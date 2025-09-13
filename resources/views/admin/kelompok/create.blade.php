@@ -35,8 +35,19 @@
                     </small>
                 </div>
 
-                {{-- Nama Kelompok: auto-generate (hidden) --}}
-                <input type="hidden" name="nama_kelompok" value="">
+                {{-- Nama Kelompok: boleh diisi, jika kosong akan otomatis --}}
+                <div class="form-group">
+                    <label for="nama_kelompok">Nama Kelompok (opsional)</label>
+                    <input
+                        type="text"
+                        name="nama_kelompok"
+                        id="nama_kelompok"
+                        class="form-control @error('nama_kelompok') is-invalid @enderror"
+                        placeholder='Kosongkan untuk otomatis (Kelompok 1, 2, 3, ...)'
+                        value="{{ old('nama_kelompok') }}"
+                    >
+                    @error('nama_kelompok') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                </div>
 
                 {{-- NIM Ketua (opsional) --}}
                 <div class="form-group">
@@ -110,9 +121,6 @@
 
 @push('scripts')
 <script>
-
-
-
 document.addEventListener('DOMContentLoaded', function(){
   const entries     = document.getElementById('entries');
   const addBtn      = document.getElementById('addRow');
@@ -147,7 +155,7 @@ document.addEventListener('DOMContentLoaded', function(){
         if (!opt.value) return; // skip placeholder
         const shouldHide = chosen.has(opt.value) && opt.value !== myVal;
         opt.disabled = shouldHide;
-        opt.hidden   = shouldHide; // sembunyikan juga di UI
+        opt.hidden   = shouldHide;
       });
     });
   }
@@ -192,14 +200,13 @@ document.addEventListener('DOMContentLoaded', function(){
     entries.appendChild(row);
     reindex();
 
-    // bind
     const nimSelect = row.querySelector('.select-nim');
     bindDuplicateGuard(nimSelect);
+
     row.querySelector('.remove-row').addEventListener('click', ()=>{
       row.remove(); reindex(); refreshNimOptions();
     });
 
-    // setelah tambah baris, update opsi
     refreshNimOptions();
   }
 
@@ -227,14 +234,6 @@ document.addEventListener('DOMContentLoaded', function(){
   // panggil saat load pertama (agar langsung sembunyikan opsi terpilih dari old input)
   refreshNimOptions();
 });
-
-$(document).ready(function() {
-  $('.select2').select2();
-});
-$(document).ready(function() {
-  $('.select3').select2();
-});
-
 </script>
 @endpush
 @endsection
