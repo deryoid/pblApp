@@ -1,11 +1,11 @@
 <?php
-
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\PeriodeController;
 use App\Http\Controllers\KelasController;
 use App\Http\Controllers\DataMahasiswaAdminController;
+use App\Http\Controllers\DataKelompokAdminController;
 
 Route::get('/', function () {
     return view('auth.login'); // Form login ditampilkan langsung 
@@ -50,10 +50,22 @@ Route::prefix('admin')->middleware(['auth','admin'])->group(function () {
     ->name('mahasiswa.import.form');
     Route::post('mahasiswa/import', [DataMahasiswaAdminController::class, 'import'])
     ->name('mahasiswa.import');
-    
+    Route::get('mahasiswa/select2', [DataMahasiswaAdminController::class, 'select2'])
+    ->name('mahasiswa.select2');
     Route::post('mahasiswa/sync', [DataMahasiswaAdminController::class, 'sync'])
     ->name('mahasiswa.sync');
     Route::resource('mahasiswa', DataMahasiswaAdminController::class);
+
+    //Kelompok Routes
+    Route::get('kelompok',              [DataKelompokAdminController::class, 'index'])->name('kelompok.index');
+    Route::get('kelompok/create',       [DataKelompokAdminController::class, 'create'])->name('kelompok.create');
+    Route::post('kelompok',             [DataKelompokAdminController::class, 'store'])->name('kelompok.store');
+    Route::get('kelompok/{uuid}',       [DataKelompokAdminController::class, 'show'])->name('kelompok.show');
+    Route::get('kelompok/{uuid}/edit',  [DataKelompokAdminController::class, 'edit'])->name('kelompok.edit');
+    Route::put('kelompok/{uuid}',       [DataKelompokAdminController::class, 'update'])->name('kelompok.update');
+    Route::delete('kelompok/{uuid}',    [DataKelompokAdminController::class, 'destroy'])->name('kelompok.destroy');
+
+
 });
 
 Route::prefix('evaluator')->middleware(['auth','evaluator'])->group(function () {

@@ -27,6 +27,10 @@ class Periode extends Model
             }
         });
     }
+    public function kelompoks()
+    { 
+        return $this->hasMany(Kelompok::class); 
+    }
 
     
 }

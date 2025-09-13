@@ -54,6 +54,12 @@
                     <span>Mahasiwa</span></a>
             </li>
 
+            <li class="nav-item">
+                <a class="nav-link" href="{{ route('kelompok.index') }}">
+                    <i class="fas fa-fw fa-users"></i>
+                    <span>Kelompok PBL</span></a>
+            </li>
+
             <!-- Nav Item - Utilities Collapse Menu -->
             <li class="nav-item">
                 <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseUtilities"

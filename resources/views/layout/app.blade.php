@@ -68,6 +68,7 @@
     </div>
     
     <x-scripts/>
+    @stack('scripts')
     @include('sweetalert::alert')
 </body>
 
