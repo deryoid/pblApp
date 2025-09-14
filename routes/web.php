@@ -1,11 +1,12 @@
 <?php
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\LoginController;
-use App\Http\Controllers\UserController;
-use App\Http\Controllers\PeriodeController;
-use App\Http\Controllers\KelasController;
-use App\Http\Controllers\DataMahasiswaAdminController;
-use App\Http\Controllers\DataKelompokAdminController;
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\PeriodeController;
+use App\Http\Controllers\Admin\KelasController;
+use App\Http\Controllers\Admin\DataMahasiswaAdminController;
+use App\Http\Controllers\Admin\DataKelompokAdminController;
+use App\Http\Controllers\Mahasiswa\PasswordController as MahasiswaPasswordController;
 
 Route::get('/', function () {
     return view('auth.login'); // Form login ditampilkan langsung 
@@ -78,4 +79,7 @@ Route::prefix('mahasiswa')->middleware(['auth','mahasiswa'])->group(function () 
     Route::get('/', function () {
        return view('mahasiswa.index');
     });
+    // Mahasiswa - Ganti Password
+    Route::get('password', [MahasiswaPasswordController::class, 'edit'])->name('mahasiswa.password.edit');
+    Route::put('password', [MahasiswaPasswordController::class, 'update'])->name('mahasiswa.password.update');
 });
