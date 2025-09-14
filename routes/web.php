@@ -74,8 +74,8 @@ Route::prefix('evaluator')->middleware(['auth','evaluator'])->group(function () 
     });
 });
 
-// Route::prefix('mahasiswa')->middleware(['auth','role:mahasiswa'])->group(function () {
-//     Route::get('/', function () {
-//        return view('mahasiswa.index');
-//     });
-// });
+Route::prefix('mahasiswa')->middleware(['auth','mahasiswa'])->group(function () {
+    Route::get('/', function () {
+       return view('mahasiswa.index');
+    });
+});
