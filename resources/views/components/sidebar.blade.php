@@ -111,15 +111,77 @@
             </li>
             @elseif (Auth::user()->role == 'mahasiswa')
             <!-- Heading -->
+            
             <div class="sidebar-heading">
                 Mahasiswa
             </div>
+            {{-- Kelompok Saya (Periode Aktif) --}}
+            @php
+                $mhs = \App\Models\Mahasiswa::where('user_id', Auth::id())->first();
+                $periodeAktif = \App\Models\Periode::where('status_periode','Aktif')->orderByDesc('created_at')->first();
+                $kelompokSaya = null;
+                $anggotaKelompok = collect();
+                if ($mhs) {
+                    if ($periodeAktif) {
+                        $kelompokSaya = $mhs->kelompoks()->wherePivot('periode_id', $periodeAktif->id)->first();
+                        if ($kelompokSaya) {
+                            $anggotaKelompok = $kelompokSaya->mahasiswas()
+                                ->wherePivot('periode_id', $periodeAktif->id)
+                                ->with('user')
+                                ->get();
+                        }
+                    }
+                    if (!$kelompokSaya) {
+                        $kelompokSaya = $mhs->kelompoks()->latest('kelompok_mahasiswa.created_at')->first();
+                        if ($kelompokSaya) {
+                            $anggotaKelompok = $kelompokSaya->mahasiswas()->with('user')->get();
+                        }
+                    }
+                }
+            @endphp
+
+            <li class="nav-item">
+                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseKelompokSaya"
+                    aria-expanded="false" aria-controls="collapseKelompokSaya">
+                    <i class="fas fa-fw fa-users"></i>
+                    <span>Kelompok Saya</span>
+                </a>
+                <div id="collapseKelompokSaya" class="collapse" data-parent="#accordionSidebar">
+                    <div class="bg-white py-2 collapse-inner rounded">
+                        @if($kelompokSaya)
+                            <h6 class="collapse-header">
+                                {{ $kelompokSaya->nama_kelompok }}
+                                @if($periodeAktif)
+                                    <small class="text-muted"> ({{ $periodeAktif->periode }})</small>
+                                @endif
+                            </h6>
+                            @forelse($anggotaKelompok as $am)
+                                <span class="collapse-item d-flex align-items-center">
+                                    <i class="fas fa-user-circle mr-2 text-gray-400"></i>
+                                    {{ $am->nama_mahasiswa }}
+                                    @php $r = strtolower($am->pivot->role ?? ''); @endphp
+                                    @if($r === 'ketua')
+                                        <span class="badge badge-primary ml-auto">Ketua</span>
+                                    @endif
+                                </span>
+                            @empty
+                                <span class="collapse-item text-muted">Belum ada anggota.</span>
+                            @endforelse
+                        @else
+                            <span class="collapse-item text-muted">Belum tergabung dalam kelompok.</span>
+                        @endif
+                    </div>
+                </div>
+            </li>
+
             <li class="nav-item">
                 <a class="nav-link" href="{{ route('mahasiswa.kunjungan.index') }}">
                     <i class="fas fa-fw fa-building"></i>
-                    <span>Pendataan Mitra Dikunjungi</span>
+                    <span>Mitra Dikunjungi</span>
                 </a>
             </li>
+
+          
             @endif
         </ul>
            
