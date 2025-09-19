@@ -157,8 +157,10 @@
                             </h6>
                             @forelse($anggotaKelompok as $am)
                                 <span class="collapse-item d-flex align-items-center">
-                                    <i class="fas fa-user-circle mr-2 text-gray-400"></i>
-                                    {{ $am->nama_mahasiswa }}
+                                    <img src="{{ ($am->user && $am->user->profile_photo_data_url) ? $am->user->profile_photo_data_url : asset('sbadmin2/img/undraw_profile.svg') }}" 
+                                         alt="Foto {{ $am->nama_mahasiswa }}" class="rounded-circle mr-2"
+                                         style="width:24px;height:24px;object-fit:cover;">
+                                    <span>{{ $am->nama_mahasiswa }}</span>
                                     @php $r = strtolower($am->pivot->role ?? ''); @endphp
                                     @if($r === 'ketua')
                                         <span class="badge badge-primary ml-auto">Ketua</span>
