@@ -182,8 +182,18 @@
                     <span>Mitra Dikunjungi</span>
                 </a>
             </li>
-
-          
+            <!-- Divider -->
+            <hr class="sidebar-divider">
+            <div class="sidebar-heading">
+                PBL 
+            </div>
+            
+            <li class="nav-item">
+                <a class="nav-link" href="{{ route('mahasiswa.kunjungan.index') }}">
+                    <i class="fas fa-fw fa-building"></i>
+                    <span>Proyek</span>
+                </a>
+            </li>
             @endif
         </ul>
            
