@@ -11,7 +11,7 @@
     <div class="card shadow">
         <div class="card-body">
             {{-- form untuk update user --}}
-            <form action="{{ route('user.update', $user->id) }}" method="POST">
+            <form action="{{ route('user.update', $user) }}" method="POST">
                 @csrf
                 @method('PUT')
 

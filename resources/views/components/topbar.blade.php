@@ -11,15 +11,22 @@
                     <ul class="navbar-nav ml-auto">
                       <!-- Nav Item - User Information -->
                         <li class="nav-item dropdown no-arrow">
-                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
+                            <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button"
                                 data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                 @auth
+                                    <img class="img-profile rounded-circle mr-2" alt="Avatar"
+                                         src="{{ Auth::user()->profile_photo_data_url ?? asset('sbadmin2/img/undraw_profile.svg') }}"
+                                         style="width:32px;height:32px;object-fit:cover;">
                                     <span class="mr-2 d-none d-lg-inline text-primary small">{{ Auth::user()->nama_user }}</span>
                                 @endauth 
                             </a>
                             <!-- Dropdown - User Information -->
                             <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in"
                                 aria-labelledby="userDropdown">
+                                <a class="dropdown-item" href="{{ route('profile.edit') }}">
+                                    <i class="fas fa-user fa-sm fa-fw mr-2 text-gray-400"></i>
+                                    Update Profile
+                                </a>
                                 <a class="dropdown-item" href="#" data-toggle="modal" data-target="#logoutModal">
                                     <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
                                     Logout

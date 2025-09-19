@@ -72,11 +72,11 @@
                                                 @endswitch
                                             </td>
                                             <td class="text-center align-middle">
-                                                <a href="{{ route('user.edit', $u->id) }}" class="btn btn-success btn-circle btn-sm">
+                                                <a href="{{ route('user.edit', $u) }}" class="btn btn-success btn-circle btn-sm">
                                                     <i class="fas fa-edit fa-sm" alt="Ubah" aria-hidden="true"></i>
                                                 </a>
                                                 
-                                                <form action="{{ route('user.destroy', $u->id) }}" method="POST" style="display:inline;">
+                                                <form action="{{ route('user.destroy', $u) }}" method="POST" style="display:inline;">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="button" class="btn btn-danger btn-circle btn-sm"

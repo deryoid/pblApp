@@ -115,13 +115,7 @@
                 Mahasiswa
             </div>
 
-            <!-- Nav Item - Change Password -->
-            <li class="nav-item">
-                <a class="nav-link" href="{{ route('mahasiswa.password.edit') }}">
-                    <i class="fas fa-key"></i>
-                    <span>Ganti Password</span>
-                </a>
-            </li>
+            
             @endif
         </ul>
            

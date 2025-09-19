@@ -6,7 +6,7 @@ use App\Http\Controllers\Admin\PeriodeController;
 use App\Http\Controllers\Admin\KelasController;
 use App\Http\Controllers\Admin\DataMahasiswaAdminController;
 use App\Http\Controllers\Admin\DataKelompokAdminController;
-use App\Http\Controllers\Mahasiswa\PasswordController as MahasiswaPasswordController;
+use App\Http\Controllers\ProfileController;
 
 Route::get('/', function () {
     return view('auth.login'); // Form login ditampilkan langsung 
@@ -20,15 +20,15 @@ Route::prefix('admin')->middleware(['auth','admin'])->group(function () {
        return view('admin.index');
     });
 
-    //User Routes
+    //User Routes (UUID-based binding)
     Route::get('user', [UserController::class, 'index'])->name('user.index');
     Route::get('user/create', [UserController::class, 'create'])->name('user.create');
     Route::post('user', [UserController::class, 'store'])->name('user.store');
-    Route::get('user/{id}/edit', [UserController::class, 'edit'])->name('user.edit');
-    Route::put('user/{id}', [UserController::class, 'update'])->name('user.update');
-    Route::delete('user/{id}', [UserController::class, 'destroy'])->name('user.destroy');
+    Route::get('user/{user}/edit', [UserController::class, 'edit'])->name('user.edit');
+    Route::put('user/{user}', [UserController::class, 'update'])->name('user.update');
+    Route::delete('user/{user}', [UserController::class, 'destroy'])->name('user.destroy');
     Route::post('user/{user}/reset-password', [UserController::class, 'resetPassword'])
-    ->name('user.reset-password');   
+        ->name('user.reset-password');   
 
     //Periode Routes
     Route::get('periode', [PeriodeController::class, 'index'])->name('periode.index');
@@ -79,7 +79,10 @@ Route::prefix('mahasiswa')->middleware(['auth','mahasiswa'])->group(function () 
     Route::get('/', function () {
        return view('mahasiswa.index');
     });
-    // Mahasiswa - Ganti Password
-    Route::get('password', [MahasiswaPasswordController::class, 'edit'])->name('mahasiswa.password.edit');
-    Route::put('password', [MahasiswaPasswordController::class, 'update'])->name('mahasiswa.password.update');
+});
+
+// Profile (semua role)
+Route::middleware(['auth'])->group(function () {
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
 });
