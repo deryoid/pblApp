@@ -6,6 +6,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 use App\Http\Middleware\Admin;
 use App\Http\Middleware\Evaluator;
 use App\Http\Middleware\Mahasiswa;  
+use App\Console\Commands\AutoTandaiTidakAdaTanggapan;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -13,6 +14,9 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+    ->withCommands([
+        AutoTandaiTidakAdaTanggapan::class,
+    ])
     ->withMiddleware(function ($middleware) {
         // daftar global kalau perlu
         // $middleware->append(SomeGlobalMiddleware::class);

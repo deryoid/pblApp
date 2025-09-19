@@ -114,8 +114,12 @@
             <div class="sidebar-heading">
                 Mahasiswa
             </div>
-
-            
+            <li class="nav-item">
+                <a class="nav-link" href="{{ route('mahasiswa.kunjungan.index') }}">
+                    <i class="fas fa-fw fa-building"></i>
+                    <span>Pendataan Mitra Dikunjungi</span>
+                </a>
+            </li>
             @endif
         </ul>
            

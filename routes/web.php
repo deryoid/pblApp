@@ -79,6 +79,9 @@ Route::prefix('mahasiswa')->middleware(['auth','mahasiswa'])->group(function () 
     Route::get('/', function () {
        return view('mahasiswa.index');
     });
+    Route::resource('kunjungan', \App\Http\Controllers\Mahasiswa\KunjunganMitraController::class)
+        ->only(['index','create','store','edit','update','destroy'])
+        ->names('mahasiswa.kunjungan');
 });
 
 // Profile (semua role)
