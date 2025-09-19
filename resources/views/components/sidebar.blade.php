@@ -76,12 +76,6 @@
                     <span>Evaluasi</span></a>
             </li>
 
-            <!-- Nav Item - Tables -->
-            <li class="nav-item">
-                <a class="nav-link" href="tables.html">
-                    <i class="fas fa-fw fa-table"></i>
-                    <span>Tables</span></a>
-            </li>
 
             <!-- Divider -->
             <hr class="sidebar-divider d-none d-md-block">
@@ -121,21 +115,6 @@
                 Mahasiswa
             </div>
 
-            <!-- Nav Item - Pages Collapse Menu -->
-            <li class="nav-item">
-                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseTwo"
-                    aria-expanded="true" aria-controls="collapseTwo">
-                    <i class="fas fa-fw fa-sitemap"></i>
-                    <span>Data Master</span>
-                </a>
-                <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
-                    <div class="bg-white py-2 collapse-inner rounded">
-                        <a class="collapse-item" href="{{ route('periode.index') }}">Periode</a>        
-                        <a class="collapse-item" href="{{ route('kelas.index') }}">Kelas</a>
-                        <a class="collapse-item" href="{{ route('user.index') }}">Pengguna</a>
-                    </div>
-                </div>
-            </li>
             <!-- Nav Item - Change Password -->
             <li class="nav-item">
                 <a class="nav-link" href="{{ route('mahasiswa.password.edit') }}">
