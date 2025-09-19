@@ -32,6 +32,7 @@ class PasswordController extends Controller
             // Lewatkan jika driver tidak mendukung
         }
 
+        
         return back()->with('status', 'Password berhasil diperbarui.');
     }
 }

@@ -3,7 +3,7 @@
 @section('content')
     <div class="container-fluid">
         <div class="d-sm-flex align-items-center justify-content-between mb-4">
-            <h1 class="h3 mb-0 text-gray-800"><i class="fas fa-key text-secondary mr-2" aria-hidden="true"></i>Ganti Password</h1>
+            <h1 class="h4 mb-0 text-gray-800">Ganti Password</h1>
         </div>
 
         @if (session('status'))
@@ -16,7 +16,7 @@
         @endif
 
         <div class="row">
-            <div class="col-lg-6">
+            <div class="col-lg-12">
                 <div class="card shadow mb-4">
                     <div class="card-header py-3">
                         <h6 class="m-0 font-weight-bold text-primary">Perbarui Password Anda</h6>
@@ -48,7 +48,7 @@
                             </div>
 
                             <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-save mr-1"></i> Simpan Perubahan
+                                Simpan Perubahan
                             </button>
                         </form>
                     </div>
