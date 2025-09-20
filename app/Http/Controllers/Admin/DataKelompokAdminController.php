@@ -71,6 +71,7 @@ class DataKelompokAdminController extends Controller
                 Rule::unique('kelompok','nama_kelompok')
                     ->where(fn($q)=>$q->where('periode_id',$request->periode_id)),
             ],
+            'link_drive'          => ['nullable','url','max:255'],
             'ketua_nim'           => ['nullable','string','max:50'],
 
             'entries'             => ['required','array','min:1'],
@@ -155,6 +156,7 @@ class DataKelompokAdminController extends Controller
                         'uuid'          => (string) Str::uuid(),
                         'periode_id'    => $periodeId,
                         'nama_kelompok' => $nama,
+                        'link_drive'    => $validated['link_drive'] ?? null,
                     ]);
                     $kelompok->mahasiswas()->attach($attach);
                     $namaKelompok = $nama;
@@ -173,6 +175,7 @@ class DataKelompokAdminController extends Controller
                             'uuid'          => (string) Str::uuid(),
                             'periode_id'    => $periodeId,
                             'nama_kelompok' => $candidate,
+                            'link_drive'    => $validated['link_drive'] ?? null,
                         ]);
                         $kelompok->mahasiswas()->attach($attach);
                         $namaKelompok = $candidate;
@@ -244,6 +247,7 @@ class DataKelompokAdminController extends Controller
                     ->where(fn($q)=>$q->where('periode_id',$request->periode_id))
                     ->ignore($kelompok->id),
             ],
+            'link_drive'          => ['nullable','url','max:255'],
             'ketua_nim'           => ['nullable','string','max:50'],
             'entries'             => ['required','array','min:1'],
             'entries.*.nim'       => ['required','string','max:50','distinct'],
@@ -304,6 +308,7 @@ class DataKelompokAdminController extends Controller
             $kelompok->update([
                 'periode_id'    => $periodeId,
                 'nama_kelompok' => $validated['nama_kelompok'],
+                'link_drive'    => $validated['link_drive'] ?? null,
             ]);
 
             $ketuaNim = $validated['ketua_nim'] ?? null;

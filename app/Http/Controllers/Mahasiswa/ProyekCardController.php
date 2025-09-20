@@ -9,6 +9,7 @@ use App\Models\ProjectCard;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
+use RealRashid\SweetAlert\Facades\Alert;
 
 class ProyekCardController extends Controller
 {
@@ -47,8 +48,8 @@ class ProyekCardController extends Controller
             'due_date' => $data['due_date'] ?? null,
             'progress' => 0,
         ]);
-
-        return back()->with('success', 'Kartu ditambahkan.');
+        Alert::toast('Kartu ditambahkan.', 'success');
+        return back();
     }
 
     public function update(Request $request, ProjectCard $card)
@@ -71,8 +72,8 @@ class ProyekCardController extends Controller
             'due_date' => $data['due_date'] ?? null,
             'progress' => $data['progress'] ?? $card->progress,
         ]);
-
-        return back()->with('success', 'Kartu diperbarui.');
+        Alert::toast('Kartu diperbarui.', 'success');
+        return back();
     }
 
     public function destroy(ProjectCard $card)
@@ -93,7 +94,8 @@ class ProyekCardController extends Controller
                 ->decrement('position');
         });
 
-        return back()->with('success', 'Kartu dihapus.');
+        Alert::toast('Kartu dihapus.', 'success');
+        return back();
     }
 
     private function resolveKelompokSaya(): array

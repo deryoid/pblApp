@@ -60,13 +60,13 @@
                             </td>
                             <td>{{ $it->user->nama_user ?? '-' }}</td>
                             <td class="text-center">
-                                <a class="btn btn-success btn-sm" href="{{ route('mahasiswa.kunjungan.edit', $it) }}">
+                                <a class="btn btn-circle btn-success btn-sm" href="{{ route('mahasiswa.kunjungan.edit', $it) }}">
                                     <i class="fas fa-edit"></i>
                                 </a>
                                 <form action="{{ route('mahasiswa.kunjungan.destroy', $it) }}" method="POST" style="display:inline;">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Hapus data ini?')">
+                                    <button type="submit" class="btn btn-circle btn-danger btn-sm" onclick="return confirm('Hapus data ini?')">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </form>

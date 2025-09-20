@@ -49,6 +49,21 @@
                     @error('nama_kelompok') <div class="invalid-feedback">{{ $message }}</div> @enderror
                 </div>
 
+                {{-- Link Drive (opsional) --}}
+                <div class="form-group">
+                    <label for="link_drive">Link Drive</label>
+                    <input
+                        type="url"
+                        name="link_drive"
+                        id="link_drive"
+                        class="form-control @error('link_drive') is-invalid @enderror"
+                        placeholder="https://drive.google.com/..."
+                        value="{{ old('link_drive') }}"
+                    >
+                    @error('link_drive') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                    <small class="form-text text-muted">Sertakan tautan Google Drive untuk dokumen kelompok.</small>
+                </div>
+
                 {{-- NIM Ketua (opsional) --}}
                 <div class="form-group">
                     <label for="ketua_nim">NIM Ketua (opsional)</label>
@@ -83,7 +98,7 @@
                             </div>
                             <div class="col-md-5">
                                 <label>Kelas</label>
-                                <select name="entries[{{ $i }}][kelas_id]" class="form-control @error('entries.'.$i.'.kelas_id') is-invalid @enderror" required>
+                                <select name="entries[{{ $i }}][kelas_id]" class="form-control select-kelas @error('entries.'.$i.'.kelas_id') is-invalid @enderror" required>
                                     <option value="">-- Pilih Kelas --</option>
                                     @foreach($kelasList as $k)
                                         <option value="{{ $k->id }}" {{ ($row['kelas_id']??'')==$k->id?'selected':'' }}>{{ $k->kelas }}</option>
@@ -127,6 +142,12 @@ document.addEventListener('DOMContentLoaded', function(){
   const ketuaInput  = document.getElementById('ketua_nim');
   const form        = document.getElementById('kelompokForm');
   const periodeSel  = document.getElementById('periode_id');
+
+  // Aktifkan Select2 agar pencarian lebih mudah
+  if (window.jQuery && jQuery().select2) {
+    $('.select-nim').select2({ width: '100%', placeholder: '-- Pilih --' });
+    $('.select-kelas').select2({ width: '100%', placeholder: '-- Pilih Kelas --' });
+  }
 
   // Reload halaman saat periode diganti agar daftar mahasiswa terfilter server-side
   if (periodeSel && periodeSel.dataset.createUrl) {
@@ -187,7 +208,7 @@ document.addEventListener('DOMContentLoaded', function(){
       </div>
       <div class="col-md-5">
         <label>Kelas</label>
-        <select class="form-control" required>
+        <select class="form-control select-kelas" required>
           <option value="">-- Pilih Kelas --</option>
           @foreach($kelasList as $k)
             <option value="{{ $k->id }}">{{ $k->kelas }}</option>
@@ -199,6 +220,12 @@ document.addEventListener('DOMContentLoaded', function(){
       </div>`;
     entries.appendChild(row);
     reindex();
+
+    // Inisialisasi Select2 pada baris baru
+    if (window.jQuery && jQuery().select2) {
+      $(row).find('.select-nim').select2({ width: '100%', placeholder: '-- Pilih --' });
+      $(row).find('.select-kelas').select2({ width: '100%', placeholder: '-- Pilih Kelas --' });
+    }
 
     const nimSelect = row.querySelector('.select-nim');
     bindDuplicateGuard(nimSelect);

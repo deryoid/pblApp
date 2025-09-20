@@ -9,6 +9,7 @@ use App\Models\Periode;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
+use RealRashid\SweetAlert\Facades\Alert;
 
 class ProyekListController extends Controller
 {
@@ -20,7 +21,6 @@ class ProyekListController extends Controller
 
         $data = $request->validate([
             'name' => 'required|string|max:255',
-            'color' => 'nullable|string|max:32',
         ]);
 
         $pid = $kelompok->periode_id ?? optional($periodeAktif)->id;
@@ -33,11 +33,10 @@ class ProyekListController extends Controller
             'kelompok_id' => $kelompok->id,
             'periode_id' => $pid,
             'name' => $data['name'],
-            'color' => $data['color'] ?? null,
             'position' => $pos,
         ]);
-
-        return back()->with('success', 'Kolom ditambahkan.');
+        Alert::toast('Kolom ditambahkan.', 'success');
+        return back();
     }
 
     public function update(Request $request, ProjectList $list)
@@ -45,10 +44,10 @@ class ProyekListController extends Controller
         $this->authorize('update', $list);
         $data = $request->validate([
             'name' => 'required|string|max:255',
-            'color' => 'nullable|string|max:32',
         ]);
         $list->update($data);
-        return back()->with('success', 'Kolom diperbarui.');
+        Alert::toast('Kolom diperbarui.', 'success');
+        return back();
     }
 
     public function destroy(ProjectList $list)
@@ -67,7 +66,8 @@ class ProyekListController extends Controller
                 ->where('position', '>', $pos)
                 ->decrement('position');
         });
-        return back()->with('success', 'Kolom dihapus.');
+        Alert::toast('Kolom dihapus.', 'success');
+        return back();
     }
 
     public function reorder(Request $request)

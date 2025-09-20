@@ -31,6 +31,15 @@
         </div>
 
         <div class="form-group">
+          <label for="link_drive">Link Drive (opsional)</label>
+          <input type="url" name="link_drive" id="link_drive"
+                 class="form-control @error('link_drive') is-invalid @enderror"
+                 placeholder="https://drive.google.com/..."
+                 value="{{ old('link_drive', $kelompok->link_drive) }}">
+          @error('link_drive') <div class="invalid-feedback">{{ $message }}</div> @enderror
+        </div>
+
+        <div class="form-group">
           <label for="ketua_nim">NIM Ketua (opsional)</label>
           <input type="text" name="ketua_nim" id="ketua_nim"
                  class="form-control @error('ketua_nim') is-invalid @enderror"
@@ -62,7 +71,7 @@
               </div>
               <div class="col-md-5">
                 <label>Kelas</label>
-                <select name="entries[{{ $i }}][kelas_id]" class="form-control @error('entries.'.$i.'.kelas_id') is-invalid @enderror" required>
+                <select name="entries[{{ $i }}][kelas_id]" class="form-control select-kelas @error('entries.'.$i.'.kelas_id') is-invalid @enderror" required>
                   <option value="">-- Pilih Kelas --</option>
                   @foreach($kelasList as $k)
                     <option value="{{ $k->id }}" {{ ($row['kelas_id']??'')==$k->id?'selected':'' }}>{{ $k->kelas }}</option>
@@ -96,6 +105,12 @@ document.addEventListener('DOMContentLoaded', function(){
   const ketuaInput = document.getElementById('ketua_nim');
   const form = document.getElementById('kelompokForm');
 
+  // Aktifkan Select2 pada semua select agar bisa dicari
+  if (window.jQuery && jQuery().select2) {
+    $('.select-nim').select2({ width: '100%', placeholder: '-- Pilih --' });
+    $('.select-kelas').select2({ width: '100%', placeholder: '-- Pilih Kelas --' });
+  }
+
   function reindex(){
     entries.querySelectorAll('.entry-row').forEach((row, idx) => {
       const selects = row.querySelectorAll('select');
@@ -119,7 +134,7 @@ document.addEventListener('DOMContentLoaded', function(){
       </div>
       <div class="col-md-5">
         <label>Kelas</label>
-        <select class="form-control" required>
+        <select class="form-control select-kelas" required>
           <option value="">-- Pilih Kelas --</option>
           @foreach($kelasList as $k)
             <option value="{{ $k->id }}">{{ $k->kelas }}</option>
@@ -131,6 +146,9 @@ document.addEventListener('DOMContentLoaded', function(){
       </div>`;
     entries.appendChild(row);
     reindex();
+    if (window.jQuery && jQuery().select2) {
+      $(row).find('.select-nim').select2({ width: '100%', placeholder: '-- Pilih --' });
+    }
     row.querySelector('.remove-row').addEventListener('click', ()=>{ row.remove(); reindex(); });
 
     // cegah duplikasi nim

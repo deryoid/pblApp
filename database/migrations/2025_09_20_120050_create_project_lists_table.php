@@ -15,8 +15,6 @@ return new class extends Migration
             $table->foreignId('periode_id')->nullable()->constrained('periode')->cascadeOnDelete();
             $table->string('name');
             $table->unsignedInteger('position')->default(0);
-            $table->string('color')->nullable();
-            $table->boolean('archived')->default(false);
             $table->timestamps();
             $table->unique(['kelompok_id','periode_id','position']);
             $table->index(['kelompok_id','periode_id']);
@@ -28,4 +26,3 @@ return new class extends Migration
         Schema::dropIfExists('project_lists');
     }
 };
-

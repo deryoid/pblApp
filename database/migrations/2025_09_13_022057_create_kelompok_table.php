@@ -15,6 +15,7 @@ return new class extends Migration
         $table->uuid('uuid')->unique();
         $table->foreignId('periode_id')->constrained('periode')->cascadeOnDelete(); // singular
         $table->string('nama_kelompok'); // jika kosong saat input, akan diisi otomatis "Kelompok {n}"
+        $table->string('link_drive')->nullable();
         $table->unique(['periode_id','nama_kelompok']); // unik per-periode
         $table->timestamps();
         });

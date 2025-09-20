@@ -20,11 +20,11 @@
     </div>
     <div class="ml-auto d-flex align-items-center">
       @if(isset($kelompok) && $kelompok)
-        <button class="btn btn-success btn-xl mr-2" data-toggle="modal" data-target="#modalAddList">
+        <button class="btn btn-success btn-circle btn-sm mr-2" data-toggle="modal" data-target="#modalAddList">
           <i class="fas fa-plus "></i>
         </button>
       @endif
-      <input id="boardSearch" type="text" class="form-control form-control-sm" placeholder="" style="max-width: 220px;">
+      <input id="boardSearch" type="text" class="form-control form-control-sm" placeholder="Cari Kolom...." style="max-width: 220px;">
     </div>
   </div>
 
@@ -36,18 +36,18 @@
           <div class="d-flex align-items-center mb-2">
             <h6 class="mb-0 text-uppercase text-muted">{{ $list['title'] }}</h6>
             <span class="badge badge-secondary ml-2">{{ count($list['cards']) }}</span>
-            <div class="ml-auto d-flex align-items-center">
-              <button class="btn btn-link btn-sm px-2 btn-edit-list" data-list-id="{{ $list['id'] }}" data-list-name="{{ $list['title'] }}" data-list-color="" data-toggle="modal" data-target="#modalEditList" title="Ubah kolom">
+            <div class="ml-auto d-flex align-items-center btn-group btn-group-sm board-actions" role="group" aria-label="Aksi Kolom">
+              <button class="btn btn-outline-primary btn-sm btn-edit-list" data-list-id="{{ $list['id'] }}" data-list-name="{{ $list['title'] }}" data-toggle="modal" data-target="#modalEditList" title="Ubah kolom">
                 <i class="fas fa-edit"></i>
               </button>
-              <form method="POST" action="{{ route('proyek.lists.destroy', ['list' => $list['id']]) }}" style="display:inline;">
+              <form method="POST" action="{{ route('proyek.lists.destroy', ['list' => $list['id']]) }}" class="m-0" style="display:inline;">
                 @csrf
                 @method('DELETE')
-                <button type="button" class="btn btn-link btn-sm px-2 text-danger btn-delete-list" title="Hapus kolom">
+                <button type="button" class="btn btn-outline-danger btn-sm btn-delete-list" title="Hapus kolom">
                   <i class="fas fa-trash"></i>
                 </button>
               </form>
-              <button class="btn btn-link btn-sm px-2 btn-add-card" data-list-id="{{ $list['id'] }}" data-toggle="modal" data-target="#modalAddCard" title="Tambah kartu">
+              <button class="btn btn-outline-success btn-sm btn-add-card" data-list-id="{{ $list['id'] }}" data-toggle="modal" data-target="#modalAddCard" title="Tambah Proyek">
                 <i class="fas fa-plus"></i>
               </button>
             </div>
@@ -77,9 +77,16 @@
                   </div>
                 </div>
 
+                @if(!empty($card['description']))
+                  <div class="text-muted small mb-2">{{ \Illuminate\Support\Str::limit($card['description'], 120) }}</div>
+                @endif
+
                   @isset($card['progress'])
-                    <div class="progress progress-sm mb-2">
-                      <div class="progress-bar" role="progressbar" style="width: {{ $card['progress'] }}%" aria-valuenow="{{ $card['progress'] }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    <div class="d-flex align-items-center mb-2">
+                      <div class="progress progress-sm flex-grow-1 mr-2">
+                        <div class="progress-bar" role="progressbar" style="width: {{ $card['progress'] }}%" aria-valuenow="{{ $card['progress'] }}" aria-valuemin="0" aria-valuemax="100"></div>
+                      </div>
+                      <span class="small text-muted">{{ $card['progress'] }}%</span>
                     </div>
                   @endisset
 
@@ -107,7 +114,7 @@
                 </div>
               </div>
             @empty
-              <div class="text-muted small">Belum ada kartu</div>
+              <div class="text-muted small">Belum ada proyek</div>
             @endforelse
           </div>
         </div>
@@ -133,7 +140,7 @@
   <div class="modal-dialog" role="document">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Tambah Kartu</h5>
+        <h5 class="modal-title">Tambah Proyek</h5>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
       </div>
       <form method="POST" action="{{ route('proyek.cards.store') }}">
@@ -171,7 +178,7 @@
   <div class="modal-dialog" role="document">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Ubah Kartu</h5>
+        <h5 class="modal-title">Ubah Proyek</h5>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
       </div>
       <form id="editCardForm" method="POST" action="#">
@@ -224,10 +231,7 @@
             <label>Nama Kolom</label>
             <input name="name" id="editListName" type="text" class="form-control" required>
           </div>
-          <div class="form-group mb-0">
-            <label>Warna (opsional)</label>
-            <input name="color" id="editListColor" type="text" class="form-control" placeholder="#4e73df atau badge class">
-          </div>
+          
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
@@ -257,6 +261,10 @@
     background: #f1f2f6; color: #4e73df; font-size: .75rem; font-weight: 700;
     border: 1px solid rgba(0,0,0,.05); margin-right: 4px;
   }
+  /* Align action buttons neatly */
+  .board-actions .btn { padding: .2rem .45rem; line-height: 1; }
+  .board-actions .btn i { font-size: .85rem; }
+  .board-column .d-flex.align-items-center { min-height: 34px; }
 </style>
 @endpush
 
@@ -331,7 +339,7 @@
     // Hapus kartu (konfirmasi)
     $(document).on('click', '.btn-delete-card', function(){
       const form = $(this).closest('form');
-      Swal.fire({ title: 'Hapus kartu?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Ya, hapus' })
+      Swal.fire({ title: 'Hapus Proyek?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Ya, hapus' })
         .then(r=>{ if(r.isConfirmed) form.submit(); });
     });
 
@@ -364,9 +372,7 @@
     $(document).on('click', '.btn-edit-list', function(){
       const id = $(this).data('list-id');
       const name = $(this).data('list-name') || '';
-      const color = $(this).data('list-color') || '';
       $('#editListName').val(name);
-      $('#editListColor').val(color);
       $('#editListForm').attr('action', "{{ url('mahasiswa/proyek/lists') }}/"+id);
     });
   })();
@@ -388,10 +394,6 @@
           <div class="form-group">
             <label>Nama Kolom</label>
             <input name="name" type="text" class="form-control" required>
-          </div>
-          <div class="form-group mb-0">
-            <label>Warna (opsional)</label>
-            <input name="color" type="text" class="form-control" placeholder="#4e73df atau badge class">
           </div>
         </div>
         <div class="modal-footer">

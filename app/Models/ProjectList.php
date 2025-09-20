@@ -15,7 +15,6 @@ class ProjectList extends Model
     protected $guarded = ['id'];
 
     protected $casts = [
-        'archived' => 'boolean',
     ];
 
     protected static function booted(): void

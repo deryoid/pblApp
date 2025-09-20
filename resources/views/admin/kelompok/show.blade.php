@@ -19,6 +19,22 @@
 
         <dt class="col-sm-3">Nama Kelompok</dt>
         <dd class="col-sm-9">{{ $kelompok->nama_kelompok }}</dd>
+
+        <dt class="col-sm-3">Link Drive</dt>
+        <dd class="col-sm-9">
+          @if(!empty($kelompok->link_drive))
+            <div class="d-inline-flex align-items-center">
+              <a href="{{ $kelompok->link_drive }}" target="_blank" rel="noopener" class="btn btn-light btn-sm mr-2">
+                <i class="fab fa-google-drive mr-1"></i> Buka
+              </a>
+              <button type="button" class="btn btn-light btn-sm btn-copy-link" data-link="{{ $kelompok->link_drive }}">
+                <i class="fas fa-copy mr-1"></i> Salin
+              </button>
+            </div>
+          @else
+            <span class="text-muted">-</span>
+          @endif
+        </dd>
       </dl>
 
       <h6 class="font-weight-bold">Anggota</h6>
@@ -52,4 +68,25 @@
   </div>
 
 </div>
+@push('scripts')
+<script>
+  document.addEventListener('DOMContentLoaded', function(){
+    document.querySelectorAll('.btn-copy-link').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        const link = this.getAttribute('data-link') || '';
+        if (!link) return;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(link).then(()=>{
+            Swal.fire({toast:true, position:'top', icon:'success', title:'Link disalin', showConfirmButton:false, timer:1200});
+          });
+        } else {
+          const ta = document.createElement('textarea');
+          ta.value = link; document.body.appendChild(ta); ta.select();
+          try { document.execCommand('copy'); Swal.fire({toast:true, position:'top', icon:'success', title:'Link disalin', showConfirmButton:false, timer:1200}); } finally { document.body.removeChild(ta); }
+        }
+      });
+    });
+  });
+</script>
+@endpush
 @endsection

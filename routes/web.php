@@ -90,6 +90,11 @@ Route::prefix('mahasiswa')->middleware(['auth','mahasiswa'])->group(function () 
     Route::post('/proyek/reorder', [\App\Http\Controllers\Mahasiswa\ProyekController::class, 'reorder'])
         ->name('proyek.reorder');
 
+    // Simulasi tampilan proyek (tanpa DB) untuk preview skema kartu baru
+    Route::get('/proyek/sim', function () {
+        return view('mahasiswa.proyek.sim');
+    })->name('proyek.sim');
+
     // CRUD List (kolom) Proyek
     Route::post('/proyek/lists', [\App\Http\Controllers\Mahasiswa\ProyekListController::class, 'store'])
         ->name('proyek.lists.store');

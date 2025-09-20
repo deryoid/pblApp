@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use RealRashid\SweetAlert\Facades\Alert;
 
 class KunjunganMitraController extends Controller
 {
@@ -68,6 +69,7 @@ class KunjunganMitraController extends Controller
                 ->where('periode_id', $validated['periode_id'])
                 ->exists();
             if (!$exists) {
+                Alert::toast('Anda bukan anggota kelompok tersebut pada periode terpilih.', 'error');
                 return back()->withErrors(['kelompok_id' => 'Anda bukan anggota kelompok tersebut pada periode terpilih.'])->withInput();
             }
         }
@@ -90,7 +92,8 @@ class KunjunganMitraController extends Controller
         }
 
         KunjunganMitra::create($payload);
-        return redirect()->route('mahasiswa.kunjungan.index')->with('status','Data kunjungan berhasil disimpan.');
+        Alert::toast('Data kunjungan berhasil disimpan.', 'success');
+        return redirect()->route('mahasiswa.kunjungan.index');
     }
 
     public function edit(KunjunganMitra $kunjungan)
@@ -137,6 +140,7 @@ class KunjunganMitraController extends Controller
                 ->where('periode_id', $validated['periode_id'])
                 ->exists();
             if (!$exists) {
+                Alert::toast('Anda bukan anggota kelompok tersebut pada periode terpilih.', 'error');
                 return back()->withErrors(['kelompok_id' => 'Anda bukan anggota kelompok tersebut pada periode terpilih.'])->withInput();
             }
         }
@@ -161,14 +165,16 @@ class KunjunganMitraController extends Controller
         }
 
         $kunjungan->save();
-        return redirect()->route('mahasiswa.kunjungan.index')->with('status','Data kunjungan berhasil diperbarui.');
+        Alert::toast('Data kunjungan berhasil diperbarui.', 'success');
+        return redirect()->route('mahasiswa.kunjungan.index');
     }
 
     public function destroy(KunjunganMitra $kunjungan)
     {
         $this->authorizeView($kunjungan);
         $kunjungan->delete();
-        return back()->with('status','Data kunjungan dihapus.');
+        Alert::toast('Data kunjungan dihapus.', 'success');
+        return back();
     }
 
     private function authorizeView(KunjunganMitra $item): void
