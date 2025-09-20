@@ -20,7 +20,7 @@ return new class extends Migration
             $table->string('perusahaan');
             $table->string('alamat', 255);
             $table->date('tanggal_kunjungan');
-            $table->enum('status_kunjungan', ['Sudah dikunjungi','Proses Pembicaraan','Tidak ada tanggapan','Ditolak'])->default('Proses Pembicaraan');
+            $table->enum('status_kunjungan', ['Sudah dikunjungi','Proses Pembicaraan','Tidak ada tanggapan','Ditolak'])->default('Sudah dikunjungi');
 
             $table->string('bukti_kunjungan_mime', 100)->nullable();
             $table->timestamps();
@@ -37,4 +37,3 @@ return new class extends Migration
         }
     }
 };
-

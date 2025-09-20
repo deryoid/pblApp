@@ -16,6 +16,7 @@ class UserSeeder extends Seeder
     {
         DB::table('users')->insert([
             [
+                'uuid'             => (string) Str::uuid(),
                 'nama_user'        => 'Dery Yuswanto Jaya',
                 'email'            => 'deryyuswantojaya@politala.ac.id',
                 'email_verified_at'=> now(),
@@ -28,6 +29,7 @@ class UserSeeder extends Seeder
                 'updated_at'       => now(),
             ],
             [
+                'uuid'             => (string) Str::uuid(),
                 'nama_user'        => 'Eka Wahyu Sholeha',
                 'email'            => 'ekawahyus@politala.ac.id',
                 'email_verified_at'=> now(),
@@ -40,6 +42,7 @@ class UserSeeder extends Seeder
                 'updated_at'       => now(),
             ],
             [
+                'uuid'             => (string) Str::uuid(),
                 'nama_user'        => 'Dewi Indra Anggraeni',
                 'email'            => 'dewi.indra.anggraeni@politala.ac.id',
                 'email_verified_at'=> now(),

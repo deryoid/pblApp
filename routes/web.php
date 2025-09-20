@@ -82,7 +82,34 @@ Route::prefix('mahasiswa')->middleware(['auth','mahasiswa'])->group(function () 
     Route::resource('kunjungan', \App\Http\Controllers\Mahasiswa\KunjunganMitraController::class)
         ->only(['index','create','store','edit','update','destroy'])
         ->names('mahasiswa.kunjungan');
+
+    // Board Proyek (mahasiswa) - Controller
+    Route::get('/proyek', [\App\Http\Controllers\Mahasiswa\ProyekController::class, 'index'])
+        ->name('proyek.index');
+
+    Route::post('/proyek/reorder', [\App\Http\Controllers\Mahasiswa\ProyekController::class, 'reorder'])
+        ->name('proyek.reorder');
+
+    // CRUD List (kolom) Proyek
+    Route::post('/proyek/lists', [\App\Http\Controllers\Mahasiswa\ProyekListController::class, 'store'])
+        ->name('proyek.lists.store');
+    Route::put('/proyek/lists/{list:uuid}', [\App\Http\Controllers\Mahasiswa\ProyekListController::class, 'update'])
+        ->name('proyek.lists.update');
+    Route::delete('/proyek/lists/{list:uuid}', [\App\Http\Controllers\Mahasiswa\ProyekListController::class, 'destroy'])
+        ->name('proyek.lists.destroy');
+    Route::post('/proyek/lists/reorder', [\App\Http\Controllers\Mahasiswa\ProyekListController::class, 'reorder'])
+        ->name('proyek.lists.reorder');
+
+    // CRUD Kartu Proyek (mahasiswa)
+    Route::post('/proyek/cards', [\App\Http\Controllers\Mahasiswa\ProyekCardController::class, 'store'])
+        ->name('proyek.cards.store');
+    Route::put('/proyek/cards/{card:uuid}', [\App\Http\Controllers\Mahasiswa\ProyekCardController::class, 'update'])
+        ->name('proyek.cards.update');
+    Route::delete('/proyek/cards/{card:uuid}', [\App\Http\Controllers\Mahasiswa\ProyekCardController::class, 'destroy'])
+        ->name('proyek.cards.destroy');
+
 });
+
 
 // Profile (semua role)
 Route::middleware(['auth'])->group(function () {

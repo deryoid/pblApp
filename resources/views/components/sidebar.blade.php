@@ -189,8 +189,8 @@
             </div>
             
             <li class="nav-item">
-                <a class="nav-link" href="{{ route('mahasiswa.kunjungan.index') }}">
-                    <i class="fas fa-fw fa-building"></i>
+                <a class="nav-link" href="{{ route('proyek.index') }}">
+                    <i class="fas fa-fw fa-project-diagram"></i>
                     <span>Proyek</span>
                 </a>
             </li>
