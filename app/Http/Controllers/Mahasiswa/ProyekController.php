@@ -28,17 +28,43 @@ class ProyekController extends Controller
             ->orderBy('position')
             ->get()
             ->map(function ($list) {
-                $cards = ProjectCard::where('list_id', $list->id)
+                $cards = ProjectCard::with(['createdBy','updatedBy'])
+                    ->where('list_id', $list->id)
                     ->orderBy('position')
                     ->orderBy('id')
                     ->get()
                     ->map(function (ProjectCard $c) {
+                        $hasUpdate = $c->updated_at && $c->created_at && !$c->updated_at->equalTo($c->created_at);
+                        $createdByName = optional($c->createdBy)->name;
+                        $updatedByName = optional($c->updatedBy)->name;
+                        // Gunakan foto profil data URL jika tersedia (sesuai topbar), fallback ke profile_photo_url
+                        $createdByAvatar = optional($c->createdBy)->profile_photo_data_url
+                            ?: optional($c->createdBy)->profile_photo_url;
+                        $updatedByAvatar = optional($c->updatedBy)->profile_photo_data_url
+                            ?: optional($c->updatedBy)->profile_photo_url;
                         return [
                             'id' => $c->uuid,
                             'title' => $c->title,
                             'labels' => $c->labels ?? [],
-                            'due' => optional($c->due_date)->toDateString(),
-                            'members' => [],
+                            // tanggal baru + fallback due lama
+                            'tanggal_mulai' => optional($c->tanggal_mulai)->toDateString(),
+                            'tanggal_selesai' => optional($c->tanggal_selesai)->toDateString() ?: optional($c->due_date)->toDateString(),
+                            // atribut tambahan skema revisi (Opsi A)
+                            'nama_mitra' => $c->nama_mitra,
+                            'kontak_mitra' => $c->kontak_mitra,
+                            'skema_pbl' => $c->skema_pbl,
+                            'biaya_barang' => $c->biaya_barang ?? 0,
+                            'biaya_jasa' => $c->biaya_jasa ?? 0,
+                            'status_proyek' => $c->status_proyek,
+                            'link_drive_proyek' => $c->link_drive_proyek,
+                            'created_by_name' => $createdByName,
+                            'updated_by_name' => $updatedByName,
+                            'created_at_human' => ($c->created_at ? $c->created_at->locale('id')->diffForHumans() : null),
+                            'updated_at_human' => ($c->updated_at ? $c->updated_at->locale('id')->diffForHumans() : null),
+                            'has_update' => $hasUpdate,
+                            'created_by_avatar' => $createdByAvatar,
+                            'updated_by_avatar' => $updatedByAvatar,
+                            // counters & lainnya
                             'comments' => $c->comments_count ?? 0,
                             'attachments' => $c->attachments_count ?? 0,
                             'progress' => $c->progress ?? 0,

@@ -5,44 +5,57 @@ Dokumen ini merangkum tampilan kartu (card-list) pada halaman Proyek Mahasiswa d
 ## Preview Tampilan Proyek
 ```
 +---------------------------------------------+
-| [Badge Label] [Badge Label]                 |
-| Judul Proyek                                |
-| Deskripsi singkat (maks 120 karakter)       |
-| [███████████-------] 65%                    |
-| ⏰ 24 Sep        [AN] [RK]     💬 3   📎 2 |
+| [Backend] [Prioritas]          [PBL x TeFa] |
+| Judul Proyek                    [Proses]    |
+| PT Satu Maju (Whatsapp +62-812-0000-0000)   |
+| Deskripsi singkat (maks 140 karakter)       |
+| [###########-----------] 65%                 |
+| 20 Sep – 24 Sep                   [GDrive]  |
+| AN  RK      💬 3                            |
 +---------------------------------------------+
 ```
 Elemen yang ditampilkan per kartu:
 - Label: array badge (opsional)
-- Judul: wajib
-- Deskripsi singkat: ringkasan dari `description`
+- Skema: badge kecil di baris label
+- Judul + Status: badge status di kanan judul
+- Mitra: nama mitra di bawah judul (opsional)
+- Kontak Mitra: nomor WhatsApp/email PIC (opsional)
+- Deskripsi: ringkasan dari `description`
 - Progress: progress bar + persentase
-- Due date: dengan indikator merah bila lewat tenggat (overdue)
+- Tanggal: rentang `tanggal_mulai – tanggal_selesai` (merah jika overdue)
+- Drive: tombol/link ke `link_drive_proyek` (opsional)
 - Anggota: avatar/initial (opsional)
-- Komentar & Lampiran: badge angka
+- Komentar: badge angka (Lampiran disembunyikan di kartu)
 
 ## Data Kartu (Client-side)
-Contoh struktur data yang dipakai view saat ini (disusun per list):
+Contoh struktur data yang dipakai view saat ini (disusun per list) — Opsi A:
 ```json
 {
   "id": "uuid-card",
   "title": "Implementasi autentikasi & RBAC",
   "description": "Detail pekerjaan singkat...",
   "labels": ["Backend", "Prioritas"],
+  "skema_pbl": "Penelitian",
+  "status_proyek": "Proses",
+  "nama_mitra": "PT Satu Maju",
+  "kontak_mitra": "+62-812-0000-0000",
+  "tanggal_mulai": "2025-09-20",
+  "tanggal_selesai": "2025-09-24",
   "progress": 65,
-  "due": "2025-09-24",
-  "members": ["AN", "RK"],
+  "link_drive_proyek": "https://drive.google.com/xxx",
+  "members": ["Andi Nugraha", "Rika Kusuma"],
   "comments": 3,
-  "attachments": 2
+  
 }
 ```
 
 ## Target Skema (Revisi)
 Tabel `project_cards` (direvisi sesuai kebutuhan):
 - `id`, `uuid`
-- `kelompok_id` (FK), `periode_id` (FK, nullable), `list_id` (FK → `project_lists`)
+- `kelompok_id` (FK), `periode_id` (FK, nullable), `list_id` (FK -> `project_lists`)
 - `title`, `description`, `position`, `labels` (JSON, nullable)
-- `nama_mitra` (string, nullable) — ambil nilai dari perusahaan pada kunjungan mitra (tanpa relasi, hanya simpan string)
+- `nama_mitra` (string, nullable) — ambil dari perusahaan pada kunjungan mitra (tanpa relasi, hanya simpan string)
+- `kontak_mitra` (JSON/string, nullable) - telepon/email PIC mitra
 - `skema_pbl` (enum/string): Penelitian | Pengabdian | Lomba | "PBL x TeFa"
 - `tanggal_mulai` (date, nullable)
 - `tanggal_selesai` (date, nullable) — dipakai indikator overdue
@@ -70,7 +83,7 @@ Tabel `project_lists` (tetap):
 - Pertahankan `comments_count` & `attachments_count` sebagai counter (diisi oleh aplikasi saat CRUD).
 - Tambahkan bila perlu:
   - `archived` (bool) pada `project_cards` untuk arsip kartu.
-  - Index tambahan: (`kelompok_id`,`periode_id`), (`due_date`), untuk filter cepat.
+  - Index tambahan: (`kelompok_id`,`periode_id`), (`tanggal_selesai`), untuk filter cepat.
 
 Kapan cocok: cepat, sederhana, data relatif kecil, tidak butuh relasi kompleks label/anggota.
 
@@ -89,7 +102,7 @@ Schema::table('project_cards', function (Blueprint $t) {
     if (!Schema::hasColumn('project_cards', 'nama_mitra'))          $t->string('nama_mitra')->nullable()->after('labels');
     if (!Schema::hasColumn('project_cards', 'skema_pbl'))           $t->string('skema_pbl', 50)->nullable()->after('nama_mitra');
     if (!Schema::hasColumn('project_cards', 'tanggal_mulai'))       $t->date('tanggal_mulai')->nullable()->after('skema_pbl');
-    // gunakan renameColumn jika ingin migrasi dari due_date → tanggal_selesai
+    // gunakan renameColumn jika ingin migrasi dari due_date -> tanggal_selesai
     if (Schema::hasColumn('project_cards', 'due_date') && !Schema::hasColumn('project_cards', 'tanggal_selesai')) {
         $t->date('tanggal_selesai')->nullable()->after('tanggal_mulai');
     } elseif (!Schema::hasColumn('project_cards', 'tanggal_selesai')) {
@@ -177,15 +190,32 @@ Schema::create('card_checklist_items', function (Blueprint $t) {
 - Tambah/pertahankan index (`kelompok_id`,`periode_id`), (`list_id`,`position`), (`status_proyek`), (`tanggal_selesai`).
 
 ## Pemetaan ke UI
-- Label: ambil dari `labels` JSON (Opsi A) atau join `card_label` → `labels` (Opsi B).
-- Nama Mitra: tampilkan di bawah judul (kecil/secondary).
-- Skema PBL: badge kecil (misal warna berbeda per skema).
-- Tanggal Mulai — Selesai: tampilkan rentang; merah jika `tanggal_selesai` lewat hari ini.
-- Biaya Barang/Jasa: total kecil (opsional di card, lengkap di detail/modal).
-- Komentar/Lampiran: gunakan count from related tables (atau cache ke kolom `_count`).
-- Anggota: join `card_assignees` ke `users`/`mahasiswa`, atau pakai nama pada `members` (JSON) untuk tampilan cepat.
-- Checklist: hitung progress checklist → dapat memengaruhi progress bar jika diinginkan.
-- Kendala/Catatan: tampilkan ringkasan/tooltip; detail di modal/edit.
+- Label: dari `labels` JSON (Opsi A) atau join `card_label` + `labels` (Opsi B).
+- Skema PBL: badge kecil di sisi kanan atas baris label.
+- Status Proyek: badge di kanan judul (Proses/Dibatalkan/Selesai).
+- Nama Mitra: teks kecil di bawah judul (secondary).
+- Kontak Mitra: telepon/email kecil setelah nama mitra.
+- Deskripsi: ringkas menggunakan `Str::limit(...)` (2–3 baris via CSS clamp).
+- Progress: progress bar kecil + persentase.
+- Tanggal Mulai – Selesai: tampil rentang; merah (overdue) bila `tanggal_selesai` < hari ini dan status ≠ Selesai.
+- Biaya: disembunyikan dari kartu (opsional di modal/detail).
+- Drive: tombol/link ke `link_drive_proyek` (ikon Google Drive) bila ada.
+- Komentar: gunakan kolom counter (`comments_count`).
+- Lampiran: disembunyikan dari kartu (kolom counter tetap boleh ada di DB).
+- Anggota: dari `members` (JSON) — string nama diringkas jadi inisial; jika sudah inisial ≤3 huruf uppercase dipakai apa adanya.
+- Kendala/Catatan: tidak ditampilkan di kartu; tersedia di form tambah/ubah (modal).
+- Checklist: belum di UI saat ini (opsional untuk Opsi B).
+
+## Catatan Kompatibilitas (due_date → tanggal_selesai)
+- Skema lama menggunakan `due_date` (datetime). Skema revisi memakai `tanggal_selesai` (date).
+- Migrasi menambahkan `tanggal_selesai` dan (bila memungkinkan) menyalin nilai dari `due_date` ke `tanggal_selesai`.
+- View menampilkan rentang tanggal dan fallback ke `due_date` jika `tanggal_selesai` masih null.
+- Endpoint store/update menjaga kompatibilitas: jika hanya salah satu diisi, nilai tersebut diisi ke keduanya untuk transisi mulus.
+- Rekomendasi: setelah data konsisten, rencanakan penghapusan `due_date` agar skema bersih.
+
+Tambahan kompatibilitas tampilan:
+- Attachments: counter tetap ada pada data/DB namun disembunyikan dari kartu.
+- Biaya: tersimpan di DB, namun disembunyikan dari kartu (boleh ditampilkan di modal/detail atau laporan bila dibutuhkan).
 
 ## Rekomendasi & Next Step
 - Jika kebutuhan sederhana dan cepat: gunakan Opsi A (tetap JSON + counter) — perubahan minimal.

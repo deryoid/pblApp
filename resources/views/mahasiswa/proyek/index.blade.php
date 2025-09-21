@@ -1,6 +1,41 @@
 @extends('layout.app')
 @section('content')
 <div class="container-fluid">
+  @php
+    // Helper kecil untuk badge skema & status (hindari match agar kompatibel)
+    if (!function_exists('schemeBadgeClass')) {
+      function schemeBadgeClass($skema) {
+        $map = [
+          'Penelitian' => 'badge-primary',
+          'Pengabdian' => 'badge-info',
+          'Lomba' => 'badge-warning',
+          'PBL x TeFa' => 'badge-success',
+        ];
+        return $map[$skema] ?? 'badge-secondary';
+      }
+    }
+    if (!function_exists('statusBadgeClass')) {
+      function statusBadgeClass($st) {
+        $map = [
+          'Proses' => 'badge-primary',
+          'Dibatalkan' => 'badge-danger',
+          'Selesai' => 'badge-success',
+        ];
+        return $map[$st] ?? 'badge-light';
+      }
+    }
+    if (!function_exists('avatarUrl')) {
+      function avatarUrl(?string $name): string {
+        $name = trim((string)$name);
+        if ($name === '') $name = 'U';
+        $palette = ['4e73df','1cc88a','36b9cc','f6c23e','e74a3b','858796'];
+        $idx = abs(crc32($name)) % count($palette);
+        $bg = $palette[$idx];
+        $enc = urlencode($name);
+        return "https://ui-avatars.com/api/?name={$enc}&background={$bg}&color=ffffff&size=64&rounded=true";
+      }
+    }
+  @endphp
   @isset($kelompok)
     @if(!$kelompok)
       <div class="alert alert-warning">Anda belum tergabung dalam kelompok. Hubungi admin/dosen pembimbing.</div>
@@ -37,17 +72,17 @@
             <h6 class="mb-0 text-uppercase text-muted">{{ $list['title'] }}</h6>
             <span class="badge badge-secondary ml-2">{{ count($list['cards']) }}</span>
             <div class="ml-auto d-flex align-items-center btn-group btn-group-sm board-actions" role="group" aria-label="Aksi Kolom">
-              <button class="btn btn-outline-primary btn-sm btn-edit-list" data-list-id="{{ $list['id'] }}" data-list-name="{{ $list['title'] }}" data-toggle="modal" data-target="#modalEditList" title="Ubah kolom">
+              <button class="btn btn-info btn-sm btn-edit-list" data-list-id="{{ $list['id'] }}" data-list-name="{{ $list['title'] }}" data-toggle="modal" data-target="#modalEditList" title="Ubah kolom">
                 <i class="fas fa-edit"></i>
               </button>
               <form method="POST" action="{{ route('proyek.lists.destroy', ['list' => $list['id']]) }}" class="m-0" style="display:inline;">
                 @csrf
                 @method('DELETE')
-                <button type="button" class="btn btn-outline-danger btn-sm btn-delete-list" title="Hapus kolom">
+                <button type="button" class="btn btn-danger btn-sm btn-delete-list" title="Hapus kolom">
                   <i class="fas fa-trash"></i>
                 </button>
               </form>
-              <button class="btn btn-outline-success btn-sm btn-add-card" data-list-id="{{ $list['id'] }}" data-toggle="modal" data-target="#modalAddCard" title="Tambah Proyek">
+              <button class="btn btn-success btn-sm btn-add-card" data-list-id="{{ $list['id'] }}" data-toggle="modal" data-target="#modalAddCard" title="Tambah Proyek">
                 <i class="fas fa-plus"></i>
               </button>
             </div>
@@ -55,60 +90,141 @@
 
           <div class="board-list" data-list-id="{{ $list['id'] }}">
             @forelse ($list['cards'] as $card)
-              <div class="card board-card shadow-sm mb-2" data-card-id="{{ $card['id'] }}" data-title="{{ $card['title'] }}" data-title-search="{{ strtolower($card['title']) }}" data-desc="{{ $card['description'] ?? '' }}" data-labels='@json($card['labels'] ?? [])' data-due="{{ $card['due'] ?? '' }}" data-progress="{{ $card['progress'] ?? 0 }}">
-                <div class="card-body py-2">
-                  @if (!empty($card['labels']))
-                    <div class="mb-1">
-                      @foreach ($card['labels'] as $label)
-                        <span class="badge badge-pill badge-info mr-1">{{ $label }}</span>
-                      @endforeach
-                    </div>
-                  @endif
-
-                <div class="d-flex align-items-start mb-1">
-                  <div class="font-weight-bold small flex-grow-1">{{ $card['title'] }}</div>
-                  <div class="ml-2">
-                    <button type="button" class="btn btn-link btn-sm p-0 text-secondary btn-edit-card" title="Ubah" data-toggle="modal" data-target="#modalEditCard"><i class="fas fa-edit"></i></button>
-                    <form method="POST" action="{{ route('proyek.cards.destroy', ['card' => $card['id']]) }}" style="display:inline;">
-                      @csrf
-                      @method('DELETE')
-                      <button type="button" class="btn btn-link btn-sm p-0 text-danger btn-delete-card" title="Hapus"><i class="fas fa-trash"></i></button>
-                    </form>
-                  </div>
-                </div>
-
-                @if(!empty($card['description']))
-                  <div class="text-muted small mb-2">{{ \Illuminate\Support\Str::limit($card['description'], 120) }}</div>
-                @endif
-
-                  @isset($card['progress'])
-                    <div class="d-flex align-items-center mb-2">
-                      <div class="progress progress-sm flex-grow-1 mr-2">
-                        <div class="progress-bar" role="progressbar" style="width: {{ $card['progress'] }}%" aria-valuenow="{{ $card['progress'] }}" aria-valuemin="0" aria-valuemax="100"></div>
-                      </div>
-                      <span class="small text-muted">{{ $card['progress'] }}%</span>
-                    </div>
-                  @endisset
-
-                  <div class="d-flex align-items-center text-muted small">
-                    @if(!empty($card['due']))
-                      @php $overdue = \Carbon\Carbon::parse($card['due'])->isPast(); @endphp
-                      <span class="mr-2 {{ $overdue ? 'text-danger' : '' }}">
-                        <i class="far fa-clock mr-1"></i>{{ \Carbon\Carbon::parse($card['due'])->format('d M') }}
-                      </span>
-                    @endif
-
-                    @if(!empty($card['members']))
-                      <div class="d-flex align-items-center mr-2">
-                        @foreach ($card['members'] as $initial)
-                          <span class="avatar-initial" title="{{ $initial }}">{{ $initial }}</span>
+              @php
+                $tglMulai = $card['tanggal_mulai'] ?? null;
+                // fallback: gunakan 'due' lama jika belum migrasi
+                $tglSelesai = $card['tanggal_selesai'] ?? ($card['due'] ?? null);
+                $isOverdue = !empty($tglSelesai)
+                  && \Carbon\Carbon::parse($tglSelesai)->isPast()
+                  && (($card['status_proyek'] ?? '') !== 'Selesai');
+                $biayaTotal = (float)($card['biaya_barang'] ?? 0) + (float)($card['biaya_jasa'] ?? 0);
+              @endphp
+              <div
+                class="card board-card shadow-sm mb-2"
+                data-card-id="{{ $card['id'] }}"
+                data-title="{{ $card['title'] }}"
+                data-title-search="{{ strtolower($card['title']) }}"
+                data-desc="{{ $card['description'] ?? '' }}"
+                data-labels='@json($card['labels'] ?? [])'
+                data-progress="{{ $card['progress'] ?? 0 }}"
+                data-tmulai="{{ $tglMulai ?? '' }}"
+                data-tselesai="{{ $tglSelesai ?? '' }}"
+                data-mitra="{{ $card['nama_mitra'] ?? '' }}"
+                data-kontak="{{ $card['kontak_mitra'] ?? '' }}"
+                data-skema="{{ $card['skema_pbl'] ?? '' }}"
+                data-status="{{ $card['status_proyek'] ?? '' }}"
+                data-bbar="{{ $card['biaya_barang'] ?? '' }}"
+                data-bjas="{{ $card['biaya_jasa'] ?? '' }}"
+                data-drive="{{ $card['link_drive_proyek'] ?? '' }}"
+                data-kendala="{{ $card['kendala'] ?? '' }}"
+                data-catatan="{{ $card['catatan'] ?? '' }}"
+              >
+                <div class="card-body py-2 d-flex flex-column">
+                  {{-- Labels + Skema --}}
+                  <div class="mb-1 d-flex align-items-center">
+                    @if (!empty($card['labels']))
+                      <div class="mr-1">
+                        @foreach ($card['labels'] as $label)
+                          <span class="badge badge-pill badge-info mr-1">{{ $label }}</span>
                         @endforeach
                       </div>
                     @endif
+                    <span class="badge {{ schemeBadgeClass($card['skema_pbl'] ?? '') }} ml-auto">{{ $card['skema_pbl'] ?? '-' }}</span>
+                  </div>
 
+                  {{-- Title + Status --}}
+                  <div class="d-flex align-items-center mb-1">
+                    <div class="font-weight-bold small flex-grow-1">{{ $card['title'] }}</div>
+                    
+                    <div class="ml-2 d-flex align-items-center">
+                      <button type="button" class="btn btn-info btn-circle btn-sm btn-edit-card mr-1" title="Ubah" aria-label="Ubah" data-toggle="modal" data-target="#modalEditCard"><i class="fas fa-edit"></i></button>
+                      <form method="POST" action="{{ route('proyek.cards.destroy', ['card' => $card['id']]) }}" class="m-0 d-inline">
+                        @csrf
+                        @method('DELETE')
+                        <button type="button" class="btn btn-danger btn-circle btn-sm btn-delete-card" title="Hapus" aria-label="Hapus"><i class="fas fa-trash"></i></button>
+                      </form>
+                    </div>
+                  </div>
+
+                  {{-- Mitra + Kontak --}}
+                  @if (!empty($card['nama_mitra']))
+                    <div class="text-muted small mb-1">
+                      <i class="fas fa-building mr-1"></i> {{ $card['nama_mitra'] }}
+                      {{-- Kontak mitra --}}
+                      @if (!empty($card['kontak_mitra']))
+                        <span class="ml-1"><i class="fas fa-phone-alt mr-1"></i>{{ $card['kontak_mitra'] }}</span>
+                      @endif
+                    </div>
+                  @endif
+
+                  {{-- Deskripsi --}}
+                  @if(!empty($card['description']))
+                    <div class="text-muted small mb-2 card-desc">{{ \Illuminate\Support\Str::limit($card['description'], 140) }}</div>
+                  @endif
+
+                  {{-- Pembuat & Pengubah (terpisah) + Inisial --}}
+                  @php
+                    $hasUpdate = !empty($card['has_update']);
+                    $creator = trim((string)($card['created_by_name'] ?? ''));
+                    $updator = trim((string)($card['updated_by_name'] ?? ''));
+                    $initial = function ($name) {
+                      if ($name === '') return '';
+                      $parts = preg_split('/\s+/', $name, -1, PREG_SPLIT_NO_EMPTY);
+                      $ini = '';
+                      foreach ($parts as $p) { $ini .= mb_substr($p,0,1); }
+                      return mb_strtoupper($ini);
+                    };
+                  @endphp
+                  <div class="text-muted small mb-2">
+                    <div class="d-flex align-items-center mb-1">
+                      <span class="user-chip" title="{{ $creator }}">
+                        <img class="user-avatar" src="{{ ($card['created_by_avatar'] ?? '') ?: avatarUrl($creator) }}" alt="{{ $creator !== '' ? $creator : 'Tanpa Nama' }}" loading="lazy">
+                        <span class="user-name">{{ $creator !== '' ? $creator : '-' }}</span>
+                      </span>
+                      @if(!empty($card['created_at_human']))
+                        <span class="ml-2"> {{ $card['created_at_human'] }}</span>
+                      @endif
+                    </div>
+                    @if($hasUpdate)
+                      <div class="d-flex align-items-center">
+                        <span class="user-chip" title="{{ $updator }}">
+                          <img class="user-avatar" src="{{ ($card['updated_by_avatar'] ?? '') ?: avatarUrl($updator) }}" alt="{{ $updator !== '' ? $updator : 'Tanpa Nama' }}" loading="lazy">
+                          <span class="user-name">{{ $updator !== '' ? $updator : '-' }}</span>
+                        </span>
+                        @if(!empty($card['updated_at_human']))
+                          <span class="ml-2"> {{ $card['updated_at_human'] }}</span>
+                        @endif
+                      </div>
+                    @endif
+                  </div>
+
+                  {{-- Progress --}}
+                  <div class="d-flex align-items-center mb-2">
+                    <div class="progress progress-sm flex-grow-1 mr-2">
+                      <div class="progress-bar" role="progressbar" style="width: {{ (int)($card['progress'] ?? 0) }}%" aria-valuenow="{{ (int)($card['progress'] ?? 0) }}" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                    <span class="small text-muted">{{ (int)($card['progress'] ?? 0) }}%</span>
+                  </div>
+
+                  {{-- Tanggal & Drive --}}
+                  <div class="d-flex align-items-center text-muted small mb-2">
+                    @if(!empty($tglMulai) || !empty($tglSelesai))
+                      <span class="mr-3 {{ $isOverdue ? 'text-danger' : '' }}">
+                        <i class="far fa-calendar-alt mr-1"></i>
+                        {{ !empty($tglMulai) ? \Carbon\Carbon::parse($tglMulai)->format('d M') : '?' }} -
+                        {{ !empty($tglSelesai) ? \Carbon\Carbon::parse($tglSelesai)->format('d M') : '?' }}
+                      </span>
+                    @endif
+                    @if(!empty($card['link_drive_proyek']))
+                      <a href="{{ $card['link_drive_proyek'] }}" target="_blank" rel="noopener" class="ml-auto btn btn-light btn-sm" title="Drive Proyek"><i class="fab fa-google-drive"></i></a>
+                    @endif
+                  </div>
+
+                  {{-- Counters --}}
+                  <div class="d-flex align-items-center text-muted small mt-auto">
                     <span class="ml-auto d-flex align-items-center">
                       <span class="mr-2"><i class="far fa-comment mr-1"></i>{{ $card['comments'] ?? 0 }}</span>
-                      <span><i class="fas fa-paperclip mr-1"></i>{{ $card['attachments'] ?? 0 }}</span>
+                      <span class="badge {{ statusBadgeClass($card['status_proyek'] ?? '') }} ml-2">{{ $card['status_proyek'] ?? 'Proses' }}</span>
                     </span>
                   </div>
                 </div>
@@ -135,7 +251,7 @@
   @endif
 </div>
 
-{{-- Modal tambah kartu sederhana (stub) --}}
+{{-- Modal tambah kartu (disesuaikan skema revisi) --}}
 <div class="modal fade" id="modalAddCard" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog" role="document">
     <div class="modal-content">
@@ -149,7 +265,7 @@
           <input type="hidden" name="list" id="addCardListId" value="">
           <div class="form-group">
             <label>Judul</label>
-            <input name="title" type="text" class="form-control" placeholder="Judul kartu" required>
+            <input name="title" type="text" class="form-control" placeholder="Judul" required>
           </div>
           <div class="form-group">
             <label>Deskripsi</label>
@@ -157,11 +273,67 @@
           </div>
           <div class="form-group">
             <label>Label (pisahkan koma)</label>
-            <input name="labels" type="text" class="form-control" placeholder="Contoh: Backend,API">
+            <input name="labels" type="text" class="form-control" placeholder="Contoh: Penelitian, AI dsb">
+          </div>
+          <div class="form-group">
+            <label>Kontak Mitra (telp/email)</label>
+            <input name="kontak_mitra" type="text" class="form-control" placeholder="Contoh: +62-812-xxxx-xxxx atau email">
+          </div>
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label>Tanggal Mulai</label>
+              <input name="tanggal_mulai" type="date" class="form-control">
+            </div>
+            <div class="form-group col-md-6">
+              <label>Tanggal Selesai</label>
+              <input name="tanggal_selesai" type="date" class="form-control">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label>Skema PBL</label>
+              <select name="skema_pbl" class="form-control">
+                <option value="">- Pilih -</option>
+                <option>Penelitian</option>
+                <option>Pengabdian</option>
+                <option>Lomba</option>
+                <option>PBL x TeFa</option>
+              </select>
+            </div>
+            <div class="form-group col-md-6">
+              <label>Status</label>
+              <select name="status_proyek" class="form-control">
+                <option>Proses</option>
+                <option>Dibatalkan</option>
+                <option>Selesai</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Nama Mitra</label>
+            <input name="nama_mitra" type="text" class="form-control" placeholder="Nama perusahaan/mitra">
+          </div>
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label>Biaya Barang</label>
+              <input name="biaya_barang" type="number" step="0.01" min="0" class="form-control" value="0">
+            </div>
+            <div class="form-group col-md-6">
+              <label>Biaya Jasa</label>
+              <input name="biaya_jasa" type="number" step="0.01" min="0" class="form-control" value="0">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Link Drive Proyek</label>
+            <input name="link_drive_proyek" type="url" class="form-control" placeholder="https://...">
+          </div>
+          <div class="form-group">
+            <label>Kendala</label>
+            <textarea name="kendala" class="form-control" rows="2"></textarea>
           </div>
           <div class="form-group mb-0">
-            <label>Tenggat</label>
-            <input name="due_date" type="date" class="form-control">
+            <label>Catatan</label>
+            <textarea name="catatan" class="form-control" rows="2"></textarea>
           </div>
         </div>
         <div class="modal-footer">
@@ -173,7 +345,7 @@
   </div>
 </div>
 
-{{-- Modal edit kartu --}}
+{{-- Modal edit kartu (disesuaikan skema revisi) --}}
 <div class="modal fade" id="modalEditCard" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog" role="document">
     <div class="modal-content">
@@ -198,12 +370,68 @@
             <input name="labels" id="editLabels" type="text" class="form-control">
           </div>
           <div class="form-group">
-            <label>Tenggat</label>
-            <input name="due_date" id="editDue" type="date" class="form-control">
+            <label>Kontak Mitra (telp/email)</label>
+            <input name="kontak_mitra" id="editKontak" type="text" class="form-control">
+          </div>
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label>Tanggal Mulai</label>
+              <input name="tanggal_mulai" id="editStart" type="date" class="form-control">
+            </div>
+            <div class="form-group col-md-6">
+              <label>Tanggal Selesai</label>
+              <input name="tanggal_selesai" id="editEnd" type="date" class="form-control">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label>Skema PBL</label>
+              <select name="skema_pbl" id="editSkema" class="form-control">
+                <option value="">- Pilih -</option>
+                <option>Penelitian</option>
+                <option>Pengabdian</option>
+                <option>Lomba</option>
+                <option>PBL x TeFa</option>
+              </select>
+            </div>
+            <div class="form-group col-md-6">
+              <label>Status</label>
+              <select name="status_proyek" id="editStatus" class="form-control">
+                <option>Proses</option>
+                <option>Dibatalkan</option>
+                <option>Selesai</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Nama Mitra</label>
+            <input name="nama_mitra" id="editMitra" type="text" class="form-control">
+          </div>
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label>Biaya Barang</label>
+              <input name="biaya_barang" id="editBiayaBarang" type="number" step="0.01" min="0" class="form-control">
+            </div>
+            <div class="form-group col-md-6">
+              <label>Biaya Jasa</label>
+              <input name="biaya_jasa" id="editBiayaJasa" type="number" step="0.01" min="0" class="form-control">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Link Drive Proyek</label>
+            <input name="link_drive_proyek" id="editDrive" type="url" class="form-control" placeholder="https://...">
           </div>
           <div class="form-group mb-0">
             <label>Progress</label>
             <input name="progress" id="editProgress" type="number" min="0" max="100" class="form-control">
+          </div>
+          <div class="form-group mt-2">
+            <label>Kendala</label>
+            <textarea name="kendala" id="editKendala" class="form-control" rows="2"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Catatan</label>
+            <textarea name="catatan" id="editCatatan" class="form-control" rows="2"></textarea>
           </div>
         </div>
         <div class="modal-footer">
@@ -255,16 +483,17 @@
   .board-card.sortable-chosen { opacity: .8; }
   .board-card.sortable-ghost { border: 1px dashed #4e73df; background: #f8f9fc; }
   .progress.progress-sm { height: 6px; }
-  .avatar-initial {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 24px; height: 24px; border-radius: 50%;
-    background: #f1f2f6; color: #4e73df; font-size: .75rem; font-weight: 700;
-    border: 1px solid rgba(0,0,0,.05); margin-right: 4px;
-  }
+  /* members UI removed */
   /* Align action buttons neatly */
   .board-actions .btn { padding: .2rem .45rem; line-height: 1; }
   .board-actions .btn i { font-size: .85rem; }
   .board-column .d-flex.align-items-center { min-height: 34px; }
+  .card-desc { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  /* Card action buttons use btn-circle globally */
+  /* Small avatar initial + name chip for creator/updater */
+  .user-chip { display:inline-flex; align-items:center; border:1px solid rgba(0,0,0,.06); border-radius:12px; padding:0 6px 0 2px; background:#fff; }
+  .user-name { max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .user-avatar { width:20px; height:20px; border-radius:50%; border:1px solid rgba(0,0,0,.06); margin-right:6px; object-fit:cover; }
 </style>
 @endpush
 
@@ -357,14 +586,34 @@
       const title = card.data('title');
       const desc = card.data('desc') || '';
       const labels = (card.data('labels')||[]).join(', ');
-      const due = card.data('due')||'';
+      const start = card.data('tmulai')||'';
+      const end = card.data('tselesai')||'';
       const progress = card.data('progress')||0;
+      const skema = card.data('skema')||'';
+      const status = card.data('status')||'';
+      const mitra = card.data('mitra')||'';
+      const kontak = card.data('kontak')||'';
+      const bbar = card.data('bbar')||'';
+      const bjas = card.data('bjas')||'';
+      const drive = card.data('drive')||'';
+      const kendala = card.data('kendala')||'';
+      const catatan = card.data('catatan')||'';
 
       $('#editTitle').val(title);
       $('#editDescription').val(desc);
       $('#editLabels').val(labels);
-      $('#editDue').val(due);
+      $('#editStart').val(start);
+      $('#editEnd').val(end);
       $('#editProgress').val(progress);
+      $('#editSkema').val(skema);
+      $('#editStatus').val(status||'Proses');
+      $('#editMitra').val(mitra);
+      $('#editKontak').val(kontak);
+      $('#editBiayaBarang').val(bbar);
+      $('#editBiayaJasa').val(bjas);
+      $('#editDrive').val(drive);
+      $('#editKendala').val(kendala);
+      $('#editCatatan').val(catatan);
       $('#editCardForm').attr('action', "{{ url('mahasiswa/proyek/cards') }}/"+id);
     });
 

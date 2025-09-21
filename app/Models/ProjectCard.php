@@ -17,6 +17,10 @@ class ProjectCard extends Model
     protected $casts = [
         'labels' => 'array',
         'due_date' => 'datetime',
+        'tanggal_mulai' => 'date',
+        'tanggal_selesai' => 'date',
+        'biaya_barang' => 'decimal:2',
+        'biaya_jasa' => 'decimal:2',
         'progress' => 'integer',
         'comments_count' => 'integer',
         'attachments_count' => 'integer',
@@ -42,6 +46,16 @@ class ProjectCard extends Model
     public function list()
     {
         return $this->belongsTo(\App\Models\ProjectList::class, 'list_id');
+    }
+
+    public function createdBy()
+    {
+        return $this->belongsTo(\App\Models\User::class, 'created_by');
+    }
+
+    public function updatedBy()
+    {
+        return $this->belongsTo(\App\Models\User::class, 'updated_by');
     }
 
     public function getRouteKeyName(): string
