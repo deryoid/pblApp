@@ -90,10 +90,6 @@ Route::prefix('mahasiswa')->middleware(['auth','mahasiswa'])->group(function () 
     Route::post('/proyek/reorder', [\App\Http\Controllers\Mahasiswa\ProyekController::class, 'reorder'])
         ->name('proyek.reorder');
 
-    // Simulasi tampilan proyek (tanpa DB) untuk preview skema kartu baru
-    Route::get('/proyek/sim', function () {
-        return view('mahasiswa.proyek.sim');
-    })->name('proyek.sim');
 
     // CRUD List (kolom) Proyek
     Route::post('/proyek/lists', [\App\Http\Controllers\Mahasiswa\ProyekListController::class, 'store'])
@@ -112,6 +108,21 @@ Route::prefix('mahasiswa')->middleware(['auth','mahasiswa'])->group(function () 
         ->name('proyek.cards.update');
     Route::delete('/proyek/cards/{card:uuid}', [\App\Http\Controllers\Mahasiswa\ProyekCardController::class, 'destroy'])
         ->name('proyek.cards.destroy');
+
+         // Board Aktivitas
+    Route::get('/aktivitas', [\App\Http\Controllers\Mahasiswa\AktivitasController::class, 'index'])->name('aktivitas.index');
+    Route::post('/aktivitas/reorder', [\App\Http\Controllers\Mahasiswa\AktivitasController::class, 'reorder'])->name('aktivitas.reorder');
+
+    // CRUD List
+    Route::post('/aktivitas/lists', [\App\Http\Controllers\Mahasiswa\AktivitasListController::class, 'store'])->name('aktivitas.lists.store');
+    Route::put('/aktivitas/lists/{list:uuid}', [\App\Http\Controllers\Mahasiswa\AktivitasListController::class, 'update'])->name('aktivitas.lists.update');
+    Route::delete('/aktivitas/lists/{list:uuid}', [\App\Http\Controllers\Mahasiswa\AktivitasListController::class, 'destroy'])->name('aktivitas.lists.destroy');
+    Route::post('/aktivitas/lists/reorder', [\App\Http\Controllers\Mahasiswa\AktivitasListController::class, 'reorder'])->name('aktivitas.lists.reorder');
+
+    // CRUD Card
+    Route::post('/aktivitas/cards', [\App\Http\Controllers\Mahasiswa\AktivitasCardController::class, 'store'])->name('aktivitas.cards.store');
+    Route::put('/aktivitas/cards/{card:uuid}', [\App\Http\Controllers\Mahasiswa\AktivitasCardController::class, 'update'])->name('aktivitas.cards.update');
+    Route::delete('/aktivitas/cards/{card:uuid}', [\App\Http\Controllers\Mahasiswa\AktivitasCardController::class, 'destroy'])->name('aktivitas.cards.destroy');
 
 });
 

@@ -8,6 +8,10 @@ use App\Models\ProjectCard;
 use App\Policies\ProjectCardPolicy;
 use App\Models\ProjectList;
 use App\Policies\ProjectListPolicy;
+use App\Models\AktivitasCard;
+use App\Policies\AktivitasCardPolicy;
+use App\Models\AktivitasList;
+use App\Policies\AktivitasListPolicy;
 use Carbon\Carbon;
 
 class AppServiceProvider extends ServiceProvider
@@ -29,6 +33,8 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(ProjectCard::class, ProjectCardPolicy::class);
         // ProjectBoard removed per latest design; no policy binding
         Gate::policy(ProjectList::class, ProjectListPolicy::class);
+        Gate::policy(AktivitasCard::class, AktivitasCardPolicy::class);
+        Gate::policy(AktivitasList::class, AktivitasListPolicy::class);
 
         // Set locale waktu ke Indonesia untuk Carbon
         try {

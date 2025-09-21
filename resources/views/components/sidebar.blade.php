@@ -194,6 +194,12 @@
                     <span>Proyek</span>
                 </a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ route('aktivitas.index') }}">
+                    <i class="fas fa-fw fa-calendar"></i>
+                    <span>Aktivitas</span>
+                </a>
+            </li>
             @endif
         </ul>
            
