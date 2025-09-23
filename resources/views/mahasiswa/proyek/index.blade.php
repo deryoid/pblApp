@@ -399,7 +399,7 @@
       <form method="POST" action="{{ route('proyek.lists.store') }}">
         @csrf
         <div class="modal-body">
-          <div class="form-group"><label>Nama Kolom</label><input name="name" type="text" class="form-control" required></div>
+          <div class="form-group"><label>Nama Kolom (Mis: Proyek 1)</label><input name="name" type="text" class="form-control" required></div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>

@@ -70,4 +70,17 @@ class User extends Authenticatable
         $base64 = base64_encode($this->profile_photo);
         return 'data:' . $this->profile_photo_mime . ';base64,' . $base64;
     }
+    
+    // Scope for admin and evaluator users
+    public function scopeAdminAndEvaluator($q) {
+        return $q->whereIn('role', ['admin','evaluator']);
+    }
+    /**
+     * Backwards-compatible accessor so templates can use $user->name
+     * while the actual column is `nama_user` in this project.
+     */
+    public function getNameAttribute(): string
+    {
+        return $this->attributes['nama_user'] ?? $this->attributes['username'] ?? '';
+    }
 }
