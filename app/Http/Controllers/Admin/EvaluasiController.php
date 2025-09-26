@@ -8,11 +8,23 @@ use App\Models\EvaluasiSetting;
 use App\Models\Kelompok;
 use App\Models\Periode;
 use App\Models\User;
+use App\Models\ProjectList;
+use App\Models\AktivitasList;
+use App\Models\ProjectCard;
+use App\Models\KunjunganMitra;
+use App\Models\EvaluasiAbsensi;
+use App\Models\EvaluasiNilaiDetail;
+use App\Models\EvaluasiSesiIndikator;
+use App\Models\EvaluasiIndikator;
+use App\Models\EvaluasiProyekNilai;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\ProjectExport;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
 use RealRashid\SweetAlert\Facades\Alert;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class EvaluasiController extends Controller
 {
@@ -56,12 +68,58 @@ class EvaluasiController extends Controller
 
         $kelompoks = $query->orderBy('nama_kelompok')->paginate(20)->withQueryString();
 
-        $sesiMap = EvaluasiSesi::query()
+        $kelompokIds = $kelompoks->pluck('id');
+        $sesiAll = EvaluasiSesi::query()
             ->when($periodeId, fn($q)=>$q->where('periode_id',$periodeId))
-            ->whereIn('kelompok_id', $kelompoks->pluck('id'))
+            ->whereIn('kelompok_id', $kelompokIds)
             ->with('evaluator:id,nama_user')
-            ->get()
-            ->keyBy('kelompok_id');
+            ->get();
+        $sesiMap = $sesiAll->sortByDesc('id')->keyBy('kelompok_id');
+
+        // Perhitungan mingguan (AP) per kelompok
+        $sesiByKel = $sesiAll->groupBy('kelompok_id');
+        $weeklyMap = [];
+        if ($sesiAll->isNotEmpty()) {
+            $sesiIds = $sesiAll->pluck('id');
+            $abs = \App\Models\EvaluasiAbsensi::whereIn('sesi_id', $sesiIds)->get()->groupBy('sesi_id');
+
+            // cari indikator 'm_presentasi' per sesi
+            $sesiIndis = \App\Models\EvaluasiSesiIndikator::with('indikator')
+                ->whereIn('sesi_id', $sesiIds)
+                ->get()
+                ->groupBy('sesi_id');
+
+            $nilai = \App\Models\EvaluasiNilaiDetail::whereIn('sesi_id', $sesiIds)->get()->groupBy('sesi_id');
+
+            foreach ($sesiByKel as $kid => $list) {
+                $evalCount = $list->count();
+                $anggotaCount = (int) ($kelompoks->firstWhere('id',$kid)->mahasiswas_count ?? 0);
+                $attPercents = [];
+                $presentasiAverages = [];
+                foreach ($list as $s) {
+                    $attRows = $abs->get($s->id) ?? collect();
+                    $hadir = $attRows->filter(fn($r)=>in_array($r->status,['Hadir','Terlambat']))->count();
+                    $perc = $anggotaCount>0 ? ($hadir*100/$anggotaCount) : 0;
+                    $attPercents[] = $perc;
+
+                    // presentasi average
+                    $indis = $sesiIndis->get($s->id) ?? collect();
+                    $idPresent = optional($indis->first(fn($x)=>optional($x->indikator)->kode==='m_presentasi'))->indikator_id;
+                    if ($idPresent) {
+                        $rows = ($nilai->get($s->id) ?? collect())->where('indikator_id', $idPresent);
+                        $avgPre = $rows->avg('skor') ?: 0;
+                        $presentasiAverages[] = $avgPre;
+                    }
+                }
+                $attAvg = $attPercents ? array_sum($attPercents)/count($attPercents) : 0;
+                $preAvg = $presentasiAverages ? array_sum($presentasiAverages)/count($presentasiAverages) : 0;
+                $weeklyMap[$kid] = [
+                    'eval_count' => $evalCount,
+                    'avg_kehadiran' => (int) round($attAvg),
+                    'avg_keaktifan' => (int) round($preAvg),
+                ];
+            }
+        }
 
         return view('admin.evaluasi.index', [
             'periodes'     => $periodes,
@@ -69,12 +127,11 @@ class EvaluasiController extends Controller
             'sesiMap'      => $sesiMap,
             'periodeAktif' => $activePeriode,
             'periodeId'    => $periodeId,
+            'weeklyMap'    => $weeklyMap,
         ]);
     }
 
-    /** ===== FORM JADWAL (per kelompok) =====
-     * GET admin/evaluasi/kelompok/{kelompok:uuid}/schedule
-     */
+    /** ===== FORM JADWAL (per kelompok) ===== */
     public function scheduleForm(Kelompok $kelompok)
     {
         $activePeriode = Periode::where('status_periode','Aktif')->orderByDesc('id')->first();
@@ -85,7 +142,7 @@ class EvaluasiController extends Controller
             ['uuid' => (string) Str::uuid(), 'status' => EvaluasiSesi::ST_BELUM, 'created_by' => Auth::id()]
         );
 
-    $evaluators = User::orderBy('nama_user')->get(['id','nama_user']);
+        $evaluators = User::orderBy('nama_user')->get(['id','nama_user']);
 
         return view('admin.evaluasi.sesi-schedule', [
             'kelompok'   => $kelompok,
@@ -95,15 +152,13 @@ class EvaluasiController extends Controller
         ]);
     }
 
-    /** ===== SIMPAN JADWAL =====
-     * PATCH admin/evaluasi/{sesi}/schedule
-     */
+    /** ===== SIMPAN JADWAL ===== */
     public function scheduleSave(Request $req, EvaluasiSesi $sesi)
     {
         $data = $req->validate([
             'evaluator_id'     => 'nullable|exists:users,id',
             'lokasi'           => 'nullable|string|max:150',
-            // opsi A: datetime-local (controller menerima beberapa nama field untuk kompatibilitas)
+            // opsi A: datetime-local
             'mulai'            => 'nullable|date',
             'selesai'          => 'nullable|date|after:mulai',
             'jadwal_mulai'     => 'nullable|date',
@@ -112,23 +167,19 @@ class EvaluasiController extends Controller
             'mulai_tanggal'    => 'nullable|date',
             'mulai_jam'        => 'nullable|date_format:H:i',
             'selesai_jam'      => 'nullable|date_format:H:i',
-            // default durasi jika hanya isi mulai
+            // default durasi
             'durasi_menit'     => 'nullable|integer|min:15|max:600',
         ]);
 
-        // Ambil nilai mulai/selesai dari beberapa sumber supaya kompatibel dengan view
         $mulai   = $data['mulai'] ?? $data['jadwal_mulai'] ?? null;
         $selesai = $data['selesai'] ?? $data['jadwal_selesai'] ?? null;
 
-        // Rakitan dari field terpisah jika diperlukan
         if (!$mulai && !empty($data['mulai_tanggal']) && !empty($data['mulai_jam'])) {
             $mulai = $data['mulai_tanggal'].' '.$data['mulai_jam'].':00';
         }
         if (!$selesai && !empty($data['mulai_tanggal']) && !empty($data['selesai_jam'])) {
             $selesai = $data['mulai_tanggal'].' '.$data['selesai_jam'].':00';
         }
-
-        // Jika hanya mulai tersedia, berikan durasi default
         if ($mulai && !$selesai) {
             $durasiMenit = (int)($data['durasi_menit'] ?? 90);
             $selesai = Carbon::parse($mulai)->addMinutes($durasiMenit)->format('Y-m-d H:i:s');
@@ -154,6 +205,11 @@ class EvaluasiController extends Controller
     {
         $activePeriode = Periode::where('status_periode','Aktif')->orderByDesc('id')->first();
         abort_unless($activePeriode, 404, 'Periode aktif tidak ditemukan');
+
+        // Data mitra
+        $mitra = KunjunganMitra::where('kelompok_id', $kelompok->id)
+            ->where('periode_id', $activePeriode->id)
+            ->first();
 
         $sesi = EvaluasiSesi::with(['evaluator','absensis','sesiIndikators.indikator','nilaiDetails'])
             ->where('periode_id', $activePeriode->id)
@@ -182,21 +238,76 @@ class EvaluasiController extends Controller
             ['w_ap_kehadiran'=>50,'w_ap_presentasi'=>50,'w_dosen'=>80,'w_mitra'=>20,'w_kelompok'=>70,'w_ap'=>30]
         );
 
+        // Project lists/cards
+        $proyekLists = ProjectList::with(['cards' => function($q) use ($kelompok) {
+            $q->where('kelompok_id', $kelompok->id)->orderBy('position');
+        }])->orderBy('position')->get();
+
+        $proyek_total_cards = $proyekLists->sum(fn($list) => $list->cards->count());
+
+        // Aktivitas lists
+        $aktivitasLists = AktivitasList::with(['cards' => function($q) use ($kelompok) {
+            $q->where('kelompok_id', $kelompok->id)->orderBy('position');
+        }])->orderBy('position')->get();
+
+        $aktivitas_total = $aktivitasLists->sum(fn($list) => $list->cards->count());
+
+        // Ambil nilai proyek per card (jika ada) untuk sesi ini
+        $allCardIds = $proyekLists->flatMap(fn($l) => $l->cards->pluck('id'))->values();
+        $cardGrades = EvaluasiProyekNilai::where('sesi_id', $sesi->id)
+            ->whereIn('card_id', $allCardIds)
+            ->get()
+            ->groupBy(['card_id','jenis']);
+
+        $cardGradesMap = [];
+        foreach ($cardGrades as $cid => $byJenis) {
+            $cardGradesMap[$cid] = [
+                'dosen' => isset($byJenis['dosen']) ? $byJenis['dosen'][0] : null,
+                'mitra' => isset($byJenis['mitra']) ? $byJenis['mitra'][0] : null,
+            ];
+        }
+
+        // Hitung agregat per list (rata-rata per list)
+        $listAggDosen = [];
+        $listAggMitra = [];
+        foreach ($proyekLists as $list) {
+            $totalsD = [];
+            $totalsM = [];
+            foreach ($list->cards as $c) {
+                $d = optional(optional($cardGrades[$c->id] ?? null)['dosen'] ?? null); $dTot = (int) ($d[0]->total ?? 0); if($dTot>0) $totalsD[] = $dTot;
+                $m = optional(optional($cardGrades[$c->id] ?? null)['mitra'] ?? null); $mTot = (int) ($m[0]->total ?? 0); if($mTot>0) $totalsM[] = $mTot;
+            }
+            $listAggDosen[$list->id] = $totalsD ? (int) round(array_sum($totalsD) / count($totalsD)) : 0;
+            $listAggMitra[$list->id] = $totalsM ? (int) round(array_sum($totalsM) / count($totalsM)) : 0;
+        }
+
+        $nilaiDosenByCard = (int) round(($listAggDosen ? array_sum($listAggDosen) / max(1,count($listAggDosen)) : 0));
+        $nilaiMitraByCard = (int) round(($listAggMitra ? array_sum($listAggMitra) / max(1,count($listAggMitra)) : 0));
+
+        $nilaiProyekByCard = (int) round($nilaiDosenByCard * ($settings['w_dosen'] ?? 80)/100 + $nilaiMitraByCard * ($settings['w_mitra'] ?? 20)/100);
+
         return view('admin.evaluasi.show', [
             'kelompok'           => $kelompok,
             'periode'            => $activePeriode,
             'sesi'               => $sesi,
             'evaluator'          => $sesi->evaluator,
             'anggota'            => $anggota,
-            'proyekLists'        => [],
-            'proyek_total_cards' => 0,
-            'aktivitasLists'     => [],
-            'aktivitas_total'    => 0,
+            'proyekLists'        => $proyekLists,
+            'proyek_total_cards' => $proyek_total_cards,
+            'aktivitasLists'     => $aktivitasLists,
+            'aktivitas_total'    => $aktivitas_total,
             'settings'           => $settings,
+            'mitra'              => $mitra,
+            'listAggDosen'       => $listAggDosen,
+            'listAggMitra'       => $listAggMitra,
+            'nilaiDosenByCard'   => $nilaiDosenByCard,
+            'nilaiMitraByCard'   => $nilaiMitraByCard,
+            'nilaiProyekByCard'  => $nilaiProyekByCard,
+            'cardGrades'         => $cardGradesMap,
         ]);
     }
 
-    /** ===== AKSI STATUS ===== */
+    /** ===== AKSI STATUS SESI ===== */
     public function start(EvaluasiSesi $sesi)
     {
         $payload = [
@@ -223,9 +334,7 @@ class EvaluasiController extends Controller
         return back();
     }
 
-
-
-    /** ===== JADWAL MASSAL (form) ===== */
+    /** ===== JADWAL MASSAL ===== */
     public function scheduleBulkForm(Request $req)
     {
         $periodes = Periode::orderByDesc('id')->get(['id','periode','status_periode']);
@@ -233,23 +342,22 @@ class EvaluasiController extends Controller
         return view('admin.evaluasi.sesi-schedule-bulk', compact('periodes','periodeId'));
     }
 
-    /** ===== JADWAL MASSAL (aksi) ===== */
     public function scheduleBulk(Request $req)
     {
         $data = $req->validate([
-            'periode_id' => 'required|exists:periode,id',
-            'jadwal_mulai' => 'required|date',
-            'jadwal_selesai' => 'nullable|date|after:jadwal_mulai',
-            'durasi_menit' => 'nullable|integer|min:15|max:1440',
-            'lokasi' => 'nullable|string|max:150',
-            'evaluator_id' => 'nullable|exists:users,id',
-            'selected_ids' => 'nullable|array',
-            'selected_ids.*' => 'integer|exists:kelompok,id',
+            'periode_id'    => 'required|exists:periode,id',
+            'jadwal_mulai'  => 'required|date',
+            'jadwal_selesai'=> 'nullable|date|after:jadwal_mulai',
+            'durasi_menit'  => 'nullable|integer|min:15|max:1440',
+            'lokasi'        => 'nullable|string|max:150',
+            'evaluator_id'  => 'nullable|exists:users,id',
+            'selected_ids'  => 'nullable|array',
+            'selected_ids.*'=> 'integer|exists:kelompok,id',
         ]);
 
         $periodeId = $data['periode_id'];
         $durasi = (int)($data['durasi_menit'] ?? 90);
-        // If selected_ids provided, schedule only those; otherwise all kelompok on periode
+
         $kelompokQuery = Kelompok::where('periode_id', $periodeId);
         if (!empty($data['selected_ids'])) {
             $kelompokQuery->whereIn('id', $data['selected_ids']);
@@ -263,11 +371,9 @@ class EvaluasiController extends Controller
 
             if (!empty($data['jadwal_mulai'])) {
                 $s->jadwal_mulai = $data['jadwal_mulai'];
-                if (!empty($data['jadwal_selesai'])) {
-                    $s->jadwal_selesai = $data['jadwal_selesai'];
-                } else {
-                    $s->jadwal_selesai = Carbon::parse($data['jadwal_mulai'])->addMinutes($durasi)->format('Y-m-d H:i:s');
-                }
+                $s->jadwal_selesai = !empty($data['jadwal_selesai'])
+                    ? $data['jadwal_selesai']
+                    : Carbon::parse($data['jadwal_mulai'])->addMinutes($durasi)->format('Y-m-d H:i:s');
                 $s->evaluator_id = $data['evaluator_id'] ?? $s->evaluator_id;
                 $s->lokasi = $data['lokasi'] ?? $s->lokasi;
                 $s->status = EvaluasiSesi::ST_JADWAL;
@@ -276,7 +382,7 @@ class EvaluasiController extends Controller
         }
 
         Alert::success('Selesai', 'Penjadwalan massal selesai.');
-        return redirect()->route('admin.evaluasi.sesi.index', ['periode_id'=>$periodeId]);
+        return redirect()->route('admin.evaluasi.index', ['periode_id'=>$periodeId]);
     }
 
     /** ===== PENGATURAN ===== */
@@ -334,6 +440,139 @@ class EvaluasiController extends Controller
         return back();
     }
 
+    /** ===== PROJECT TIMELINE ===== */
+    public function projectTimeline(Kelompok $kelompok)
+    {
+        $activePeriode = Periode::where('status_periode', 'Aktif')->orderByDesc('id')->first();
+        abort_unless($activePeriode, 404, 'Periode aktif tidak ditemukan');
+
+        $proyekLists = ProjectList::with(['cards' => function($q) use ($kelompok) {
+            $q->where('kelompok_id', $kelompok->id)
+              ->orderBy('tanggal_mulai')
+              ->orderBy('due_date');
+        }])->orderBy('position')->get();
+
+        return view('admin.evaluasi.project-timeline', [
+            'kelompok'   => $kelompok,
+            'periode'    => $activePeriode,
+            'proyekLists'=> $proyekLists,
+        ]);
+    }
+
+    /** ===== Drag & Drop: kartu ===== */
+    public function reorderProjectCard(Request $request)
+    {
+        $data = $request->validate([
+            'card_id'  => 'required|integer',
+            'to_list'  => 'required|integer',
+            'position' => 'required|integer|min:0',
+        ]);
+
+        $card  = ProjectCard::find($data['card_id']);
+        $toList= ProjectList::find($data['to_list']);
+        if (!$card || !$toList) return response()->json(['status'=>'not_found'], 404);
+
+        DB::transaction(function() use ($card, $toList, $data) {
+            $fromListId = $card->list_id;
+            $oldPos = (int) $card->position;
+            $newPos = (int) $data['position'];
+
+            if ($fromListId === $toList->id) {
+                if ($newPos > $oldPos) {
+                    ProjectCard::where('list_id', $fromListId)
+                        ->whereBetween('position', [$oldPos + 1, $newPos])
+                        ->decrement('position');
+                } else if ($newPos < $oldPos) {
+                    ProjectCard::where('list_id', $fromListId)
+                        ->whereBetween('position', [$newPos, $oldPos - 1])
+                        ->increment('position');
+                }
+            } else {
+                ProjectCard::where('list_id', $fromListId)
+                    ->where('position', '>', $oldPos)
+                    ->decrement('position');
+
+                ProjectCard::where('list_id', $toList->id)
+                    ->where('position', '>=', $newPos)
+                    ->increment('position');
+            }
+
+            $card->update([
+                'list_id'   => $toList->id,
+                'position'  => $newPos,
+                'updated_by'=> Auth::id(),
+            ]);
+        });
+
+        return response()->json(['status'=>'ok']);
+    }
+
+    /** ===== Drag & Drop: kolom ===== */
+    public function reorderProjectLists(Request $request)
+    {
+        $ids = $request->input('list_ids');
+        if (!is_array($ids) || empty($ids)) {
+            return response()->json(['status'=>'invalid'], 422);
+        }
+
+        DB::transaction(function() use ($ids) {
+            foreach ($ids as $idx => $listId) {
+                ProjectList::where('id', (int)$listId)->update(['position' => $idx]);
+            }
+        });
+
+        return response()->json(['status'=>'ok']);
+    }
+
+    /** ===== Quick action: update progress ===== */
+    public function updateProjectProgress(Request $request, ProjectCard $card)
+    {
+        $data = $request->validate(['progress'=>'required|integer|min:0|max:100']);
+        $card->update([
+            'progress'   => $data['progress'],
+            'updated_by' => Auth::id(),
+        ]);
+        return response()->json(['success'=>true,'progress'=>$card->progress]);
+    }
+
+    /** ===== Quick action: update status ===== */
+    public function updateProjectStatus(Request $request, ProjectCard $card)
+    {
+        $data = $request->validate(['status'=>'required|string|in:Proses,Selesai,Dibatalkan']);
+
+        // Simpan ke kedua kolom untuk kompatibilitas
+        $card->update([
+            'status'         => $data['status'],
+            'status_proyek'  => $data['status'],
+            'updated_by'     => Auth::id(),
+        ]);
+
+        return response()->json(['success'=>true,'status'=>$card->status]);
+    }
+
+    /** ===== PROJECT EXPORT ===== */
+    public function projectExport(Kelompok $kelompok)
+    {
+        $activePeriode = Periode::where('status_periode', 'Aktif')->orderByDesc('id')->first();
+        abort_unless($activePeriode, 404, 'Periode aktif tidak ditemukan');
+
+        $proyekLists = ProjectList::with(['cards' => function($q) use ($kelompok) {
+            $q->where('kelompok_id', $kelompok->id)
+              ->orderBy('tanggal_mulai')
+              ->orderBy('due_date');
+        }])->orderBy('position')->get();
+
+        $aktivitasLists = AktivitasList::with(['cards' => function($q) use ($kelompok) {
+            $q->where('kelompok_id', $kelompok->id)
+              ->orderBy('tanggal_mulai')
+              ->orderBy('due_date');
+        }])->orderBy('position')->get();
+
+        $fileName = 'proyek_' . Str::slug($kelompok->nama_kelompok) . '_' . date('Y-m-d') . '.xlsx';
+
+        return Excel::download(new ProjectExport($kelompok, $proyekLists, $aktivitasLists), $fileName);
+    }
+
     /** ===== UTIL (opsional) ===== */
     private function ensureSessions(int $periodeId): int
     {
@@ -357,4 +596,210 @@ class EvaluasiController extends Controller
         }
         return $missing->count();
     }
+
+    public function updateProject(Request $request, ProjectCard $card)
+    {
+        $data = $request->validate([
+            'title' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
+            'labels' => 'nullable|string',
+            'due_date' => 'nullable|date',
+            'tanggal_mulai' => 'nullable|date',
+            'tanggal_selesai' => 'nullable|date',
+            'progress' => 'nullable|integer|min:0|max:100',
+            'nama_mitra' => 'nullable|string|max:255',
+            'kontak_mitra' => 'nullable|string|max:255',
+            'skema_pbl' => 'nullable|string|max:50',
+            'biaya_barang' => 'nullable|numeric|min:0',
+            'biaya_jasa' => 'nullable|numeric|min:0',
+            'status_proyek' => 'nullable|string|in:Proses,Dibatalkan,Selesai',
+            'link_drive_proyek' => 'nullable|url',
+            'kendala' => 'nullable|string',
+            'catatan' => 'nullable|string',
+            'status'   => 'nullable|in:Proses,Selesai,Dibatalkan',
+        ]);
+
+        $labels = null;
+        if (!empty($data['labels'])) {
+            $labels = collect(explode(',', $data['labels']))->map(fn($s)=>trim($s))->filter()->values()->all();
+        }
+
+        $card->title = $data['title'] ?? $card->title;
+        $card->description = $data['description'] ?? $card->description;
+        if ($labels !== null) $card->labels = $labels;
+        $card->tanggal_mulai = $data['tanggal_mulai'] ?? $card->tanggal_mulai;
+        $card->tanggal_selesai = $data['tanggal_selesai'] ?? ($data['due_date'] ?? $card->tanggal_selesai);
+        $card->due_date = $data['due_date'] ?? ($data['tanggal_selesai'] ?? $card->due_date);
+        if (array_key_exists('progress', $data)) $card->progress = $data['progress'];
+        $card->nama_mitra = $data['nama_mitra'] ?? $card->nama_mitra;
+        $card->kontak_mitra = $data['kontak_mitra'] ?? $card->kontak_mitra;
+        $card->skema_pbl = $data['skema_pbl'] ?? $card->skema_pbl;
+        if (array_key_exists('biaya_barang', $data)) $card->biaya_barang = $data['biaya_barang'];
+        if (array_key_exists('biaya_jasa', $data)) $card->biaya_jasa = $data['biaya_jasa'];
+        if (!empty($data['status_proyek'])) $card->status_proyek = $data['status_proyek'];
+        if (!empty($data['status'])) $card->status = $data['status'];
+        if (!empty($data['link_drive_proyek'])) $card->link_drive_proyek = $data['link_drive_proyek'];
+        if (array_key_exists('kendala', $data)) $card->kendala = $data['kendala'];
+        if (array_key_exists('catatan', $data)) $card->catatan = $data['catatan'];
+        $card->updated_by = Auth::id();
+        $card->save();
+
+        return response()->json(['success'=>true]);
+    }
+
+    public function destroyProject(ProjectCard $card)
+    {
+        $card->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Kartu proyek berhasil dihapus'
+        ]);
+    }
+
+    /** ===== PENILAIAN PROYEK: Dosen ===== */
+    public function saveProjectGradeDosen(Request $request, ProjectCard $card)
+    {
+        $sesiId = (int) $request->input('sesi_id');
+        $items = $request->input('items', []);
+
+        $weights = [
+            'd_hasil' => (int) (EvaluasiSetting::get('d_hasil') ?? 30),
+            'd_teknis' => (int) (EvaluasiSetting::get('d_teknis') ?? 20),
+            'd_user' => (int) (EvaluasiSetting::get('d_user') ?? 15),
+            'd_efisiensi' => (int) (EvaluasiSetting::get('d_efisiensi') ?? 10),
+            'd_dokpro' => (int) (EvaluasiSetting::get('d_dokpro') ?? 15),
+            'd_inisiatif' => (int) (EvaluasiSetting::get('d_inisiatif') ?? 10),
+        ];
+
+        $total = 0; $payload = [];
+        foreach ($weights as $k => $w) {
+            $v = max(0, min(100, (int)($items[$k] ?? 0)));
+            $payload[$k] = $v;
+            $total += $v * $w;
+        }
+        $total = (int) round($total / 100);
+
+        $row = EvaluasiProyekNilai::updateOrCreate([
+            'sesi_id' => $sesiId ?: null,
+            'card_id' => $card->id,
+            'jenis'   => 'dosen',
+        ],[
+            'nilai' => $payload,
+            'total' => $total,
+            'updated_by' => Auth::id(),
+            'created_by' => Auth::id(),
+        ]);
+
+        return response()->json(['success'=>true,'total'=>$row->total]);
+    }
+
+    /** ===== PENILAIAN PROYEK: Mitra ===== */
+    public function saveProjectGradeMitra(Request $request, ProjectCard $card)
+    {
+        $sesiId = (int) $request->input('sesi_id');
+        $kehadiran = max(0, min(100, (int)$request->input('kehadiran', 0)));
+        $presentasi = max(0, min(100, (int)$request->input('presentasi', 0)));
+
+        $wKeh = (int) (EvaluasiSetting::get('m_kehadiran') ?? 50);
+        $wPre = (int) (EvaluasiSetting::get('m_presentasi') ?? 50);
+        $total = (int) round(($kehadiran * $wKeh + $presentasi * $wPre) / 100);
+
+        $row = EvaluasiProyekNilai::updateOrCreate([
+            'sesi_id' => $sesiId ?: null,
+            'card_id' => $card->id,
+            'jenis'   => 'mitra',
+        ],[
+            'nilai' => ['kehadiran'=>$kehadiran, 'presentasi'=>$presentasi],
+            'total' => $total,
+            'updated_by' => Auth::id(),
+            'created_by' => Auth::id(),
+        ]);
+
+        return response()->json(['success'=>true,'total'=>$row->total]);
+    }
+
+    /** ====== SAVE: Absensi per sesi & mahasiswa ====== */
+    public function saveAbsensi(Request $request, EvaluasiSesi $sesi)
+    {
+        $data = $request->validate([
+            'mahasiswa_id' => 'required|integer',
+            'status'       => 'required|string|in:Hadir,Terlambat,Sakit,Dispensasi,Alpa',
+            'waktu_absen'  => 'nullable|date',
+            'keterangan'   => 'nullable|string|max:255',
+        ]);
+
+        $row = EvaluasiAbsensi::updateOrCreate(
+            ['sesi_id' => $sesi->id, 'mahasiswa_id' => $data['mahasiswa_id']],
+            [
+                'status'      => $data['status'],
+                'waktu_absen' => $data['waktu_absen'] ?? now(),
+                'keterangan'  => $data['keterangan'] ?? null,
+            ]
+        );
+
+        return response()->json(['success' => true, 'data' => $row]);
+    }
+
+    /** ====== SAVE: AP (Kehadiran & Presentasi) per mahasiswa ====== */
+    public function saveAP(Request $request, EvaluasiSesi $sesi)
+    {
+        $data = $request->validate([
+            'mahasiswa_id' => 'required|integer',
+            'kehadiran'    => 'required|integer|min:0|max:100',
+            'presentasi'   => 'required|integer|min:0|max:100',
+        ]);
+
+        // Ambil indikator_id untuk kode m_kehadiran & m_presentasi dari sesi ini
+        $indikators = EvaluasiSesiIndikator::with('indikator')
+            ->where('sesi_id', $sesi->id)
+            ->get()
+            ->keyBy(fn($si) => optional($si->indikator)->kode);
+
+        $idKeh = optional($indikators->get('m_kehadiran'))->indikator_id;
+        $idPre = optional($indikators->get('m_presentasi'))->indikator_id;
+
+        if (!$idKeh || !$idPre) {
+            return response()->json(['success'=>false,'message'=>'Indikator AP belum diset untuk sesi ini'], 422);
+        }
+
+        DB::transaction(function() use ($sesi, $data, $idKeh, $idPre) {
+            EvaluasiNilaiDetail::updateOrCreate(
+                ['sesi_id'=>$sesi->id, 'mahasiswa_id'=>$data['mahasiswa_id'], 'indikator_id'=>$idKeh],
+                ['skor'=>$data['kehadiran']]
+            );
+            EvaluasiNilaiDetail::updateOrCreate(
+                ['sesi_id'=>$sesi->id, 'mahasiswa_id'=>$data['mahasiswa_id'], 'indikator_id'=>$idPre],
+                ['skor'=>$data['presentasi']]
+            );
+        });
+
+        return response()->json(['success'=>true]);
+    }
+
+    /** ====== SAVE: Skor indikator dosen (per sesi) ====== */
+    public function saveSesiIndikators(Request $request, EvaluasiSesi $sesi)
+    {
+        $items = $request->input('items');
+        if (!is_array($items) || empty($items)) {
+            return response()->json(['success'=>false,'message'=>'Data kosong'], 422);
+        }
+
+        DB::transaction(function() use ($items, $sesi) {
+            foreach ($items as $indikatorId => $val) {
+                $skor = (int)($val['skor'] ?? 0);
+                $kom  = isset($val['komentar']) ? (string)$val['komentar'] : null;
+                EvaluasiSesiIndikator::where('sesi_id', $sesi->id)
+                    ->where('indikator_id', (int)$indikatorId)
+                    ->update([
+                        'skor'      => max(0, min(100, $skor)),
+                        'komentar'  => $kom,
+                        'updated_at'=> now(),
+                    ]);
+            }
+        });
+
+        return response()->json(['success'=>true]);
+    }
+
 }

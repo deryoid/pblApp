@@ -249,7 +249,11 @@ class DataMahasiswaAdminController extends Controller
     public function import(Request $request)
     {
         $request->validate([
-            'file' => ['required','file','mimetypes:text/plain,text/csv,application/vnd.ms-excel','max:2048'],
+            'file' => [
+                'required','file',
+                'mimetypes:text/plain,text/csv,application/vnd.ms-excel',
+                'max:2048'
+            ],
         ]);
 
         $path = $request->file('file')->getRealPath();
@@ -258,31 +262,80 @@ class DataMahasiswaAdminController extends Controller
             return back()->withErrors(['file' => 'Tidak dapat membaca file.']);
         }
 
-        // Deteksi delimiter (comma/semicolon/tab)
+        // --- Deteksi delimiter ---
         $firstLine = fgets($fh);
         $delims = [',',';',"\t"];
         $delim = ',';
-        $bestCount = 0;
+        $bestCount = -1;
         foreach ($delims as $d) {
             $c = substr_count($firstLine, $d);
             if ($c > $bestCount) { $bestCount = $c; $delim = $d; }
         }
-        // handle BOM & reset pointer
+
+        // --- Deteksi enclosure ---
+        $enclosures = ['"', "'"];
+        $enc = '"';
+        $encCountBest = -1;
+        foreach ($enclosures as $e) {
+            $cnt = substr_count($firstLine, $e);
+            if ($cnt > $encCountBest) { $encCountBest = $cnt; $enc = $e; }
+        }
+
+        // Reset pointer & handle BOM UTF-8
         rewind($fh);
         $bom = "\xEF\xBB\xBF";
         $headPeek = fread($fh, 3);
         if ($headPeek !== $bom) { rewind($fh); }
 
-        // Baca baris pertama utk cek header
-        $header = fgetcsv($fh, 0, $delim);
-        $header = $header ? array_map(fn($v) => strtolower(trim($v ?? '')), $header) : [];
-        $hasHeader = in_array('nim', $header, true) || in_array('nama', $header, true) || in_array('nama_mahasiswa', $header, true);
+        // --- Baca header ---
+        $header = fgetcsv($fh, 0, $delim, $enc);
+        $header = $header ? array_map(fn($v) => strtolower(trim((string)($v ?? ''))), $header) : [];
+        $hasHeader = in_array('nim', $header, true)
+                || in_array('nama', $header, true)
+                || in_array('nama_mahasiswa', $header, true);
 
         if (!$hasHeader) {
-            // tidak ada header → gunakan baris pertama sebagai data; kembalikan pointer ke sesudah first line
             rewind($fh);
-            if ($headPeek === $bom) fseek($fh, 3); // lewati BOM
+            if ($headPeek === $bom) { fseek($fh, 3); }
         }
+
+        // --- Helper: paksa UTF-8 valid ---
+        $toUtf8 = function (?string $s): string {
+            $s = (string) $s;
+            // Kalau bukan UTF-8 valid, coba konversi dari Windows-1252/ISO-8859-1
+            if (!mb_detect_encoding($s, 'UTF-8', true)) {
+                $s = @mb_convert_encoding($s, 'UTF-8', 'UTF-8, Windows-1252, ISO-8859-1');
+                if ($s === false || $s === null) {
+                    // fallback terakhir: buang byte non-ASCII yang bermasalah
+                    $s = preg_replace('/[^\x20-\x7E\x0A\x0D\x09]/', '', (string) $s) ?? '';
+                }
+            }
+            return $s;
+        };
+
+        // --- Helper: normalisasi kutip & spasi (aman null/UTF-8 rusak) ---
+        $normalizeText = function (?string $s) use ($toUtf8): string {
+            $s = $toUtf8($s);
+            // smart quotes -> kutip lurus
+            $s = strtr($s, ["“"=>'"', "”"=>'"', "‘"=>"'", "’"=>"'" ]);
+            $s = trim($s);
+
+            // Coba dengan /u dulu (Unicode). Jika null → fallback tanpa /u. Jika tetap null → kembalikan string asal.
+            $tmp = preg_replace('/\s+/u', ' ', $s);
+            if ($tmp === null) {
+                $tmp = preg_replace('/\s+/', ' ', $s);
+                if ($tmp === null) $tmp = $s;
+            }
+            return $tmp;
+        };
+
+        // --- Helper: cek null/kosong/hanya kutip ---
+        $onlyQuotes = function (?string $s) use ($toUtf8): bool {
+            if ($s === null) return true;
+            $t = trim($toUtf8($s));
+            $t = trim($t, "\"'");
+            return $t === '';
+        };
 
         $createdUsers = 0;
         $createdMhs   = 0;
@@ -294,49 +347,58 @@ class DataMahasiswaAdminController extends Controller
 
         $rowNum = $hasHeader ? 2 : 1;
 
-        // Loop CSV
-        while (($row = fgetcsv($fh, 0, $delim)) !== false) {
-            // Map kolom
+        while (($row = fgetcsv($fh, 0, $delim, $enc)) !== false) {
             $nim = null; $nama = null;
 
             if ($hasHeader) {
-                // cari index berdasar nama header
-                $idxNim = array_search('nim', $header, true);
+                $idxNim  = array_search('nim', $header, true);
                 $idxNama = array_search('nama', $header, true);
                 if ($idxNama === false) $idxNama = array_search('nama_mahasiswa', $header, true);
 
-                $nim  = $idxNim  !== false && isset($row[$idxNim])  ? $row[$idxNim]  : null;
-                $nama = $idxNama !== false && isset($row[$idxNama]) ? $row[$idxNama] : null;
+                $nim  = ($idxNim  !== false && isset($row[$idxNim]))  ? $row[$idxNim]  : null;
+                $nama = ($idxNama !== false && isset($row[$idxNama])) ? $row[$idxNama] : null;
             } else {
-                // asumsi: kolom 0 = nim, kolom 1 = nama
                 $nim  = $row[0] ?? null;
                 $nama = $row[1] ?? null;
             }
 
             // Normalisasi
-            $nim  = strtoupper(preg_replace('/\s+/', '', (string) $nim));
-            $nama = preg_replace('/\s+/', ' ', trim((string) $nama));
+            $nim  = strtoupper(preg_replace('/\s+/', '', (string) $toUtf8($nim)));
+            $nama = $normalizeText($nama);
 
             // Validasi minimal
-            if ($nim === '' || $nama === '') {
-                $errors[] = "Baris {$rowNum}: NIM/Nama kosong.";
+            if (
+                $nim === '' ||
+                $nama === '' ||
+                strtoupper(trim($nama)) === 'NULL' ||
+                $onlyQuotes($nama)
+            ) {
+                $errors[] = "Baris {$rowNum}: NIM/Nama tidak valid (kosong/NULL/hanya kutip/encoding rusak).";
                 $rowNum++; continue;
             }
 
             try {
                 DB::transaction(function () use ($nim, $nama, &$createdUsers, &$createdMhs, &$updatedMhs, &$attached, &$skipped, &$conflict) {
-                    // Cari user by username (NIM)
+                    // USER
                     $user = User::where('username', $nim)->first();
 
                     if (!$user) {
-                        // Pastikan email unik
+                        $safeNama = (string)$nama;
+                        if (
+                            $safeNama === '' ||
+                            strtoupper(trim($safeNama)) === 'NULL' ||
+                            trim($safeNama, "\"' \t\n\r\0\x0B") === ''
+                        ) {
+                            $safeNama = 'Mahasiswa '.$nim;
+                        }
+
                         $email = strtolower($nim.'@politala.ac.id');
                         if (User::where('email', $email)->exists()) {
                             $email = strtolower($nim.'+'.Str::random(4).'@politala.ac.id');
                         }
 
                         $user = User::create([
-                            'nama_user'         => $nama,
+                            'nama_user'         => $safeNama,
                             'email'             => $email,
                             'email_verified_at' => now(),
                             'no_hp'             => '-',
@@ -347,56 +409,42 @@ class DataMahasiswaAdminController extends Controller
                         ]);
                         $createdUsers++;
                     } else {
-                        // Sinkron nama user jika beda
-                        if ($user->nama_user !== $nama) {
+                        if ($user->nama_user === null || trim($user->nama_user) === '' || strtoupper(trim($user->nama_user)) === 'NULL') {
+                            $user->nama_user = ($nama && strtoupper(trim($nama)) !== 'NULL') ? $nama : ('Mahasiswa '.$nim);
+                            $user->save();
+                        } elseif ($user->nama_user !== $nama && $nama && strtoupper(trim($nama)) !== 'NULL') {
                             $user->nama_user = $nama;
                             $user->save();
                         }
-                        // Role bukan mahasiswa? Biarkan/opsional ubah => up to policy
                     }
 
-                    // Mahasiswa: cek by user_id
+                    // MAHASISWA
                     $m = Mahasiswa::where('user_id', $user->id)->first();
                     if ($m) {
                         $changed = false;
                         if ($m->nim !== $nim) {
-                            // Cek duplikat nim di mahasiswa lain
                             $dupe = Mahasiswa::where('nim', $nim)->where('id', '!=', $m->id)->exists();
-                            if ($dupe) {
-                                $conflict++;
-                            } else {
-                                $m->nim = $nim;
-                                $changed = true;
-                            }
+                            if ($dupe) { $conflict++; } else { $m->nim = $nim; $changed = true; }
                         }
-                        if ($m->nama_mahasiswa !== $nama) {
-                            $m->nama_mahasiswa = $nama;
-                            $changed = true;
-                        }
-
+                        if ($m->nama_mahasiswa !== $nama) { $m->nama_mahasiswa = $nama; $changed = true; }
                         if ($changed) { $m->save(); $updatedMhs++; } else { $skipped++; }
                         return;
                     }
 
-                    // Belum ada by user_id → cek ada record by NIM?
                     $mByNim = Mahasiswa::where('nim', $nim)->first();
                     if ($mByNim) {
                         if ($mByNim->user_id && $mByNim->user_id !== $user->id) {
                             $conflict++;
                         } else {
                             $mByNim->user_id = $user->id;
-                            if ($mByNim->nama_mahasiswa !== $nama) {
-                                $mByNim->nama_mahasiswa = $nama;
-                            }
+                            if ($mByNim->nama_mahasiswa !== $nama) { $mByNim->nama_mahasiswa = $nama; }
                             $mByNim->save();
                             $attached++;
                         }
                         return;
                     }
 
-                    // Buat baru
                     Mahasiswa::create([
-                        // uuid auto dari model booted()
                         'user_id'        => $user->id,
                         'nim'            => $nim,
                         'nama_mahasiswa' => $nama,
@@ -411,17 +459,28 @@ class DataMahasiswaAdminController extends Controller
         }
         fclose($fh);
 
-        $msg = "Import selesai — user baru: {$createdUsers}, mhs baru: {$createdMhs}, diperbarui: {$updatedMhs}, ditautkan: {$attached}, dilewati: {$skipped}, konflik: {$conflict}";
+        // Stats ke session (optional untuk view)
+        session()->flash('import_stats', [
+            'created_users' => $createdUsers,
+            'created_mhs'   => $createdMhs,
+            'updated_mhs'   => $updatedMhs,
+            'attached'      => $attached,
+            'skipped'       => $skipped,
+            'conflict'      => $conflict,
+        ]);
+
         if ($errors) {
-            // Simpan error ke session utk ditampilkan
             session()->flash('import_errors', $errors);
-            Alert::toast($msg.' (ada beberapa baris bermasalah)', 'warning');
+            Alert::toast("Import selesai — user baru: {$createdUsers}, mhs baru: {$createdMhs}, diperbarui: {$updatedMhs}, ditautkan: {$attached}, dilewati: {$skipped}, konflik: {$conflict} (ada error)", 'warning');
         } else {
-            Alert::toast($msg, 'success');
+            Alert::toast("Import selesai — user baru: {$createdUsers}, mhs baru: {$createdMhs}, diperbarui: {$updatedMhs}, ditautkan: {$attached}, dilewati: {$skipped}, konflik: {$conflict}", 'success');
         }
 
         return redirect()->route('mahasiswa.import.form');
     }
+
+
+
 
     
 }

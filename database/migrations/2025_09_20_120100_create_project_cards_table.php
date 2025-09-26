@@ -18,12 +18,39 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->unsignedInteger('position')->default(0);
             $table->json('labels')->nullable();
-            $table->dateTime('due_date')->nullable();
+            // tanggal
+            $table->date('tanggal_mulai')->nullable();
+            $table->date('tanggal_selesai')->nullable();
+            $table->dateTime('due_date')->nullable(); // kompat
+
+            // atribut mitra/skema
+            $table->string('nama_mitra')->nullable();
+            $table->string('kontak_mitra')->nullable();
+            $table->string('skema_pbl', 50)->nullable();
+
+            // biaya
+            $table->decimal('biaya_barang', 15, 2)->default(0);
+            $table->decimal('biaya_jasa', 15, 2)->default(0);
+
+            // metadata
+            $table->text('kendala')->nullable();
+            $table->text('catatan')->nullable();
+            $table->string('status_proyek', 20)->default('Proses');
+            $table->string('status')->default('Proses'); // kompat name
+            $table->string('link_drive_proyek')->nullable();
+
             $table->unsignedInteger('comments_count')->default(0);
             $table->unsignedInteger('attachments_count')->default(0);
             $table->unsignedTinyInteger('progress')->default(0);
+
+            // audit
+            $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
+            $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
             $table->index(['list_id','position']);
+            $table->index(['kelompok_id','periode_id'],'pc_kelompok_periode_idx');
+            $table->index('status_proyek','pc_status_idx');
+            $table->index('tanggal_selesai','pc_tselesai_idx');
         });
     }
 

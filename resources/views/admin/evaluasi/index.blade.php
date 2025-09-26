@@ -68,6 +68,7 @@
               <th>Lokasi</th>
               <th>Evaluator</th>
               <th>Status</th>
+              <th>Mingguan (AP)</th>
               <th style="width:220px; text-align: center;">Aksi</th>
             </tr>
           </thead>
@@ -108,6 +109,14 @@
                 <td>
                   <span class="badge status-badge {{ statusClass($status) }}">{{ $status }}</span>
                 </td>
+                <td>
+                  @php $wk = $weeklyMap[$k->id] ?? ['eval_count'=>0,'avg_kehadiran'=>0,'avg_keaktifan'=>0]; @endphp
+                  <div class="small-muted">
+                    Sesi: <strong>{{ $wk['eval_count'] }}</strong><br>
+                    Kehadiran: <strong>{{ $wk['avg_kehadiran'] }}%</strong><br>
+                    Keaktifan: <strong>{{ $wk['avg_keaktifan'] }}%</strong>
+                  </div>
+                </td>
                 <td align="center">
                   {{-- Detail --}}
                   <a href="{{ route('admin.evaluasi.kelompok.show', $k->uuid) }}"
@@ -117,7 +126,7 @@
 
                     {{-- Mulai (hanya jika ada sesi & belum/terjadwal) --}}
                     <form action="{{ $sesi ? route('admin.evaluasi.start', $sesi->id) : '#' }}"
-                          method="POST" onsubmit="return confirm('Mulai sesi evaluasi?')" class="ml-1">
+                          method="POST" class="ml-1 frm-start">
                       @csrf @method('PATCH')
                       <button type="submit" class="btn btn-circle btn-success btn-sm"
                         {{ !$sesi || in_array($status,['Berlangsung','Selesai','Dibatalkan']) ? 'disabled' : '' }}>
@@ -127,7 +136,7 @@
 
                     {{-- Selesai (hanya jika sedang berlangsung) --}}
                     <form action="{{ $sesi ? route('admin.evaluasi.finish', $sesi->id) : '#' }}"
-                          method="POST" onsubmit="return confirm('Akhiri sesi evaluasi?')" class="ml-1">
+                          method="POST" class="ml-1 frm-finish">
                       @csrf @method('PATCH')
                       <button type="submit" class="btn btn-circle btn-dark btn-sm"
                         {{ !$sesi || $status!=='Berlangsung' ? 'disabled' : '' }}>
@@ -172,6 +181,7 @@
   </div>
 
 @push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 (function(){
   // Pencarian client-side tambahan (opsional)
@@ -202,15 +212,24 @@
     });
   }
 
+  // SweetAlert confirm for start/finish
+  $(document).on('submit','.frm-start', function(e){
+    e.preventDefault(); const form = this;
+    Swal.fire({title:'Mulai sesi evaluasi?', icon:'question', showCancelButton:true, confirmButtonText:'Mulai'})
+      .then(r=>{ if(r.isConfirmed) form.submit(); });
+  });
+  $(document).on('submit','.frm-finish', function(e){
+    e.preventDefault(); const form = this;
+    Swal.fire({title:'Akhiri sesi evaluasi?', icon:'warning', showCancelButton:true, confirmButtonText:'Akhiri'})
+      .then(r=>{ if(r.isConfirmed) form.submit(); });
+  });
+
   // Bulk schedule button
   const btnBulk = document.getElementById('btn-bulk-schedule');
   if (btnBulk) {
     btnBulk.addEventListener('click', function(){
       const selected = Array.from(document.querySelectorAll('.chk-kelompok:checked')).map(n => n.value);
-      if (selected.length === 0) {
-        alert('Pilih minimal satu kelompok');
-        return;
-      }
+      if (selected.length === 0) { Swal.fire('Info','Pilih minimal satu kelompok','info'); return; }
       // Populate hidden inputs in modal form
       const container = document.getElementById('bulk-selected-inputs');
       container.innerHTML = '';

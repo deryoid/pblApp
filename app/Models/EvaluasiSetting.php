@@ -36,4 +36,11 @@ class EvaluasiSetting extends Model
             );
         }
     }
+
+    public static function get(string $key, $default = null)
+    {
+        $row = self::where('key', $key)->first();
+        if (!$row) return $default;
+        return is_numeric($row->value) ? (int) $row->value : $row->value;
+    }
 }

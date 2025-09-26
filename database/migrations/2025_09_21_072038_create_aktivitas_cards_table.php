@@ -38,19 +38,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        // drop index & FK dulu agar aman di beberapa driver
-        Schema::table('aktivitas_cards', function (Blueprint $t) {
-            try { $t->dropIndex('akc_list_pos_id_idx'); } catch (\Throwable $e) {}
-            try { $t->dropIndex('akc_kelompok_periode_idx'); } catch (\Throwable $e) {}
-            try { $t->dropIndex('akc_tanggal_idx'); } catch (\Throwable $e) {}
-
-            foreach (['updated_by','created_by','list_aktivitas_id','periode_id','kelompok_id'] as $fk) {
-                if (Schema::hasColumn('aktivitas_cards', $fk)) {
-                    try { $t->dropConstrainedForeignId($fk); } catch (\Throwable $e) {}
-                }
-            }
-        });
-
         Schema::dropIfExists('aktivitas_cards');
     }
 };

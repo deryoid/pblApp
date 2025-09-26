@@ -50,6 +50,13 @@ Route::prefix('admin')->middleware(['auth','admin'])->group(function () {
     Route::post('mahasiswa/import', [DataMahasiswaAdminController::class, 'import'])->name('mahasiswa.import');
     Route::get('mahasiswa/select2', [DataMahasiswaAdminController::class, 'select2'])->name('mahasiswa.select2');
     Route::post('mahasiswa/sync', [DataMahasiswaAdminController::class, 'sync'])->name('mahasiswa.sync');
+    Route::get('/admin/mahasiswa/template-csv', function () {
+        $csv = "NIM,Nama\n230411100001,Budi Santoso\n230411100002,Siti Aminah\n230411100003,Agus Saputra\n";
+        return response($csv, 200, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="template-mahasiswa.csv"',
+        ]);
+    })->name('mahasiswa.template.csv');
     Route::resource('mahasiswa', DataMahasiswaAdminController::class);
 
     // Kelompok
@@ -61,36 +68,64 @@ Route::prefix('admin')->middleware(['auth','admin'])->group(function () {
     Route::put('kelompok/{uuid}',       [DataKelompokAdminController::class, 'update'])->name('kelompok.update');
     Route::delete('kelompok/{uuid}',    [DataKelompokAdminController::class, 'destroy'])->name('kelompok.destroy');
 
-    // Evaluasi - daftar kelompok
-    Route::get('evaluasi', [AdminEval::class, 'index'])->name('admin.evaluasi.index');
+    /** =========================
+     *  Evaluasi (BERSIH & RAPIH)
+     *  ========================= */
+    Route::prefix('evaluasi')->name('admin.evaluasi.')->group(function () {
 
-    // Detail evaluasi per kelompok (pakai uuid di route model binding)
-    Route::get('evaluasi/kelompok/{kelompok:uuid}', [AdminEval::class, 'showKelompok'])
-        ->name('admin.evaluasi.kelompok.show');
+        // Daftar kelompok evaluasi
+        Route::get('/', [AdminEval::class, 'index'])->name('index');
 
-    // Jadwal evaluasi
-    Route::get('evaluasi/kelompok/{kelompok:uuid}/schedule', [AdminEval::class,'scheduleForm'])
-        ->name('admin.evaluasi.schedule.form');
-    Route::patch('evaluasi/{sesi}/schedule', [AdminEval::class,'scheduleSave'])
-        ->name('admin.evaluasi.schedule.save');
+        // Detail evaluasi per kelompok (binding by UUID)
+        Route::get('kelompok/{kelompok:uuid}', [AdminEval::class, 'showKelompok'])->name('kelompok.show');
 
-    // Pengaturan evaluasi
-    Route::get('evaluasi/settings', [AdminEval::class, 'settings'])->name('admin.evaluasi.settings');
-    Route::post('evaluasi/settings', [AdminEval::class, 'saveSettings'])->name('admin.evaluasi.settings.save');
+        // Jadwal evaluasi
+        Route::get('kelompok/{kelompok:uuid}/schedule', [AdminEval::class,'scheduleForm'])->name('schedule.form');
+        Route::patch('{sesi}/schedule', [AdminEval::class,'scheduleSave'])->name('schedule.save');
 
-    // Sesi evaluasi - jadwalkan massal (no separate sesi index)
-    Route::get('evaluasi/sesi/jadwal-massal', [AdminEval::class, 'scheduleBulkForm'])->name('admin.evaluasi.schedule.bulk.form');
-    Route::post('evaluasi/sesi/jadwal-massal', [AdminEval::class, 'scheduleBulk'])->name('admin.evaluasi.schedule.bulk');
+        // Pengaturan evaluasi
+        Route::get('settings', [AdminEval::class, 'settings'])->name('settings');
+        Route::post('settings', [AdminEval::class, 'saveSettings'])->name('settings.save');
 
-    // Aksi mulai/selesai sesi
-    Route::patch('evaluasi/{sesi}/start',  [AdminEval::class,'start'])->name('admin.evaluasi.start');
-    Route::patch('evaluasi/{sesi}/finish', [AdminEval::class,'finish'])->name('admin.evaluasi.finish');
+        // Jadwal massal
+        Route::get('sesi/jadwal-massal', [AdminEval::class, 'scheduleBulkForm'])->name('schedule.bulk.form');
+        Route::post('sesi/jadwal-massal', [AdminEval::class, 'scheduleBulk'])->name('schedule.bulk');
+
+        // Aksi mulai/selesai sesi
+        Route::patch('{sesi}/start',  [AdminEval::class,'start'])->name('start');
+        Route::patch('{sesi}/finish', [AdminEval::class,'finish'])->name('finish');
+
+        // Project timeline & export
+        Route::get('project/{kelompok:uuid}/timeline', [AdminEval::class, 'projectTimeline'])->name('project.timeline');
+        Route::get('project/{kelompok:uuid}/export',   [AdminEval::class, 'projectExport'])->name('project.export');
+
+        // Board: drag & drop (kolom & kartu)
+        Route::post('project/reorder', [AdminEval::class, 'reorderProjectCard'])->name('project.reorder');
+        Route::post('lists/reorder',   [AdminEval::class, 'reorderProjectLists'])->name('lists.reorder');
+
+        // Quick action: progress & status kartu
+        Route::post('project/{card}/progress', [AdminEval::class, 'updateProjectProgress'])->name('project.progress');
+        Route::delete('project/{card}', [AdminEval::class, 'destroyProject'])->name('project.destroy');
+        Route::post('project/{card}/update', [AdminEval::class, 'updateProject'])->name('project.update');
+        Route::post('project/{card}/status',   [AdminEval::class, 'updateProjectStatus'])->name('project.status');
+
+        // Penilaian (AJAX)
+        Route::post('sesi/{sesi}/absensi', [AdminEval::class, 'saveAbsensi'])->name('absensi.save');
+        Route::post('sesi/{sesi}/ap',      [AdminEval::class, 'saveAP'])->name('ap.save');
+        Route::post('sesi/{sesi}/indikator', [AdminEval::class, 'saveSesiIndikators'])->name('indikator.save');
+
+        // Penilaian per proyek (per card)
+        Route::post('project/{card}/grade/dosen', [AdminEval::class, 'saveProjectGradeDosen'])->name('project.grade.dosen');
+        Route::post('project/{card}/grade/mitra', [AdminEval::class, 'saveProjectGradeMitra'])->name('project.grade.mitra');
+    });
 });
 
+// Evaluator
 Route::prefix('evaluator')->middleware(['auth','evaluator'])->group(function () {
     Route::get('/', fn () => view('evaluator.index'));
 });
 
+// Mahasiswa
 Route::prefix('mahasiswa')->middleware(['auth','mahasiswa'])->group(function () {
     Route::get('/', fn () => view('mahasiswa.index'));
 

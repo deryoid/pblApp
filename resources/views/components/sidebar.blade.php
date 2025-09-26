@@ -57,6 +57,14 @@
         <hr class="sidebar-divider">
         <div class="sidebar-heading">PBL</div>
 
+        {{-- Pengaturan Evaluasi --}}
+        <li class="nav-item {{ request()->routeIs('admin.evaluasi.settings','admin.evaluasi.settings.*') ? 'active' : '' }}">
+            <a class="nav-link" href="{{ route('admin.evaluasi.settings') }}">
+                <i class="fas fa-fw fa-sliders-h"></i>
+                <span>Pengaturan Evaluasi</span>
+            </a>
+        </li>
+
         {{-- Kelompok PBL --}}
         <li class="nav-item {{ request()->routeIs('kelompok.*') ? 'active' : '' }}">
             <a class="nav-link" href="{{ route('kelompok.index') }}">
@@ -73,13 +81,6 @@
             </a>
         </li>
 
-        {{-- Pengaturan Evaluasi --}}
-        <li class="nav-item {{ request()->routeIs('admin.evaluasi.settings','admin.evaluasi.settings.*') ? 'active' : '' }}">
-            <a class="nav-link" href="{{ route('admin.evaluasi.settings') }}">
-                <i class="fas fa-fw fa-sliders-h"></i>
-                <span>Pengaturan Evaluasi</span>
-            </a>
-        </li>
 
         <!-- Divider -->
         <hr class="sidebar-divider d-none d-md-block">
