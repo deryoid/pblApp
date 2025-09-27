@@ -63,14 +63,16 @@
         'id'   => $arr->id   ?? ($arr->mahasiswa_id ?? null),
         'nim'  => $arr->nim  ?? null,
         'nama' => $arr->nama ?? ($arr->nama_mahasiswa ?? null),
+        'kelas'=> optional($arr->kelas ?? null)->kelas ?? ($arr->kelas ?? null),
       ];
   });
 
-  $absensis   = collect($sesi->absensis ?? []);
-  $sesiIndis  = collect($sesi->sesiIndikators ?? []);
-  $nilaiDetil = collect($sesi->nilaiDetails ?? []);
-
-  $absByMhs   = $absensis->keyBy('mahasiswa_id');
+  // Hapus dependensi Absensi/AP: hanya gunakan data indikator & nilai detail jika ada
+  // Guard: hindari query ke tabel yang belum ada
+  $hasSesiIndi   = \Illuminate\Support\Facades\Schema::hasTable((new \App\Models\EvaluasiSesiIndikator)->getTable());
+  $hasNilaiDetil = \Illuminate\Support\Facades\Schema::hasTable((new \App\Models\EvaluasiNilaiDetail)->getTable());
+  $sesiIndis  = $hasSesiIndi   ? collect($sesi->sesiIndikators ?? []) : collect();
+  $nilaiDetil = $hasNilaiDetil ? collect($sesi->nilaiDetails ?? [])   : collect();
   $nilaiByMhs = $nilaiDetil->groupBy('mahasiswa_id');
 
   $byKode = $sesiIndis->mapWithKeys(function($si){
@@ -88,27 +90,15 @@
   $wDosen         = (int)($settings['w_dosen'] ?? 80);
   $wMitra         = (int)($settings['w_mitra'] ?? 20);
   $wKelompok      = (int)($settings['w_kelompok'] ?? 70);
-  $wAP            = (int)($settings['w_ap'] ?? 30);
-  $wAP_Kehadiran  = (int)($settings['w_ap_kehadiran'] ?? 50);
-  $wAP_Presentasi = (int)($settings['w_ap_presentasi'] ?? 50);
 
   $idKehadiran  = $byKode['m_kehadiran']['id']  ?? null;
   $idPresentasi = $byKode['m_presentasi']['id'] ?? null;
-  $apIndicatorsReady = $idKehadiran && $idPresentasi;
 
-  $hadirCount = $members->filter(function($m) use ($absByMhs){
-    $st = optional($absByMhs->get($m->id))->status;
-    return in_array($st, ['Hadir','Terlambat'], true);
-  })->count();
-  $total = $members->count();
-
-  $apScores = [];
   $mitraScores = [];
   foreach ($members as $m) {
     $rows = $nilaiByMhs->get($m->id) ?? collect();
     $skKeh = (int)($rows->firstWhere('indikator_id',$idKehadiran)->skor ?? 0);
     $skPrs = (int)($rows->firstWhere('indikator_id',$idPresentasi)->skor ?? 0);
-    $apScores[$m->id]    = (int) round($skKeh * $wAP_Kehadiran/100 + $skPrs * $wAP_Presentasi/100);
     $mitraScores[$m->id] = (int) round(($skKeh + $skPrs) / 2);
   }
 
@@ -123,14 +113,8 @@
   }
   $nilaiProyekKelompok = (int) round(collect($nilaiProyekPerMhs)->avg() ?? 0);
 
-  $nilaiAkhirPerMhs = [];
-  foreach ($members as $m) {
-    $np = $nilaiProyekPerMhs[$m->id] ?? 0;
-    $ap = $apScores[$m->id] ?? 0;
-    $nilaiAkhirPerMhs[$m->id] = (int) round($np * $wKelompok/100 + $ap * $wAP/100);
-  }
-
-  $avgNilai = (int) round(collect($nilaiAkhirPerMhs)->avg() ?? 0);
+  // Tanpa AP: nilai akhir = nilai proyek
+  $avgNilai = (int) round(collect($nilaiProyekPerMhs)->avg() ?? 0);
 
   function kategoriLabel($n){
     if ($n>=81) return 'Sangat Baik';
@@ -147,6 +131,29 @@
       if($card->progress !== null){
         $totalProgress += (int)$card->progress;
         $cardCount++;
+      }
+    }
+  }
+  
+  // Jumlah proyek selesai (status 'Selesai' atau progress 100%)
+  $proyekSelesai = 0;
+  foreach(($proyekLists ?? []) as $list){
+    foreach(($list->cards ?? []) as $card){
+      $stNow = $card->status_proyek ?? ($card->status ?? '');
+      if ($stNow === 'Selesai' || (int)($card->progress ?? 0) === 100) {
+        $proyekSelesai++;
+      }
+    }
+  }
+
+  // Jumlah aktivitas 7 hari terakhir
+  $aktivitasMingguan = 0;
+  $cut = \Carbon\Carbon::now()->subDays(7)->startOfDay();
+  foreach(($aktivitasLists ?? []) as $alist){
+    foreach(($alist->cards ?? []) as $ac){
+      $dt = $ac->tanggal_aktivitas ?? $ac->created_at ?? null;
+      if ($dt && \Carbon\Carbon::parse($dt)->greaterThanOrEqualTo($cut)) {
+        $aktivitasMingguan++;
       }
     }
   }
@@ -189,46 +196,43 @@
 
   {{-- Metrik ringkas --}}
   <div class="row mb-4">
-    <div class="col-md-3 mb-2">
-      <div class="metric-card d-flex align-items-center">
-        <div class="icon-wrap"><i class="fas fa-user-check" aria-hidden="true"></i></div>
-        <div>
-          <div class="metric-title">Kehadiran</div>
-          <div class="metric-value">{{ $hadirCount }}/{{ $total }}</div>
-          <div class="metric-sub">{{ (int) round($total ? ($hadirCount*100/$total) : 0) }}%</div>
+    <div class="col-lg-4 mb-2">
+      <div class="metric-card">
+        <div class="metric-title">Anggota (NIM • Nama • Kelas)</div>
+        <div class="mt-2" style="max-height: 120px; overflow:auto">
+          @forelse($members as $m)
+            <div class="d-flex align-items-center small mb-1">
+              <span class="text-monospace mr-2">{{ $m->nim ?: '-' }}</span>
+              <span class="mr-2">{{ $m->nama ?: '-' }}</span>
+              <span class="badge badge-light border">{{ $m->kelas ?: '-' }}</span> 
+            </div>
+          @empty
+            <div class="text-muted small">Tidak ada anggota.</div>
+          @endforelse
         </div>
       </div>
     </div>
-    <div class="col-md-3 mb-2">
+    <div class="col-lg-4 mb-2">
       <div class="metric-card d-flex align-items-center">
-        <div class="icon-wrap"><i class="fas fa-chart-line" aria-hidden="true"></i></div>
+        <div class="icon-wrap"><i class="fas fa-check-circle" aria-hidden="true"></i></div>
         <div>
-          <div class="metric-title">Nilai Rata-rata</div>
-          <div class="metric-value">{{ $avgNilai }}</div>
-          <div class="metric-sub">{{ kategoriLabel($avgNilai) }}</div>
+          <div class="metric-title">Jumlah Proyek Selesai</div>
+          <div class="metric-value">{{ $proyekSelesai }}</div>
+          <div class="metric-sub">Dari {{ (int)($proyek_total_cards ?? 0) }} proyek</div>
         </div>
       </div>
     </div>
-    <div class="col-md-3 mb-2">
+    <div class="col-lg-4 mb-2">
       <div class="metric-card d-flex align-items-center">
-        <div class="icon-wrap"><i class="fas fa-project-diagram" aria-hidden="true"></i></div>
+        <div class="icon-wrap"><i class="fas fa-calendar-week" aria-hidden="true"></i></div>
         <div>
-          <div class="metric-title">Nilai Proyek (Kelompok)</div>
-          <div class="metric-value">{{ $nilaiProyekKelompok }}</div>
-          <div class="metric-sub">Dosen {{ $wDosen }}% • Mitra {{ $wMitra }}%</div>
+          <div class="metric-title">Jumlah Aktivitas (7 hari)</div>
+          <div class="metric-value">{{ $aktivitasMingguan }}</div>
+          <div class="metric-sub">Total aktivitas: {{ (int)($aktivitas_total ?? 0) }}</div>
         </div>
       </div>
     </div>
-    <div class="col-md-3 mb-2">
-      <div class="metric-card d-flex align-items-center">
-        <div class="icon-wrap"><i class="fas fa-user-clock" aria-hidden="true"></i></div>
-        <div>
-          <div class="metric-title">Kontribusi AP</div>
-          <div class="metric-value">{{ $wAP }}%</div>
-          <div class="metric-sub">Kehadiran {{ $wAP_Kehadiran }}% • Presentasi {{ $wAP_Presentasi }}%</div>
-        </div>
-      </div>
-    </div>
+
   </div>
 
   {{-- Overview Proyek --}}
@@ -856,72 +860,7 @@
   };
 
   // Edit Absensi
-  window.editAbsensi = function(mahasiswaId, nim, nama, current, catatan){
-    const options = ['Hadir','Terlambat','Sakit','Dispensasi','Alpa'];
-    const selectHtml = `<select id="swStatus" class="swal2-select">${options.map(o=>`<option ${o===current?'selected':''}>${o}</option>`).join('')}</select>`;
-    const noteHtml = `<input id="swKet" class="swal2-input" placeholder="Catatan" value="${(catatan||'').replace(/\"/g,'&quot;')}">`;
-    Swal.fire({
-      title: `Absensi ${nim}`, html: `<div class="text-left">Nama: <strong>${nama}</strong></div>${selectHtml}${noteHtml}`,
-      focusConfirm:false, showCancelButton:true, confirmButtonText:'Simpan'
-    }).then((res)=>{
-      if(!res.isConfirmed) return;
-      const status = document.getElementById('swStatus').value;
-      const ket = document.getElementById('swKet').value;
-      $.post("{{ route('admin.evaluasi.absensi.save', $sesi->id) }}", {mahasiswa_id:mahasiswaId,status:status,keterangan:ket,_token:'{{ csrf_token() }}'})
-        .done(function(r){ r.success ? (swalToast('success','Absensi disimpan'), location.reload()) : Swal.fire('Gagal','Tidak dapat menyimpan absensi','error'); })
-        .fail(()=> Swal.fire('Gagal','Tidak dapat menyimpan absensi','error'));
-    });
-  };
-
-  // Edit AP (dua input angka agar presisi)
-  window.editAP = function(mahasiswaId, nim, nama, vKeh, vPre){
-    const html = `
-      <div class="text-left mb-2">Nama: <strong>${nama}</strong></div>
-      <label class="d-block text-left">Kehadiran</label>
-      <input id="apKeh" type="number" min="0" max="100" value="${vKeh}" class="swal2-input" style="width:140px">
-      <label class="d-block text-left mt-2">Presentasi</label>
-      <input id="apPre" type="number" min="0" max="100" value="${vPre}" class="swal2-input" style="width:140px">
-    `;
-    Swal.fire({title:`AP ${nim}`, html, focusConfirm:false, showCancelButton:true, confirmButtonText:'Simpan'})
-      .then((res)=>{
-        if(!res.isConfirmed) return;
-        const keh = parseInt(document.getElementById('apKeh').value,10)||0;
-        const pre = parseInt(document.getElementById('apPre').value,10)||0;
-        $.post("{{ route('admin.evaluasi.ap.save', $sesi->id) }}", {mahasiswa_id:mahasiswaId, kehadiran:keh, presentasi:pre, _token:'{{ csrf_token() }}'})
-          .done(function(r){
-            if(r.success){ swalToast('success','AP disimpan'); location.reload(); }
-            else { Swal.fire('Gagal', r.message || 'Tidak dapat menyimpan AP', 'error'); }
-          })
-          .fail(function(xhr){
-            const msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Tidak dapat menyimpan AP';
-            Swal.fire('Gagal', msg, 'error');
-          });
-      });
-  };
-
-  // Edit Presentasi saja
-  window.editPresentasi = function(mahasiswaId, nim, nama, vKeh, vPre){
-    const html = `
-      <div class="text-left mb-2">Nama: <strong>${nama}</strong></div>
-      <label class="d-block text-left mt-2">Presentasi</label>
-      <input id="apPre2" type="number" min="0" max="100" value="${vPre}" class="swal2-input" style="width:140px">
-    `;
-    Swal.fire({title:`Keaktifan Presentasi ${nim}`, html, focusConfirm:false, showCancelButton:true, confirmButtonText:'Simpan'})
-      .then((res)=>{
-        if(!res.isConfirmed) return;
-        const pre = parseInt(document.getElementById('apPre2').value,10)||0;
-        $.post("{{ route('admin.evaluasi.ap.save', $sesi->id) }}", {mahasiswa_id:mahasiswaId, kehadiran:(vKeh||0), presentasi:pre, _token:'{{ csrf_token() }}'})
-          .done(function(r){
-            if(r.success){ swalToast('success','Keaktifan disimpan'); location.reload(); }
-            else { Swal.fire('Gagal', r.message || 'Tidak dapat menyimpan', 'error'); }
-          })
-          .fail(function(xhr){
-            const msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Tidak dapat menyimpan';
-            Swal.fire('Gagal', msg, 'error');
-          });
-      });
-  };
-
+  // Absensi/AP functions removed
   // Grade Dosen per proyek
   window.gradeDosen = function(cardId, title){
     if(!cardId || !title) return;

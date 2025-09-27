@@ -25,9 +25,23 @@ use Illuminate\Support\Facades\Auth;
 use RealRashid\SweetAlert\Facades\Alert;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class EvaluasiController extends Controller
 {
+    protected function setting(string $key, $default = null)
+    {
+        try {
+            if (Schema::hasTable((new EvaluasiSetting)->getTable())) {
+                $val = EvaluasiSetting::get($key);
+                if ($val !== null) return $val;
+            }
+        } catch (\Throwable $e) {
+            // ignore and fallback
+        }
+        $cfg = config('evaluasi.defaults.'.$key);
+        return $cfg !== null ? $cfg : $default;
+    }
     /** ===== LIST KELOMPOK ===== */
     public function index(Request $request)
     {
@@ -81,15 +95,25 @@ class EvaluasiController extends Controller
         $weeklyMap = [];
         if ($sesiAll->isNotEmpty()) {
             $sesiIds = $sesiAll->pluck('id');
-            $abs = \App\Models\EvaluasiAbsensi::whereIn('sesi_id', $sesiIds)->get()->groupBy('sesi_id');
+            // Fallback aman bila tabel belum ada
+            $abs = collect();
+            if (Schema::hasTable('evaluasi_absensi')) {
+                $abs = \App\Models\EvaluasiAbsensi::whereIn('sesi_id', $sesiIds)->get()->groupBy('sesi_id');
+            }
 
             // cari indikator 'm_presentasi' per sesi
-            $sesiIndis = \App\Models\EvaluasiSesiIndikator::with('indikator')
-                ->whereIn('sesi_id', $sesiIds)
-                ->get()
-                ->groupBy('sesi_id');
+            $sesiIndis = collect();
+            if (Schema::hasTable('evaluasi_sesi_indikator')) {
+                $sesiIndis = \App\Models\EvaluasiSesiIndikator::with('indikator')
+                    ->whereIn('sesi_id', $sesiIds)
+                    ->get()
+                    ->groupBy('sesi_id');
+            }
 
-            $nilai = \App\Models\EvaluasiNilaiDetail::whereIn('sesi_id', $sesiIds)->get()->groupBy('sesi_id');
+            $nilai = collect();
+            if (Schema::hasTable('evaluasi_nilai_detail')) {
+                $nilai = \App\Models\EvaluasiNilaiDetail::whereIn('sesi_id', $sesiIds)->get()->groupBy('sesi_id');
+            }
 
             foreach ($sesiByKel as $kid => $list) {
                 $evalCount = $list->count();
@@ -211,7 +235,19 @@ class EvaluasiController extends Controller
             ->where('periode_id', $activePeriode->id)
             ->first();
 
-        $sesi = EvaluasiSesi::with(['evaluator','absensis','sesiIndikators.indikator','nilaiDetails'])
+        // Guard: hanya eager load relasi jika tabelnya ada
+        $withRels = ['evaluator'];
+        if (\Illuminate\Support\Facades\Schema::hasTable((new EvaluasiAbsensi)->getTable())) {
+            $withRels[] = 'absensis';
+        }
+        if (\Illuminate\Support\Facades\Schema::hasTable((new EvaluasiSesiIndikator)->getTable())) {
+            $withRels[] = 'sesiIndikators.indikator';
+        }
+        if (\Illuminate\Support\Facades\Schema::hasTable((new EvaluasiNilaiDetail)->getTable())) {
+            $withRels[] = 'nilaiDetails';
+        }
+
+        $sesi = EvaluasiSesi::with($withRels)
             ->where('periode_id', $activePeriode->id)
             ->where('kelompok_id', $kelompok->id)
             ->latest('id')
@@ -230,14 +266,27 @@ class EvaluasiController extends Controller
 
         $anggota = $kelompok->mahasiswas()
             ->wherePivot('periode_id', $activePeriode->id)
+            ->with('kelas:id,kelas')
             ->orderBy('nama_mahasiswa')
-            ->get(['mahasiswa.id','nim','nama_mahasiswa as nama']);
+            ->get(['mahasiswa.id','nim','nama_mahasiswa as nama','kelas_id']);
 
-        $settings = EvaluasiSetting::getMany(
-            ['w_ap_kehadiran','w_ap_presentasi','w_dosen','w_mitra','w_kelompok','w_ap'],
-            ['w_ap_kehadiran'=>50,'w_ap_presentasi'=>50,'w_dosen'=>80,'w_mitra'=>20,'w_kelompok'=>70,'w_ap'=>30]
-        );
-
+                // Settings bobot dengan fallback jika tabel belum tersedia
+        $settingsDefaults = [
+            'w_ap_kehadiran' => 50,
+            'w_ap_presentasi'=> 50,
+            'w_dosen'        => 80,
+            'w_mitra'        => 20,
+            'w_kelompok'     => 70,
+            'w_ap'           => 30,
+        ];
+        if (Schema::hasTable((new EvaluasiSetting)->getTable())) {
+            $settings = EvaluasiSetting::getMany(
+                ['w_ap_kehadiran','w_ap_presentasi','w_dosen','w_mitra','w_kelompok','w_ap'],
+                $settingsDefaults
+            );
+        } else {
+            $settings = $settingsDefaults;
+        }
         // Project lists/cards
         $proyekLists = ProjectList::with(['cards' => function($q) use ($kelompok) {
             $q->where('kelompok_id', $kelompok->id)->orderBy('position');
@@ -254,10 +303,13 @@ class EvaluasiController extends Controller
 
         // Ambil nilai proyek per card (jika ada) untuk sesi ini
         $allCardIds = $proyekLists->flatMap(fn($l) => $l->cards->pluck('id'))->values();
-        $cardGrades = EvaluasiProyekNilai::where('sesi_id', $sesi->id)
-            ->whereIn('card_id', $allCardIds)
-            ->get()
-            ->groupBy(['card_id','jenis']);
+        $cardGrades = collect();
+        if (\Illuminate\Support\Facades\Schema::hasTable((new EvaluasiProyekNilai)->getTable())) {
+            $cardGrades = EvaluasiProyekNilai::where('sesi_id', $sesi->id)
+                ->whereIn('card_id', $allCardIds)
+                ->get()
+                ->groupBy(['card_id','jenis']);
+        }
 
         $cardGradesMap = [];
         foreach ($cardGrades as $cid => $byJenis) {
@@ -402,7 +454,11 @@ class EvaluasiController extends Controller
             'w_kelompok'=>70,'w_ap'=>30,
             'w_ap_kehadiran'=>50,'w_ap_presentasi'=>50,
         ];
-        $settings = EvaluasiSetting::getMany($keys, $defaults);
+        if (Schema::hasTable((new EvaluasiSetting)->getTable())) {
+            $settings = EvaluasiSetting::getMany($keys, $defaults);
+        } else {
+            $settings = $defaults;
+        }
 
         return view('admin.evaluasi.settings', compact('settings'));
     }
@@ -664,12 +720,12 @@ class EvaluasiController extends Controller
         $items = $request->input('items', []);
 
         $weights = [
-            'd_hasil' => (int) (EvaluasiSetting::get('d_hasil') ?? 30),
-            'd_teknis' => (int) (EvaluasiSetting::get('d_teknis') ?? 20),
-            'd_user' => (int) (EvaluasiSetting::get('d_user') ?? 15),
-            'd_efisiensi' => (int) (EvaluasiSetting::get('d_efisiensi') ?? 10),
-            'd_dokpro' => (int) (EvaluasiSetting::get('d_dokpro') ?? 15),
-            'd_inisiatif' => (int) (EvaluasiSetting::get('d_inisiatif') ?? 10),
+            'd_hasil'     => (int) $this->setting('d_hasil', 30),
+            'd_teknis'    => (int) $this->setting('d_teknis', 20),
+            'd_user'      => (int) $this->setting('d_user', 15),
+            'd_efisiensi' => (int) $this->setting('d_efisiensi', 10),
+            'd_dokpro'    => (int) $this->setting('d_dokpro', 15),
+            'd_inisiatif' => (int) $this->setting('d_inisiatif', 10),
         ];
 
         $total = 0; $payload = [];
@@ -701,8 +757,8 @@ class EvaluasiController extends Controller
         $kehadiran = max(0, min(100, (int)$request->input('kehadiran', 0)));
         $presentasi = max(0, min(100, (int)$request->input('presentasi', 0)));
 
-        $wKeh = (int) (EvaluasiSetting::get('m_kehadiran') ?? 50);
-        $wPre = (int) (EvaluasiSetting::get('m_presentasi') ?? 50);
+        $wKeh = (int) $this->setting('m_kehadiran', 50);
+        $wPre = (int) $this->setting('m_presentasi', 50);
         $total = (int) round(($kehadiran * $wKeh + $presentasi * $wPre) / 100);
 
         $row = EvaluasiProyekNilai::updateOrCreate([
@@ -803,3 +859,6 @@ class EvaluasiController extends Controller
     }
 
 }
+
+
+

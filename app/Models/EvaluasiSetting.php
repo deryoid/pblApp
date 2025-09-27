@@ -6,7 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class EvaluasiSetting extends Model
 {
-    protected $table = 'evaluasi_settings';
+    // Samakan dengan migration: gunakan tabel 'evaluation_settings'
+    protected $table = 'evaluation_settings';
     protected $guarded = ['id'];
 
     /**

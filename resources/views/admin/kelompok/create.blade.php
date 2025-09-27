@@ -35,7 +35,7 @@
                     </small>
                 </div>
 
-                {{-- Nama Kelompok: boleh diisi, jika kosong akan otomatis --}}
+                {{-- Nama Kelompok (opsional) --}}
                 <div class="form-group">
                     <label for="nama_kelompok">Nama Kelompok (opsional)</label>
                     <input
@@ -91,7 +91,6 @@
                                             {{ $m->nim }} — {{ $m->nama_mahasiswa }}
                                         </option>
                                     @empty
-                                        {{-- Jika kosong, biarkan placeholder saja --}}
                                     @endforelse
                                 </select>
                                 @error('entries.'.$i.'.nim') <div class="invalid-feedback">{{ $message }}</div> @enderror
@@ -143,13 +142,41 @@ document.addEventListener('DOMContentLoaded', function(){
   const form        = document.getElementById('kelompokForm');
   const periodeSel  = document.getElementById('periode_id');
 
-  // Aktifkan Select2 agar pencarian lebih mudah
-  if (window.jQuery && jQuery().select2) {
-    $('.select-nim').select2({ width: '100%', placeholder: '-- Pilih --' });
-    $('.select-kelas').select2({ width: '100%', placeholder: '-- Pilih Kelas --' });
+  // ==== Select2 (opsional) ====
+  // Matcher yang menyembunyikan NIM yang sudah dipilih di baris lain.
+  window.__chosenNims = new Set();
+  function select2Matcher(params, data) {
+    if (!data.id) return null;                          // skip group
+    const val = (data.element && data.element.value) ? data.element.value : data.id;
+    // Sembunyikan jika sudah dipilih di baris lain (kecuali opsi yang sedang terpilih di select ini)
+    const isSelectedHere = data.element && data.element.selected;
+    if (window.__chosenNims.has(val) && !isSelectedHere) return null;
+
+    // Pencarian bawaan
+    if (!params.term) return data;
+    const term = params.term.toLowerCase();
+    const text = (data.text || '').toLowerCase();
+    return text.indexOf(term) > -1 ? data : null;
   }
 
-  // Reload halaman saat periode diganti agar daftar mahasiswa terfilter server-side
+  function initSelect2(scope){
+    if (!(window.jQuery && jQuery().select2)) return;
+    $(scope).find('.select-nim').each(function(){
+      const $el = $(this);
+      if ($el.data('select2')) $el.select2('destroy');
+      $el.select2({ width: '100%', placeholder: '-- Pilih --', matcher: select2Matcher });
+    });
+    $(scope).find('.select-kelas').each(function(){
+      const $el = $(this);
+      if ($el.data('select2')) $el.select2('destroy');
+      $el.select2({ width: '100%', placeholder: '-- Pilih Kelas --' });
+    });
+  }
+
+  // Inisialisasi Select2 pertama kali (jika ada lib-nya)
+  initSelect2(document);
+
+  // Reload halaman saat periode diganti (filter server-side)
   if (periodeSel && periodeSel.dataset.createUrl) {
     periodeSel.addEventListener('change', function(){
       const base = this.dataset.createUrl;
@@ -166,30 +193,46 @@ document.addEventListener('DOMContentLoaded', function(){
     });
   }
 
-  // Sembunyikan/disable opsi NIM yang sudah dipilih di baris lain
-  function refreshNimOptions(){
+  // Kumpulkan NIM yang sudah dipilih & update tampilan semua select
+  function collectChosen(){
     const selects = Array.from(document.querySelectorAll('select.select-nim'));
-    const chosen  = new Set(selects.map(s => s.value).filter(Boolean));
+    window.__chosenNims = new Set(selects.map(s => s.value).filter(Boolean));
+  }
+
+  // Fallback native (tanpa Select2): sembunyikan & disable option yang sudah dipilih di baris lain
+  function refreshNativeOptions(){
+    const selects = Array.from(document.querySelectorAll('select.select-nim'));
     selects.forEach(sel => {
       const myVal = sel.value;
       sel.querySelectorAll('option').forEach(opt => {
-        if (!opt.value) return; // skip placeholder
-        const shouldHide = chosen.has(opt.value) && opt.value !== myVal;
+        if (!opt.value) return; // placeholder
+        const shouldHide = window.__chosenNims.has(opt.value) && opt.value !== myVal;
         opt.disabled = shouldHide;
         opt.hidden   = shouldHide;
       });
     });
   }
 
+  // Sinkronkan ke Select2 (matcher pakai window.__chosenNims, cukup trigger change)
+  function refreshAllSelects(){
+    collectChosen();
+    refreshNativeOptions();
+    if (window.jQuery && jQuery().select2) {
+      $('.select-nim').each(function(){ $(this).trigger('change.select2'); });
+    }
+  }
+
   function bindDuplicateGuard(sel){
     sel.addEventListener('change', function(){
-      const v = this.value; if(!v) { refreshNimOptions(); return; }
+      const v = this.value;
+      if(!v){ refreshAllSelects(); return; }
       const all = [...document.querySelectorAll('select.select-nim')].map(s=>s.value).filter(Boolean);
       if (all.filter(x=>x===v).length > 1) {
         alert('NIM sudah dipilih di baris lain.');
         this.value='';
+        if (window.jQuery && jQuery().select2) $(this).val('').trigger('change');
       }
-      refreshNimOptions();
+      refreshAllSelects();
     });
   }
 
@@ -221,23 +264,20 @@ document.addEventListener('DOMContentLoaded', function(){
     entries.appendChild(row);
     reindex();
 
-    // Inisialisasi Select2 pada baris baru
-    if (window.jQuery && jQuery().select2) {
-      $(row).find('.select-nim').select2({ width: '100%', placeholder: '-- Pilih --' });
-      $(row).find('.select-kelas').select2({ width: '100%', placeholder: '-- Pilih Kelas --' });
-    }
+    // Init Select2 di baris baru
+    initSelect2(row);
 
     const nimSelect = row.querySelector('.select-nim');
     bindDuplicateGuard(nimSelect);
 
     row.querySelector('.remove-row').addEventListener('click', ()=>{
-      row.remove(); reindex(); refreshNimOptions();
+      row.remove(); reindex(); refreshAllSelects();
     });
 
-    refreshNimOptions();
+    refreshAllSelects();
   }
 
-  // validasi ketua (UX)
+  // validasi ketua (harus salah satu dari daftar anggota)
   if (form && ketuaInput) {
     form.addEventListener('submit', function(e){
       const ketua = ketuaInput.value.trim();
@@ -253,13 +293,13 @@ document.addEventListener('DOMContentLoaded', function(){
 
   // init awal
   entries.querySelectorAll('.remove-row').forEach(btn => btn.addEventListener('click', e => {
-    e.currentTarget.closest('.entry-row').remove(); reindex(); refreshNimOptions();
+    e.currentTarget.closest('.entry-row').remove(); reindex(); refreshAllSelects();
   }));
   entries.querySelectorAll('select.select-nim').forEach(bindDuplicateGuard);
   addBtn.addEventListener('click', addRow);
 
-  // panggil saat load pertama (agar langsung sembunyikan opsi terpilih dari old input)
-  refreshNimOptions();
+  // panggil saat load pertama (agar langsung menyembunyikan opsi dari old input)
+  refreshAllSelects();
 });
 </script>
 @endpush

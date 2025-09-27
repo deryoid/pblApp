@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\DataMahasiswaAdminController;
 use App\Http\Controllers\Admin\DataKelompokAdminController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\EvaluasiController as AdminEval;
+use App\Http\Controllers\Admin\PenilaianEvaluasiController;
 
 Route::get('/', function () {
     return view('auth.login'); // Form login ditampilkan langsung
@@ -68,6 +69,9 @@ Route::prefix('admin')->middleware(['auth','admin'])->group(function () {
     Route::put('kelompok/{uuid}',       [DataKelompokAdminController::class, 'update'])->name('kelompok.update');
     Route::delete('kelompok/{uuid}',    [DataKelompokAdminController::class, 'destroy'])->name('kelompok.destroy');
 
+        
+    Route::get('/penilaian/{sesi}/rekap', [PenilaianEvaluasiController::class,'rekap'])->name('penilaian.rekap');
+    Route::post('/penilaian/score/save', [PenilaianEvaluasiController::class,'saveScore'])->name('penilaian.score.save');
     /** =========================
      *  Evaluasi (BERSIH & RAPIH)
      *  ========================= */
@@ -117,7 +121,9 @@ Route::prefix('admin')->middleware(['auth','admin'])->group(function () {
         // Penilaian per proyek (per card)
         Route::post('project/{card}/grade/dosen', [AdminEval::class, 'saveProjectGradeDosen'])->name('project.grade.dosen');
         Route::post('project/{card}/grade/mitra', [AdminEval::class, 'saveProjectGradeMitra'])->name('project.grade.mitra');
+
     });
+
 });
 
 // Evaluator
