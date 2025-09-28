@@ -151,6 +151,9 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
         Route::put('penilaian-dosen/{penilaian}', [AdminEval::class, 'updatePenilaianDosen'])->name('penilaian-dosen.update');
         Route::delete('penilaian-dosen/{penilaian}', [AdminEval::class, 'destroyPenilaianDosen'])->name('penilaian-dosen.destroy');
 
+        // CRUD Evaluasi Mitra (AJAX)
+        Route::get('penilaian-mitra/show-by-project/{project}', [AdminEval::class, 'getPenilaianMitraByProject'])->name('penilaian-mitra.show-by-project');
+
     });
 
 });

@@ -357,7 +357,11 @@
                     $evalDosen = $cardGrades[$card->id]['evaluasi_dosen'] ?? null;
                     $evalDetails = collect($cardGrades[$card->id]['evaluasi_dosen_details'] ?? []);
                     $evalSummary = $cardGrades[$card->id]['evaluasi_dosen_summary'] ?? ['avg' => null, 'count' => 0];
+                    $evalMitra = $cardGrades[$card->id]['evaluasi_mitra'] ?? null;
+                    $evalMitraDetails = collect($cardGrades[$card->id]['evaluasi_mitra_details'] ?? []);
+                    $mitraSummary = $cardGrades[$card->id]['evaluasi_mitra_summary'] ?? ['avg' => null, 'count' => 0];
                     $avgNilaiDosen = $evalSummary['avg'] ?? null;
+                    $avgNilaiMitra = $mitraSummary['avg'] ?? null;
                     $gradeColors = ['A' => 'success', 'B' => 'info', 'C' => 'warning', 'D' => 'danger', 'E' => 'dark'];
                   @endphp
 
@@ -370,11 +374,6 @@
                       {{-- Judul --}}
                       <div class="d-flex align-items-start mb-1">
                         <div class="card-title-full font-weight-bold flex-grow-1">{{ $card->title }}</div>
-                        @if($avgNilaiDosen !== null)
-                          <span class="badge badge-success badge-pill ml-2" title="Sudah dievaluasi">
-                            <i class="fas fa-check mr-1"></i>{{ (int) $avgNilaiDosen }}
-                          </span>
-                        @endif
                       </div>
 
                       {{-- Tanggal --}}
@@ -418,30 +417,46 @@
                         </span>
                       </div>
 
-                      {{-- Nilai Dosen --}}
+                      {{-- Nilai Dosen & Mitra --}}
                       @php
                         $dTot = optional($cgRow)->total;
                         $mTot = optional($cgRowM)->total;
                         $newDosenNilai = $evalDosen ? ($evalDosen->nilai_akhir ?? null) : null;
                         $finalDosenNilai = $avgNilaiDosen ?? $newDosenNilai ?? $dTot;
+                        $finalMitraNilai = $avgNilaiMitra ?? optional($evalMitra)->nilai_akhir ?? $mTot;
                       @endphp
-                      <div class="score-card mb-2 p-2" style="border:1px solid var(--border);border-radius:.5rem;background:var(--bg-soft)">
-                        <div class="d-flex justify-content-between">
-                          <div class="mr-2">
-                            <i class="fas fa-user-graduate mr-1" aria-hidden="true"></i>
-                            Dosen:
-                  
-                            @if($evalDosen && $evalDosen->status)
-                              <span class="badge badge-xs ml-1 {{ $evalDosen->status == 'draft' ? 'badge-warning' : ($evalDosen->status == 'submitted' ? 'badge-info' : 'badge-success') }}">
-                                {{ strtoupper($evalDosen->status) }}
-                              </span>
-                            @endif
+                      <div class="score-card mb-2 p-3" style="border:1px solid var(--border);border-radius:.5rem;background:var(--bg-soft)">
+                        <div class="d-flex justify-content-between align-items-start flex-wrap">
+                          <div class="mr-3 mb-2">
+                            <div class="small text-muted text-uppercase">Dosen</div>
+                            <div class="d-flex align-items-center">
+                              <i class="fas fa-user-graduate mr-1" aria-hidden="true"></i>
+                              <span class="font-weight-bold score-dosen-val"></span>
+                              @if($evalDosen && $evalDosen->status)
+                                <span class="badge badge-xs ml-2 {{ $evalDosen->status == 'draft' ? 'badge-warning' : ($evalDosen->status == 'submitted' ? 'badge-info' : 'badge-success') }}">
+                                  {{ strtoupper($evalDosen->status) }}
+                                </span>
+                              @endif
+                            </div>
+                          </div>
+                          <div class="mb-2">
+                            <div class="small text-muted text-uppercase">Mitra</div>
+                            <div class="d-flex align-items-center">
+                              <i class="fas fa-handshake mr-1" aria-hidden="true"></i>
+                              <span class="font-weight-bold score-mitra-val"></span>
+                              @if($evalMitra && $evalMitra->status)
+                                <span class="badge badge-xs ml-2 {{ $evalMitra->status == 'draft' ? 'badge-warning' : ($evalMitra->status == 'submitted' ? 'badge-info' : 'badge-success') }}">
+                                  {{ strtoupper($evalMitra->status) }}
+                                </span>
+                              @endif
+                            </div>
                           </div>
                         </div>
+
                         @if($evalSummary['count'] ?? 0)
-                          <div class="mt-2">
+                          <div class="mt-2 per-mahasiswa-wrapper per-mahasiswa-wrapper-dosen">
                             <div class="d-flex justify-content-between align-items-center text-muted text-uppercase small">
-                              <span>Nilai per Mahasiswa</span>
+                              <span>Nilai Dosen per Mahasiswa</span>
                               <span class="badge badge-light border">{{ $evalSummary['count'] }} orang</span>
                             </div>
                             <div class="mt-2 rounded bg-white" style="border:1px solid var(--border);">
@@ -471,9 +486,43 @@
                             </div>
                           </div>
                         @endif
+
+                        @if($mitraSummary['count'] ?? 0)
+                          <div class="mt-2 per-mahasiswa-wrapper per-mahasiswa-wrapper-mitra">
+                            <div class="d-flex justify-content-between align-items-center text-muted text-uppercase small">
+                              <span>Nilai Mitra per Mahasiswa</span>
+                              <span class="badge badge-light border">{{ $mitraSummary['count'] }} orang</span>
+                            </div>
+                            <div class="mt-2 rounded bg-white" style="border:1px solid var(--border);">
+                              @foreach($evalMitraDetails as $index => $detail)
+                                @php
+                                  $rowNameM = optional($detail->mahasiswa)->nama ?? optional($detail->mahasiswa)->nama_mahasiswa ?? 'Mahasiswa';
+                                  $rowNimM = optional($detail->mahasiswa)->nim ?? '-';
+                                  $rowNilaiM = $detail->nilai_akhir !== null ? number_format((float) $detail->nilai_akhir, 1) : null;
+                                  $rowGradeM = $detail->grade ?? null;
+                                  $gradeClassM = $rowGradeM && isset($gradeColors[$rowGradeM]) ? $gradeColors[$rowGradeM] : 'secondary';
+                                @endphp
+                                <div class="d-flex align-items-center justify-content-between px-2 py-1 {{ $index !== 0 ? 'border-top' : '' }}" style="border-color: var(--border);">
+                                  <div class="small">
+                                    <div class="font-weight-bold">{{ $rowNameM }}</div>
+                                    <div class="text-muted">{{ $rowNimM }}</div>
+                                  </div>
+                                  <div class="text-right">
+                                    @if($rowNilaiM !== null)
+                                      <div class="font-weight-bold">{{ $rowNilaiM }}</div>
+                                      <span class="badge badge-{{ $gradeClassM }}">{{ $rowGradeM }}</span>
+                                    @else
+                                      <span class="text-muted small">Belum dinilai</span>
+                                    @endif
+                                  </div>
+                                </div>
+                              @endforeach
+                            </div>
+                          </div>
+                        @endif
+
+                        
                       </div>
-{{-- Nilai mitra --}}
-//nilai mitra disini ya buatkan seperti diatas
 
                       {{-- Footer: status + actions --}}
                       <div class="d-flex align-items-center x-small mt-auto pt-1">
@@ -976,39 +1025,191 @@
   };
 
   // Grade Mitra per proyek per mahasiswa
-  window.gradeMitra = function(cardId, title){
-    if(!cardId || !title) return;
+  window.gradeMitra = async function(cardId, cardTitle) {
+    if (!cardId) {
+      return;
+    }
 
-    // Use settings data for mitra
     const mitraItems = [
       { kode: 'm_kehadiran', nama: 'Komunikasi & Sikap', bobot: {{ (int)($settings['m_kehadiran'] ?? 50) }} },
       { kode: 'm_presentasi', nama: 'Hasil Pekerjaan', bobot: {{ (int)($settings['m_presentasi'] ?? 50) }} }
     ];
 
-    const items = mitraItems.map(item => item.kode);
-    const labels = {};
-    const percentages = {};
-    const weights = {};
+    const weightMap = mitraItems.reduce((acc, item) => {
+      acc[item.kode] = item.bobot;
 
-    mitraItems.forEach(item => {
-      labels[item.kode] = item.nama;
-      percentages[item.kode] = item.bobot + '%';
-      weights[item.kode] = item.bobot;
-    });
+      return acc;
+    }, {});
 
     const members = [
       @foreach($members as $m)
         { id: '{{ $m->id }}', nim: '{{ $m->nim }}', nama: '{{ $m->nama }}' },
       @endforeach
     ];
+    const membersMap = members.reduce((acc, member) => {
+      acc[String(member.id)] = member;
 
-    const saved = (window.cardGrades?.[cardId]?.mitra) || null;
-    const nilai = (saved && saved.nilai) ? saved.nilai : {};
+      return acc;
+    }, {});
 
-    let html = `
+    const fetchUrl = "{{ route('admin.evaluasi.penilaian-mitra.show-by-project', ['project' => '__ID__']) }}".replace('__ID__', cardId);
+    const gradeUrl = "{{ route('admin.evaluasi.project.grade.mitra', ['card'=>'__ID__']) }}".replace('__ID__', cardId);
+    const styleId = 'grade-mitra-modal-styles';
+
+    const syncCardEvaluations = (evaluations) => {
+      const cardEl = document.querySelector(`.board-card[data-card-uuid="${cardId}"]`);
+      if (!cardEl) {
+        return;
+      }
+
+      const list = Array.isArray(evaluations) ? evaluations : [];
+      const validScores = list
+        .map(item => item?.nilai_akhir)
+        .filter(value => value !== null && value !== undefined)
+        .map(value => parseFloat(value))
+        .filter(value => ! Number.isNaN(value));
+
+      const avg = validScores.length ? Math.round(validScores.reduce((sum, value) => sum + value, 0) / validScores.length) : null;
+      const scoreEl = cardEl.querySelector('.score-mitra-val');
+      if (scoreEl) {
+        scoreEl.textContent = avg !== null ? avg : '—';
+      }
+
+      const scoreCard = cardEl.querySelector('.score-card');
+      if (scoreCard) {
+        let wrapper = scoreCard.querySelector('.per-mahasiswa-wrapper-mitra');
+        if (!list.length) {
+          if (wrapper) {
+            wrapper.remove();
+          }
+          const dosenCount = window.cardGrades?.[cardId]?.evaluasi_dosen_summary?.count ?? 0;
+          if (!dosenCount) {
+            cardEl.classList.remove('border-success');
+          }
+        } else {
+          if (!wrapper) {
+            wrapper = document.createElement('div');
+            wrapper.className = 'mt-2 per-mahasiswa-wrapper per-mahasiswa-wrapper-mitra';
+            scoreCard.appendChild(wrapper);
+          }
+
+          const rowsHtml = list.map((item, index) => {
+            const member = membersMap[String(item.mahasiswa_id)] || {};
+            const name = item.mahasiswa_nama || member.nama || 'Mahasiswa';
+            const nim = item.mahasiswa_nim || member.nim || '-';
+            const nilai = item.nilai_akhir !== null && item.nilai_akhir !== undefined
+              ? Number.parseFloat(item.nilai_akhir).toFixed(1)
+              : null;
+            const grade = item.grade || (nilai !== null ? getGradeFromScore(Number.parseFloat(item.nilai_akhir)) : null);
+            const gradeClass = grade ? `badge-${getGradeColor(grade)}` : 'badge-secondary';
+            const borderClass = index === 0 ? '' : 'border-top';
+
+            if (nilai === null) {
+              return `
+                <div class="d-flex align-items-center justify-content-between px-2 py-1 ${borderClass}" style="border-color: var(--border);">
+                  <div class="small">
+                    <div class="font-weight-bold">${name}</div>
+                    <div class="text-muted">${nim}</div>
+                  </div>
+                  <div class="text-right text-muted small">Belum dinilai</div>
+                </div>`;
+            }
+
+            return `
+              <div class="d-flex align-items-center justify-content-between px-2 py-1 ${borderClass}" style="border-color: var(--border);">
+                <div class="small">
+                  <div class="font-weight-bold">${name}</div>
+                  <div class="text-muted">${nim}</div>
+                </div>
+                <div class="text-right">
+                  <div class="font-weight-bold">${nilai}</div>
+                  <span class="badge ${gradeClass}">${grade || '-'}</span>
+                </div>
+              </div>`;
+          }).join('');
+
+          wrapper.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center text-muted text-uppercase small">
+              <span>Nilai Mitra per Mahasiswa</span>
+              <span class="badge badge-light border">${list.length} orang</span>
+            </div>
+            <div class="mt-2 rounded bg-white" style="border:1px solid var(--border);">
+              ${rowsHtml}
+            </div>`;
+          cardEl.classList.add('border-success');
+        }
+      }
+
+      window.cardGrades = window.cardGrades || {};
+      window.cardGrades[cardId] = window.cardGrades[cardId] || {};
+      window.cardGrades[cardId].evaluasi_mitra_summary = { avg, count: list.length };
+      window.cardGrades[cardId].evaluasi_mitra_details = list;
+      window.cardGrades[cardId].evaluasi_mitra = list.length ? list[list.length - 1] : null;
+    };
+
+    const existingEvaluations = {};
+    try {
+      const response = await fetch(fetchUrl, {
+        headers: {
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      });
+
+      if (response.ok) {
+        const payload = await response.json();
+        if (payload?.success && Array.isArray(payload.evaluations)) {
+          payload.evaluations.forEach(item => {
+            if (!item || typeof item.mahasiswa_id === 'undefined') {
+              return;
+            }
+            existingEvaluations[String(item.mahasiswa_id)] = item;
+          });
+          syncCardEvaluations(payload.evaluations);
+        }
+      }
+    } catch (error) {
+      console.warn('Gagal memuat evaluasi mitra awal', error);
+    }
+
+    const buildRow = (member) => {
+      const current = existingEvaluations[member.id] || {};
+      const valueFor = (kode) => {
+        const val = current[kode];
+        return (val === 0 || val) ? val : '';
+      };
+
+      return `
+        <tr data-member="${member.id}" data-evaluation-id="${current.id || ''}">
+          <td style="vertical-align: middle; background: #f8f9fa; font-weight: 600;">
+            <div>${member.nama}</div>
+            <small style="color: #6b7280;">${member.nim}</small>
+          </td>
+          ${mitraItems.map(item => `
+            <td style="text-align: center; vertical-align: middle;">
+              <input type="number"
+                     class="form-control form-control-sm grade-input-mitra"
+                     data-member="${member.id}"
+                     data-item="${item.kode}"
+                     min="0" max="100"
+                     value="${valueFor(item.kode)}"
+                     placeholder="-"
+                     style="text-align: center;">
+            </td>
+          `).join('')}
+          <td style="text-align: center; vertical-align: middle; font-weight: 600; background: #f8f9fa;">
+            <span class="badge badge-info average-badge-mitra">-</span>
+          </td>
+          <td style="text-align: center; vertical-align: middle; font-weight: 600; background: #e3f2fd;">
+            <span class="badge badge-success percentage-badge-mitra">-</span>
+          </td>
+        </tr>`;
+    };
+
+    const modalHtml = `
       <div class="grade-modal-container">
         <div class="text-center mb-4">
-          <h4 style="margin: 0; font-size: 1.3rem; font-weight: 700; color: #2c3e50;">${title}</h4>
+          <h4 style="margin: 0; font-size: 1.3rem; font-weight: 700; color: #2c3e50;">${cardTitle}</h4>
           <p style="margin: 0.5rem 0 0 0; color: #6b7280; font-size: 1rem;">Penilaian Mitra per Mahasiswa</p>
         </div>
 
@@ -1017,10 +1218,11 @@
             <thead class="thead-info sticky-top">
               <tr>
                 <th style="min-width: 180px; background: #17a2b8; color: white; border-color: #138496;">Mahasiswa</th>
-                ${items.map(item => `
+                ${mitraItems.map(item => `
                   <th style="min-width: 140px; text-align: center; background: #17a2b8; color: white; border-color: #138496;">
-                    <div>${labels[item]}</div>
-                    <small style="font-weight: normal; opacity: 0.8;">Bobot: ${percentages[item]}</small>
+                    <div>${item.nama}</div>
+                    <small style="font-weight: normal; opacity: 0.8;">Bobot: ${item.bobot}%</small>
+                    <div style="font-size: 0.7rem; opacity: 0.6; margin-top: 2px;">Input 0-100</div>
                   </th>
                 `).join('')}
                 <th style="min-width: 100px; text-align: center; background: #17a2b8; color: white; border-color: #138496;">Rata-rata</th>
@@ -1030,51 +1232,7 @@
               </tr>
             </thead>
             <tbody>
-              ${members.map(member => {
-                const memberNilai = nilai[member.id] || {};
-                let total = 0;
-                let count = 0;
-                let weightedTotal = 0;
-
-                return `
-                  <tr>
-                    <td style="vertical-align: middle; background: #f8f9fa; font-weight: 600;">
-                      <div>${member.nama}</div>
-                      <div style="font-size: 0.85rem; color: #6b7280; font-weight: normal;">${member.nim}</div>
-                    </td>
-                    ${items.map(item => {
-                      const val = parseInt((memberNilai && memberNilai[item] != null) ? memberNilai[item] : 0, 10) || 0;
-                      total += val;
-                      count++;
-                      const weight = parseInt(percentages[item]) || 0;
-                      weightedTotal += (val * weight / 100);
-                      return `
-                        <td style="text-align: center; vertical-align: middle;">
-                          <input type="number"
-                                 min="1" max="100"
-                                 value="${val}"
-                                 class="form-control form-control-sm text-center grade-input-mitra"
-                                 style="width: 70px; font-size: 0.9rem; margin: 0 auto;"
-                                 data-member="${member.id}"
-                                 data-item="${item}"
-                                 placeholder="1-100"
-                                 title="Masukkan nilai 1-100">
-                        </td>
-                      `;
-                    }).join('')}
-                    <td style="text-align: center; vertical-align: middle; background: #e9ecef;">
-                      <span class="badge badge-info average-badge-mitra" style="font-size: 0.9rem; padding: 0.5rem 0.75rem;">
-                        ${count > 0 ? Math.round(total / count) : 0}
-                      </span>
-                    </td>
-                    <td style="text-align: center; vertical-align: middle; background: #d1ecf1;">
-                      <span class="badge badge-success percentage-badge-mitra" style="font-size: 0.9rem; padding: 0.5rem 0.75rem;">
-                        ${Math.round(weightedTotal)}
-                      </span>
-                    </td>
-                  </tr>
-                `;
-              }).join('')}
+              ${members.map(buildRow).join('')}
             </tbody>
           </table>
         </div>
@@ -1082,145 +1240,172 @@
         <div class="d-flex justify-content-between align-items-center mt-4">
           <div class="text-left">
             <small class="text-muted">
-              <strong>Keterangan:</strong> Input nilai 1-100 • Sistem akan menghitung persentase otomatis berdasarkan bobot
+              <strong>Keterangan:</strong> Input nilai 0-100 • Sistem menghitung otomatis berdasarkan bobot
             </small>
           </div>
           <div class="text-right">
             <small class="text-muted">Total Mahasiswa: ${members.length}</small>
           </div>
         </div>
-      </div>
-    `;
+      </div>`;
+
+    const calculateRow = (row) => {
+      const inputs = row.querySelectorAll('.grade-input-mitra');
+      let total = 0;
+      let count = 0;
+      let weighted = 0;
+
+      inputs.forEach(input => {
+        const raw = input.value.trim();
+        if (raw === '') {
+          return;
+        }
+        const numeric = Math.max(0, Math.min(100, parseInt(raw, 10) || 0));
+        total += numeric;
+        count++;
+        const kode = input.getAttribute('data-item');
+        const weight = weightMap[kode] ?? 0;
+        weighted += (numeric * weight / 100);
+      });
+
+      row.dataset.averageScore = count > 0 ? (total / count).toFixed(2) : '';
+      row.dataset.finalScore = weighted > 0 ? weighted.toFixed(2) : '';
+
+      const avgBadge = row.querySelector('.average-badge-mitra');
+      if (avgBadge) {
+        avgBadge.textContent = count > 0 ? Math.round(total / count) : '-';
+      }
+
+      const finalBadge = row.querySelector('.percentage-badge-mitra');
+      if (finalBadge) {
+        finalBadge.textContent = weighted > 0 ? Math.round(weighted) : '-';
+      }
+    };
 
     Swal.fire({
-      title: '',
-      html: html,
+      html: modalHtml,
       width: '100%',
-      height: 'auto',
-      showCloseButton: true,
       showConfirmButton: true,
       confirmButtonText: '💾 Simpan Nilai',
       confirmButtonColor: '#28a745',
       showCancelButton: true,
       cancelButtonText: '❌ Batal',
+      showCloseButton: true,
+      allowOutsideClick: () => !Swal.isLoading(),
       customClass: {
         container: 'grade-mitra-modal',
-        popup: 'p-0 m-3'
+        popup: 'swal2-popup'
       },
       didOpen: () => {
-        // Auto-calculate averages and percentages when inputs change
-        document.querySelectorAll('.grade-input-mitra').forEach(input => {
-          input.addEventListener('input', function() {
-            const row = this.closest('tr');
-            const inputs = row.querySelectorAll('.grade-input-mitra');
-            let total = 0;
-            let count = 0;
-            let weightedTotal = 0;
-
-            // Use weights from settings for mitra
-            const weights = {
-              'm_kehadiran': {{ (int)($settings['m_kehadiran'] ?? 50) }},
-              'm_presentasi': {{ (int)($settings['m_presentasi'] ?? 50) }}
-            };
-
-            inputs.forEach(inp => {
-              const val = parseInt(inp.value) || 0;
-              total += val;
-              count++;
-              const item = inp.getAttribute('data-item');
-              if (weights[item]) {
-                weightedTotal += (val * weights[item] / 100);
-              }
-            });
-
-            const average = count > 0 ? Math.round(total / count) : 0;
-            const percentage = Math.round(weightedTotal);
-
-            const avgBadge = row.querySelector('.average-badge-mitra');
-            if (avgBadge) {
-              avgBadge.textContent = average;
-            }
-
-            const percBadge = row.querySelector('.percentage-badge-mitra');
-            if (percBadge) {
-              percBadge.textContent = percentage;
-            }
-          });
+        const popup = Swal.getPopup();
+        popup.querySelectorAll('.grade-input-mitra').forEach(input => {
+          const row = input.closest('tr');
+          calculateRow(row);
+          input.addEventListener('input', () => calculateRow(row));
         });
 
-        // Add better styling
-        const style = document.createElement('style');
-        style.textContent = `
-          .grade-mitra-modal .swal2-popup {
-            padding: 0;
-            border-radius: 0.5rem;
-            max-width: none;
-            width: 100%;
-          }
-          .grade-input-mitra:focus {
-            border-color: #36b9cc;
-            box-shadow: 0 0 0 0.2rem rgba(54, 185, 204, 0.25);
-          }
-          .grade-input-mitra {
-            transition: all 0.2s ease;
-          }
-          .grade-input-mitra:hover {
-            border-color: #36b9cc;
-          }
-          .grade-mitra-modal .table {
-            background: white;
-          }
-          .grade-mitra-modal .table th {
-            position: sticky;
-            top: 0;
-            z-index: 10;
-          }
-          .grade-mitra-modal .input-group-text {
-            background: #f8f9fa;
-            border-color: #dee2e6;
-          }
-        `;
-        document.head.appendChild(style);
-      }
-    }).then((result) => {
-      if (!result.isConfirmed) return;
-
-      // Collect all values
-      const payload = {};
-      document.querySelectorAll('.grade-input-mitra').forEach(input => {
-        const memberId = input.getAttribute('data-member');
-        const item = input.getAttribute('data-item');
-        const value = parseInt(input.value) || 0;
-
-        if (!payload[memberId]) {
-          payload[memberId] = {};
+        if (!document.querySelector(`#${styleId}`)) {
+          const style = document.createElement('style');
+          style.id = styleId;
+          style.textContent = `
+            .grade-mitra-modal .swal2-popup { padding: 0; border-radius: 0.5rem; max-width: none; width: 100%; }
+            .grade-input-mitra { transition: all 0.2s ease; }
+            .grade-input-mitra:focus { border-color: #36b9cc; box-shadow: 0 0 0 0.2rem rgba(54,185,204,0.25); }
+            .grade-input-mitra:hover { border-color: #36b9cc; }
+            .grade-mitra-modal .table { background: white; }
+            .grade-mitra-modal .table th { position: sticky; top: 0; z-index: 10; }
+          `;
+          document.head.appendChild(style);
         }
-        payload[memberId][item] = value;
-      });
+      },
+      preConfirm: () => {
+        const popup = Swal.getPopup();
+        const rows = Array.from(popup.querySelectorAll('tbody tr'));
+        const items = {};
 
-      $.post("{{ route('admin.evaluasi.project.grade.mitra', ['card'=>'__ID__']) }}".replace('__ID__', cardId), {sesi_id: {{ $sesi->id }}, items: payload, _token:'{{ csrf_token() }}'})
-        .done(function(r){
-          if(r.success){
-            swalToast('success','Nilai mitra disimpan');
-            try{
-              window.cardGrades = window.cardGrades || {};
-              window.cardGrades[cardId] = window.cardGrades[cardId] || {};
-              window.cardGrades[cardId].mitra = window.cardGrades[cardId].mitra || {};
-              window.cardGrades[cardId].mitra.nilai = payload;
-              if (typeof r.total !== 'undefined') {
-                window.cardGrades[cardId].mitra.total = r.total;
-                const wrap = document.querySelector('.board-card[data-card-uuid="'+cardId+'"]');
-                if (wrap){
-                  const el = wrap.querySelector('.score-mitra-val') || wrap.querySelector('.badge.badge-info.ml-1');
-                  if (el) el.textContent = r.total;
-                }
-              }
-            }catch(e){}
-          } else {
-            Swal.fire('Gagal','Tidak dapat menyimpan','error');
+        rows.forEach(row => calculateRow(row));
+
+        rows.forEach(row => {
+          const memberId = row.getAttribute('data-member');
+          const rowData = {};
+          row.querySelectorAll('.grade-input-mitra').forEach(input => {
+            const raw = input.value.trim();
+            if (raw === '') {
+              return;
+            }
+            const numeric = Math.max(0, Math.min(100, parseInt(raw, 10) || 0));
+            rowData[input.getAttribute('data-item')] = numeric;
+          });
+
+          if (Object.keys(rowData).length > 0) {
+            items[memberId] = rowData;
+          }
+        });
+
+        if (! Object.keys(items).length) {
+          Swal.showValidationMessage('Isi minimal satu nilai mitra sebelum menyimpan');
+
+          return false;
+        }
+
+        const finalScores = rows
+          .map(row => parseFloat(row.dataset.finalScore || '0'))
+          .filter(value => ! Number.isNaN(value) && value > 0);
+
+        return fetch(gradeUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: JSON.stringify({
+            sesi_id: {{ $sesi->id }},
+            items
+          })
+        })
+          .then(response => {
+            if (! response.ok) {
+              throw new Error('Gagal menyimpan nilai (HTTP '+response.status+')');
+            }
+
+            return response.json();
+          })
+          .then(data => {
+            if (! data?.success) {
+              throw new Error(data?.message || 'Gagal menyimpan nilai');
+            }
+
+            return { data, finalScores };
+          })
+          .catch(error => {
+            Swal.showValidationMessage(error.message || 'Gagal menyimpan nilai');
+
+            return false;
+          });
+      }
+    }).then(result => {
+      if (! result.isConfirmed || ! result.value) {
+        return;
+      }
+
+      const { data } = result.value;
+      swalToast('success', data.message || 'Nilai mitra berhasil disimpan');
+
+      fetch(fetchUrl, {
+        headers: {
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      })
+        .then(res => res.ok ? res.json() : null)
+        .then(payload => {
+          if (payload?.success && Array.isArray(payload.evaluations)) {
+            syncCardEvaluations(payload.evaluations);
           }
         })
-        .fail(()=> Swal.fire('Gagal','Tidak dapat menyimpan','error'));
+        .catch(error => console.warn('Gagal memuat ulang evaluasi mitra', error));
     });
   };
 
@@ -1292,23 +1477,24 @@
       }
 
       const scoreCard = cardEl.querySelector('.score-card');
-      let wrapper = scoreCard?.querySelector('.per-mahasiswa-wrapper');
+      if (scoreCard) {
+        let wrapper = scoreCard.querySelector('.per-mahasiswa-wrapper-dosen');
 
-      if (! list.length) {
-        cardEl.classList.remove('border-success');
-        if (wrapper) {
-          wrapper.remove();
-        }
-      } else {
-        cardEl.classList.add('border-success');
+        if (!list.length) {
+          if (wrapper) {
+            wrapper.remove();
+          }
+          const mitraCount = window.cardGrades?.[cardId]?.evaluasi_mitra_summary?.count ?? 0;
+          if (!mitraCount) {
+            cardEl.classList.remove('border-success');
+          }
+        } else {
+          if (!wrapper) {
+            wrapper = document.createElement('div');
+            wrapper.className = 'mt-2 per-mahasiswa-wrapper per-mahasiswa-wrapper-dosen';
+            scoreCard.appendChild(wrapper);
+          }
 
-        if (! wrapper && scoreCard) {
-          wrapper = document.createElement('div');
-          wrapper.className = 'mt-2 per-mahasiswa-wrapper';
-          scoreCard.appendChild(wrapper);
-        }
-
-        if (wrapper) {
           const rowsHtml = list.map((item, index) => {
             const member = membersMap[String(item.mahasiswa_id)] || {};
             const name = item.mahasiswa_nama || member.nama || 'Mahasiswa';
@@ -1346,12 +1532,13 @@
 
           wrapper.innerHTML = `
             <div class="d-flex justify-content-between align-items-center text-muted text-uppercase small">
-              <span>Nilai per Mahasiswa</span>
+              <span>Nilai Dosen per Mahasiswa</span>
               <span class="badge badge-light border">${list.length} orang</span>
             </div>
-            <div class="mt-2 rounded bg-white per-mahasiswa-list" style="border:1px solid var(--border);">
+            <div class="mt-2 rounded bg-white" style="border:1px solid var(--border);">
               ${rowsHtml}
             </div>`;
+          cardEl.classList.add('border-success');
         }
       }
 
