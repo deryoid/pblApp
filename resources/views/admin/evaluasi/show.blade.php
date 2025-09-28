@@ -357,7 +357,7 @@
                     $evalDosen = $cardGrades[$card->id]['evaluasi_dosen'] ?? null;
                   @endphp
 
-                  <div class="card board-card shadow-xs mb-2 hover-raise {{ ($evalDosen && $evalDosen->nilai_akhir !== null) ? 'border-success' : '' }}"
+                  <div class="card shadow-xs mb-2 hover-raise {{ ($evalDosen && $evalDosen->nilai_akhir !== null) ? 'border-success' : '' }}"
                        data-card-id="{{ $card->id }}"
                        data-card-uuid="{{ $card->uuid }}"
                        data-title="{{ $card->title }}">

@@ -299,7 +299,7 @@ if (!function_exists('avatarUrl')) {
           </div>
           <div class="form-group">
             <label>Rentang Tanggal</label>
-            <input name="rentang_tanggal" type="text" class="form-control" placeholder="Contoh : 01 Jan 2024 - 07 Jan 2024">
+            <input name="rentang_tanggal" type="text" class="form-control" placeholder="Contoh : 01 Jan 2025 - 07 Jan 2025">
           </div>
           <div class="form-group">
             <label>Link Drive Logbook</label>
@@ -309,7 +309,6 @@ if (!function_exists('avatarUrl')) {
             <label>Status Evaluasi</label>
             <select name="status_evaluasi" class="form-control">
               <option>Belum Evaluasi</option>
-              <option>Sudah Evaluasi</option>
             </select>
           </div>
         </div>
@@ -348,7 +347,6 @@ if (!function_exists('avatarUrl')) {
             <label>Status Evaluasi</label>
             <select name="status_evaluasi" id="editListStatus" class="form-control">
               <option>Belum Evaluasi</option>
-              <option>Sudah Evaluasi</option>
             </select>
           </div>
         </div>

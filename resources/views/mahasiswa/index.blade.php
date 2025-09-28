@@ -56,12 +56,12 @@
                         </div>
                         <div class="col-lg-8 mb-3">
                             <div class="card shadow h-100">
-                                <div class="card-header py-3 d-flex align-items-center justify-content-between">
-                                    <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-users mr-2"></i>Kelompok Saya</h6>
-                                    @if($kelompokSaya)
-                                        <span class="badge badge-info">{{ $kelompokSaya->nama_kelompok }}</span>
-                                    @endif
+                                @if($kelompokSaya)
+                                <div class="card-header py-3 d-flex align-items-right justify-content-between">
+                                    <h6 class="m-0 font-weight-bold text-primary"><i class="fas fa-users mr-2"></i>{{ $kelompokSaya->nama_kelompok }} </h6>                                    
+                                       <a href="{{ $kelompokSaya->link_drive }}" target="blank" class="badge badge-secondary" title="Klik untuk copy"><i class="fas fa-copy mr-2"></i>Drive Kelompok</a>
                                 </div>
+                                @endif
                                 <div class="card-body p-2">
                                     @if($kelompokSaya)
                                         <ul class="list-group list-group-flush">
