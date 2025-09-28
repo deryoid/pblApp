@@ -248,6 +248,9 @@ class DataMahasiswaAdminController extends Controller
 
     public function import(Request $request)
     {
+        // Tambah timeout untuk proses import
+        set_time_limit(300); // 5 menit
+
         $request->validate([
             'file' => [
                 'required','file',
