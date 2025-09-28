@@ -1202,11 +1202,12 @@
     });
   };
 
-  // Modal Detail Proyek untuk Evaluasi Dosen - MODIFIKASI SINGLE SUBMIT
-  window.showProjectDetail = function(cardId, cardTitle) {
-    if (!cardId) return;
+  // Modal Detail Proyek untuk Evaluasi Dosen - sinkron dengan schema evaluasi_dosen
+  window.showProjectDetail = async function(cardId, cardTitle) {
+    if (!cardId) {
+      return;
+    }
 
-    // Load indikator dari database evaluation_rubric_indicators
     const dosenItems = [
       { kode: 'd_hasil', nama: 'Kualitas Hasil Proyek', bobot: {{ (int)($settings['d_hasil'] ?? 30) }} },
       { kode: 'd_teknis', nama: 'Tingkat Kompleksitas Teknis', bobot: {{ (int)($settings['d_teknis'] ?? 20) }} },
@@ -1223,8 +1224,63 @@
     ];
 
     const totalBobot = dosenItems.reduce((sum, item) => sum + item.bobot, 0);
+    const fetchUrl = "{{ route('admin.evaluasi.penilaian-dosen.show-by-project', ['project' => '__ID__']) }}".replace('__ID__', cardId);
+    const gradeUrl = "{{ route('admin.evaluasi.project.grade.dosen', ['card' => '__ID__']) }}".replace('__ID__', cardId);
 
-    let html = `
+    const existingEvaluations = {};
+    try {
+      const response = await fetch(fetchUrl, {
+        headers: {
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      });
+
+      if (response.ok) {
+        const payload = await response.json();
+        if (payload?.success && Array.isArray(payload.evaluations)) {
+          payload.evaluations.forEach(item => {
+            if (!item || typeof item.mahasiswa_id === 'undefined') {
+              return;
+            }
+            existingEvaluations[String(item.mahasiswa_id)] = item;
+          });
+        }
+      }
+    } catch (error) {
+      console.warn('Gagal memuat evaluasi dosen awal', error);
+    }
+
+    const buildRow = member => {
+      const current = existingEvaluations[member.id] || {};
+      return `
+        <tr data-member="${member.id}" data-evaluation-id="${current.id || ''}">
+          <td style="vertical-align: middle; background: #f8f9fa; font-weight: 600;">
+            <div>${member.nama}</div>
+            <small style="color: #6b7280;">${member.nim}</small>
+          </td>
+          ${dosenItems.map(item => {
+            const raw = current[item.kode];
+            const value = (raw === 0 || raw) ? raw : '';
+            return `
+              <td style="text-align: center; vertical-align: middle;">
+                <input type="number"
+                       class="form-control form-control-sm grade-input"
+                       data-member="${member.id}"
+                       data-item="${item.kode}"
+                       data-card="${cardId}"
+                       min="0" max="100"
+                       value="${value}"
+                       placeholder="-"
+                       style="text-align: center;">
+              </td>`;
+          }).join('')}
+          <td style="text-align: center; vertical-align: middle; font-weight: 600; background: #f8f9fa;">-</td>
+          <td style="text-align: center; vertical-align: middle; font-weight: 600; background: #e3f2fd;">-</td>
+        </tr>`;
+    };
+
+    const modalHtml = `
       <div class="project-detail-modal">
         <div class="text-center mb-4">
           <h4 style="margin: 0; font-size: 1.3rem; font-weight: 700; color: #2c3e50;">${cardTitle}</h4>
@@ -1251,33 +1307,7 @@
               </tr>
             </thead>
             <tbody>
-              ${members.map(member => `
-                <tr>
-                  <td style="vertical-align: middle; background: #f8f9fa; font-weight: 600;">
-                    <div>${member.nama}</div>
-                    <small style="color: #6b7280;">${member.nim}</small>
-                  </td>
-                  ${dosenItems.map(item => `
-                    <td style="text-align: center; vertical-align: middle;">
-                      <input type="number"
-                             class="form-control form-control-sm grade-input"
-                             data-member="${member.id}"
-                             data-item="${item.kode}"
-                             data-card="${cardId}"
-                             min="0" max="100"
-                             value=""
-                             placeholder="-"
-                             style="text-align: center;">
-                    </td>
-                  `).join('')}
-                  <td style="text-align: center; vertical-align: middle; font-weight: 600; background: #f8f9fa;">
-                    -
-                  </td>
-                  <td style="text-align: center; vertical-align: middle; font-weight: 600; background: #e3f2fd;">
-                    -
-                  </td>
-                </tr>
-              `).join('')}
+              ${members.map(buildRow).join('')}
             </tbody>
           </table>
         </div>
@@ -1296,7 +1326,7 @@
     `;
 
     Swal.fire({
-      html: html,
+      html: modalHtml,
       width: '95%',
       showConfirmButton: true,
       confirmButtonText: '💾 Simpan Semua Nilai',
@@ -1304,77 +1334,133 @@
       showCancelButton: true,
       cancelButtonText: '❌ Batal',
       showCloseButton: true,
+      showLoaderOnConfirm: true,
+      allowOutsideClick: () => !Swal.isLoading(),
       customClass: {
         container: 'project-detail-modal',
         popup: 'swal2-popup'
-      }
-    }).then((result) => {
-      if (!result.isConfirmed) return;
+      },
+      didOpen: () => {
+        document.querySelectorAll('.grade-input').forEach(input => {
+          input.addEventListener('input', function() {
+            const row = this.closest('tr');
+            if (row) {
+              calculateRowTotals(row);
+            }
+          });
+        });
 
-      // Collect all evaluations data for single submit
-      const evaluationsData = [];
-      document.querySelectorAll('tbody tr').forEach(row => {
-        const inputs = row.querySelectorAll('.grade-input');
-        if (inputs.length > 0) {
-          const memberId = inputs[0].getAttribute('data-member');
+        document.querySelectorAll('.project-detail-modal tbody tr').forEach(row => {
+          calculateRowTotals(row);
+        });
+      },
+      preConfirm: () => {
+        const popup = Swal.getPopup();
+        const rows = popup.querySelectorAll('tbody tr');
+        const items = {};
 
-          const evaluationData = {
-            evaluasi_sesi_id: {{ $sesi->id }},
-            periode_id: {{ $sesi->periode_id }},
-            kelompok_id: {{ $kelompok->id }},
-            mahasiswa_id: memberId,
-            project_card_id: cardId,
-            evaluator_id: {{ Auth::id() }},
-            d_hasil: parseInt(row.querySelector('[data-item="d_hasil"]').value) || null,
-            d_teknis: parseInt(row.querySelector('[data-item="d_teknis"]').value) || null,
-            d_user: parseInt(row.querySelector('[data-item="d_user"]').value) || null,
-            d_efisiensi: parseInt(row.querySelector('[data-item="d_efisiensi"]').value) || null,
-            d_dokpro: parseInt(row.querySelector('[data-item="d_dokpro"]').value) || null,
-            d_inisiatif: parseInt(row.querySelector('[data-item="d_inisiatif"]').value) || null,
-            progress_percentage: 100,
-            evaluation_type: 'regular',
-            _token: '{{ csrf_token() }}'
-          };
+        rows.forEach(row => calculateRowTotals(row));
 
-  
-          evaluationsData.push(evaluationData);
-        }
-      });
+        rows.forEach(row => {
+          const memberId = row.getAttribute('data-member');
+          const inputs = row.querySelectorAll('.grade-input');
+          const rowData = {};
 
-      // Send all data in single request
-      $.ajax({
-        url: "{{ route('admin.evaluasi.penilaian-dosen.batch-store') }}",
-        method: 'POST',
-        data: {
-          evaluations: evaluationsData,
-          _token: '{{ csrf_token() }}'
-        },
-        success: function(response) {
-          if (response.success) {
-            swalToast('success', 'Semua nilai berhasil disimpan');
-            
-            // Update the UI with new values
-            response.evaluations.forEach(updatedEval => {
-              const row = document.querySelector(`tr:has([data-member="${updatedEval.mahasiswa_id}"])`);
-              if (row) {
-                calculateRowTotals(row);
-              }
-            });
-          } else {
-            Swal.fire('Gagal', response.message || 'Gagal menyimpan nilai', 'error');
+          inputs.forEach(input => {
+            const raw = input.value.trim();
+            if (raw === '') {
+              return;
+            }
+            const numeric = Math.max(0, Math.min(100, parseInt(raw, 10) || 0));
+            rowData[input.getAttribute('data-item')] = numeric;
+          });
+
+          if (Object.keys(rowData).length > 0) {
+            items[memberId] = rowData;
           }
-        },
-        error: function() {
-          Swal.fire('Gagal', 'Terjadi kesalahan saat menyimpan nilai', 'error');
-        }
-      });
-    });
+        });
 
-    // Add event listeners for auto-calculation
-    document.querySelectorAll('.grade-input').forEach(input => {
-      input.addEventListener('input', function() {
-        calculateRowTotals(this.closest('tr'));
-      });
+        if (! Object.keys(items).length) {
+          Swal.showValidationMessage('Isi minimal satu nilai sebelum menyimpan');
+
+          return false;
+        }
+
+        const finalScores = [];
+        rows.forEach(row => {
+          const val = parseFloat(row.dataset.finalScore || '0');
+          if (! Number.isNaN(val) && val > 0) {
+            finalScores.push(val);
+          }
+        });
+
+        return fetch(gradeUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: JSON.stringify({
+            sesi_id: {{ $sesi->id }},
+            items
+          })
+        })
+          .then(response => {
+            if (! response.ok) {
+              throw new Error('Gagal menyimpan nilai (HTTP '+response.status+')');
+            }
+
+            return response.json();
+          })
+          .then(data => {
+            if (! data?.success) {
+              throw new Error(data?.message || 'Gagal menyimpan nilai');
+            }
+
+            return { data, finalScores };
+          })
+          .catch(error => {
+            Swal.showValidationMessage(error.message || 'Gagal menyimpan nilai');
+
+            return false;
+          });
+      }
+    }).then(result => {
+      if (! result.isConfirmed || ! result.value) {
+        return;
+      }
+
+      const { data, finalScores } = result.value;
+      swalToast('success', data.message || 'Nilai dosen berhasil disimpan');
+
+      const cardEl = document.querySelector(`.board-card[data-card-uuid="${cardId}"]`);
+      if (cardEl && Array.isArray(finalScores) && finalScores.length) {
+        const total = finalScores.reduce((sum, val) => sum + Number(val), 0);
+        const avg = Math.round(total / finalScores.length);
+
+        const scoreEl = cardEl.querySelector('.score-dosen-val');
+        if (scoreEl) {
+          scoreEl.textContent = avg;
+        }
+
+        const badge = cardEl.querySelector('.badge.badge-success.badge-pill');
+        if (badge) {
+          const icon = badge.querySelector('i')?.outerHTML || '<i class="fas fa-check mr-1"></i>';
+          badge.innerHTML = icon + avg;
+        }
+
+        cardEl.classList.add('border-success');
+
+        window.cardGrades = window.cardGrades || {};
+        window.cardGrades[cardId] = window.cardGrades[cardId] || {};
+        window.cardGrades[cardId].dosen = Object.assign({}, window.cardGrades[cardId].dosen, { total: avg });
+        window.cardGrades[cardId].evaluasi_dosen = Object.assign({}, window.cardGrades[cardId].evaluasi_dosen, {
+          nilai_akhir: avg,
+          status: 'submitted'
+        });
+      }
     });
 
     // Add custom styles
@@ -1435,7 +1521,10 @@
     const avgCell = row.children[inputs.length + 1];
     const finalCell = row.children[inputs.length + 2];
 
-    avgCell.innerHTML = count > 0 ? total.toFixed(1) : '-';
+    row.dataset.averageScore = count > 0 ? (total / count).toFixed(2) : '';
+    row.dataset.finalScore = weightedTotal > 0 ? weightedTotal.toFixed(2) : '';
+
+    avgCell.innerHTML = count > 0 ? (total / count).toFixed(1) : '-';
 
     if (weightedTotal > 0) {
       const final = weightedTotal.toFixed(1);
