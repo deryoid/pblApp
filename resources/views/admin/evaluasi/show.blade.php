@@ -861,25 +861,267 @@
 
   // Edit Absensi
   // Absensi/AP functions removed
-  // Grade Dosen per proyek
+  // Grade Dosen per proyek per mahasiswa
   window.gradeDosen = function(cardId, title){
     if(!cardId || !title) return;
-    const items = ['d_hasil','d_teknis','d_user','d_efisiensi','d_dokpro','d_inisiatif'];
-    const labels = {
-      d_hasil:'Kualitas Hasil Proyek', d_teknis:'Kompleksitas Teknis', d_user:'Kesesuaian Pengguna',
-      d_efisiensi:'Efisiensi Waktu & Biaya', d_dokpro:'Dokumentasi & Profesionalisme', d_inisiatif:'Kemandirian & Inisiatif'
-    };
+
+    // Use settings data instead of session indicators
+    const dosenItems = [
+      { kode: 'd_hasil', nama: 'Kualitas Hasil Proyek', bobot: {{ (int)($settings['d_hasil'] ?? 20) }} },
+      { kode: 'd_teknis', nama: 'Kompleksitas Teknis', bobot: {{ (int)($settings['d_teknis'] ?? 20) }} },
+      { kode: 'd_user', nama: 'Kesesuaian Pengguna', bobot: {{ (int)($settings['d_user'] ?? 15) }} },
+      { kode: 'd_efisiensi', nama: 'Efisiensi Waktu/Biaya', bobot: {{ (int)($settings['d_efisiensi'] ?? 15) }} },
+      { kode: 'd_dokpro', nama: 'Dokumentasi & Profesionalisme', bobot: {{ (int)($settings['d_dokpro'] ?? 15) }} },
+      { kode: 'd_inisiatif', nama: 'Kemandirian & Inisiatif', bobot: {{ (int)($settings['d_inisiatif'] ?? 15) }} }
+    ];
+
+    const items = dosenItems.map(item => item.kode);
+    const labels = {};
+    const percentages = {};
+    const weights = {};
+
+    dosenItems.forEach(item => {
+      labels[item.kode] = item.nama;
+      percentages[item.kode] = item.bobot + '%';
+      weights[item.kode] = item.bobot;
+    });
+
+    const members = [
+      @foreach($members as $m)
+        { id: '{{ $m->id }}', nim: '{{ $m->nim }}', nama: '{{ $m->nama }}' },
+      @endforeach
+    ];
+
     const saved = (window.cardGrades?.[cardId]?.dosen) || null;
     const nilai = (saved && saved.nilai) ? saved.nilai : {};
-    let html='';
-    items.forEach(k=>{
-      const val = parseInt((nilai && nilai[k] != null) ? nilai[k] : 0, 10) || 0;
-      html += `<div class="text-left mt-2"><label class="d-block">${labels[k]}</label>`+
-              `<input id="num-${k}" type="number" min="0" max="100" value="${val}" class="swal2-input" style="width:140px"></div>`;
-    });
-    Swal.fire({title:`Nilai Dosen — ${title}`, html, showCancelButton:true, confirmButtonText:'Simpan'}).then(res=>{
-      if(!res.isConfirmed) return;
-      const payload={}; items.forEach(k=> payload[k] = parseInt(document.getElementById('num-'+k).value||'0',10)||0 );
+
+    let html = `
+      <div class="grade-modal-container">
+        <div class="text-center mb-4">
+          <h4 style="margin: 0; font-size: 1.3rem; font-weight: 700; color: #2c3e50;">${title}</h4>
+          <p style="margin: 0.5rem 0 0 0; color: #6b7280; font-size: 1rem;">Penilaian Dosen per Mahasiswa</p>
+        </div>
+
+        <div class="table-responsive" style="max-height: 65vh; overflow-y: auto;">
+          <table class="table table-bordered" style="font-size: 0.9rem; margin-bottom: 0;">
+            <thead class="thead-dark sticky-top">
+              <tr>
+                <th style="min-width: 180px; background: #343a40; color: white; border-color: #454d55;">Mahasiswa</th>
+                ${items.map(item => `
+                  <th style="min-width: 140px; text-align: center; background: #343a40; color: white; border-color: #454d55;">
+                    <div>${labels[item]}</div>
+                    <small style="font-weight: normal; opacity: 0.8;">Bobot: ${percentages[item]}</small>
+                    <div style="font-size: 0.7rem; opacity: 0.6; margin-top: 2px;">Input 1-100</div>
+                  </th>
+                `).join('')}
+                <th style="min-width: 100px; text-align: center; background: #343a40; color: white; border-color: #454d55;">Rata-rata</th>
+                <th style="min-width: 120px; text-align: center; background: #343a40; color: white; border-color: #454d55;">
+                  Final<br><small style="font-weight: normal; opacity: 0.8;">(Weighted)</small>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              ${members.map(member => {
+                const memberNilai = nilai[member.id] || {};
+                let total = 0;
+                let count = 0;
+                let weightedTotal = 0;
+
+                return `
+                  <tr>
+                    <td style="vertical-align: middle; background: #f8f9fa; font-weight: 600;">
+                      <div>${member.nama}</div>
+                      <div style="font-size: 0.85rem; color: #6b7280; font-weight: normal;">${member.nim}</div>
+                    </td>
+                    ${items.map(item => {
+                      const val = parseInt((memberNilai && memberNilai[item] != null) ? memberNilai[item] : 0, 10) || 0;
+                      total += val;
+                      count++;
+                      const weight = parseInt(percentages[item]) || 0;
+                      weightedTotal += (val * weight / 100);
+                      return `
+                        <td style="text-align: center; vertical-align: middle;">
+                          <input type="number"
+                               min="1" max="100"
+                               value="${val}"
+                               class="form-control form-control-sm text-center grade-input"
+                               style="width: 70px; font-size: 0.9rem; margin: 0 auto;"
+                               data-member="${member.id}"
+                               data-item="${item}"
+                               placeholder="1-100"
+                               title="Masukkan nilai 1-100">
+                        </td>
+                      `;
+                    }).join('')}
+                    <td style="text-align: center; vertical-align: middle; background: #e9ecef;">
+                      <span class="badge badge-primary average-badge" style="font-size: 0.9rem; padding: 0.5rem 0.75rem;">
+                        ${count > 0 ? Math.round(total / count) : 0}
+                      </span>
+                    </td>
+                    <td style="text-align: center; vertical-align: middle; background: #d4edda;">
+                      <span class="badge badge-success percentage-badge" style="font-size: 0.9rem; padding: 0.5rem 0.75rem;">
+                        ${Math.round(weightedTotal)}
+                      </span>
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mt-4">
+          <div class="text-left">
+            <small class="text-muted">
+              <strong>Keterangan:</strong> Input nilai 1-100 • Sistem akan menghitung persentase otomatis berdasarkan bobot
+            </small>
+          </div>
+          <div class="text-right">
+            <small class="text-muted">Total Mahasiswa: ${members.length}</small>
+          </div>
+        </div>
+      </div>
+    `;
+
+    Swal.fire({
+      title: '',
+      html: html,
+      width: '100%',
+      height: 'auto',
+      showCloseButton: true,
+      showConfirmButton: true,
+      confirmButtonText: '💾 Simpan Nilai',
+      confirmButtonColor: '#28a745',
+      showCancelButton: true,
+      cancelButtonText: '❌ Batal',
+      customClass: {
+        container: 'grade-dosen-modal',
+        popup: 'p-0 m-3'
+      },
+      didOpen: () => {
+        // Auto-calculate averages and weighted percentages when inputs change
+        document.querySelectorAll('.grade-input').forEach(input => {
+          input.addEventListener('input', function() {
+            const row = this.closest('tr');
+            const inputs = row.querySelectorAll('.grade-input');
+            let total = 0;
+            let count = 0;
+            let weightedTotal = 0;
+
+            // Use weights from settings (these are the percentages)
+            const weights = {
+              'd_hasil': {{ (int)($settings['d_hasil'] ?? 20) }},
+              'd_teknis': {{ (int)($settings['d_teknis'] ?? 20) }},
+              'd_user': {{ (int)($settings['d_user'] ?? 15) }},
+              'd_efisiensi': {{ (int)($settings['d_efisiensi'] ?? 15) }},
+              'd_dokpro': {{ (int)($settings['d_dokpro'] ?? 15) }},
+              'd_inisiatif': {{ (int)($settings['d_inisiatif'] ?? 15) }}
+            };
+
+            inputs.forEach(inp => {
+              const val = parseInt(inp.value) || 0;
+              total += val;
+              count++;
+              const item = inp.getAttribute('data-item');
+              if (weights[item]) {
+                // Convert input (1-100) to weighted percentage
+                weightedTotal += (val * weights[item] / 100);
+              }
+            });
+
+            const average = count > 0 ? Math.round(total / count) : 0;
+            const percentage = Math.round(weightedTotal);
+
+            const avgBadge = row.querySelector('.average-badge');
+            if (avgBadge) {
+              avgBadge.textContent = average;
+            }
+
+            const percBadge = row.querySelector('.percentage-badge');
+            if (percBadge) {
+              percBadge.textContent = percentage;
+            }
+
+            // Show individual weighted contributions in tooltips
+            inputs.forEach(inp => {
+              const val = parseInt(inp.value) || 0;
+              const item = inp.getAttribute('data-item');
+              if (weights[item]) {
+                const contribution = Math.round(val * weights[item] / 100);
+                inp.setAttribute('title', `Input: ${val} × Bobot: ${weights[item]}% = Kontribusi: ${contribution}`);
+              }
+            });
+          });
+
+          // Initialize tooltips on page load
+          document.querySelectorAll('.grade-input').forEach(inp => {
+            const val = parseInt(inp.value) || 0;
+            const item = inp.getAttribute('data-item');
+            const weights = {
+              'd_hasil': {{ (int)($settings['d_hasil'] ?? 20) }},
+              'd_teknis': {{ (int)($settings['d_teknis'] ?? 20) }},
+              'd_user': {{ (int)($settings['d_user'] ?? 15) }},
+              'd_efisiensi': {{ (int)($settings['d_efisiensi'] ?? 15) }},
+              'd_dokpro': {{ (int)($settings['d_dokpro'] ?? 15) }},
+              'd_inisiatif': {{ (int)($settings['d_inisiatif'] ?? 15) }}
+            };
+            if (weights[item]) {
+              const contribution = Math.round(val * weights[item] / 100);
+              inp.setAttribute('title', `Input: ${val} × Bobot: ${weights[item]}% = Kontribusi: ${contribution}`);
+            }
+          });
+        });
+
+        // Add better styling
+        const style = document.createElement('style');
+        style.textContent = `
+          .grade-dosen-modal .swal2-popup {
+            padding: 0;
+            border-radius: 0.5rem;
+            max-width: none;
+            width: 100%;
+          }
+          .grade-input:focus {
+            border-color: #4e73df;
+            box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+          }
+          .grade-input {
+            transition: all 0.2s ease;
+          }
+          .grade-input:hover {
+            border-color: #4e73df;
+          }
+          .grade-dosen-modal .table {
+            background: white;
+          }
+          .grade-dosen-modal .table th {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+          }
+          .grade-dosen-modal .input-group-text {
+            background: #f8f9fa;
+            border-color: #dee2e6;
+          }
+        `;
+        document.head.appendChild(style);
+      }
+    }).then((result) => {
+      if (!result.isConfirmed) return;
+
+      // Collect all values
+      const payload = {};
+      document.querySelectorAll('.grade-input').forEach(input => {
+        const memberId = input.getAttribute('data-member');
+        const item = input.getAttribute('data-item');
+        const value = parseInt(input.value) || 0;
+
+        if (!payload[memberId]) {
+          payload[memberId] = {};
+        }
+        payload[memberId][item] = value;
+      });
+
       $.post("{{ route('admin.evaluasi.project.grade.dosen', ['card'=>'__ID__']) }}".replace('__ID__', cardId), {sesi_id: {{ $sesi->id }}, items: payload, _token:'{{ csrf_token() }}'})
         .done(function(r){
           if(r.success){
@@ -906,24 +1148,230 @@
     });
   };
 
-  // Grade Mitra per proyek
+  // Grade Mitra per proyek per mahasiswa
   window.gradeMitra = function(cardId, title){
     if(!cardId || !title) return;
+
+    // Use settings data for mitra
+    const mitraItems = [
+      { kode: 'm_kehadiran', nama: 'Komunikasi & Sikap', bobot: {{ (int)($settings['m_kehadiran'] ?? 50) }} },
+      { kode: 'm_presentasi', nama: 'Hasil Pekerjaan', bobot: {{ (int)($settings['m_presentasi'] ?? 50) }} }
+    ];
+
+    const items = mitraItems.map(item => item.kode);
+    const labels = {};
+    const percentages = {};
+    const weights = {};
+
+    mitraItems.forEach(item => {
+      labels[item.kode] = item.nama;
+      percentages[item.kode] = item.bobot + '%';
+      weights[item.kode] = item.bobot;
+    });
+
+    const members = [
+      @foreach($members as $m)
+        { id: '{{ $m->id }}', nim: '{{ $m->nim }}', nama: '{{ $m->nama }}' },
+      @endforeach
+    ];
+
     const saved = (window.cardGrades?.[cardId]?.mitra) || null;
-    const n = (saved && saved.nilai) ? saved.nilai : {};
-    const vK = parseInt((n && n.kehadiran != null) ? n.kehadiran : 0, 10) || 0;
-    const vP = parseInt((n && n.presentasi != null) ? n.presentasi : 0, 10) || 0;
-    const html = `
-      <label class="d-block text-left">Kehadiran</label>
-      <input id="num-mke" type="number" min="0" max="100" value="${vK}" class="swal2-input" style="width:140px">
-      <label class="d-block text-left mt-2">Presentasi</label>
-      <input id="num-mpr" type="number" min="0" max="100" value="${vP}" class="swal2-input" style="width:140px">
+    const nilai = (saved && saved.nilai) ? saved.nilai : {};
+
+    let html = `
+      <div class="grade-modal-container">
+        <div class="text-center mb-4">
+          <h4 style="margin: 0; font-size: 1.3rem; font-weight: 700; color: #2c3e50;">${title}</h4>
+          <p style="margin: 0.5rem 0 0 0; color: #6b7280; font-size: 1rem;">Penilaian Mitra per Mahasiswa</p>
+        </div>
+
+        <div class="table-responsive" style="max-height: 65vh; overflow-y: auto;">
+          <table class="table table-bordered" style="font-size: 0.9rem; margin-bottom: 0;">
+            <thead class="thead-info sticky-top">
+              <tr>
+                <th style="min-width: 180px; background: #17a2b8; color: white; border-color: #138496;">Mahasiswa</th>
+                ${items.map(item => `
+                  <th style="min-width: 140px; text-align: center; background: #17a2b8; color: white; border-color: #138496;">
+                    <div>${labels[item]}</div>
+                    <small style="font-weight: normal; opacity: 0.8;">Bobot: ${percentages[item]}</small>
+                  </th>
+                `).join('')}
+                <th style="min-width: 100px; text-align: center; background: #17a2b8; color: white; border-color: #138496;">Rata-rata</th>
+                <th style="min-width: 120px; text-align: center; background: #17a2b8; color: white; border-color: #138496;">
+                  Final<br><small style="font-weight: normal; opacity: 0.8;">(Weighted)</small>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              ${members.map(member => {
+                const memberNilai = nilai[member.id] || {};
+                let total = 0;
+                let count = 0;
+                let weightedTotal = 0;
+
+                return `
+                  <tr>
+                    <td style="vertical-align: middle; background: #f8f9fa; font-weight: 600;">
+                      <div>${member.nama}</div>
+                      <div style="font-size: 0.85rem; color: #6b7280; font-weight: normal;">${member.nim}</div>
+                    </td>
+                    ${items.map(item => {
+                      const val = parseInt((memberNilai && memberNilai[item] != null) ? memberNilai[item] : 0, 10) || 0;
+                      total += val;
+                      count++;
+                      const weight = parseInt(percentages[item]) || 0;
+                      weightedTotal += (val * weight / 100);
+                      return `
+                        <td style="text-align: center; vertical-align: middle;">
+                          <input type="number"
+                                 min="1" max="100"
+                                 value="${val}"
+                                 class="form-control form-control-sm text-center grade-input-mitra"
+                                 style="width: 70px; font-size: 0.9rem; margin: 0 auto;"
+                                 data-member="${member.id}"
+                                 data-item="${item}"
+                                 placeholder="1-100"
+                                 title="Masukkan nilai 1-100">
+                        </td>
+                      `;
+                    }).join('')}
+                    <td style="text-align: center; vertical-align: middle; background: #e9ecef;">
+                      <span class="badge badge-info average-badge-mitra" style="font-size: 0.9rem; padding: 0.5rem 0.75rem;">
+                        ${count > 0 ? Math.round(total / count) : 0}
+                      </span>
+                    </td>
+                    <td style="text-align: center; vertical-align: middle; background: #d1ecf1;">
+                      <span class="badge badge-success percentage-badge-mitra" style="font-size: 0.9rem; padding: 0.5rem 0.75rem;">
+                        ${Math.round(weightedTotal)}
+                      </span>
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mt-4">
+          <div class="text-left">
+            <small class="text-muted">
+              <strong>Keterangan:</strong> Input nilai 1-100 • Sistem akan menghitung persentase otomatis berdasarkan bobot
+            </small>
+          </div>
+          <div class="text-right">
+            <small class="text-muted">Total Mahasiswa: ${members.length}</small>
+          </div>
+        </div>
+      </div>
     `;
-    Swal.fire({title:`Nilai Mitra — ${title}`, html, showCancelButton:true, confirmButtonText:'Simpan'}).then(res=>{
-      if(!res.isConfirmed) return;
-      const keh = parseInt(document.getElementById('num-mke').value||'0',10)||0;
-      const pre = parseInt(document.getElementById('num-mpr').value||'0',10)||0;
-      $.post("{{ route('admin.evaluasi.project.grade.mitra', ['card'=>'__ID__']) }}".replace('__ID__', cardId), {sesi_id: {{ $sesi->id }}, kehadiran:keh, presentasi:pre, _token:'{{ csrf_token() }}'})
+
+    Swal.fire({
+      title: '',
+      html: html,
+      width: '100%',
+      height: 'auto',
+      showCloseButton: true,
+      showConfirmButton: true,
+      confirmButtonText: '💾 Simpan Nilai',
+      confirmButtonColor: '#28a745',
+      showCancelButton: true,
+      cancelButtonText: '❌ Batal',
+      customClass: {
+        container: 'grade-mitra-modal',
+        popup: 'p-0 m-3'
+      },
+      didOpen: () => {
+        // Auto-calculate averages and percentages when inputs change
+        document.querySelectorAll('.grade-input-mitra').forEach(input => {
+          input.addEventListener('input', function() {
+            const row = this.closest('tr');
+            const inputs = row.querySelectorAll('.grade-input-mitra');
+            let total = 0;
+            let count = 0;
+            let weightedTotal = 0;
+
+            // Use weights from settings for mitra
+            const weights = {
+              'm_kehadiran': {{ (int)($settings['m_kehadiran'] ?? 50) }},
+              'm_presentasi': {{ (int)($settings['m_presentasi'] ?? 50) }}
+            };
+
+            inputs.forEach(inp => {
+              const val = parseInt(inp.value) || 0;
+              total += val;
+              count++;
+              const item = inp.getAttribute('data-item');
+              if (weights[item]) {
+                weightedTotal += (val * weights[item] / 100);
+              }
+            });
+
+            const average = count > 0 ? Math.round(total / count) : 0;
+            const percentage = Math.round(weightedTotal);
+
+            const avgBadge = row.querySelector('.average-badge-mitra');
+            if (avgBadge) {
+              avgBadge.textContent = average;
+            }
+
+            const percBadge = row.querySelector('.percentage-badge-mitra');
+            if (percBadge) {
+              percBadge.textContent = percentage;
+            }
+          });
+        });
+
+        // Add better styling
+        const style = document.createElement('style');
+        style.textContent = `
+          .grade-mitra-modal .swal2-popup {
+            padding: 0;
+            border-radius: 0.5rem;
+            max-width: none;
+            width: 100%;
+          }
+          .grade-input-mitra:focus {
+            border-color: #36b9cc;
+            box-shadow: 0 0 0 0.2rem rgba(54, 185, 204, 0.25);
+          }
+          .grade-input-mitra {
+            transition: all 0.2s ease;
+          }
+          .grade-input-mitra:hover {
+            border-color: #36b9cc;
+          }
+          .grade-mitra-modal .table {
+            background: white;
+          }
+          .grade-mitra-modal .table th {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+          }
+          .grade-mitra-modal .input-group-text {
+            background: #f8f9fa;
+            border-color: #dee2e6;
+          }
+        `;
+        document.head.appendChild(style);
+      }
+    }).then((result) => {
+      if (!result.isConfirmed) return;
+
+      // Collect all values
+      const payload = {};
+      document.querySelectorAll('.grade-input-mitra').forEach(input => {
+        const memberId = input.getAttribute('data-member');
+        const item = input.getAttribute('data-item');
+        const value = parseInt(input.value) || 0;
+
+        if (!payload[memberId]) {
+          payload[memberId] = {};
+        }
+        payload[memberId][item] = value;
+      });
+
+      $.post("{{ route('admin.evaluasi.project.grade.mitra', ['card'=>'__ID__']) }}".replace('__ID__', cardId), {sesi_id: {{ $sesi->id }}, items: payload, _token:'{{ csrf_token() }}'})
         .done(function(r){
           if(r.success){
             swalToast('success','Nilai mitra disimpan');
@@ -931,7 +1379,7 @@
               window.cardGrades = window.cardGrades || {};
               window.cardGrades[cardId] = window.cardGrades[cardId] || {};
               window.cardGrades[cardId].mitra = window.cardGrades[cardId].mitra || {};
-              window.cardGrades[cardId].mitra.nilai = { kehadiran:keh, presentasi:pre };
+              window.cardGrades[cardId].mitra.nilai = payload;
               if (typeof r.total !== 'undefined') {
                 window.cardGrades[cardId].mitra.total = r.total;
                 const wrap = document.querySelector('.board-card[data-card-uuid="'+cardId+'"]');
