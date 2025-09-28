@@ -1,15 +1,15 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Auth\LoginController;
-use App\Http\Controllers\Admin\UserController;
-use App\Http\Controllers\Admin\PeriodeController;
-use App\Http\Controllers\Admin\KelasController;
-use App\Http\Controllers\Admin\DataMahasiswaAdminController;
 use App\Http\Controllers\Admin\DataKelompokAdminController;
-use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Admin\DataMahasiswaAdminController;
 use App\Http\Controllers\Admin\EvaluasiController as AdminEval;
+use App\Http\Controllers\Admin\KelasController;
 use App\Http\Controllers\Admin\PenilaianEvaluasiController;
+use App\Http\Controllers\Admin\PeriodeController;
+use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\ProfileController;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('auth.login'); // Form login ditampilkan langsung
@@ -18,7 +18,26 @@ Route::get('/', function () {
 Route::post('/login', [LoginController::class, 'login'])->name('login.attempt');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
-Route::prefix('admin')->middleware(['auth','admin'])->group(function () {
+// Debug route for testing validation
+Route::get('/debug-validation', function () {
+    $evaluasiSesi = \App\Models\EvaluasiSesi::first();
+    $periode = \App\Models\Periode::first();
+    $kelompok = \App\Models\Kelompok::first();
+    $mahasiswa = \App\Models\Mahasiswa::first();
+    $projectCard = \App\Models\ProjectCard::first();
+    $user = \App\Models\User::first();
+
+    return [
+        'evaluasi_sesi' => $evaluasiSesi ? ['id' => $evaluasiSesi->id, 'nama' => $evaluasiSesi->nama ?? 'N/A'] : 'NOT FOUND',
+        'periode' => $periode ? ['id' => $periode->id, 'nama' => $periode->nama] : 'NOT FOUND',
+        'kelompok' => $kelompok ? ['id' => $kelompok->id, 'nama' => $kelompok->nama] : 'NOT FOUND',
+        'mahasiswa' => $mahasiswa ? ['id' => $mahasiswa->id, 'nama' => $mahasiswa->nama] : 'NOT FOUND',
+        'project_card' => $projectCard ? ['id' => $projectCard->id, 'title' => $projectCard->title] : 'NOT FOUND',
+        'user' => $user ? ['id' => $user->id, 'name' => $user->name] : 'NOT FOUND',
+    ];
+});
+
+Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     Route::get('/', fn () => view('admin.index'));
 
     // User (UUID-based binding)
@@ -53,6 +72,7 @@ Route::prefix('admin')->middleware(['auth','admin'])->group(function () {
     Route::post('mahasiswa/sync', [DataMahasiswaAdminController::class, 'sync'])->name('mahasiswa.sync');
     Route::get('/admin/mahasiswa/template-csv', function () {
         $csv = "NIM,Nama\n230411100001,Budi Santoso\n230411100002,Siti Aminah\n230411100003,Agus Saputra\n";
+
         return response($csv, 200, [
             'Content-Type' => 'text/csv',
             'Content-Disposition' => 'attachment; filename="template-mahasiswa.csv"',
@@ -61,17 +81,16 @@ Route::prefix('admin')->middleware(['auth','admin'])->group(function () {
     Route::resource('mahasiswa', DataMahasiswaAdminController::class);
 
     // Kelompok
-    Route::get('kelompok',              [DataKelompokAdminController::class, 'index'])->name('kelompok.index');
-    Route::get('kelompok/create',       [DataKelompokAdminController::class, 'create'])->name('kelompok.create');
-    Route::post('kelompok',             [DataKelompokAdminController::class, 'store'])->name('kelompok.store');
-    Route::get('kelompok/{uuid}',       [DataKelompokAdminController::class, 'show'])->name('kelompok.show');
-    Route::get('kelompok/{uuid}/edit',  [DataKelompokAdminController::class, 'edit'])->name('kelompok.edit');
-    Route::put('kelompok/{uuid}',       [DataKelompokAdminController::class, 'update'])->name('kelompok.update');
-    Route::delete('kelompok/{uuid}',    [DataKelompokAdminController::class, 'destroy'])->name('kelompok.destroy');
+    Route::get('kelompok', [DataKelompokAdminController::class, 'index'])->name('kelompok.index');
+    Route::get('kelompok/create', [DataKelompokAdminController::class, 'create'])->name('kelompok.create');
+    Route::post('kelompok', [DataKelompokAdminController::class, 'store'])->name('kelompok.store');
+    Route::get('kelompok/{uuid}', [DataKelompokAdminController::class, 'show'])->name('kelompok.show');
+    Route::get('kelompok/{uuid}/edit', [DataKelompokAdminController::class, 'edit'])->name('kelompok.edit');
+    Route::put('kelompok/{uuid}', [DataKelompokAdminController::class, 'update'])->name('kelompok.update');
+    Route::delete('kelompok/{uuid}', [DataKelompokAdminController::class, 'destroy'])->name('kelompok.destroy');
 
-        
-    Route::get('/penilaian/{sesi}/rekap', [PenilaianEvaluasiController::class,'rekap'])->name('penilaian.rekap');
-    Route::post('/penilaian/score/save', [PenilaianEvaluasiController::class,'saveScore'])->name('penilaian.score.save');
+    Route::get('/penilaian/{sesi}/rekap', [PenilaianEvaluasiController::class, 'rekap'])->name('penilaian.rekap');
+    Route::post('/penilaian/score/save', [PenilaianEvaluasiController::class, 'saveScore'])->name('penilaian.score.save');
     /** =========================
      *  Evaluasi (BERSIH & RAPIH)
      *  ========================= */
@@ -80,64 +99,74 @@ Route::prefix('admin')->middleware(['auth','admin'])->group(function () {
         // Daftar kelompok evaluasi
         Route::get('/', [AdminEval::class, 'index'])->name('index');
 
+        // Nilai final per mahasiswa
+        Route::get('nilai-final', [AdminEval::class, 'nilaiFinal'])->name('nilai-final');
+
         // Detail evaluasi per kelompok (binding by UUID)
         Route::get('kelompok/{kelompok:uuid}', [AdminEval::class, 'showKelompok'])->name('kelompok.show');
 
-        // Jadwal evaluasi
-        Route::get('kelompok/{kelompok:uuid}/schedule', [AdminEval::class,'scheduleForm'])->name('schedule.form');
-        Route::patch('{sesi}/schedule', [AdminEval::class,'scheduleSave'])->name('schedule.save');
+        // Jadwal evaluasi dihapus karena tidak ada kolom jadwal, lokasi, status
+        // Route::get('kelompok/{kelompok:uuid}/schedule', [AdminEval::class, 'scheduleForm'])->name('schedule.form');
+        // Route::patch('{evaluasi}/schedule', [AdminEval::class, 'scheduleSave'])->name('schedule.save');
 
         // Pengaturan evaluasi
         Route::get('settings', [AdminEval::class, 'settings'])->name('settings');
         Route::post('settings', [AdminEval::class, 'saveSettings'])->name('settings.save');
 
-        // Jadwal massal
-        Route::get('sesi/jadwal-massal', [AdminEval::class, 'scheduleBulkForm'])->name('schedule.bulk.form');
-        Route::post('sesi/jadwal-massal', [AdminEval::class, 'scheduleBulk'])->name('schedule.bulk');
+        // Jadwal massal dihapus
+        // Route::get('evaluasi/jadwal-massal', [AdminEval::class, 'scheduleBulkForm'])->name('schedule.bulk.form');
+        // Route::post('evaluasi/jadwal-massal', [AdminEval::class, 'scheduleBulk'])->name('schedule.bulk');
 
-        // Aksi mulai/selesai sesi
-        Route::patch('{sesi}/start',  [AdminEval::class,'start'])->name('start');
-        Route::patch('{sesi}/finish', [AdminEval::class,'finish'])->name('finish');
+        // Aksi mulai/selesai dihapus karena tidak ada status
+        // Route::patch('{evaluasi}/start', [AdminEval::class, 'start'])->name('start');
+        // Route::patch('{evaluasi}/finish', [AdminEval::class, 'finish'])->name('finish');
 
         // Project timeline & export
         Route::get('project/{kelompok:uuid}/timeline', [AdminEval::class, 'projectTimeline'])->name('project.timeline');
-        Route::get('project/{kelompok:uuid}/export',   [AdminEval::class, 'projectExport'])->name('project.export');
+        Route::get('project/{kelompok:uuid}/export', [AdminEval::class, 'projectExport'])->name('project.export');
 
         // Board: drag & drop (kolom & kartu)
         Route::post('project/reorder', [AdminEval::class, 'reorderProjectCard'])->name('project.reorder');
-        Route::post('lists/reorder',   [AdminEval::class, 'reorderProjectLists'])->name('lists.reorder');
+        Route::post('lists/reorder', [AdminEval::class, 'reorderProjectLists'])->name('lists.reorder');
 
         // Quick action: progress & status kartu
         Route::post('project/{card}/progress', [AdminEval::class, 'updateProjectProgress'])->name('project.progress');
         Route::delete('project/{card}', [AdminEval::class, 'destroyProject'])->name('project.destroy');
         Route::post('project/{card}/update', [AdminEval::class, 'updateProject'])->name('project.update');
-        Route::post('project/{card}/status',   [AdminEval::class, 'updateProjectStatus'])->name('project.status');
+        Route::post('project/{card}/status', [AdminEval::class, 'updateProjectStatus'])->name('project.status');
 
         // Penilaian (AJAX)
-        Route::post('sesi/{sesi}/absensi', [AdminEval::class, 'saveAbsensi'])->name('absensi.save');
-        Route::post('sesi/{sesi}/ap',      [AdminEval::class, 'saveAP'])->name('ap.save');
-        Route::post('sesi/{sesi}/indikator', [AdminEval::class, 'saveSesiIndikators'])->name('indikator.save');
+        Route::post('evaluasi/{evaluasi}/absensi', [AdminEval::class, 'saveAbsensi'])->name('absensi.save');
+        Route::post('evaluasi/{evaluasi}/ap', [AdminEval::class, 'saveAP'])->name('ap.save');
+        Route::post('evaluasi/{evaluasi}/indikator', [AdminEval::class, 'saveSesiIndikators'])->name('indikator.save');
 
         // Penilaian per proyek (per card)
         Route::post('project/{card}/grade/dosen', [AdminEval::class, 'saveProjectGradeDosen'])->name('project.grade.dosen');
         Route::post('project/{card}/grade/mitra', [AdminEval::class, 'saveProjectGradeMitra'])->name('project.grade.mitra');
+
+        // CRUD Evaluasi Dosen
+        Route::get('penilaian-dosen/show-by-project/{project}', [AdminEval::class, 'getPenilaianDosenByProject'])->name('penilaian-dosen.show-by-project');
+        Route::post('penilaian-dosen', [AdminEval::class, 'storePenilaianDosen'])->name('penilaian-dosen.store');
+        Route::post('penilaian-dosen/batch-store', [AdminEval::class, 'batchStorePenilaianDosen'])->name('penilaian-dosen.batch-store');
+        Route::put('penilaian-dosen/{penilaian}', [AdminEval::class, 'updatePenilaianDosen'])->name('penilaian-dosen.update');
+        Route::delete('penilaian-dosen/{penilaian}', [AdminEval::class, 'destroyPenilaianDosen'])->name('penilaian-dosen.destroy');
 
     });
 
 });
 
 // Evaluator
-Route::prefix('evaluator')->middleware(['auth','evaluator'])->group(function () {
+Route::prefix('evaluator')->middleware(['auth', 'evaluator'])->group(function () {
     Route::get('/', fn () => view('evaluator.index'));
 });
 
 // Mahasiswa
-Route::prefix('mahasiswa')->middleware(['auth','mahasiswa'])->group(function () {
+Route::prefix('mahasiswa')->middleware(['auth', 'mahasiswa'])->group(function () {
     Route::get('/', fn () => view('mahasiswa.index'));
 
     // Kunjungan Mitra
     Route::resource('kunjungan', \App\Http\Controllers\Mahasiswa\KunjunganMitraController::class)
-        ->only(['index','create','store','edit','update','destroy'])
+        ->only(['index', 'create', 'store', 'edit', 'update', 'destroy'])
         ->names('mahasiswa.kunjungan');
 
     // Board Proyek

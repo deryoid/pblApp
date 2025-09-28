@@ -38,4 +38,14 @@ class ProjectList extends Model
     {
         return $this->hasMany(ProjectCard::class, 'list_id');
     }
+
+    public function kelompok()
+    {
+        return $this->belongsTo(Kelompok::class);
+    }
+
+    public function periode()
+    {
+        return $this->belongsTo(Periode::class);
+    }
 }

@@ -44,6 +44,7 @@
   .board-col-head{position:sticky;top:0;z-index:2;background:#fff;border:1px solid var(--border);border-radius:.75rem;padding:.6rem .7rem;box-shadow:0 2px 6px rgba(0,0,0,.03);margin-bottom:.5rem}
   .board-list{min-height:20px}
   .board-card{border-left:3px solid #4e73df;border-radius:.75rem;overflow:hidden}
+  .board-card.border-success{border-left-color:#28a745;border:1px solid #28a745}
   .board-card.sortable-chosen{opacity:.9}
   .board-card.sortable-ghost{border:1px dashed #4e73df;background:#f8f9fc}
 
@@ -178,33 +179,25 @@
     </div>
     <div class="ml-auto text-right">
       <div class="text-muted small">Evaluator:
-        <strong>{{ optional($evaluator)->name ?? optional($evaluator)->nama ?? '—' }}</strong>
-      </div>
-      <div class="text-muted small">
-        Jadwal:
-        @if(!empty($sesi->jadwal_mulai))
-          {{ \Carbon\Carbon::parse($sesi->jadwal_mulai)->locale('id')->translatedFormat('d M Y, H:i') }}
-          @if(!empty($sesi->jadwal_selesai)) – {{ \Carbon\Carbon::parse($sesi->jadwal_selesai)->locale('id')->translatedFormat('H:i') }} @endif
-        @else — @endif
-        @if(!empty($sesi->lokasi)) • {{ $sesi->lokasi }} @endif
-      </div>
-      <div class="mt-1">
-        <span class="badge badge-warning">{{ $sesi->status ?? '—' }}</span>
+        <strong>{{ Auth::user()->name ?? '—' }}</strong>
       </div>
     </div>
   </div>
 
   {{-- Metrik ringkas --}}
   <div class="row mb-4">
-    <div class="col-lg-4 mb-2">
+    <div class="col-lg-6 mb-2">
       <div class="metric-card">
-        <div class="metric-title">Anggota (NIM • Nama • Kelas)</div>
-        <div class="mt-2" style="max-height: 120px; overflow:auto">
-          @forelse($members as $m)
-            <div class="d-flex align-items-center small mb-1">
+        <div class="metric-title">Anggota ({{ $anggota->count() }})</div>
+        <div class="mt-2" style="max-height: 200px; overflow:auto">
+          @forelse($anggota as $m)
+            <div class="d-flex align-items-center small mb-2 p-2 border rounded border-light">
               <span class="text-monospace mr-2">{{ $m->nim ?: '-' }}</span>
               <span class="mr-2">{{ $m->nama ?: '-' }}</span>
-              <span class="badge badge-light border">{{ $m->kelas ?: '-' }}</span> 
+              <span class="badge badge-light border">{{ $m->kelas?->kelas ?: '-' }}</span>
+              @if($m->pivot->role === 'Ketua')
+                <span class="badge badge-primary ml-auto">Ketua</span>
+              @endif
             </div>
           @empty
             <div class="text-muted small">Tidak ada anggota.</div>
@@ -212,27 +205,30 @@
         </div>
       </div>
     </div>
-    <div class="col-lg-4 mb-2">
-      <div class="metric-card d-flex align-items-center">
-        <div class="icon-wrap"><i class="fas fa-check-circle" aria-hidden="true"></i></div>
-        <div>
-          <div class="metric-title">Jumlah Proyek Selesai</div>
-          <div class="metric-value">{{ $proyekSelesai }}</div>
-          <div class="metric-sub">Dari {{ (int)($proyek_total_cards ?? 0) }} proyek</div>
+    <div class="col-lg-6 mb-2">
+      <div class="row">
+        <div class="col-12 mb-2">
+          <div class="metric-card d-flex align-items-center">
+            <div class="icon-wrap"><i class="fas fa-check-circle" aria-hidden="true"></i></div>
+            <div>
+              <div class="metric-title">Jumlah Proyek Selesai</div>
+              <div class="metric-value">{{ $proyekSelesai }}</div>
+              <div class="metric-sub">Dari {{ (int)($proyek_total_cards ?? 0) }} proyek</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 mb-2">
+          <div class="metric-card d-flex align-items-center">
+            <div class="icon-wrap"><i class="fas fa-calendar-week" aria-hidden="true"></i></div>
+            <div>
+              <div class="metric-title">Jumlah Aktivitas (7 hari)</div>
+              <div class="metric-value">{{ $aktivitasMingguan }}</div>
+              <div class="metric-sub">Total aktivitas: {{ (int)($aktivitas_total ?? 0) }}</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
-    <div class="col-lg-4 mb-2">
-      <div class="metric-card d-flex align-items-center">
-        <div class="icon-wrap"><i class="fas fa-calendar-week" aria-hidden="true"></i></div>
-        <div>
-          <div class="metric-title">Jumlah Aktivitas (7 hari)</div>
-          <div class="metric-value">{{ $aktivitasMingguan }}</div>
-          <div class="metric-sub">Total aktivitas: {{ (int)($aktivitas_total ?? 0) }}</div>
-        </div>
-      </div>
-    </div>
-
   </div>
 
   {{-- Overview Proyek --}}
@@ -249,6 +245,49 @@
         <div class="col-md-3 mb-3">
           <div class="metric-title">Total Aktivitas</div>
           <div class="metric-value">{{ $aktivitas_total }}</div>
+        </div>
+        <div class="col-md-3 mb-3">
+          @php
+            $evaluatedCards = 0;
+            foreach ($proyekLists as $list) {
+              foreach ($list->cards as $card) {
+                $evalData = $cardGrades[$card->id]['evaluasi_dosen'] ?? null;
+                if ($evalData && $evalData->nilai_akhir !== null) {
+                  $evaluatedCards++;
+                }
+              }
+            }
+            $evalPercentage = $proyek_total_cards > 0 ? round(($evaluatedCards / $proyek_total_cards) * 100) : 0;
+          @endphp
+          <div class="metric-title">Progres Evaluasi</div>
+          <div class="metric-value">{{ $evaluatedCards }}/{{ $proyek_total_cards }}</div>
+          <div class="progress mt-2" style="height: 8px;">
+            <div class="progress-bar {{ $evalPercentage == 100 ? 'bg-success' : ($evalPercentage > 50 ? 'bg-warning' : 'bg-danger') }}"
+                 role="progressbar"
+                 style="width: {{ $evalPercentage }}%"
+                 aria-valuenow="{{ $evalPercentage }}" aria-valuemin="0" aria-valuemax="100">
+            </div>
+          </div>
+          <div class="metric-sub">{{ $evalPercentage }}%</div>
+        </div>
+        <div class="col-md-3 mb-3">
+          @php
+            $totalNilai = 0;
+            $countNilai = 0;
+            foreach ($proyekLists as $list) {
+              foreach ($list->cards as $card) {
+                $evalData = $cardGrades[$card->id]['evaluasi_dosen'] ?? null;
+                if ($evalData && $evalData->nilai_akhir !== null) {
+                  $totalNilai += $evalData->nilai_akhir;
+                  $countNilai++;
+                }
+              }
+            }
+            $avgNilai = $countNilai > 0 ? round($totalNilai / $countNilai) : 0;
+          @endphp
+          <div class="metric-title">Rata-rata Nilai</div>
+          <div class="metric-value">{{ $avgNilai }}</div>
+          <div class="metric-sub">Dari {{ $countNilai }} proyek</div>
         </div>
       </div>
     </div>
@@ -280,6 +319,28 @@
                   <h6 class="mb-0 text-uppercase font-weight-bold truncate">{{ $list->name }}</h6>
                   <span class="badge badge-soft ml-2">{{ count($list->cards) }}</span>
                 </div>
+                <div class="text-right small">
+                  @php
+                    $listAvgDosen = $listAggDosen[$list->id] ?? 0;
+                    $listAvgMitra = $listAggMitra[$list->id] ?? 0;
+                    $evaluatedCards = 0;
+                    foreach ($list->cards as $card) {
+                      $evalData = $cardGrades[$card->id]['evaluasi_dosen'] ?? null;
+                      if ($evalData && $evalData->nilai_akhir !== null) {
+                        $evaluatedCards++;
+                      }
+                    }
+                  @endphp
+                  @if($evaluatedCards > 0)
+                    <div class="text-success">
+                      <i class="fas fa-check-circle mr-1"></i>
+                      {{ $evaluatedCards }}/{{ count($list->cards) }} dievaluasi
+                    </div>
+                    @if($listAvgDosen > 0)
+                      <div class="text-muted">Rata-rata: {{ $listAvgDosen }}</div>
+                    @endif
+                  @endif
+                </div>
               </div>
 
               {{-- List kartu --}}
@@ -293,16 +354,24 @@
                     $statusNow  = $card->status_proyek ?? ($card->status ?? 'Proses');
                     $cgRow  = $cardGrades[$card->id]['dosen'] ?? null;
                     $cgRowM = $cardGrades[$card->id]['mitra'] ?? null;
+                    $evalDosen = $cardGrades[$card->id]['evaluasi_dosen'] ?? null;
                   @endphp
 
-                  <div class="card board-card shadow-xs mb-2 hover-raise"
+                  <div class="card board-card shadow-xs mb-2 hover-raise {{ ($evalDosen && $evalDosen->nilai_akhir !== null) ? 'border-success' : '' }}"
                        data-card-id="{{ $card->id }}"
                        data-card-uuid="{{ $card->uuid }}"
                        data-title="{{ $card->title }}">
                     <div class="card-body p-2 d-flex flex-column">
 
                       {{-- Judul --}}
-                      <div class="card-title-full font-weight-bold mb-1">{{ $card->title }}</div>
+                      <div class="d-flex align-items-start mb-1">
+                        <div class="card-title-full font-weight-bold flex-grow-1">{{ $card->title }}</div>
+                        @if($evalDosen && $evalDosen->nilai_akhir !== null)
+                          <span class="badge badge-success badge-pill ml-2" title="Sudah dievaluasi">
+                            <i class="fas fa-check mr-1"></i>{{ (int)$evalDosen->nilai_akhir }}
+                          </span>
+                        @endif
+                      </div>
 
                       {{-- Tanggal --}}
                       @if($tglMulai || $tglSelesai)
@@ -346,18 +415,42 @@
                       </div>
 
                       {{-- Nilai Dosen & Mitra --}}
-                      @php $dTot = optional($cgRow)->total; $mTot = optional($cgRowM)->total; @endphp
+                      @php
+                        $dTot = optional($cgRow)->total;
+                        $mTot = optional($cgRowM)->total;
+                        $newDosenNilai = $evalDosen ? ($evalDosen->nilai_akhir ?? null) : null;
+                        $finalDosenNilai = $newDosenNilai ?? $dTot;
+                      @endphp
                       <div class="score-card mb-2 p-2" style="border:1px solid var(--border);border-radius:.5rem;background:var(--bg-soft)">
                         <div class="d-flex justify-content-between">
                           <div class="mr-2">
                             <i class="fas fa-user-graduate mr-1" aria-hidden="true"></i>
-                            Dosen: <span class="font-weight-bold score-dosen-val">{{ $dTot !== null ? (int)$dTot : '—' }}</span>
+                            Dosen:
+                            <span class="font-weight-bold score-dosen-val">
+                              {{ $finalDosenNilai !== null ? (int)$finalDosenNilai : '—' }}
+                            </span>
+                            @if($evalDosen && $evalDosen->status)
+                              <span class="badge badge-xs ml-1 {{ $evalDosen->status == 'draft' ? 'badge-warning' : ($evalDosen->status == 'submitted' ? 'badge-info' : 'badge-success') }}">
+                                {{ strtoupper($evalDosen->status) }}
+                              </span>
+                            @endif
                           </div>
                           <div>
                             <i class="fas fa-handshake mr-1" aria-hidden="true"></i>
                             Mitra: <span class="font-weight-bold score-mitra-val">{{ $mTot !== null ? (int)$mTot : '—' }}</span>
                           </div>
                         </div>
+                        @if($evalDosen && $evalDosen->is_complete)
+                          <div class="mt-1 small text-muted">
+                            <i class="fas fa-check-circle text-success mr-1"></i>
+                            Lengkap:
+                            @foreach($evalDosen->kriteria as $kriteria => $nilai)
+                              @if($nilai !== null)
+                                <span class="mr-2">{{ ucwords(str_replace('_', ' ', $kriteria)) }}: {{ $nilai }}</span>
+                              @endif
+                            @endforeach
+                          </div>
+                        @endif
                       </div>
 
                       {{-- Footer: status + actions --}}
@@ -377,12 +470,13 @@
                             </a>
                           @endif
 
+
                           {{-- Nilai Dosen --}}
                           <button type="button"
-                                  class="btn btn-outline-primary"
+                                  class="btn btn-outline-success"
                                   title="Nilai Dosen"
-                                  onclick="gradeDosen('{{ $card->uuid }}','{{ addslashes($card->title) }}')">
-                            <i class="fas fa-user-graduate" aria-hidden="true"></i>
+                                  onclick="showProjectDetail('{{ $card->uuid }}','{{ addslashes($card->title) }}')">
+                            <i class="fas fa-clipboard-list" aria-hidden="true"></i>
                           </button>
 
                           {{-- Nilai Mitra --}}
@@ -859,295 +953,6 @@
     });
   };
 
-  // Edit Absensi
-  // Absensi/AP functions removed
-  // Grade Dosen per proyek per mahasiswa
-  window.gradeDosen = function(cardId, title){
-    if(!cardId || !title) return;
-
-    // Use settings data instead of session indicators
-    const dosenItems = [
-      { kode: 'd_hasil', nama: 'Kualitas Hasil Proyek', bobot: {{ (int)($settings['d_hasil'] ?? 20) }} },
-      { kode: 'd_teknis', nama: 'Kompleksitas Teknis', bobot: {{ (int)($settings['d_teknis'] ?? 20) }} },
-      { kode: 'd_user', nama: 'Kesesuaian Pengguna', bobot: {{ (int)($settings['d_user'] ?? 15) }} },
-      { kode: 'd_efisiensi', nama: 'Efisiensi Waktu/Biaya', bobot: {{ (int)($settings['d_efisiensi'] ?? 15) }} },
-      { kode: 'd_dokpro', nama: 'Dokumentasi & Profesionalisme', bobot: {{ (int)($settings['d_dokpro'] ?? 15) }} },
-      { kode: 'd_inisiatif', nama: 'Kemandirian & Inisiatif', bobot: {{ (int)($settings['d_inisiatif'] ?? 15) }} }
-    ];
-
-    const items = dosenItems.map(item => item.kode);
-    const labels = {};
-    const percentages = {};
-    const weights = {};
-
-    dosenItems.forEach(item => {
-      labels[item.kode] = item.nama;
-      percentages[item.kode] = item.bobot + '%';
-      weights[item.kode] = item.bobot;
-    });
-
-    const members = [
-      @foreach($members as $m)
-        { id: '{{ $m->id }}', nim: '{{ $m->nim }}', nama: '{{ $m->nama }}' },
-      @endforeach
-    ];
-
-    const saved = (window.cardGrades?.[cardId]?.dosen) || null;
-    const nilai = (saved && saved.nilai) ? saved.nilai : {};
-
-    let html = `
-      <div class="grade-modal-container">
-        <div class="text-center mb-4">
-          <h4 style="margin: 0; font-size: 1.3rem; font-weight: 700; color: #2c3e50;">${title}</h4>
-          <p style="margin: 0.5rem 0 0 0; color: #6b7280; font-size: 1rem;">Penilaian Dosen per Mahasiswa</p>
-        </div>
-
-        <div class="table-responsive" style="max-height: 65vh; overflow-y: auto;">
-          <table class="table table-bordered" style="font-size: 0.9rem; margin-bottom: 0;">
-            <thead class="thead-dark sticky-top">
-              <tr>
-                <th style="min-width: 180px; background: #343a40; color: white; border-color: #454d55;">Mahasiswa</th>
-                ${items.map(item => `
-                  <th style="min-width: 140px; text-align: center; background: #343a40; color: white; border-color: #454d55;">
-                    <div>${labels[item]}</div>
-                    <small style="font-weight: normal; opacity: 0.8;">Bobot: ${percentages[item]}</small>
-                    <div style="font-size: 0.7rem; opacity: 0.6; margin-top: 2px;">Input 1-100</div>
-                  </th>
-                `).join('')}
-                <th style="min-width: 100px; text-align: center; background: #343a40; color: white; border-color: #454d55;">Rata-rata</th>
-                <th style="min-width: 120px; text-align: center; background: #343a40; color: white; border-color: #454d55;">
-                  Final<br><small style="font-weight: normal; opacity: 0.8;">(Weighted)</small>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              ${members.map(member => {
-                const memberNilai = nilai[member.id] || {};
-                let total = 0;
-                let count = 0;
-                let weightedTotal = 0;
-
-                return `
-                  <tr>
-                    <td style="vertical-align: middle; background: #f8f9fa; font-weight: 600;">
-                      <div>${member.nama}</div>
-                      <div style="font-size: 0.85rem; color: #6b7280; font-weight: normal;">${member.nim}</div>
-                    </td>
-                    ${items.map(item => {
-                      const val = parseInt((memberNilai && memberNilai[item] != null) ? memberNilai[item] : 0, 10) || 0;
-                      total += val;
-                      count++;
-                      const weight = parseInt(percentages[item]) || 0;
-                      weightedTotal += (val * weight / 100);
-                      return `
-                        <td style="text-align: center; vertical-align: middle;">
-                          <input type="number"
-                               min="1" max="100"
-                               value="${val}"
-                               class="form-control form-control-sm text-center grade-input"
-                               style="width: 70px; font-size: 0.9rem; margin: 0 auto;"
-                               data-member="${member.id}"
-                               data-item="${item}"
-                               placeholder="1-100"
-                               title="Masukkan nilai 1-100">
-                        </td>
-                      `;
-                    }).join('')}
-                    <td style="text-align: center; vertical-align: middle; background: #e9ecef;">
-                      <span class="badge badge-primary average-badge" style="font-size: 0.9rem; padding: 0.5rem 0.75rem;">
-                        ${count > 0 ? Math.round(total / count) : 0}
-                      </span>
-                    </td>
-                    <td style="text-align: center; vertical-align: middle; background: #d4edda;">
-                      <span class="badge badge-success percentage-badge" style="font-size: 0.9rem; padding: 0.5rem 0.75rem;">
-                        ${Math.round(weightedTotal)}
-                      </span>
-                    </td>
-                  </tr>
-                `;
-              }).join('')}
-            </tbody>
-          </table>
-        </div>
-
-        <div class="d-flex justify-content-between align-items-center mt-4">
-          <div class="text-left">
-            <small class="text-muted">
-              <strong>Keterangan:</strong> Input nilai 1-100 • Sistem akan menghitung persentase otomatis berdasarkan bobot
-            </small>
-          </div>
-          <div class="text-right">
-            <small class="text-muted">Total Mahasiswa: ${members.length}</small>
-          </div>
-        </div>
-      </div>
-    `;
-
-    Swal.fire({
-      title: '',
-      html: html,
-      width: '100%',
-      height: 'auto',
-      showCloseButton: true,
-      showConfirmButton: true,
-      confirmButtonText: '💾 Simpan Nilai',
-      confirmButtonColor: '#28a745',
-      showCancelButton: true,
-      cancelButtonText: '❌ Batal',
-      customClass: {
-        container: 'grade-dosen-modal',
-        popup: 'p-0 m-3'
-      },
-      didOpen: () => {
-        // Auto-calculate averages and weighted percentages when inputs change
-        document.querySelectorAll('.grade-input').forEach(input => {
-          input.addEventListener('input', function() {
-            const row = this.closest('tr');
-            const inputs = row.querySelectorAll('.grade-input');
-            let total = 0;
-            let count = 0;
-            let weightedTotal = 0;
-
-            // Use weights from settings (these are the percentages)
-            const weights = {
-              'd_hasil': {{ (int)($settings['d_hasil'] ?? 20) }},
-              'd_teknis': {{ (int)($settings['d_teknis'] ?? 20) }},
-              'd_user': {{ (int)($settings['d_user'] ?? 15) }},
-              'd_efisiensi': {{ (int)($settings['d_efisiensi'] ?? 15) }},
-              'd_dokpro': {{ (int)($settings['d_dokpro'] ?? 15) }},
-              'd_inisiatif': {{ (int)($settings['d_inisiatif'] ?? 15) }}
-            };
-
-            inputs.forEach(inp => {
-              const val = parseInt(inp.value) || 0;
-              total += val;
-              count++;
-              const item = inp.getAttribute('data-item');
-              if (weights[item]) {
-                // Convert input (1-100) to weighted percentage
-                weightedTotal += (val * weights[item] / 100);
-              }
-            });
-
-            const average = count > 0 ? Math.round(total / count) : 0;
-            const percentage = Math.round(weightedTotal);
-
-            const avgBadge = row.querySelector('.average-badge');
-            if (avgBadge) {
-              avgBadge.textContent = average;
-            }
-
-            const percBadge = row.querySelector('.percentage-badge');
-            if (percBadge) {
-              percBadge.textContent = percentage;
-            }
-
-            // Show individual weighted contributions in tooltips
-            inputs.forEach(inp => {
-              const val = parseInt(inp.value) || 0;
-              const item = inp.getAttribute('data-item');
-              if (weights[item]) {
-                const contribution = Math.round(val * weights[item] / 100);
-                inp.setAttribute('title', `Input: ${val} × Bobot: ${weights[item]}% = Kontribusi: ${contribution}`);
-              }
-            });
-          });
-
-          // Initialize tooltips on page load
-          document.querySelectorAll('.grade-input').forEach(inp => {
-            const val = parseInt(inp.value) || 0;
-            const item = inp.getAttribute('data-item');
-            const weights = {
-              'd_hasil': {{ (int)($settings['d_hasil'] ?? 20) }},
-              'd_teknis': {{ (int)($settings['d_teknis'] ?? 20) }},
-              'd_user': {{ (int)($settings['d_user'] ?? 15) }},
-              'd_efisiensi': {{ (int)($settings['d_efisiensi'] ?? 15) }},
-              'd_dokpro': {{ (int)($settings['d_dokpro'] ?? 15) }},
-              'd_inisiatif': {{ (int)($settings['d_inisiatif'] ?? 15) }}
-            };
-            if (weights[item]) {
-              const contribution = Math.round(val * weights[item] / 100);
-              inp.setAttribute('title', `Input: ${val} × Bobot: ${weights[item]}% = Kontribusi: ${contribution}`);
-            }
-          });
-        });
-
-        // Add better styling
-        const style = document.createElement('style');
-        style.textContent = `
-          .grade-dosen-modal .swal2-popup {
-            padding: 0;
-            border-radius: 0.5rem;
-            max-width: none;
-            width: 100%;
-          }
-          .grade-input:focus {
-            border-color: #4e73df;
-            box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
-          }
-          .grade-input {
-            transition: all 0.2s ease;
-          }
-          .grade-input:hover {
-            border-color: #4e73df;
-          }
-          .grade-dosen-modal .table {
-            background: white;
-          }
-          .grade-dosen-modal .table th {
-            position: sticky;
-            top: 0;
-            z-index: 10;
-          }
-          .grade-dosen-modal .input-group-text {
-            background: #f8f9fa;
-            border-color: #dee2e6;
-          }
-        `;
-        document.head.appendChild(style);
-      }
-    }).then((result) => {
-      if (!result.isConfirmed) return;
-
-      // Collect all values
-      const payload = {};
-      document.querySelectorAll('.grade-input').forEach(input => {
-        const memberId = input.getAttribute('data-member');
-        const item = input.getAttribute('data-item');
-        const value = parseInt(input.value) || 0;
-
-        if (!payload[memberId]) {
-          payload[memberId] = {};
-        }
-        payload[memberId][item] = value;
-      });
-
-      $.post("{{ route('admin.evaluasi.project.grade.dosen', ['card'=>'__ID__']) }}".replace('__ID__', cardId), {sesi_id: {{ $sesi->id }}, items: payload, _token:'{{ csrf_token() }}'})
-        .done(function(r){
-          if(r.success){
-            swalToast('success','Nilai dosen disimpan');
-            try{
-              window.cardGrades = window.cardGrades || {};
-              window.cardGrades[cardId] = window.cardGrades[cardId] || {};
-              window.cardGrades[cardId].dosen = window.cardGrades[cardId].dosen || {};
-              window.cardGrades[cardId].dosen.nilai = payload;
-              if (typeof r.total !== 'undefined') {
-                window.cardGrades[cardId].dosen.total = r.total;
-                const wrap = document.querySelector('.board-card[data-card-uuid="'+cardId+'"]');
-                if (wrap){
-                  const el = wrap.querySelector('.score-dosen-val') || wrap.querySelector('.badge.badge-primary.ml-1');
-                  if (el) el.textContent = r.total;
-                }
-              }
-            }catch(e){}
-          } else {
-            Swal.fire('Gagal','Tidak dapat menyimpan','error');
-          }
-        })
-        .fail(()=> Swal.fire('Gagal','Tidak dapat menyimpan','error'));
-    });
-  };
-
   // Grade Mitra per proyek per mahasiswa
   window.gradeMitra = function(cardId, title){
     if(!cardId || !title) return;
@@ -1396,6 +1201,288 @@
         .fail(()=> Swal.fire('Gagal','Tidak dapat menyimpan','error'));
     });
   };
+
+  // Modal Detail Proyek untuk Evaluasi Dosen - MODIFIKASI SINGLE SUBMIT
+  window.showProjectDetail = function(cardId, cardTitle) {
+    if (!cardId) return;
+
+    // Load indikator dari database evaluation_rubric_indicators
+    const dosenItems = [
+      { kode: 'd_hasil', nama: 'Kualitas Hasil Proyek', bobot: {{ (int)($settings['d_hasil'] ?? 30) }} },
+      { kode: 'd_teknis', nama: 'Tingkat Kompleksitas Teknis', bobot: {{ (int)($settings['d_teknis'] ?? 20) }} },
+      { kode: 'd_user', nama: 'Kesesuaian dengan Kebutuhan Pengguna', bobot: {{ (int)($settings['d_user'] ?? 15) }} },
+      { kode: 'd_efisiensi', nama: 'Efisiensi Waktu dan Biaya', bobot: {{ (int)($settings['d_efisiensi'] ?? 10) }} },
+      { kode: 'd_dokpro', nama: 'Dokumentasi dan Profesionalisme', bobot: {{ (int)($settings['d_dokpro'] ?? 15) }} },
+      { kode: 'd_inisiatif', nama: 'Kemandirian dan Inisiatif', bobot: {{ (int)($settings['d_inisiatif'] ?? 10) }} }
+    ];
+
+    const members = [
+      @foreach($members as $m)
+        { id: '{{ $m->id }}', nim: '{{ $m->nim }}', nama: '{{ $m->nama }}' },
+      @endforeach
+    ];
+
+    const totalBobot = dosenItems.reduce((sum, item) => sum + item.bobot, 0);
+
+    let html = `
+      <div class="project-detail-modal">
+        <div class="text-center mb-4">
+          <h4 style="margin: 0; font-size: 1.3rem; font-weight: 700; color: #2c3e50;">${cardTitle}</h4>
+          <p style="margin: 0.5rem 0 0 0; color: #6b7280; font-size: 1rem;">Evaluasi Dosen per Mahasiswa</p>
+          <small style="color: #28a745; font-weight: 600;">Total Bobot: ${totalBobot}%</small>
+        </div>
+
+        <div class="table-responsive" style="max-height: 65vh; overflow-y: auto;">
+          <table class="table table-bordered" style="font-size: 0.9rem; margin-bottom: 0;">
+            <thead class="thead-dark sticky-top">
+              <tr>
+                <th style="min-width: 180px; background: #343a40; color: white; border-color: #454d55;">Mahasiswa</th>
+                ${dosenItems.map(item => `
+                  <th style="min-width: 140px; text-align: center; background: #343a40; color: white; border-color: #454d55;">
+                    <div>${item.nama}</div>
+                    <small style="font-weight: normal; opacity: 0.8;">Bobot: ${item.bobot}%</small>
+                    <div style="font-size: 0.7rem; opacity: 0.6; margin-top: 2px;">Input 1-100</div>
+                  </th>
+                `).join('')}
+                <th style="min-width: 100px; text-align: center; background: #343a40; color: white; border-color: #454d55;">Rata-rata</th>
+                <th style="min-width: 120px; text-align: center; background: #343a40; color: white; border-color: #454d55;">
+                  Final<br><small style="font-weight: normal; opacity: 0.8;">(Weighted)</small>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              ${members.map(member => `
+                <tr>
+                  <td style="vertical-align: middle; background: #f8f9fa; font-weight: 600;">
+                    <div>${member.nama}</div>
+                    <small style="color: #6b7280;">${member.nim}</small>
+                  </td>
+                  ${dosenItems.map(item => `
+                    <td style="text-align: center; vertical-align: middle;">
+                      <input type="number"
+                             class="form-control form-control-sm grade-input"
+                             data-member="${member.id}"
+                             data-item="${item.kode}"
+                             data-card="${cardId}"
+                             min="0" max="100"
+                             value=""
+                             placeholder="-"
+                             style="text-align: center;">
+                    </td>
+                  `).join('')}
+                  <td style="text-align: center; vertical-align: middle; font-weight: 600; background: #f8f9fa;">
+                    -
+                  </td>
+                  <td style="text-align: center; vertical-align: middle; font-weight: 600; background: #e3f2fd;">
+                    -
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mt-4">
+          <div class="text-left">
+            <small class="text-muted">
+              <strong>Keterangan:</strong> Input nilai 1-100 untuk setiap kriteria • Sistem akan menghitung otomatis
+            </small>
+          </div>
+          <div class="text-right">
+            <small class="text-muted">Total Mahasiswa: ${members.length}</small>
+          </div>
+        </div>
+      </div>
+    `;
+
+    Swal.fire({
+      html: html,
+      width: '95%',
+      showConfirmButton: true,
+      confirmButtonText: '💾 Simpan Semua Nilai',
+      confirmButtonColor: '#28a745',
+      showCancelButton: true,
+      cancelButtonText: '❌ Batal',
+      showCloseButton: true,
+      customClass: {
+        container: 'project-detail-modal',
+        popup: 'swal2-popup'
+      }
+    }).then((result) => {
+      if (!result.isConfirmed) return;
+
+      // Collect all evaluations data for single submit
+      const evaluationsData = [];
+      document.querySelectorAll('tbody tr').forEach(row => {
+        const inputs = row.querySelectorAll('.grade-input');
+        if (inputs.length > 0) {
+          const memberId = inputs[0].getAttribute('data-member');
+
+          const evaluationData = {
+            evaluasi_sesi_id: {{ $sesi->id }},
+            periode_id: {{ $sesi->periode_id }},
+            kelompok_id: {{ $kelompok->id }},
+            mahasiswa_id: memberId,
+            project_card_id: cardId,
+            evaluator_id: {{ Auth::id() }},
+            d_hasil: parseInt(row.querySelector('[data-item="d_hasil"]').value) || null,
+            d_teknis: parseInt(row.querySelector('[data-item="d_teknis"]').value) || null,
+            d_user: parseInt(row.querySelector('[data-item="d_user"]').value) || null,
+            d_efisiensi: parseInt(row.querySelector('[data-item="d_efisiensi"]').value) || null,
+            d_dokpro: parseInt(row.querySelector('[data-item="d_dokpro"]').value) || null,
+            d_inisiatif: parseInt(row.querySelector('[data-item="d_inisiatif"]').value) || null,
+            progress_percentage: 100,
+            evaluation_type: 'regular',
+            _token: '{{ csrf_token() }}'
+          };
+
+  
+          evaluationsData.push(evaluationData);
+        }
+      });
+
+      // Send all data in single request
+      $.ajax({
+        url: "{{ route('admin.evaluasi.penilaian-dosen.batch-store') }}",
+        method: 'POST',
+        data: {
+          evaluations: evaluationsData,
+          _token: '{{ csrf_token() }}'
+        },
+        success: function(response) {
+          if (response.success) {
+            swalToast('success', 'Semua nilai berhasil disimpan');
+            
+            // Update the UI with new values
+            response.evaluations.forEach(updatedEval => {
+              const row = document.querySelector(`tr:has([data-member="${updatedEval.mahasiswa_id}"])`);
+              if (row) {
+                calculateRowTotals(row);
+              }
+            });
+          } else {
+            Swal.fire('Gagal', response.message || 'Gagal menyimpan nilai', 'error');
+          }
+        },
+        error: function() {
+          Swal.fire('Gagal', 'Terjadi kesalahan saat menyimpan nilai', 'error');
+        }
+      });
+    });
+
+    // Add event listeners for auto-calculation
+    document.querySelectorAll('.grade-input').forEach(input => {
+      input.addEventListener('input', function() {
+        calculateRowTotals(this.closest('tr'));
+      });
+    });
+
+    // Add custom styles
+    if (!document.querySelector('#project-detail-modal-styles')) {
+      const style = document.createElement('style');
+      style.id = 'project-detail-modal-styles';
+      style.textContent = `
+        .project-detail-modal .swal2-popup {
+          padding: 0;
+          border-radius: 0.75rem;
+          max-height: 90vh;
+        }
+        .project-detail-modal .table {
+          margin-bottom: 0;
+        }
+        .project-detail-modal .table th,
+        .project-detail-modal .table td {
+          padding: 0.5rem;
+          vertical-align: middle;
+        }
+        .project-detail-modal .form-control-sm {
+          height: 30px;
+          font-size: 0.8rem;
+        }
+        .project-detail-modal .form-control-sm.border-success {
+          border: 2px solid #28a745;
+          background-color: #f8fff9;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+  }
+
+  function calculateRowTotals(row) {
+    const inputs = row.querySelectorAll('.grade-input');
+    const dosenItems = [
+      { kode: 'd_hasil', bobot: {{ (int)($settings['d_hasil'] ?? 30) }} },
+      { kode: 'd_teknis', bobot: {{ (int)($settings['d_teknis'] ?? 20) }} },
+      { kode: 'd_user', bobot: {{ (int)($settings['d_user'] ?? 15) }} },
+      { kode: 'd_efisiensi', bobot: {{ (int)($settings['d_efisiensi'] ?? 10) }} },
+      { kode: 'd_dokpro', bobot: {{ (int)($settings['d_dokpro'] ?? 15) }} },
+      { kode: 'd_inisiatif', bobot: {{ (int)($settings['d_inisiatif'] ?? 10) }} }
+    ];
+
+    let total = 0;
+    let count = 0;
+    let weightedTotal = 0;
+
+    inputs.forEach((input, index) => {
+      const value = parseInt(input.value) || 0;
+      if (value > 0) {
+        total += value;
+        count++;
+        weightedTotal += (value * dosenItems[index].bobot / 100);
+      }
+    });
+
+    const avgCell = row.children[inputs.length + 1];
+    const finalCell = row.children[inputs.length + 2];
+
+    avgCell.innerHTML = count > 0 ? total.toFixed(1) : '-';
+
+    if (weightedTotal > 0) {
+      const final = weightedTotal.toFixed(1);
+      const grade = getGradeFromScore(weightedTotal);
+      finalCell.innerHTML = `${final} <br><small class="badge badge-${getGradeColor(grade)}">${grade}</small>`;
+    } else {
+      finalCell.innerHTML = '-';
+    }
+  }
+
+  function getGradeFromScore(score) {
+    if (score >= 85) return 'A';
+    if (score >= 75) return 'B';
+    if (score >= 65) return 'C';
+    if (score >= 55) return 'D';
+    return 'E';
+  }
+
+  function getGradeColor(grade) {
+    const colors = {
+      'A': 'success',
+      'B': 'info',
+      'C': 'warning',
+      'D': 'danger',
+      'E': 'dark'
+    };
+    return colors[grade] || 'secondary';
+  }
+
+  function swalToast(type, message) {
+    const Toast = Swal.mixin({
+      toast: true,
+      position: 'top-end',
+      showConfirmButton: false,
+      timer: 3000,
+      timerProgressBar: true,
+      didOpen: (toast) => {
+        toast.addEventListener('mouseenter', Swal.stopTimer)
+        toast.addEventListener('mouseleave', Swal.resumeTimer)
+      }
+    });
+
+    Toast.fire({
+      icon: type,
+      title: message
+    });
+  }
 })();
 </script>
 @endpush

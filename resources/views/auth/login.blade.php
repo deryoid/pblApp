@@ -19,6 +19,45 @@
 
     <!-- Custom styles for this template-->
     <link href="{{asset('/')}}sbadmin2/css/sb-admin-2.min.css" rel="stylesheet">
+    <style>
+        body.bg-gradient-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding-top: 60px;
+        }
+        .card {
+            border-radius: 15px;
+            overflow: hidden;
+        }
+        .bg-login-image {
+            background-color: #f8f9fc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .bg-login-image img {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 80%;
+            max-height: 300px;
+            object-fit: contain;
+        }
+        @media (max-width: 992px) {
+            body.bg-gradient-primary {
+                padding-top: 40px;
+            }
+            .card {
+                margin: 20px auto;
+                max-width: 400px;
+            }
+        }
+    </style>
 
 </head>
 
@@ -31,12 +70,12 @@
 
             <div class="col-xl-10 col-lg-12 col-md-9">
 
-                <div class="card o-hidden border-0 shadow-lg my-5">
+                <div class="card o-hidden border-0 shadow-lg">
                     <div class="card-body p-0">
                         <!-- Nested Row within Card Body -->
                         <div class="row">
-                            <div class="col-lg-6 d-none d-lg-block bg-login-image">
-                                <img src="{{ asset('sbadmin2/img/logo-pbl.png') }}" alt="logo" class="mx-auto d-block" style="width: 80%; padding-top: 50px;">
+                            <div class="col-lg-6 d-none d-lg-block bg-login-image position-relative">
+                                <img src="{{ asset('sbadmin2/img/logo-pbl.png') }}" alt="logo">
                             </div>
                             <div class="col-lg-6">
                                 <div class="p-5">
@@ -84,6 +123,7 @@
         </div>
 
     </div>
+
     <x-scripts/>
 @include('sweetalert::alert')
 </body>

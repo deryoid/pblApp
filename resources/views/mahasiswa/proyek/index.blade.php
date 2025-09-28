@@ -319,7 +319,7 @@
             </div>
             <div class="form-group col-md-6">
               <label>Status</label>
-              <select name="status_proyek" class="form-control"><option>Proses</option><option>Dibatalkan</option><option>Selesai</option></select>
+              <select name="status_proyek" class="form-control"><option>Proses</option><option>Dibatalkan</option></select>
             </div>
           </div>
           <div class="form-group"><label>Nama Mitra</label><input name="nama_mitra" type="text" class="form-control"></div>
@@ -329,7 +329,7 @@
           </div>
           <div class="form-group"><label>Link Drive Proyek</label><input name="link_drive_proyek" type="url" class="form-control" placeholder="https://..."></div>
           <div class="form-group"><label>Kendala</label><textarea name="kendala" class="form-control" rows="2"></textarea></div>
-          <div class="form-group mb-0"><label>Catatan</label><textarea name="catatan" class="form-control" rows="2"></textarea></div>
+          <div class="form-group mb-0"><label>Catatan</label><textarea name="catatan" class="form-control" rows="2" readonly></textarea></div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
@@ -367,7 +367,10 @@
             </div>
             <div class="form-group col-md-6">
               <label>Status</label>
-              <select name="status_proyek" id="editStatus" class="form-control"><option>Proses</option><option>Dibatalkan</option><option>Selesai</option></select>
+              <select name="status_proyek" id="editStatus" class="form-control">
+                <option value="Proses">Proses</option>
+                <option value="Dibatalkan">Dibatalkan</option>
+              </select>
             </div>
           </div>
           <div class="form-group"><label>Nama Mitra</label><input name="nama_mitra" id="editMitra" type="text" class="form-control"></div>
@@ -377,8 +380,8 @@
           </div>
           <div class="form-group"><label>Link Drive Proyek</label><input name="link_drive_proyek" id="editDrive" type="url" class="form-control" placeholder="https://..."></div>
           <div class="form-group"><label>Progress</label><input name="progress" id="editProgress" type="number" min="0" max="100" class="form-control"></div>
-          <div class="form-group"><label>Kendala</label><textarea name="kendala" id="editKendala" class="form-control" rows="2"></textarea></div>
-          <div class="form-group"><label>Catatan</label><textarea name="catatan" id="editCatatan" class="form-control" rows="2"></textarea></div>
+          <div class="form-group"><label>Kendala</label><textarea name="kendala"  id="editKendala"  class="form-control" rows="2"></textarea></div>
+          <div class="form-group"><label>Catatan</label><textarea name="catatan" id="editCatatan" readonly class="form-control" rows="2"></textarea></div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>

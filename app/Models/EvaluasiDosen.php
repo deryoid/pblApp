@@ -2,9 +2,10 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Facades\Auth;
 
 class EvaluasiDosen extends Model
 {
@@ -19,6 +20,7 @@ class EvaluasiDosen extends Model
     }
 
     protected $table = 'evaluasi_dosen';
+
     protected $guarded = [];
 
     protected $casts = [
@@ -51,7 +53,7 @@ class EvaluasiDosen extends Model
             }
 
             if (empty($model->evaluator_id)) {
-                $model->evaluator_id = auth()->id();
+                $model->evaluator_id = Auth::check() ? Auth::id() : null;
             }
         });
 
@@ -71,15 +73,26 @@ class EvaluasiDosen extends Model
             $model->rata_rata = $count > 0 ? array_sum($values) / $count : null;
 
             // Hitung nilai akhir dengan pembobotan
-            if ($model->rata_rata !== null) {
+            if ($count > 0) {
+                // Coba dapatkan bobot dari evaluation_rubric_indicators dulu
+                try {
+                    $indicators = \App\Models\EvaluationRubricIndicator::whereIn('code', [
+                        'd_hasil', 'd_teknis', 'd_user', 'd_efisiensi', 'd_dokpro', 'd_inisiatif',
+                    ])->pluck('weight', 'code')->toArray();
+                } catch (\Exception $e) {
+                    $indicators = [];
+                }
+
+                // Fallback ke evaluation_settings
                 $settings = \App\Models\EvaluationSetting::whereIn('key', [
-                    'd_hasil', 'd_teknis', 'd_user', 'd_efisiensi', 'd_dokpro', 'd_inisiatif'
+                    'd_hasil', 'd_teknis', 'd_user', 'd_efisiensi', 'd_dokpro', 'd_inisiatif',
                 ])->pluck('value', 'key')->toArray();
 
                 $weightedTotal = 0;
                 foreach ($kriteria as $k) {
                     if ($model->$k !== null && $model->$k > 0) {
-                        $weight = $settings[$k] ?? 20; // default 20%
+                        // Prioritaskan bobot dari indicators, fallback ke settings, default ke bobot rata-rata
+                        $weight = $indicators[$k] ?? $settings[$k] ?? (100 / count($kriteria));
                         $weightedTotal += ($model->$k * $weight / 100);
                     }
                 }
@@ -98,7 +111,7 @@ class EvaluasiDosen extends Model
 
                 if ($newStatus === 'locked') {
                     $model->locked_at = now();
-                    $model->locked_by = auth()->id();
+                    $model->locked_by = Auth::check() ? Auth::id() : null;
                 } elseif ($oldStatus === 'locked' && $newStatus !== 'locked') {
                     $model->locked_at = null;
                     $model->locked_by = null;
@@ -130,7 +143,7 @@ class EvaluasiDosen extends Model
 
     public function projectCard()
     {
-        return $this->belongsTo(ProjectCard::class);
+        return $this->belongsTo(ProjectCard::class, 'project_card_id', 'uuid');
     }
 
     public function evaluator()
@@ -146,19 +159,30 @@ class EvaluasiDosen extends Model
     // Accessor untuk grade (dihitung saat dibutuhkan)
     public function getGradeAttribute()
     {
-        if ($this->nilai_akhir === null) return null;
+        if ($this->nilai_akhir === null) {
+            return null;
+        }
 
-        if ($this->nilai_akhir >= 85) return 'A';
-        if ($this->nilai_akhir >= 75) return 'B';
-        if ($this->nilai_akhir >= 65) return 'C';
-        if ($this->nilai_akhir >= 55) return 'D';
+        if ($this->nilai_akhir >= 85) {
+            return 'A';
+        }
+        if ($this->nilai_akhir >= 75) {
+            return 'B';
+        }
+        if ($this->nilai_akhir >= 65) {
+            return 'C';
+        }
+        if ($this->nilai_akhir >= 55) {
+            return 'D';
+        }
+
         return 'E';
     }
 
     // Accessor untuk status label
     public function getStatusLabelAttribute()
     {
-        return match($this->status) {
+        return match ($this->status) {
             'draft' => 'Draft',
             'submitted' => 'Submitted',
             'locked' => 'Locked',
@@ -169,7 +193,7 @@ class EvaluasiDosen extends Model
     // Accessor untuk evaluation type label
     public function getEvaluationTypeLabelAttribute()
     {
-        return match($this->evaluation_type) {
+        return match ($this->evaluation_type) {
             'regular' => 'Regular',
             'remedial' => 'Remedial',
             'improvement' => 'Improvement',
@@ -288,6 +312,7 @@ class EvaluasiDosen extends Model
                 return false;
             }
         }
+
         return true;
     }
 
@@ -295,12 +320,12 @@ class EvaluasiDosen extends Model
     public function getKriteriaDescriptionsAttribute()
     {
         return [
-            'd_hasil' => 'Hasil/Keluaran proyek',
-            'd_teknis' => 'Aspek teknis implementasi',
-            'd_user' => 'User experience & interface',
-            'd_efisiensi' => 'Efisiensi waktu & sumber daya',
-            'd_dokpro' => 'Dokumentasi proses',
-            'd_inisiatif' => 'Inisiatif & kreativitas'
+            'd_hasil' => 'Kualitas Hasil Proyek',
+            'd_teknis' => 'Tingkat Kompleksitas Teknis',
+            'd_user' => 'Kesesuaian dengan Kebutuhan Pengguna',
+            'd_efisiensi' => 'Efisiensi Waktu dan Biaya',
+            'd_dokpro' => 'Dokumentasi dan Profesionalisme',
+            'd_inisiatif' => 'Kemandirian dan Inisiatif',
         ];
     }
 
@@ -312,7 +337,7 @@ class EvaluasiDosen extends Model
             'periode_id' => 'required|exists:periode,id',
             'kelompok_id' => 'required|exists:kelompok,id',
             'mahasiswa_id' => 'required|exists:mahasiswa,id',
-            'project_card_id' => 'required|exists:project_cards,id',
+            'project_card_id' => 'required|exists:project_cards,uuid',
             'evaluator_id' => 'required|exists:users,id',
             'd_hasil' => 'nullable|integer|min:0|max:100',
             'd_teknis' => 'nullable|integer|min:0|max:100',
