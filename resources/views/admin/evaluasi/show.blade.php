@@ -355,9 +355,13 @@
                     $cgRow  = $cardGrades[$card->id]['dosen'] ?? null;
                     $cgRowM = $cardGrades[$card->id]['mitra'] ?? null;
                     $evalDosen = $cardGrades[$card->id]['evaluasi_dosen'] ?? null;
+                    $evalDetails = collect($cardGrades[$card->id]['evaluasi_dosen_details'] ?? []);
+                    $evalSummary = $cardGrades[$card->id]['evaluasi_dosen_summary'] ?? ['avg' => null, 'count' => 0];
+                    $avgNilaiDosen = $evalSummary['avg'] ?? null;
+                    $gradeColors = ['A' => 'success', 'B' => 'info', 'C' => 'warning', 'D' => 'danger', 'E' => 'dark'];
                   @endphp
 
-                  <div class="card shadow-xs mb-2 hover-raise {{ ($evalDosen && $evalDosen->nilai_akhir !== null) ? 'border-success' : '' }}"
+                  <div class="card shadow-xs mb-2 hover-raise {{ ($avgNilaiDosen !== null) ? 'border-success' : '' }}"
                        data-card-id="{{ $card->id }}"
                        data-card-uuid="{{ $card->uuid }}"
                        data-title="{{ $card->title }}">
@@ -366,9 +370,9 @@
                       {{-- Judul --}}
                       <div class="d-flex align-items-start mb-1">
                         <div class="card-title-full font-weight-bold flex-grow-1">{{ $card->title }}</div>
-                        @if($evalDosen && $evalDosen->nilai_akhir !== null)
+                        @if($avgNilaiDosen !== null)
                           <span class="badge badge-success badge-pill ml-2" title="Sudah dievaluasi">
-                            <i class="fas fa-check mr-1"></i>{{ (int)$evalDosen->nilai_akhir }}
+                            <i class="fas fa-check mr-1"></i>{{ (int) $avgNilaiDosen }}
                           </span>
                         @endif
                       </div>
@@ -414,44 +418,62 @@
                         </span>
                       </div>
 
-                      {{-- Nilai Dosen & Mitra --}}
+                      {{-- Nilai Dosen --}}
                       @php
                         $dTot = optional($cgRow)->total;
                         $mTot = optional($cgRowM)->total;
                         $newDosenNilai = $evalDosen ? ($evalDosen->nilai_akhir ?? null) : null;
-                        $finalDosenNilai = $newDosenNilai ?? $dTot;
+                        $finalDosenNilai = $avgNilaiDosen ?? $newDosenNilai ?? $dTot;
                       @endphp
                       <div class="score-card mb-2 p-2" style="border:1px solid var(--border);border-radius:.5rem;background:var(--bg-soft)">
                         <div class="d-flex justify-content-between">
                           <div class="mr-2">
                             <i class="fas fa-user-graduate mr-1" aria-hidden="true"></i>
                             Dosen:
-                            <span class="font-weight-bold score-dosen-val">
-                              {{ $finalDosenNilai !== null ? (int)$finalDosenNilai : '—' }}
-                            </span>
+                  
                             @if($evalDosen && $evalDosen->status)
                               <span class="badge badge-xs ml-1 {{ $evalDosen->status == 'draft' ? 'badge-warning' : ($evalDosen->status == 'submitted' ? 'badge-info' : 'badge-success') }}">
                                 {{ strtoupper($evalDosen->status) }}
                               </span>
                             @endif
                           </div>
-                          <div>
-                            <i class="fas fa-handshake mr-1" aria-hidden="true"></i>
-                            Mitra: <span class="font-weight-bold score-mitra-val">{{ $mTot !== null ? (int)$mTot : '—' }}</span>
-                          </div>
                         </div>
-                        @if($evalDosen && $evalDosen->is_complete)
-                          <div class="mt-1 small text-muted">
-                            <i class="fas fa-check-circle text-success mr-1"></i>
-                            Lengkap:
-                            @foreach($evalDosen->kriteria as $kriteria => $nilai)
-                              @if($nilai !== null)
-                                <span class="mr-2">{{ ucwords(str_replace('_', ' ', $kriteria)) }}: {{ $nilai }}</span>
-                              @endif
-                            @endforeach
+                        @if($evalSummary['count'] ?? 0)
+                          <div class="mt-2">
+                            <div class="d-flex justify-content-between align-items-center text-muted text-uppercase small">
+                              <span>Nilai per Mahasiswa</span>
+                              <span class="badge badge-light border">{{ $evalSummary['count'] }} orang</span>
+                            </div>
+                            <div class="mt-2 rounded bg-white" style="border:1px solid var(--border);">
+                              @foreach($evalDetails as $index => $detail)
+                                @php
+                                  $rowName = optional($detail->mahasiswa)->nama ?? optional($detail->mahasiswa)->nama_mahasiswa ?? 'Mahasiswa';
+                                  $rowNim = optional($detail->mahasiswa)->nim ?? '-';
+                                  $rowNilai = $detail->nilai_akhir !== null ? number_format((float) $detail->nilai_akhir, 1) : null;
+                                  $rowGrade = $detail->grade ?? null;
+                                  $gradeClass = $rowGrade && isset($gradeColors[$rowGrade]) ? $gradeColors[$rowGrade] : 'secondary';
+                                @endphp
+                                <div class="d-flex align-items-center justify-content-between px-2 py-1 {{ $index !== 0 ? 'border-top' : '' }}" style="border-color: var(--border);">
+                                  <div class="small">
+                                    <div class="font-weight-bold">{{ $rowName }}</div>
+                                    <div class="text-muted">{{ $rowNim }}</div>
+                                  </div>
+                                  <div class="text-right">
+                                    @if($rowNilai !== null)
+                                      <div class="font-weight-bold">{{ $rowNilai }}</div>
+                                      <span class="badge badge-{{ $gradeClass }}">{{ $rowGrade }}</span>
+                                    @else
+                                      <span class="text-muted small">Belum dinilai</span>
+                                    @endif
+                                  </div>
+                                </div>
+                              @endforeach
+                            </div>
                           </div>
                         @endif
                       </div>
+{{-- Nilai mitra --}}
+//nilai mitra disini ya buatkan seperti diatas
 
                       {{-- Footer: status + actions --}}
                       <div class="d-flex align-items-center x-small mt-auto pt-1">
@@ -1222,10 +1244,123 @@
         { id: '{{ $m->id }}', nim: '{{ $m->nim }}', nama: '{{ $m->nama }}' },
       @endforeach
     ];
+    const membersMap = members.reduce((acc, member) => {
+      acc[String(member.id)] = member;
+
+      return acc;
+    }, {});
 
     const totalBobot = dosenItems.reduce((sum, item) => sum + item.bobot, 0);
     const fetchUrl = "{{ route('admin.evaluasi.penilaian-dosen.show-by-project', ['project' => '__ID__']) }}".replace('__ID__', cardId);
     const gradeUrl = "{{ route('admin.evaluasi.project.grade.dosen', ['card' => '__ID__']) }}".replace('__ID__', cardId);
+
+    const syncCardEvaluations = (evaluations) => {
+      const cardEl = document.querySelector(`.board-card[data-card-uuid="${cardId}"]`);
+      if (!cardEl) {
+        return;
+      }
+
+      const list = Array.isArray(evaluations) ? evaluations : [];
+      const validScores = list
+        .map(item => item?.nilai_akhir)
+        .filter(value => value !== null && value !== undefined)
+        .map(value => parseFloat(value))
+        .filter(value => ! Number.isNaN(value));
+
+      const avg = validScores.length ? Math.round(validScores.reduce((sum, value) => sum + value, 0) / validScores.length) : null;
+      const titleWrap = cardEl.querySelector('.d-flex.align-items-start.mb-1');
+      let badge = titleWrap?.querySelector('.badge.badge-success.badge-pill');
+
+      if (avg !== null) {
+        if (! badge && titleWrap) {
+          badge = document.createElement('span');
+          badge.className = 'badge badge-success badge-pill ml-2';
+          titleWrap.appendChild(badge);
+        }
+        if (badge) {
+          const icon = badge.querySelector('i')?.outerHTML || '<i class="fas fa-check mr-1"></i>';
+          badge.innerHTML = `${icon}${avg}`;
+          badge.style.display = '';
+        }
+      } else if (badge) {
+        badge.remove();
+      }
+
+      const scoreEl = cardEl.querySelector('.score-dosen-val');
+      if (scoreEl) {
+        scoreEl.textContent = avg !== null ? avg : '—';
+      }
+
+      const scoreCard = cardEl.querySelector('.score-card');
+      let wrapper = scoreCard?.querySelector('.per-mahasiswa-wrapper');
+
+      if (! list.length) {
+        cardEl.classList.remove('border-success');
+        if (wrapper) {
+          wrapper.remove();
+        }
+      } else {
+        cardEl.classList.add('border-success');
+
+        if (! wrapper && scoreCard) {
+          wrapper = document.createElement('div');
+          wrapper.className = 'mt-2 per-mahasiswa-wrapper';
+          scoreCard.appendChild(wrapper);
+        }
+
+        if (wrapper) {
+          const rowsHtml = list.map((item, index) => {
+            const member = membersMap[String(item.mahasiswa_id)] || {};
+            const name = item.mahasiswa_nama || member.nama || 'Mahasiswa';
+            const nim = item.mahasiswa_nim || member.nim || '-';
+            const nilai = item.nilai_akhir !== null && item.nilai_akhir !== undefined
+              ? Number.parseFloat(item.nilai_akhir).toFixed(1)
+              : null;
+            const grade = item.grade || (nilai !== null ? getGradeFromScore(Number.parseFloat(item.nilai_akhir)) : null);
+            const gradeClass = grade ? `badge-${getGradeColor(grade)}` : 'badge-secondary';
+            const borderClass = index === 0 ? '' : 'border-top';
+
+            if (nilai === null) {
+              return `
+                <div class="d-flex align-items-center justify-content-between px-2 py-1 ${borderClass}" style="border-color: var(--border);">
+                  <div class="small">
+                    <div class="font-weight-bold">${name}</div>
+                    <div class="text-muted">${nim}</div>
+                  </div>
+                  <div class="text-right text-muted small">Belum dinilai</div>
+                </div>`;
+            }
+
+            return `
+              <div class="d-flex align-items-center justify-content-between px-2 py-1 ${borderClass}" style="border-color: var(--border);">
+                <div class="small">
+                  <div class="font-weight-bold">${name}</div>
+                  <div class="text-muted">${nim}</div>
+                </div>
+                <div class="text-right">
+                  <div class="font-weight-bold">${nilai}</div>
+                  <span class="badge ${gradeClass}">${grade || '-'}</span>
+                </div>
+              </div>`;
+          }).join('');
+
+          wrapper.innerHTML = `
+            <div class="d-flex justify-content-between align-items-center text-muted text-uppercase small">
+              <span>Nilai per Mahasiswa</span>
+              <span class="badge badge-light border">${list.length} orang</span>
+            </div>
+            <div class="mt-2 rounded bg-white per-mahasiswa-list" style="border:1px solid var(--border);">
+              ${rowsHtml}
+            </div>`;
+        }
+      }
+
+      window.cardGrades = window.cardGrades || {};
+      window.cardGrades[cardId] = window.cardGrades[cardId] || {};
+      window.cardGrades[cardId].evaluasi_dosen_summary = { avg, count: list.length };
+      window.cardGrades[cardId].evaluasi_dosen_details = list;
+      window.cardGrades[cardId].evaluasi_dosen = list.length ? list[list.length - 1] : null;
+    };
 
     const existingEvaluations = {};
     try {
@@ -1245,6 +1380,7 @@
             }
             existingEvaluations[String(item.mahasiswa_id)] = item;
           });
+          syncCardEvaluations(payload.evaluations);
         }
       }
     } catch (error) {
@@ -1461,6 +1597,20 @@
           status: 'submitted'
         });
       }
+
+      fetch(fetchUrl, {
+        headers: {
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      })
+        .then(res => res.ok ? res.json() : null)
+        .then(payload => {
+          if (payload?.success && Array.isArray(payload.evaluations)) {
+            syncCardEvaluations(payload.evaluations);
+          }
+        })
+        .catch(error => console.warn('Gagal memuat ulang evaluasi dosen', error));
     });
 
     // Add custom styles

@@ -7,9 +7,9 @@ use App\Http\Controllers\Controller;
 use App\Models\AktivitasList;
 use App\Models\EvaluasiAbsensi;
 use App\Models\EvaluasiDosen;
+use App\Models\EvaluasiMaster;
 use App\Models\EvaluasiNilaiDetail;
 use App\Models\EvaluasiProyekNilai;
-use App\Models\EvaluasiMaster;
 use App\Models\EvaluasiSesiIndikator;
 use App\Models\EvaluasiSetting;
 use App\Models\Kelompok;
@@ -96,7 +96,7 @@ class EvaluasiController extends Controller
         $sesiAll = EvaluasiMaster::query()
             ->when($periodeId, fn ($q) => $q->where('periode_id', $periodeId))
             ->whereIn('kelompok_id', $kelompokIds)
-              ->get();
+            ->get();
         $sesiMap = $sesiAll->sortByDesc('id')->keyBy('kelompok_id');
 
         // Perhitungan mingguan (AP) per kelompok
@@ -220,7 +220,6 @@ class EvaluasiController extends Controller
             ['uuid' => (string) Str::uuid(), 'created_by' => Auth::id()]
         );
 
-        
         return view('admin.evaluasi.sesi-schedule', [
             'kelompok' => $kelompok,
             'periode' => $activePeriode,
@@ -395,13 +394,14 @@ class EvaluasiController extends Controller
                 ->groupBy(['card_id', 'jenis']);
         }
 
-        // Load data from EvaluasiDosen table as well
-        $evaluasiDosenData = collect();
+        // Load data from EvaluasiDosen table as well (per project + per mahasiswa)
+        $evaluasiDosenCollections = collect();
         if (\Illuminate\Support\Facades\Schema::hasTable((new EvaluasiDosen)->getTable())) {
-            $evaluasiDosenData = EvaluasiDosen::where('evaluasi_sesi_id', $sesi->id)
+            $evaluasiDosenCollections = EvaluasiDosen::with(['mahasiswa:id,nim,nama_mahasiswa'])
+                ->where('evaluasi_sesi_id', $sesi->id)
                 ->whereIn('project_card_id', $allCardIds)
                 ->get()
-                ->keyBy('project_card_id');
+                ->groupBy('project_card_id');
         }
 
         $cardGradesMap = [];
@@ -411,6 +411,11 @@ class EvaluasiController extends Controller
                 'dosen' => null,
                 'mitra' => null,
                 'evaluasi_dosen' => null,
+                'evaluasi_dosen_details' => collect(),
+                'evaluasi_dosen_summary' => [
+                    'avg' => null,
+                    'count' => 0,
+                ],
             ];
         }
 
@@ -421,8 +426,14 @@ class EvaluasiController extends Controller
         }
 
         // Fill in EvaluasiDosen data
-        foreach ($evaluasiDosenData as $projectCardId => $evaluasiDosen) {
-            $cardGradesMap[$projectCardId]['evaluasi_dosen'] = $evaluasiDosen;
+        foreach ($evaluasiDosenCollections as $projectCardId => $collection) {
+            $collection = $collection->sortBy(fn ($row) => optional($row->mahasiswa)->nama ?? optional($row->mahasiswa)->nama_mahasiswa ?? $row->mahasiswa_id);
+            $cardGradesMap[$projectCardId]['evaluasi_dosen_details'] = $collection;
+            $cardGradesMap[$projectCardId]['evaluasi_dosen'] = $collection->sortByDesc('updated_at')->first();
+            $cardGradesMap[$projectCardId]['evaluasi_dosen_summary'] = [
+                'avg' => $collection->avg('nilai_akhir') !== null ? (int) round($collection->avg('nilai_akhir')) : null,
+                'count' => $collection->count(),
+            ];
         }
 
         // Hitung agregat per list (rata-rata per list)
@@ -549,7 +560,7 @@ class EvaluasiController extends Controller
                     : Carbon::parse($data['jadwal_mulai'])->addMinutes($durasi)->format('Y-m-d H:i:s');
                 $s->evaluator_id = $data['evaluator_id'] ?? $s->evaluator_id;
                 $s->lokasi = $data['lokasi'] ?? $s->lokasi;
-                $s->status = //JADWAL;
+                $s->status = // JADWAL;
                 $s->save();
             }
         }
@@ -1122,13 +1133,19 @@ class EvaluasiController extends Controller
         $projectCard = ProjectCard::where('uuid', $project)->orWhere('id', $project)->firstOrFail();
 
         $evaluations = EvaluasiDosen::where('project_card_id', $projectCard->id)
-            ->with(['mahasiswa', 'evaluator'])
+            ->with([
+                'mahasiswa:id,nim,nama_mahasiswa',
+                'evaluator:id,name',
+            ])
             ->get()
             ->map(function ($evaluation) {
+                $mahasiswa = $evaluation->mahasiswa;
+
                 return [
                     'id' => $evaluation->uuid,
                     'mahasiswa_id' => $evaluation->mahasiswa_id,
-                    'mahasiswa_nama' => $evaluation->mahasiswa->nama ?? '',
+                    'mahasiswa_nama' => optional($mahasiswa)->nama ?? optional($mahasiswa)->nama_mahasiswa ?? '',
+                    'mahasiswa_nim' => optional($mahasiswa)->nim ?? '',
                     'd_hasil' => $evaluation->d_hasil,
                     'd_teknis' => $evaluation->d_teknis,
                     'd_user' => $evaluation->d_user,
