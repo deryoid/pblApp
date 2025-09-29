@@ -1178,6 +1178,22 @@ class EvaluasiController extends Controller
         ]);
     }
 
+    public function updateAktivitasStatus(Request $request, \App\Models\AktivitasList $list)
+    {
+        $data = $request->validate([
+            'status' => 'required|in:Belum Evaluasi,Sudah Evaluasi',
+        ]);
+
+        $list->update([
+            'status_evaluasi' => $data['status'],
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'status' => $list->status_evaluasi,
+        ]);
+    }
+
     /** ====== SAVE: Absensi per sesi & mahasiswa ====== */
     public function saveAbsensi(Request $request, EvaluasiMaster $sesi)
     {

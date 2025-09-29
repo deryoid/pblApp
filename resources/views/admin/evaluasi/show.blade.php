@@ -298,11 +298,11 @@
     <div class="card-header d-flex justify-content-between align-items-center">
       <div class="d-flex align-items-center">
         <div class="section-title mb-0 mr-2">Daftar Proyek</div>
-        <button class="btn btn-sm btn-outline-secondary" type="button"
-                data-toggle="collapse" data-target="#sectionProjects"
-                aria-expanded="true" aria-controls="sectionProjects">Toggle</button>
       </div>
       <div class="d-flex align-items-center">
+        <button class="btn btn-sm btn-secondary mr-2" type="button"
+                data-toggle="collapse" data-target="#sectionProjects"
+                aria-expanded="true" aria-controls="sectionProjects">Toggle</button>
         <input id="boardSearch" type="text" class="form-control form-control-sm mr-2" placeholder="Cari Proyek..." style="max-width: 220px;" aria-label="Cari kartu proyek">
       </div>
     </div>
@@ -411,10 +411,10 @@
                           $cAt = optional($card->created_at)->format('d M Y H:i') ?? '-';
                           $uAt = optional($card->updated_at)->format('d M Y H:i') ?? '-';
                         @endphp
-                        <span class="badge badge-info" title="created/updated">
+                        <i>
                           Dibuat: {{ $cName }} ({{ $cAt }}) <br>
                           Diupdate: {{ $uName }} ({{ $uAt }})
-                        </span>
+                        </i>
                       </div>
 
                       {{-- Nilai Dosen & Mitra --}}
@@ -433,7 +433,7 @@
                               <i class="fas fa-user-graduate mr-1" aria-hidden="true"></i>
                               <span class="font-weight-bold score-dosen-val"></span>
                               @if($evalDosen && $evalDosen->status)
-                                <span class="badge badge-xs ml-2 {{ $evalDosen->status == 'draft' ? 'badge-warning' : ($evalDosen->status == 'submitted' ? 'badge-info' : 'badge-success') }}">
+                                <span class="badge badge-xs ml-2 {{ $evalDosen->status == 'draft' ? 'badge-warning' : ($evalDosen->status == 'submitted' ? 'badge-secondary' : 'badge-success') }}">
                                   {{ strtoupper($evalDosen->status) }}
                                 </span>
                               @endif
@@ -445,7 +445,7 @@
                               <i class="fas fa-handshake mr-1" aria-hidden="true"></i>
                               <span class="font-weight-bold score-mitra-val"></span>
                               @if($evalMitra && $evalMitra->status)
-                                <span class="badge badge-xs ml-2 {{ $evalMitra->status == 'draft' ? 'badge-warning' : ($evalMitra->status == 'submitted' ? 'badge-info' : 'badge-success') }}">
+                                <span class="badge badge-xs ml-2 {{ $evalMitra->status == 'draft' ? 'badge-warning' : ($evalMitra->status == 'submitted' ? 'badge-secondary' : 'badge-success') }}">
                                   {{ strtoupper($evalMitra->status) }}
                                 </span>
                               @endif
@@ -457,32 +457,39 @@
                           <div class="mt-2 per-mahasiswa-wrapper per-mahasiswa-wrapper-dosen">
                             <div class="d-flex justify-content-between align-items-center text-muted text-uppercase small">
                               <span>Nilai Dosen per Mahasiswa</span>
-                              <span class="badge badge-light border">{{ $evalSummary['count'] }} orang</span>
+                              <div class="d-flex align-items-center">
+                                <span class="badge badge-light border mr-2">{{ $evalSummary['count'] }} </span>
+                                <button class="btn btn-sm btn-circle btn-secondary toggle-detail" type="button" data-toggle="collapse" data-target="#detail-dosen-{{ $card->id }}" aria-expanded="false" aria-controls="detail-dosen-{{ $card->id }}">
+                                  <i class="fas fa-list"></i>
+                                </button>
+                              </div>
                             </div>
-                            <div class="mt-2 rounded bg-white" style="border:1px solid var(--border);">
-                              @foreach($evalDetails as $index => $detail)
-                                @php
-                                  $rowName = optional($detail->mahasiswa)->nama ?? optional($detail->mahasiswa)->nama_mahasiswa ?? 'Mahasiswa';
-                                  $rowNim = optional($detail->mahasiswa)->nim ?? '-';
-                                  $rowNilai = $detail->nilai_akhir !== null ? number_format((float) $detail->nilai_akhir, 1) : null;
-                                  $rowGrade = $detail->grade ?? null;
-                                  $gradeClass = $rowGrade && isset($gradeColors[$rowGrade]) ? $gradeColors[$rowGrade] : 'secondary';
-                                @endphp
-                                <div class="d-flex align-items-center justify-content-between px-2 py-1 {{ $index !== 0 ? 'border-top' : '' }}" style="border-color: var(--border);">
-                                  <div class="small">
-                                    <div class="font-weight-bold">{{ $rowName }}</div>
-                                    <div class="text-muted">{{ $rowNim }}</div>
+                            <div id="detail-dosen-{{ $card->id }}" class="collapse mt-2">
+                              <div class="rounded bg-white" style="border:1px solid var(--border);">
+                                @foreach($evalDetails as $index => $detail)
+                                  @php
+                                    $rowName = optional($detail->mahasiswa)->nama ?? optional($detail->mahasiswa)->nama_mahasiswa ?? 'Mahasiswa';
+                                    $rowNim = optional($detail->mahasiswa)->nim ?? '-';
+                                    $rowNilai = $detail->nilai_akhir !== null ? number_format((float) $detail->nilai_akhir, 1) : null;
+                                    $rowGrade = $detail->grade ?? null;
+                                    $gradeClass = $rowGrade && isset($gradeColors[$rowGrade]) ? $gradeColors[$rowGrade] : 'secondary';
+                                  @endphp
+                                  <div class="d-flex align-items-center justify-content-between px-2 py-1 {{ $index !== 0 ? 'border-top' : '' }}" style="border-color: var(--border);">
+                                    <div class="small">
+                                      <div class="font-weight-bold">{{ $rowName }}</div>
+                                      <div class="text-muted">{{ $rowNim }}</div>
+                                    </div>
+                                    <div class="text-right">
+                                      @if($rowNilai !== null)
+                                        <div class="font-weight-bold">{{ $rowNilai }}</div>
+                                        <span class="badge badge-{{ $gradeClass }}"></span>
+                                      @else
+                                        <span class="text-muted small">Belum dinilai</span>
+                                      @endif
+                                    </div>
                                   </div>
-                                  <div class="text-right">
-                                    @if($rowNilai !== null)
-                                      <div class="font-weight-bold">{{ $rowNilai }}</div>
-                                      <span class="badge badge-{{ $gradeClass }}">{{ $rowGrade }}</span>
-                                    @else
-                                      <span class="text-muted small">Belum dinilai</span>
-                                    @endif
-                                  </div>
-                                </div>
-                              @endforeach
+                                @endforeach
+                              </div>
                             </div>
                           </div>
                         @endif
@@ -491,9 +498,12 @@
                           <div class="mt-2 per-mahasiswa-wrapper per-mahasiswa-wrapper-mitra">
                             <div class="d-flex justify-content-between align-items-center text-muted text-uppercase small">
                               <span>Nilai Mitra per Mahasiswa</span>
-                              <span class="badge badge-light border">{{ $mitraSummary['count'] }} orang</span>
+                              <span class="badge badge-light border">{{ $mitraSummary['count'] }}</span>
+                              <button type="button" class="btn btn-sm btn-circle btn-secondary toggle-detail" data-toggle="collapse" data-target="#mitraPerMhsCollapse" aria-expanded="false" aria-controls="mitraPerMhsCollapse">
+                                <i class="fas fa-list"></i>
+                              </button>
                             </div>
-                            <div class="mt-2 rounded bg-white" style="border:1px solid var(--border);">
+                            <div id="mitraPerMhsCollapse" class="collapse mt-2 rounded bg-white" style="border:1px solid var(--border);">
                               @foreach($evalMitraDetails as $index => $detail)
                                 @php
                                   $rowNameM = optional($detail->mahasiswa)->nama ?? optional($detail->mahasiswa)->nama_mahasiswa ?? 'Mahasiswa';
@@ -510,7 +520,7 @@
                                   <div class="text-right">
                                     @if($rowNilaiM !== null)
                                       <div class="font-weight-bold">{{ $rowNilaiM }}</div>
-                                      <span class="badge badge-{{ $gradeClassM }}">{{ $rowGradeM }}</span>
+                                      <span class="badge badge-{{ $gradeClassM }}"></span>
                                     @else
                                       <span class="text-muted small">Belum dinilai</span>
                                     @endif
@@ -536,7 +546,7 @@
                           {{-- Drive --}}
                           @php $drive = $card->link_drive_proyek ?? $card->drive_link ?? null; @endphp
                           @if(!empty($drive))
-                            <a href="{{ $drive }}" class="btn btn-outline-secondary" target="_blank" rel="noopener" title="Drive">
+                            <a href="{{ $drive }}" class="btn btn-sm btn-circle btn-dark" target="_blank" rel="noopener" title="Drive">
                               <i class="fab fa-google-drive" aria-hidden="true"></i>
                             </a>
                           @endif
@@ -544,7 +554,7 @@
 
                           {{-- Nilai Dosen --}}
                           <button type="button"
-                                  class="btn btn-outline-success"
+                                  class="btn btn-circle btn-secondary"
                                   title="Nilai Dosen"
                                   onclick="showProjectDetail('{{ $card->uuid }}','{{ addslashes($card->title) }}')">
                             <i class="fas fa-clipboard-list" aria-hidden="true"></i>
@@ -552,7 +562,7 @@
 
                           {{-- Nilai Mitra --}}
                           <button type="button"
-                                  class="btn btn-outline-info"
+                                  class="btn btn-circle btn-secondary"
                                   title="Nilai Mitra"
                                   onclick="gradeMitra('{{ $card->uuid }}','{{ addslashes($card->title) }}')">
                             <i class="fas fa-handshake" aria-hidden="true"></i>
@@ -560,7 +570,7 @@
 
                           {{-- Edit --}}
                           <button type="button"
-                                  class="btn btn-outline-warning"
+                                  class="btn btn-circle btn-success"
                                   title="Edit Proyek"
                                   data-toggle="modal"
                                   data-target="#modalEditProyek"
@@ -586,7 +596,7 @@
 
                           {{-- Hapus --}}
                           <button type="button"
-                                  class="btn btn-outline-danger"
+                                  class="btn btn-circle btn-danger"
                                   title="Hapus Proyek"
                                   onclick="confirmDeleteProject('{{ $card->uuid }}', '{{ addslashes($card->title) }}')">
                             <i class="fas fa-trash" aria-hidden="true"></i>
@@ -618,38 +628,63 @@
     <div class="card-header d-flex justify-content-between align-items-center">
       <div class="d-flex align-items-center">
         <div class="section-title mb-0 mr-2">Aktivitas Mingguan</div>
-        <button class="btn btn-sm btn-outline-secondary" type="button"
-                data-toggle="collapse" data-target="#sectionAktivitas"
-                aria-expanded="true" aria-controls="sectionAktivitas">Toggle</button>
+       
       </div>
       <div class="d-flex align-items-center">
+         <button class="btn btn-sm btn-secondary mr-2" type="button"
+                data-toggle="collapse" data-target="#sectionAktivitas"
+                aria-expanded="true" aria-controls="sectionAktivitas">Toggle</button>
         <input id="actSearch" type="text" class="form-control form-control-sm mr-2"
                placeholder="Cari Aktivitas…" style="max-width: 220px;" aria-label="Cari aktivitas">
       </div>
     </div>
 
     <div id="sectionAktivitas" class="collapse show">
-      <div class="card-body p-2">
+      <div class="card-body p-3">
         <div class="board-wrapper">
           <div id="actBoard" class="board">
           @forelse ($aktivitasLists as $alist)
             <div class="board-column" data-col-id="{{ $alist->id }}">
-              {{-- Head kolom: sama gaya dengan proyek --}}
+              <!-- Column header -->
               <div class="board-col-head d-flex align-items-center justify-content-between">
-                <div class="d-flex align-items-center">
-                  <h6 class="mb-0 text-uppercase font-weight-bold truncate">
+                <div class="d-flex flex-column">
+                  <h6 class="mb-1 text-uppercase font-weight-bold truncate">
                     {{ $alist->title ?? $alist->name ?? 'Minggu' }}
+                    <span class="badge badge-soft mr-2">{{ count($alist->cards) }}</span>
                   </h6>
-                  <span class="badge badge-soft ml-2">{{ count($alist->cards) }}</span>
+                  <div class="d-flex align-items-center mt-1">
+                    
+                    @php
+                      $badgeId = 'aktivitas-status-'.($alist->uuid ?? $alist->id);
+                      $statusNow = $alist->status_evaluasi ?? 'Belum Evaluasi';
+                      $statusClass = $statusNow === 'Sudah Evaluasi' ? 'badge-success' : 'badge-secondary';
+                    @endphp
+                    <span id="{{ $badgeId }}" class="badge {{ $statusClass }}">{{ $statusNow }}</span>
+                  </div>
                 </div>
-                @if(!empty($alist->status_evaluasi))
-                  <span class="badge {{ $alist->status_evaluasi==='Sudah Evaluasi'?'badge-success':'badge-secondary' }}">
-                    {{ $alist->status_evaluasi }}
-                  </span>
-                @endif
+
+                <div class="d-flex align-items-center">
+                  @if(!empty($alist->link_drive_logbook))
+                    <a href="{{ $alist->link_drive_logbook }}"
+                       target="_blank"
+                       rel="noopener"
+                       class="btn btn-sm btn-circle btn-primary mr-2"
+                       title="Lihat Logbook">
+                      <i class="fas fa-book-open" aria-hidden="true"></i>
+                    </a>
+                  @endif
+
+                  <button type="button"
+                          class="btn btn-sm btn-circle btn-success js-aktivitas-status"
+                          data-uuid="{{ $alist->uuid ?? $alist->id }}"
+                          data-status="{{ $statusNow }}"
+                          data-target="#{{ $badgeId }}">
+                    <i class="fas fa-sync-alt" aria-hidden="true"></i> 
+                  </button>
+                </div>
               </div>
 
-              {{-- List aktivitas: bentuk & garis sama dengan proyek --}}
+              <!-- Activities list -->
               <div class="board-list act-list" data-list-id="{{ $alist->id }}">
                 @forelse ($alist->cards as $ac)
                   @php
@@ -659,10 +694,10 @@
                     $cAt = optional($ac->created_at)->format('d M Y H:i') ?? '-';
                     $uAt = optional($ac->updated_at)->format('d M Y H:i') ?? '-';
                   @endphp
-                  <div class="card board-card shadow-xs mb-2 hover-raise" data-card-id="{{ $ac->id }}">
-                    <div class="card-body p-2 d-flex flex-column">
+                  <div class="card board-card shadow-sm mb-2 hover-raise" data-card-id="{{ $ac->id }}">
+                    <div class="card-body p-3 d-flex flex-column">
 
-                      {{-- Tanggal: chip seperti proyek --}}
+                      <!-- Date chip -->
                       @if($tgl)
                         <div class="mb-2">
                           <span class="date-chip">
@@ -671,30 +706,30 @@
                         </div>
                       @endif
 
-                      {{-- Deskripsi singkat --}}
+                      <!-- Description -->
                       @if($ac->description)
-                        <div class="text-muted text-body-2 mb-2 clamp-2">
+                        <div class="text-muted mb-2 clamp-2">
                           {{ \Illuminate\Support\Str::limit($ac->description, 160) }}
                         </div>
                       @endif
 
-                      {{-- Meta created/updated --}}
-                      @if($ac->created_at || $ac->updated_at || $ac->createdBy || $ac->updatedBy)
-                        <div class="small text-muted mb-1">
-                          <span class="badge badge-info" title="created/updated">
-                            Dibuat: {{ $cName }} ({{ $cAt }}) <br>
-                            Diupdate: {{ $uName }} ({{ $uAt }})
-                          </span>
+                      <!-- Created/Updated meta -->
+                      <div class="small text-muted mb-2">
+                        <div class="d-flex justify-content-between">
+                          <i>Dibuat: {{ $cName }} ({{ $cAt }})</i>
                         </div>
-                      @endif
+                        <div class="d-flex justify-content-between">
+                          <i>Diupdate: {{ $uName }} ({{ $uAt }})</i>
+                        </div>
+                      </div>
 
-                      {{-- Footer aksi --}}
-                      <div class="d-flex align-items-center x-small mt-auto pt-1">
-                        <span class="text-muted"></span>
-                        <div class="ml-auto btn-group btn-group-sm">
+                      <!-- Footer actions -->
+                      <div class="d-flex align-items-center mt-auto pt-2 border-top-light">
+                        <span class="text-muted small"></span>
+                        <div class="ml-auto">
                           @if($ac->bukti_kegiatan)
                             <a href="{{ $ac->bukti_kegiatan }}" target="_blank" rel="noopener"
-                               class="btn btn-outline-dark btn-sm" title="Bukti aktivitas">
+                               class="btn btn-sm btn-outline-primary" title="Bukti aktivitas">
                               <i class="fas fa-link" aria-hidden="true"></i> Bukti
                             </a>
                           @endif
@@ -929,6 +964,92 @@
 
       // Sembunyikan kolom saat pencarian jika tidak cocok
       col.style.display = (q==='' || any || colMatch) ? '' : 'none';
+    });
+  });
+
+  /* ====== Update status aktivitas ====== */
+  const statusUrlTemplate = "{{ route('admin.evaluasi.aktivitas.status', ['list' => '__UUID__']) }}";
+  const statusStyles = {
+    'Belum Evaluasi': 'badge-secondary',
+    'Sudah Evaluasi': 'badge-success',
+  };
+
+  qsa('.js-aktivitas-status').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const uuid = btn.getAttribute('data-uuid');
+      const current = btn.getAttribute('data-status') || 'Belum Evaluasi';
+      if (!uuid) {
+        return;
+      }
+
+      Swal.fire({
+        title: 'Ubah status aktivitas',
+        input: 'select',
+        inputOptions: {
+          'Belum Evaluasi': 'Belum Evaluasi',
+          'Sudah Evaluasi': 'Sudah Evaluasi',
+        },
+        inputValue: current,
+        showCancelButton: true,
+        confirmButtonText: 'Simpan',
+        cancelButtonText: 'Batal',
+        preConfirm: (value) => {
+          if (!value) {
+            Swal.showValidationMessage('Pilih status terlebih dahulu');
+
+            return false;
+          }
+
+          const url = statusUrlTemplate.replace('__UUID__', uuid);
+
+          return fetch(url, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'X-CSRF-TOKEN': '{{ csrf_token() }}',
+              'X-Requested-With': 'XMLHttpRequest',
+            },
+            body: JSON.stringify({ status: value })
+          })
+            .then(res => {
+              if (!res.ok) {
+                throw new Error('Gagal memperbarui status');
+              }
+
+              return res.json();
+            })
+            .then(data => {
+              if (!data?.success) {
+                throw new Error(data?.message || 'Gagal memperbarui status');
+              }
+
+              return data.status;
+            })
+            .catch(error => {
+              Swal.showValidationMessage(error.message || 'Gagal memperbarui status');
+
+              return false;
+            });
+        }
+      }).then(result => {
+        if (!result.isConfirmed || !result.value) {
+          return;
+        }
+
+        const newStatus = result.value;
+        const badgeSelector = btn.getAttribute('data-target');
+        const badge = badgeSelector ? document.querySelector(badgeSelector) : null;
+
+        if (badge) {
+          Object.values(statusStyles).forEach(cls => badge.classList.remove(cls));
+          badge.classList.add(statusStyles[newStatus] || 'badge-secondary');
+          badge.textContent = newStatus;
+        }
+
+        btn.setAttribute('data-status', newStatus);
+        swalToast('success', 'Status aktivitas diperbarui');
+      });
     });
   });
 
@@ -1610,7 +1731,6 @@
           <p style="margin: 0.5rem 0 0 0; color: #6b7280; font-size: 1rem;">Evaluasi Dosen per Mahasiswa</p>
           <small style="color: #28a745; font-weight: 600;">Total Bobot: ${totalBobot}%</small>
         </div>
-
         <div class="table-responsive" style="max-height: 65vh; overflow-y: auto;">
           <table class="table table-bordered" style="font-size: 0.9rem; margin-bottom: 0;">
             <thead class="thead-dark sticky-top">
@@ -1630,8 +1750,13 @@
               </tr>
             </thead>
             <tbody>
-              ${members.map(buildRow).join('')}
-            </tbody>
+              ${members.map(m => {
+                // Cari nilai mahasiswa di cardGrades (dosen) atau evaluasi_dosen_details
+                const dosenDetails = window.cardGrades?.[cardId]?.evaluasi_dosen_details ?? [];
+                const existing = dosenDetails.find(d => Number(d.mahasiswa_id) === Number(m.id));
+                return buildRow(m, existing);
+              }).join('')}
+            </tbody>      
           </table>
         </div>
 

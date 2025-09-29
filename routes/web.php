@@ -143,6 +143,7 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
         // Penilaian per proyek (per card)
         Route::post('project/{card}/grade/dosen', [AdminEval::class, 'saveProjectGradeDosen'])->name('project.grade.dosen');
         Route::post('project/{card}/grade/mitra', [AdminEval::class, 'saveProjectGradeMitra'])->name('project.grade.mitra');
+        Route::post('aktivitas/{list}/status', [AdminEval::class, 'updateAktivitasStatus'])->name('aktivitas.status');
 
         // CRUD Evaluasi Dosen
         Route::get('penilaian-dosen/show-by-project/{project}', [AdminEval::class, 'getPenilaianDosenByProject'])->name('penilaian-dosen.show-by-project');
