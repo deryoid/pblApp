@@ -337,7 +337,7 @@
                       {{ $evaluatedCards }}/{{ count($list->cards) }} dievaluasi
                     </div>
                     @if($listAvgDosen > 0)
-                      <div class="text-muted">Rata-rata: {{ $listAvgDosen }}</div>
+                      <div class="text-muted"></div>
                     @endif
                   @endif
                 </div>
@@ -1286,10 +1286,10 @@
       html: modalHtml,
       width: '100%',
       showConfirmButton: true,
-      confirmButtonText: '💾 Simpan Nilai',
+      confirmButtonText: ' Simpan Nilai',
       confirmButtonColor: '#28a745',
       showCancelButton: true,
-      cancelButtonText: '❌ Batal',
+      cancelButtonText: ' Batal',
       showCloseButton: true,
       allowOutsideClick: () => !Swal.isLoading(),
       customClass: {
@@ -1652,10 +1652,10 @@
       html: modalHtml,
       width: '95%',
       showConfirmButton: true,
-      confirmButtonText: '💾 Simpan Semua Nilai',
+      confirmButtonText: 'Simpan Semua Nilai',
       confirmButtonColor: '#28a745',
       showCancelButton: true,
-      cancelButtonText: '❌ Batal',
+      cancelButtonText: ' Batal',
       showCloseButton: true,
       showLoaderOnConfirm: true,
       allowOutsideClick: () => !Swal.isLoading(),

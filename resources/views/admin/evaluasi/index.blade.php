@@ -76,7 +76,15 @@
                 </td>
                 <td align="center">
                   {{-- Jumlah anggota --}}
-                  <span class="badge badge-primary">{{ (int)($k->mahasiswas_count ?? 0) }}</span>
+                      @if($k->mahasiswas && $k->mahasiswas->count())
+                        <div class="text-left">
+                          @foreach($k->mahasiswas as $m)
+                            <span class="d-block small">{{ $loop->iteration }}. {{ $m->nama }}</span>
+                          @endforeach
+                        </div>
+                      @else
+                        <span class="text-muted small">—</span>
+                      @endif
                 </td>
                 <td align="center">
                   {{-- Detail --}}
