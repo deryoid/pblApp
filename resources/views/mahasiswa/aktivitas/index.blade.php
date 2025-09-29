@@ -299,7 +299,7 @@ if (!function_exists('avatarUrl')) {
           </div>
           <div class="form-group">
             <label>Rentang Tanggal</label>
-            <input name="rentang_tanggal" type="text" class="form-control" placeholder="Contoh : 01 Jan 2025 - 07 Jan 2025">
+            <input name="rentang_tanggal" type="text" class="form-control" placeholder="Contoh : 01 - 07 Oktober 2025">
           </div>
           <div class="form-group">
             <label>Link Drive Logbook</label>

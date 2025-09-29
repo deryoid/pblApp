@@ -1448,6 +1448,10 @@
 
         rows.forEach(row => {
           const memberId = row.getAttribute('data-member');
+          if (!memberId) {
+            return;
+          }
+
           const rowData = {};
           row.querySelectorAll('.grade-input-mitra').forEach(input => {
             const raw = input.value.trim();
@@ -1458,8 +1462,13 @@
             rowData[input.getAttribute('data-item')] = numeric;
           });
 
-          if (Object.keys(rowData).length > 0) {
-            items[memberId] = rowData;
+          const evaluationId = row.getAttribute('data-evaluation-id') || '';
+
+          if (Object.keys(rowData).length > 0 || evaluationId) {
+            items[memberId] = {
+              evaluation_id: evaluationId,
+              nilai: rowData,
+            };
           }
         });
 
@@ -1482,6 +1491,7 @@
             'X-Requested-With': 'XMLHttpRequest'
           },
           body: JSON.stringify({
+            evaluasi_master_id: {{ $sesi->id }},
             sesi_id: {{ $sesi->id }},
             items
           })
@@ -1811,6 +1821,10 @@
 
         rows.forEach(row => {
           const memberId = row.getAttribute('data-member');
+          if (!memberId) {
+            return;
+          }
+
           const inputs = row.querySelectorAll('.grade-input');
           const rowData = {};
 
@@ -1823,8 +1837,13 @@
             rowData[input.getAttribute('data-item')] = numeric;
           });
 
-          if (Object.keys(rowData).length > 0) {
-            items[memberId] = rowData;
+          const evaluationId = row.getAttribute('data-evaluation-id') || '';
+
+          if (Object.keys(rowData).length > 0 || evaluationId) {
+            items[memberId] = {
+              evaluation_id: evaluationId,
+              nilai: rowData,
+            };
           }
         });
 
@@ -1851,6 +1870,7 @@
             'X-Requested-With': 'XMLHttpRequest'
           },
           body: JSON.stringify({
+            evaluasi_master_id: {{ $sesi->id }},
             sesi_id: {{ $sesi->id }},
             items
           })

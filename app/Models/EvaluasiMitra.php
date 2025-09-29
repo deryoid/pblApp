@@ -2,18 +2,11 @@
 
 namespace App\Models;
 
-use App\Models\EvaluationRubricIndicator;
-use App\Models\EvaluationSetting;
-use App\Models\EvaluasiSesi;
-use App\Models\Kelompok;
-use App\Models\Mahasiswa;
-use App\Models\Periode;
-use App\Models\ProjectCard;
-use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class EvaluasiMitra extends Model
@@ -127,9 +120,30 @@ class EvaluasiMitra extends Model
         });
     }
 
+    protected static function masterKey(): string
+    {
+        static $column;
+
+        if ($column) {
+            return $column;
+        }
+
+        $instance = new static;
+        $column = Schema::hasColumn($instance->getTable(), 'evaluasi_master_id')
+            ? 'evaluasi_master_id'
+            : 'evaluasi_sesi_id';
+
+        return $column;
+    }
+
+    public function evaluasiMaster()
+    {
+        return $this->belongsTo(EvaluasiMaster::class, static::masterKey());
+    }
+
     public function sesi()
     {
-        return $this->belongsTo(EvaluasiSesi::class, 'evaluasi_sesi_id');
+        return $this->evaluasiMaster();
     }
 
     public function periode()

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 
 class EvaluasiDosen extends Model
 {
@@ -121,9 +122,30 @@ class EvaluasiDosen extends Model
     }
 
     // Relationships
+    protected static function masterKey(): string
+    {
+        static $column;
+
+        if ($column) {
+            return $column;
+        }
+
+        $instance = new static;
+        $column = Schema::hasColumn($instance->getTable(), 'evaluasi_master_id')
+            ? 'evaluasi_master_id'
+            : 'evaluasi_sesi_id';
+
+        return $column;
+    }
+
+    public function evaluasiMaster()
+    {
+        return $this->belongsTo(EvaluasiMaster::class, static::masterKey());
+    }
+
     public function sesi()
     {
-        return $this->belongsTo(EvaluasiSesi::class, 'evaluasi_sesi_id');
+        return $this->evaluasiMaster();
     }
 
     public function periode()
@@ -143,7 +165,7 @@ class EvaluasiDosen extends Model
 
     public function projectCard()
     {
-        return $this->belongsTo(ProjectCard::class, 'project_card_id', 'uuid');
+        return $this->belongsTo(ProjectCard::class, 'project_card_id');
     }
 
     public function evaluator()
@@ -220,9 +242,14 @@ class EvaluasiDosen extends Model
     }
 
     // Scope queries
-    public function scopeBySesi($query, $sesiId)
+    public function scopeByEvaluasiMaster($query, $masterId)
     {
-        return $query->where('evaluasi_sesi_id', $sesiId);
+        return $query->where(static::masterKey(), $masterId);
+    }
+
+    public function scopeBySesi($query, $masterId)
+    {
+        return $this->scopeByEvaluasiMaster($query, $masterId);
     }
 
     public function scopeByPeriode($query, $periodeId)
@@ -333,12 +360,12 @@ class EvaluasiDosen extends Model
     public static function getValidationRules()
     {
         return [
-            'evaluasi_sesi_id' => 'required|exists:evaluasi_sesi,id',
+            'evaluasi_master_id' => 'required|exists:evaluasi_master,id',
             'periode_id' => 'required|exists:periode,id',
             'kelompok_id' => 'required|exists:kelompok,id',
             'mahasiswa_id' => 'required|exists:mahasiswa,id',
-            'project_card_id' => 'required|exists:project_cards,uuid',
-            'evaluator_id' => 'required|exists:users,id',
+            'project_card_id' => 'required|exists:project_cards,id',
+            'evaluator_id' => 'nullable|exists:users,id',
             'd_hasil' => 'nullable|integer|min:0|max:100',
             'd_teknis' => 'nullable|integer|min:0|max:100',
             'd_user' => 'nullable|integer|min:0|max:100',

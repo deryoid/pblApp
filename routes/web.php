@@ -20,7 +20,7 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 // Debug route for testing validation
 Route::get('/debug-validation', function () {
-    $evaluasiSesi = \App\Models\EvaluasiSesi::first();
+    $evaluasiMaster = \App\Models\EvaluasiMaster::first();
     $periode = \App\Models\Periode::first();
     $kelompok = \App\Models\Kelompok::first();
     $mahasiswa = \App\Models\Mahasiswa::first();
@@ -28,7 +28,7 @@ Route::get('/debug-validation', function () {
     $user = \App\Models\User::first();
 
     return [
-        'evaluasi_sesi' => $evaluasiSesi ? ['id' => $evaluasiSesi->id, 'nama' => $evaluasiSesi->nama ?? 'N/A'] : 'NOT FOUND',
+        'evaluasi_master' => $evaluasiMaster ? ['id' => $evaluasiMaster->id] : 'NOT FOUND',
         'periode' => $periode ? ['id' => $periode->id, 'nama' => $periode->nama] : 'NOT FOUND',
         'kelompok' => $kelompok ? ['id' => $kelompok->id, 'nama' => $kelompok->nama] : 'NOT FOUND',
         'mahasiswa' => $mahasiswa ? ['id' => $mahasiswa->id, 'nama' => $mahasiswa->nama] : 'NOT FOUND',

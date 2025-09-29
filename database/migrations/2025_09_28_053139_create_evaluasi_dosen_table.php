@@ -16,12 +16,12 @@ return new class extends Migration
             $table->uuid('uuid')->unique();
 
             // Foreign keys
-            $table->foreignId('evaluasi_sesi_id')->constrained('evaluasi_sesi')->onDelete('cascade');
+            $table->foreignId('evaluasi_master_id')->constrained('evaluasi_master')->onDelete('cascade');
             $table->foreignId('periode_id')->nullable(false)->constrained('periode')->onDelete('cascade');
             $table->foreignId('kelompok_id')->nullable(false)->constrained('kelompok')->onDelete('cascade');
             $table->foreignId('mahasiswa_id')->constrained('mahasiswa')->onDelete('cascade');
             $table->foreignId('project_card_id')->constrained('project_cards')->onDelete('cascade');
-            $table->foreignId('evaluator_id')->nullable(false)->constrained('users')->onDelete('cascade');
+            $table->foreignId('evaluator_id')->nullable()->constrained('users')->nullOnDelete();
 
             // Evaluation criteria
             $table->integer('d_hasil')->nullable()->comment('Nilai hasil (0-100)');
@@ -52,11 +52,11 @@ return new class extends Migration
             $table->softDeletes();
 
             // Unique constraint to prevent duplicates
-            $table->unique(['evaluasi_sesi_id', 'mahasiswa_id', 'project_card_id'], 'unique_evaluasi_per_mahasiswa_project');
+            $table->unique(['evaluasi_master_id', 'mahasiswa_id', 'project_card_id'], 'unique_evaluasi_per_mahasiswa_project');
 
             // Performance indexes
             $table->index(['periode_id', 'kelompok_id', 'mahasiswa_id'], 'idx_periode_kelompok_mahasiswa');
-            $table->index(['evaluasi_sesi_id', 'status'], 'idx_sesi_status');
+            $table->index(['evaluasi_master_id', 'status'], 'idx_sesi_status');
             $table->index(['evaluator_id', 'tanggal_evaluasi'], 'idx_evaluator_date');
             $table->index(['project_card_id', 'nilai_akhir'], 'idx_project_score');
             $table->index(['deleted_at'], 'idx_deleted_at');
