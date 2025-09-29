@@ -43,6 +43,11 @@ class ProjectCard extends Model
         return $this->belongsTo(\App\Models\Kelompok::class);
     }
 
+    public function periode()
+    {
+        return $this->belongsTo(\App\Models\Periode::class);
+    }
+
     public function list()
     {
         return $this->belongsTo(\App\Models\ProjectList::class, 'list_id');

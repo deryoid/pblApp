@@ -18,9 +18,7 @@ use App\Models\KunjunganMitra;
 use App\Models\Periode;
 use App\Models\ProjectCard;
 use App\Models\ProjectList;
-use App\Models\User;
 use Illuminate\Support\Facades\Log;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -176,7 +174,7 @@ class EvaluasiController extends Controller
             'mahasiswa:id,nama_mahasiswa,nim',
             'kelompok:id,nama_kelompok',
             'projectCard:id,title',
-            'evaluator:id,name',
+            'evaluator:id,nama_user',
         ])
             ->when($periodeId, fn ($q) => $q->where('periode_id', $periodeId))
             ->when($kelompokId, fn ($q) => $q->where('kelompok_id', $kelompokId))
@@ -211,68 +209,7 @@ class EvaluasiController extends Controller
         return view('admin.evaluasi.nilai-final', compact('mahasiswaNilai', 'periodes', 'kelompoks', 'periodeId', 'kelompokId'));
     }
 
-    /** ===== FORM JADWAL (per kelompok) ===== */
-    public function scheduleForm(Kelompok $kelompok)
-    {
-        $activePeriode = Periode::where('status_periode', 'Aktif')->orderByDesc('id')->first();
-        abort_unless($activePeriode, 404, 'Periode aktif tidak ditemukan');
-
-        $sesi = EvaluasiMaster::firstOrCreate(
-            ['periode_id' => $activePeriode->id, 'kelompok_id' => $kelompok->id],
-            ['uuid' => (string) Str::uuid(), 'created_by' => Auth::id()]
-        );
-
-        return view('admin.evaluasi.sesi-schedule', [
-            'kelompok' => $kelompok,
-            'periode' => $activePeriode,
-            'sesi' => $sesi,
-        ]);
-    }
-
-    /** ===== SIMPAN JADWAL ===== */
-    public function scheduleSave(Request $req, EvaluasiMaster $sesi)
-    {
-        $data = $req->validate([
-            'evaluator_id' => 'nullable|exists:users,id',
-            'lokasi' => 'nullable|string|max:150',
-            // opsi A: datetime-local
-            'mulai' => 'nullable|date',
-            'selesai' => 'nullable|date|after:mulai',
-            'jadwal_mulai' => 'nullable|date',
-            'jadwal_selesai' => 'nullable|date|after:jadwal_mulai',
-            // opsi B: field terpisah
-            'mulai_tanggal' => 'nullable|date',
-            'mulai_jam' => 'nullable|date_format:H:i',
-            'selesai_jam' => 'nullable|date_format:H:i',
-            // default durasi
-            'durasi_menit' => 'nullable|integer|min:15|max:600',
-        ]);
-
-        $mulai = $data['mulai'] ?? $data['jadwal_mulai'] ?? null;
-        $selesai = $data['selesai'] ?? $data['jadwal_selesai'] ?? null;
-
-        if (! $mulai && ! empty($data['mulai_tanggal']) && ! empty($data['mulai_jam'])) {
-            $mulai = $data['mulai_tanggal'].' '.$data['mulai_jam'].':00';
-        }
-        if (! $selesai && ! empty($data['mulai_tanggal']) && ! empty($data['selesai_jam'])) {
-            $selesai = $data['mulai_tanggal'].' '.$data['selesai_jam'].':00';
-        }
-        if ($mulai && ! $selesai) {
-            $durasiMenit = (int) ($data['durasi_menit'] ?? 90);
-            $selesai = Carbon::parse($mulai)->addMinutes($durasiMenit)->format('Y-m-d H:i:s');
-        }
-
-        $sesi->update([
-            'updated_by' => Auth::id(),
-        ]);
-
-        Alert::success('Tersimpan', 'Jadwal sesi berhasil disimpan.');
-
-        $kelompok = $sesi->kelompok()->first();
-
-        return redirect()->route('admin.evaluasi.kelompok.show', $kelompok->uuid);
-    }
-
+    
     /** ===== DETAIL KELOMPOK ===== */
     public function showKelompok(Kelompok $kelompok, Request $request)
     {
@@ -374,16 +311,26 @@ class EvaluasiController extends Controller
             $settings = $settingsDefaults;
         }
         // Project lists/cards
-        $proyekLists = ProjectList::with(['cards' => function ($q) use ($kelompok) {
-            $q->where('kelompok_id', $kelompok->id)->orderBy('position');
-        }])->orderBy('position')->get();
+        $proyekLists = ProjectList::with(['cards' => function ($q) use ($kelompok, $activePeriode) {
+            $q->where('kelompok_id', $kelompok->id)
+              ->where('periode_id', $activePeriode->id)
+              ->orderBy('position');
+        }])->where('kelompok_id', $kelompok->id)
+          ->where('periode_id', $activePeriode->id)
+          ->orderBy('position')
+          ->get();
 
         $proyek_total_cards = $proyekLists->sum(fn ($list) => $list->cards->count());
 
         // Aktivitas lists
-        $aktivitasLists = AktivitasList::with(['cards' => function ($q) use ($kelompok) {
-            $q->where('kelompok_id', $kelompok->id)->orderBy('position');
-        }])->orderBy('position')->get();
+        $aktivitasLists = AktivitasList::with(['cards' => function ($q) use ($kelompok, $activePeriode) {
+            $q->where('kelompok_id', $kelompok->id)
+              ->where('periode_id', $activePeriode->id)
+              ->orderBy('position');
+        }])->where('kelompok_id', $kelompok->id)
+          ->where('periode_id', $activePeriode->id)
+          ->orderBy('position')
+          ->get();
 
         $aktivitas_total = $aktivitasLists->sum(fn ($list) => $list->cards->count());
 
@@ -524,89 +471,8 @@ class EvaluasiController extends Controller
     }
 
     /** ===== AKSI STATUS SESI ===== */
-    public function start(EvaluasiMaster $sesi)
-    {
-        $payload = [
-            'updated_by' => Auth::id(),
-        ];
-        if (empty($sesi->jadwal_mulai)) {
-            $payload['jadwal_mulai'] = now();
-        }
-        $sesi->update($payload);
-
-        Alert::success('Berlangsung', 'Sesi evaluasi dimulai.');
-
-        return back();
-    }
-
-    public function finish(EvaluasiMaster $sesi)
-    {
-        $payload = [
-            'updated_by' => Auth::id(),
-        ];
-        if (empty($sesi->jadwal_selesai)) {
-            $payload['jadwal_selesai'] = now();
-        }
-        $sesi->update($payload);
-
-        Alert::success('Selesai', 'Sesi evaluasi diselesaikan.');
-
-        return back();
-    }
-
-    /** ===== JADWAL MASSAL ===== */
-    public function scheduleBulkForm(Request $req)
-    {
-        $periodes = Periode::orderByDesc('id')->get(['id', 'periode', 'status_periode']);
-        $periodeId = (int) $req->get('periode_id', 0);
-
-        return view('admin.evaluasi.sesi-schedule-bulk', compact('periodes', 'periodeId'));
-    }
-
-    public function scheduleBulk(Request $req)
-    {
-        $data = $req->validate([
-            'periode_id' => 'required|exists:periode,id',
-            'jadwal_mulai' => 'required|date',
-            'jadwal_selesai' => 'nullable|date|after:jadwal_mulai',
-            'durasi_menit' => 'nullable|integer|min:15|max:1440',
-            'lokasi' => 'nullable|string|max:150',
-            'evaluator_id' => 'nullable|exists:users,id',
-            'selected_ids' => 'nullable|array',
-            'selected_ids.*' => 'integer|exists:kelompok,id',
-        ]);
-
-        $periodeId = $data['periode_id'];
-        $durasi = (int) ($data['durasi_menit'] ?? 90);
-
-        $kelompokQuery = Kelompok::where('periode_id', $periodeId);
-        if (! empty($data['selected_ids'])) {
-            $kelompokQuery->whereIn('id', $data['selected_ids']);
-        }
-        $kelompokIds = $kelompokQuery->pluck('id');
-
-        foreach ($kelompokIds as $kid) {
-            $s = EvaluasiMaster::firstOrCreate([
-                'periode_id' => $periodeId, 'kelompok_id' => $kid,
-            ], ['created_by' => Auth::id()]);
-
-            if (! empty($data['jadwal_mulai'])) {
-                $s->jadwal_mulai = $data['jadwal_mulai'];
-                $s->jadwal_selesai = ! empty($data['jadwal_selesai'])
-                    ? $data['jadwal_selesai']
-                    : Carbon::parse($data['jadwal_mulai'])->addMinutes($durasi)->format('Y-m-d H:i:s');
-                $s->evaluator_id = $data['evaluator_id'] ?? $s->evaluator_id;
-                $s->lokasi = $data['lokasi'] ?? $s->lokasi;
-                $s->status = // JADWAL;
-                $s->save();
-            }
-        }
-
-        Alert::success('Selesai', 'Penjadwalan massal selesai.');
-
-        return redirect()->route('admin.evaluasi.index', ['periode_id' => $periodeId]);
-    }
-
+    
+    
     /** ===== PENGATURAN ===== */
     public function settings()
     {
@@ -681,11 +547,15 @@ class EvaluasiController extends Controller
         $activePeriode = Periode::where('status_periode', 'Aktif')->orderByDesc('id')->first();
         abort_unless($activePeriode, 404, 'Periode aktif tidak ditemukan');
 
-        $proyekLists = ProjectList::with(['cards' => function ($q) use ($kelompok) {
+        $proyekLists = ProjectList::with(['cards' => function ($q) use ($kelompok, $activePeriode) {
             $q->where('kelompok_id', $kelompok->id)
+              ->where('periode_id', $activePeriode->id)
                 ->orderBy('tanggal_mulai')
                 ->orderBy('due_date');
-        }])->orderBy('position')->get();
+        }])->where('kelompok_id', $kelompok->id)
+          ->where('periode_id', $activePeriode->id)
+          ->orderBy('position')
+          ->get();
 
         return view('admin.evaluasi.project-timeline', [
             'kelompok' => $kelompok,
@@ -794,17 +664,25 @@ class EvaluasiController extends Controller
         $activePeriode = Periode::where('status_periode', 'Aktif')->orderByDesc('id')->first();
         abort_unless($activePeriode, 404, 'Periode aktif tidak ditemukan');
 
-        $proyekLists = ProjectList::with(['cards' => function ($q) use ($kelompok) {
+        $proyekLists = ProjectList::with(['cards' => function ($q) use ($kelompok, $activePeriode) {
             $q->where('kelompok_id', $kelompok->id)
+              ->where('periode_id', $activePeriode->id)
                 ->orderBy('tanggal_mulai')
                 ->orderBy('due_date');
-        }])->orderBy('position')->get();
+        }])->where('kelompok_id', $kelompok->id)
+          ->where('periode_id', $activePeriode->id)
+          ->orderBy('position')
+          ->get();
 
-        $aktivitasLists = AktivitasList::with(['cards' => function ($q) use ($kelompok) {
+        $aktivitasLists = AktivitasList::with(['cards' => function ($q) use ($kelompok, $activePeriode) {
             $q->where('kelompok_id', $kelompok->id)
+              ->where('periode_id', $activePeriode->id)
                 ->orderBy('tanggal_mulai')
                 ->orderBy('due_date');
-        }])->orderBy('position')->get();
+        }])->where('kelompok_id', $kelompok->id)
+          ->where('periode_id', $activePeriode->id)
+          ->orderBy('position')
+          ->get();
 
         $fileName = 'proyek_'.Str::slug($kelompok->nama_kelompok).'_'.date('Y-m-d').'.xlsx';
 
@@ -812,31 +690,7 @@ class EvaluasiController extends Controller
     }
 
     /** ===== UTIL (opsional) ===== */
-    private function ensureSessions(int $periodeId): int
-    {
-        $kelompokIds = Kelompok::where('periode_id', $periodeId)->pluck('id');
-        if ($kelompokIds->isEmpty()) {
-            return 0;
-        }
-
-        $existing = EvaluasiMaster::where('periode_id', $periodeId)
-            ->whereIn('kelompok_id', $kelompokIds)
-            ->pluck('kelompok_id')
-            ->all();
-
-        $missing = $kelompokIds->diff($existing);
-        foreach ($missing as $kid) {
-            EvaluasiMaster::create([
-                'uuid' => (string) Str::uuid(),
-                'periode_id' => $periodeId,
-                'kelompok_id' => (int) $kid,
-                'created_by' => Auth::id(),
-            ]);
-        }
-
-        return $missing->count();
-    }
-
+    
     public function updateProject(Request $request, ProjectCard $card)
     {
         $data = $request->validate([
@@ -1343,7 +1197,7 @@ class EvaluasiController extends Controller
         $evaluations = EvaluasiDosen::where('project_card_id', $projectCard->id)
             ->with([
                 'mahasiswa:id,nim,nama_mahasiswa',
-                'evaluator:id,name',
+                'evaluator:id,nama_user',
             ])
             ->get()
             ->map(function ($evaluation) {
@@ -1364,7 +1218,7 @@ class EvaluasiController extends Controller
                     'nilai_akhir' => $evaluation->nilai_akhir,
                     'grade' => $evaluation->grade,
                     'status' => $evaluation->status,
-                    'evaluator_nama' => $evaluation->evaluator->name ?? '',
+                    'evaluator_nama' => $evaluation->evaluator->nama_user ?? '',
                     'created_at' => $evaluation->created_at,
                     'updated_at' => $evaluation->updated_at,
                 ];
@@ -1383,7 +1237,7 @@ class EvaluasiController extends Controller
         $evaluations = EvaluasiMitra::where('project_card_id', $projectCard->id)
             ->with([
                 'mahasiswa:id,nim,nama_mahasiswa',
-                'evaluator:id,name',
+                'evaluator:id,nama_user',
             ])
             ->get()
             ->map(function ($evaluation) {
@@ -1400,7 +1254,7 @@ class EvaluasiController extends Controller
                     'nilai_akhir' => $evaluation->nilai_akhir,
                     'grade' => $evaluation->grade,
                     'status' => $evaluation->status,
-                    'evaluator_nama' => optional($evaluation->evaluator)->name ?? '',
+                    'evaluator_nama' => optional($evaluation->evaluator)->nama_user ?? '',
                     'created_at' => $evaluation->created_at,
                     'updated_at' => $evaluation->updated_at,
                 ];

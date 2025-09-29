@@ -1682,24 +1682,34 @@
 
     const existingEvaluations = {};
     try {
+      console.log('Fetching evaluations from:', fetchUrl);
       const response = await fetch(fetchUrl, {
         headers: {
           'Accept': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRF-TOKEN': '{{ csrf_token() }}'
         }
       });
 
+      console.log('Response status:', response.status);
       if (response.ok) {
         const payload = await response.json();
+        console.log('Response payload:', payload);
         if (payload?.success && Array.isArray(payload.evaluations)) {
+          console.log('Found evaluations:', payload.evaluations.length);
           payload.evaluations.forEach(item => {
             if (!item || typeof item.mahasiswa_id === 'undefined') {
               return;
             }
+            console.log('Adding evaluation for mahasiswa_id:', item.mahasiswa_id, item);
             existingEvaluations[String(item.mahasiswa_id)] = item;
           });
           syncCardEvaluations(payload.evaluations);
+        } else {
+          console.warn('Invalid payload structure:', payload);
         }
+      } else {
+        console.warn('Response not OK:', response.statusText);
       }
     } catch (error) {
       console.warn('Gagal memuat evaluasi dosen awal', error);
@@ -1707,6 +1717,7 @@
 
     const buildRow = member => {
       const current = existingEvaluations[member.id] || {};
+      console.log('Building row for member:', member.id, member.nama, 'Current evaluation:', current);
       return `
         <tr data-member="${member.id}" data-evaluation-id="${current.id || ''}">
           <td style="vertical-align: middle; background: #f8f9fa; font-weight: 600;">
@@ -1715,7 +1726,9 @@
           </td>
           ${dosenItems.map(item => {
             const raw = current[item.kode];
-            const value = (raw === 0 || raw) ? raw : '';
+            // Handle null, undefined, and empty string - only show value if it's 0 or a positive number
+            const value = (raw === 0 || (raw && raw !== '' && !isNaN(raw))) ? raw : '';
+            console.log(`Setting value for ${item.kode}:`, value, 'from raw:', raw, 'type:', typeof raw);
             return `
               <td style="text-align: center; vertical-align: middle;">
                 <input type="number"
@@ -1760,12 +1773,7 @@
               </tr>
             </thead>
             <tbody>
-              ${members.map(m => {
-                // Cari nilai mahasiswa di cardGrades (dosen) atau evaluasi_dosen_details
-                const dosenDetails = window.cardGrades?.[cardId]?.evaluasi_dosen_details ?? [];
-                const existing = dosenDetails.find(d => Number(d.mahasiswa_id) === Number(m.id));
-                return buildRow(m, existing);
-              }).join('')}
+              ${members.map(m => buildRow(m)).join('')}
             </tbody>      
           </table>
         </div>

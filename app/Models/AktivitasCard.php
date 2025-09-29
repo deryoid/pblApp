@@ -40,6 +40,16 @@ class AktivitasCard extends Model
         return $this->belongsTo(AktivitasList::class, 'list_aktivitas_id');
     }
 
+    public function kelompok()
+    {
+        return $this->belongsTo(Kelompok::class);
+    }
+
+    public function periode()
+    {
+        return $this->belongsTo(Periode::class);
+    }
+
     public function createdBy()
     {
         return $this->belongsTo(User::class, 'created_by');

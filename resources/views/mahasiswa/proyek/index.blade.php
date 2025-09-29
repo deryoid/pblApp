@@ -151,9 +151,9 @@
                 data-bbar="{{ $card['biaya_barang'] ?? '' }}"
                 data-bjas="{{ $card['biaya_jasa'] ?? '' }}"
                 data-drive="{{ $card['link_drive_proyek'] ?? '' }}"
-                data-kendala="{{ $card['kendala'] ?? '' }}"
-                data-catatan="{{ $card['catatan'] ?? '' }}"
-              >
+                data-kendala="{{ e($card['kendala'] ?? '') }}"
+                data-catatan="{{ e($card['catatan'] ?? '') }}"
+                              >
                 <div class="card-body p-2 d-flex flex-column">
 
                  {{-- HEADER: Aksi (kanan atas) → Judul penuh → Tanggal --}}
@@ -382,7 +382,7 @@
           <div class="form-group"><label>Progress</label><input name="progress" id="editProgress" type="number" min="0" max="100" class="form-control"></div>
           <div class="form-group">
             <label>Kendala</label>
-            <textarea name="kendala" id="editKendala" class="form-control" rows="2">{{ old('kendala', $card['kendala'] ?? '') }}</textarea>
+            <textarea name="kendala" id="editKendala" class="form-control" rows="2"></textarea>
           </div>
           <div class="form-group">
             <label>Catatan</label>

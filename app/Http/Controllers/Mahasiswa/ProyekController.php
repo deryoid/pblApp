@@ -27,16 +27,18 @@ class ProyekController extends Controller
             ->where('periode_id', $pid)
             ->orderBy('position')
             ->get()
-            ->map(function ($list) {
+            ->map(function ($list) use ($kelompok, $pid) {
                 $cards = ProjectCard::with(['createdBy','updatedBy'])
                     ->where('list_id', $list->id)
+                    ->where('kelompok_id', $kelompok->id)
+                    ->where('periode_id', $pid)
                     ->orderBy('position')
                     ->orderBy('id')
                     ->get()
                     ->map(function (ProjectCard $c) {
                         $hasUpdate = $c->updated_at && $c->created_at && !$c->updated_at->equalTo($c->created_at);
-                        $createdByName = optional($c->createdBy)->name;
-                        $updatedByName = optional($c->updatedBy)->name;
+                        $createdByName = optional($c->createdBy)->nama_user;
+                        $updatedByName = optional($c->updatedBy)->nama_user;
                         // Gunakan foto profil data URL jika tersedia (sesuai topbar), fallback ke profile_photo_url
                         $createdByAvatar = optional($c->createdBy)->profile_photo_data_url
                             ?: optional($c->createdBy)->profile_photo_url;
@@ -69,6 +71,10 @@ class ProyekController extends Controller
                             'attachments' => $c->attachments_count ?? 0,
                             'progress' => $c->progress ?? 0,
                             'description' => $c->description,
+                            'mahasiswa_id' => $c->created_by,
+                            'mahasiswa_nama' => $createdByName,
+                            'kendala' => $c->kendala,
+                            'catatan' => $c->catatan,
                         ];
                     })->toArray();
 

@@ -44,6 +44,8 @@ class AktivitasController extends Controller
         // 2) Ambil SEMUA card untuk list tersebut dalam 1 query, plus relasi createdBy & updatedBy
         $cards = AktivitasCard::with(['createdBy', 'updatedBy'])
             ->whereIn('list_aktivitas_id', $lists->pluck('id'))
+            ->where('kelompok_id', $kelompok->id)
+            ->where('periode_id', $pid)
             ->orderBy('list_aktivitas_id')
             ->orderBy('position')
             ->orderBy('id')
