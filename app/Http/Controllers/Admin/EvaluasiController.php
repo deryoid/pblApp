@@ -19,6 +19,7 @@ use App\Models\Periode;
 use App\Models\ProjectCard;
 use App\Models\ProjectList;
 use App\Models\User;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -398,31 +399,21 @@ class EvaluasiController extends Controller
 
         // Load data from EvaluasiDosen table as well (per project + per mahasiswa)
         $evaluasiDosenCollections = collect();
-        if (\Illuminate\Support\Facades\Schema::hasTable((new EvaluasiDosen)->getTable())) {
-            $evaluasiDosenQuery = EvaluasiDosen::with(['mahasiswa:id,nim,nama_mahasiswa'])
-                ->whereIn('project_card_id', $allCardIds);
-
-            if (Schema::hasColumn((new EvaluasiDosen)->getTable(), 'evaluasi_master_id')) {
-                $evaluasiDosenQuery->where('evaluasi_master_id', $sesi->id);
-            } else {
-                $evaluasiDosenQuery->where('evaluasi_sesi_id', $sesi->id);
-            }
-
-            $evaluasiDosenCollections = $evaluasiDosenQuery->get()->groupBy('project_card_id');
+        if (Schema::hasTable((new EvaluasiDosen)->getTable())) {
+            $evaluasiDosenCollections = EvaluasiDosen::with(['mahasiswa:id,nim,nama_mahasiswa'])
+                ->whereIn('project_card_id', $allCardIds)
+                ->where('evaluasi_master_id', $sesi->id)
+                ->get()
+                ->groupBy('project_card_id');
         }
 
         $evaluasiMitraCollections = collect();
-        if (\Illuminate\Support\Facades\Schema::hasTable((new EvaluasiMitra)->getTable())) {
-            $evaluasiMitraQuery = EvaluasiMitra::with(['mahasiswa:id,nim,nama_mahasiswa'])
-                ->whereIn('project_card_id', $allCardIds);
-
-            if (Schema::hasColumn((new EvaluasiMitra)->getTable(), 'evaluasi_master_id')) {
-                $evaluasiMitraQuery->where('evaluasi_master_id', $sesi->id);
-            } else {
-                $evaluasiMitraQuery->where('evaluasi_sesi_id', $sesi->id);
-            }
-
-            $evaluasiMitraCollections = $evaluasiMitraQuery->get()->groupBy('project_card_id');
+        if (Schema::hasTable((new EvaluasiMitra)->getTable())) {
+            $evaluasiMitraCollections = EvaluasiMitra::with(['mahasiswa:id,nim,nama_mahasiswa'])
+                ->whereIn('project_card_id', $allCardIds)
+                ->where('evaluasi_master_id', $sesi->id)
+                ->get()
+                ->groupBy('project_card_id');
         }
 
         $cardGradesMap = [];
@@ -929,7 +920,7 @@ class EvaluasiController extends Controller
     {
         try {
             // Check if user is authenticated
-            if (! auth()->check()) {
+            if (! Auth::check()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'User tidak terautentikasi. Silakan login ulang.',
@@ -940,11 +931,11 @@ class EvaluasiController extends Controller
             $items = $request->input('items', []);
 
             // Debug log
-            \Log::info('saveProjectGradeDosen called', [
+            Log::info('saveProjectGradeDosen called', [
                 'card_id' => $card->id,
                 'evaluasi_master_id' => $evaluasiMasterId,
                 'items_count' => count($items),
-                'user_id' => auth()->id(),
+                'evaluator_id' => Auth::id(),
             ]);
 
             // Get project card details
@@ -965,10 +956,6 @@ class EvaluasiController extends Controller
                 ]);
             }
 
-            $evaluasiDosenTable = (new \App\Models\EvaluasiDosen)->getTable();
-            $hasEvaluasiMasterColumn = Schema::hasColumn($evaluasiDosenTable, 'evaluasi_master_id');
-            $hasEvaluasiSesiColumn = Schema::hasColumn($evaluasiDosenTable, 'evaluasi_sesi_id');
-
             $savedEvaluations = [];
             $skippedCount = 0;
 
@@ -982,7 +969,7 @@ class EvaluasiController extends Controller
                 // Validate mahasiswa exists
                 $mahasiswa = \App\Models\Mahasiswa::find($mahasiswaId);
                 if (! $mahasiswa) {
-                    \Log::warning('Mahasiswa not found', ['mahasiswa_id' => $mahasiswaId]);
+                    Log::warning('Mahasiswa not found', ['mahasiswa_id' => $mahasiswaId]);
                     $skippedCount++;
 
                     continue;
@@ -995,7 +982,7 @@ class EvaluasiController extends Controller
                     ->exists();
 
                 if (! $isInKelompok) {
-                    \Log::warning('Mahasiswa not in kelompok', [
+                    Log::warning('Mahasiswa not in kelompok', [
                         'mahasiswa_id' => $mahasiswaId,
                         'mahasiswa_name' => $mahasiswa->nama_mahasiswa,
                         'expected_kelompok' => $kelompokId,
@@ -1028,22 +1015,13 @@ class EvaluasiController extends Controller
                 }
 
                 if (! $evaluation) {
-                    $attributes = [
+                    $evaluation = \App\Models\EvaluasiDosen::firstOrNew([
+                        'evaluasi_master_id' => $evaluasiMasterId ?: null,
                         'periode_id' => $periodeId,
                         'kelompok_id' => $kelompokId,
                         'mahasiswa_id' => $mahasiswaId,
                         'project_card_id' => $card->id,
-                    ];
-
-                    if ($hasEvaluasiSesiColumn) {
-                        $attributes['evaluasi_sesi_id'] = $evaluasiMasterId ?: null;
-                    }
-
-                    if ($hasEvaluasiMasterColumn) {
-                        $attributes['evaluasi_master_id'] = $evaluasiMasterId ?: null;
-                    }
-
-                    $evaluation = \App\Models\EvaluasiDosen::firstOrNew($attributes);
+                    ]);
                 }
 
                 foreach (['d_hasil', 'd_teknis', 'd_user', 'd_efisiensi', 'd_dokpro', 'd_inisiatif'] as $field) {
@@ -1056,14 +1034,8 @@ class EvaluasiController extends Controller
                 $evaluation->evaluation_type = 'regular';
                 $evaluation->status = 'submitted';
                 $evaluation->submitted_at = now();
-                $evaluation->evaluator_id = auth()->id();
-                if ($hasEvaluasiSesiColumn) {
-                    $evaluation->evaluasi_sesi_id = $evaluasiMasterId ?: null;
-                }
-
-                if ($hasEvaluasiMasterColumn) {
-                    $evaluation->evaluasi_master_id = $evaluasiMasterId ?: null;
-                }
+                $evaluation->evaluator_id = Auth::id();
+                $evaluation->evaluasi_master_id = $evaluasiMasterId ?: null;
 
                 $evaluation->save();
 
@@ -1090,7 +1062,7 @@ class EvaluasiController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('Error in saveProjectGradeDosen', [
+            Log::error('Error in saveProjectGradeDosen', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
@@ -1105,7 +1077,7 @@ class EvaluasiController extends Controller
     /** ===== PENILAIAN PROYEK: Mitra ===== */
     public function saveProjectGradeMitra(Request $request, ProjectCard $card)
     {
-        if (! auth()->check()) {
+        if (! Auth::check()) {
             return response()->json([
                 'success' => false,
                 'message' => 'User tidak terautentikasi. Silakan login ulang.',
@@ -1135,10 +1107,6 @@ class EvaluasiController extends Controller
         $savedEvaluations = [];
         $skippedCount = 0;
 
-        $evaluasiMitraTable = (new EvaluasiMitra)->getTable();
-        $hasMitraMasterColumn = Schema::hasColumn($evaluasiMitraTable, 'evaluasi_master_id');
-        $hasMitraSesiColumn = Schema::hasColumn($evaluasiMitraTable, 'evaluasi_sesi_id');
-
         foreach ($items as $mahasiswaId => $payload) {
             $mahasiswaId = (int) $mahasiswaId;
             $rowPayload = is_array($payload) ? $payload : ['nilai' => $payload];
@@ -1147,7 +1115,7 @@ class EvaluasiController extends Controller
 
             $mahasiswa = \App\Models\Mahasiswa::find($mahasiswaId);
             if (! $mahasiswa) {
-                \Log::warning('Mahasiswa not found for mitra evaluation', ['mahasiswa_id' => $mahasiswaId]);
+                Log::warning('Mahasiswa not found for mitra evaluation', ['mahasiswa_id' => $mahasiswaId]);
                 $skippedCount++;
 
                 continue;
@@ -1159,7 +1127,7 @@ class EvaluasiController extends Controller
                 ->exists();
 
             if (! $isInKelompok) {
-                \Log::warning('Mahasiswa not in kelompok for mitra evaluation', [
+                Log::warning('Mahasiswa not in kelompok for mitra evaluation', [
                     'mahasiswa_id' => $mahasiswaId,
                     'expected_kelompok' => $kelompokId,
                     'expected_periode' => $periodeId,
@@ -1188,22 +1156,13 @@ class EvaluasiController extends Controller
             }
 
             if (! $evaluation) {
-                $attributes = [
+                $evaluation = EvaluasiMitra::firstOrNew([
+                    'evaluasi_master_id' => $evaluasiMasterId ?: null,
                     'periode_id' => $periodeId,
                     'kelompok_id' => $kelompokId,
                     'mahasiswa_id' => $mahasiswaId,
                     'project_card_id' => $card->id,
-                ];
-
-                if ($hasMitraMasterColumn) {
-                    $attributes['evaluasi_master_id'] = $evaluasiMasterId ?: null;
-                }
-
-                if ($hasMitraSesiColumn) {
-                    $attributes['evaluasi_sesi_id'] = $evaluasiMasterId ?: null;
-                }
-
-                $evaluation = EvaluasiMitra::firstOrNew($attributes);
+                ]);
             }
 
             if ($scores['m_kehadiran'] !== null) {
@@ -1219,12 +1178,7 @@ class EvaluasiController extends Controller
             $evaluation->submitted_at = now();
             $evaluation->evaluation_type = 'regular';
             $evaluation->evaluator_id = Auth::id();
-            if ($hasMitraMasterColumn) {
-                $evaluation->evaluasi_master_id = $evaluasiMasterId ?: null;
-            }
-            if ($hasMitraSesiColumn) {
-                $evaluation->evaluasi_sesi_id = $evaluasiMasterId ?: null;
-            }
+            $evaluation->evaluasi_master_id = $evaluasiMasterId ?: null;
 
             $evaluation->save();
 
@@ -1241,21 +1195,8 @@ class EvaluasiController extends Controller
 
         // Update legacy aggregate table for compatibility
         $avgQuery = EvaluasiMitra::where('project_card_id', $card->id)
-            ->whereNull('deleted_at');
-
-        if ($hasMitraMasterColumn) {
-            if ($evaluasiMasterId) {
-                $avgQuery->where('evaluasi_master_id', $evaluasiMasterId);
-            } else {
-                $avgQuery->whereNull('evaluasi_master_id');
-            }
-        } elseif ($hasMitraSesiColumn) {
-            if ($evaluasiMasterId) {
-                $avgQuery->where('evaluasi_sesi_id', $evaluasiMasterId);
-            } else {
-                $avgQuery->whereNull('evaluasi_sesi_id');
-            }
-        }
+            ->whereNull('deleted_at')
+            ->where('evaluasi_master_id', $evaluasiMasterId ?: null);
 
         $avgMitra = $avgQuery->avg('nilai_akhir');
 
@@ -1267,12 +1208,8 @@ class EvaluasiController extends Controller
                 'jenis' => 'mitra',
             ];
 
-            $proyekTable = (new EvaluasiProyekNilai)->getTable();
-            if (Schema::hasColumn($proyekTable, 'evaluasi_master_id')) {
-                $aggregateAttributes['evaluasi_master_id'] = $evaluasiMasterId ?: null;
-            } else {
-                $aggregateAttributes['sesi_id'] = $evaluasiMasterId ?: null;
-            }
+            // evaluasi_proyek_nilai tetap menggunakan kolom 'sesi_id' yang merujuk ke evaluasi_master
+            $aggregateAttributes['sesi_id'] = $evaluasiMasterId ?: null;
 
             EvaluasiProyekNilai::updateOrCreate($aggregateAttributes, [
                 'nilai' => ['avg' => $avgMitra],
@@ -1481,11 +1418,11 @@ class EvaluasiController extends Controller
     public function storePenilaianDosen(Request $request)
     {
         // Debug log the incoming request
-        \Log::info('storePenilaianDosen called', [
+        Log::info('storePenilaianDosen called', [
             'request_data' => $request->all(),
             'request_headers' => $request->headers->all(),
             'content_type' => $request->header('Content-Type'),
-            'user_id' => auth()->id(),
+            'user_id' => Auth::id(),
         ]);
 
         try {
@@ -1519,8 +1456,8 @@ class EvaluasiController extends Controller
             ]);
 
             // Add default values for nullable fields
-            if (empty($validated['evaluator_id']) && auth()->check()) {
-                $validated['evaluator_id'] = auth()->id();
+            if (empty($validated['evaluator_id']) && Auth::check()) {
+                $validated['evaluator_id'] = Auth::id();
             }
             $validated['evaluasi_master_id'] = $validated['evaluasi_master_id'] ?? null;
             $validated['progress_percentage'] = $validated['progress_percentage'] ?? 0;
@@ -1547,7 +1484,7 @@ class EvaluasiController extends Controller
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             // Log validation errors for debugging
-            \Log::error('Validation error in storePenilaianDosen', [
+            Log::error('Validation error in storePenilaianDosen', [
                 'errors' => $e->errors(),
                 'request_data' => $request->all(),
                 'failed_rules' => $e->validator->failed(),
@@ -1600,8 +1537,8 @@ class EvaluasiController extends Controller
             foreach ($validated['evaluations'] as $evaluationData) {
                 try {
                     // Add default values
-                    if (empty($evaluationData['evaluator_id']) && auth()->check()) {
-                        $evaluationData['evaluator_id'] = auth()->id();
+                    if (empty($evaluationData['evaluator_id']) && Auth::check()) {
+                        $evaluationData['evaluator_id'] = Auth::id();
                     }
                     $evaluationData['evaluasi_master_id'] = $evaluationData['evaluasi_master_id'] ?? null;
                     $evaluationData['progress_percentage'] = $evaluationData['progress_percentage'] ?? 0;
@@ -1619,7 +1556,7 @@ class EvaluasiController extends Controller
                     $successCount++;
 
                 } catch (\Exception $e) {
-                    \Log::error('Error creating evaluation in batch', [
+                    Log::error('Error creating evaluation in batch', [
                         'error' => $e->getMessage(),
                         'data' => $evaluationData,
                     ]);
