@@ -1553,41 +1553,58 @@ class EvaluasiController extends Controller
      */
     public function getNilaiAPByAktivitasList($aktivitasList)
     {
-        $aktivitasList = AktivitasList::where('uuid', $aktivitasList)->orWhere('id', $aktivitasList)->firstOrFail();
+        try {
+            $aktivitasList = AktivitasList::where('uuid', $aktivitasList)->orWhere('id', $aktivitasList)->firstOrFail();
 
-        $nilaiAP = EvaluasiNilaiAP::where('aktivitas_list_id', $aktivitasList->id)
-            ->with([
-                'mahasiswa:id,nim,nama_mahasiswa',
-                'evaluator:id,nama_user',
-                'aktivitasList:id,title,name',
-            ])
-            ->get()
-            ->map(function ($nilai) {
-                $mahasiswa = $nilai->mahasiswa;
-                $aktivitasList = $nilai->aktivitasList;
+            $nilaiAP = EvaluasiNilaiAP::where('aktivitas_list_id', $aktivitasList->id)
+                ->with([
+                    'mahasiswa:id,nim,nama_mahasiswa',
+                    'evaluator:id,nama_user',
+                    'aktivitasList:id,name',
+                ])
+                ->get()
+                ->map(function ($nilai) {
+                    $mahasiswa = $nilai->mahasiswa;
 
-                return [
-                    'id' => $nilai->uuid,
-                    'mahasiswa_id' => $nilai->mahasiswa_id,
-                    'aktivitas_list_id' => $nilai->aktivitas_list_id,
-                    'mahasiswa_nama' => optional($mahasiswa)->nama ?? optional($mahasiswa)->nama_mahasiswa ?? '',
-                    'mahasiswa_nim' => optional($mahasiswa)->nim ?? '',
-                    'w_ap_kehadiran' => $nilai->w_ap_kehadiran,
-                    'tanggal_hadir' => $nilai->tanggal_hadir ? $nilai->tanggal_hadir->format('Y-m-d') : null,
-                    'w_ap_presentasi' => $nilai->w_ap_presentasi,
-                    'catatan_presentasi' => $nilai->catatan_presentasi,
-                    'kehadiran_bobot' => $nilai->kehadiran_bobot,
-                    'status' => $nilai->status,
-                    'evaluator_nama' => optional($nilai->evaluator)->nama_user ?? '',
-                    'created_at' => $nilai->created_at,
-                    'updated_at' => $nilai->updated_at,
-                ];
-            });
+                    return [
+                        'id' => $nilai->uuid,
+                        'mahasiswa_id' => $nilai->mahasiswa_id,
+                        'aktivitas_list_id' => $nilai->aktivitas_list_id,
+                        'mahasiswa_nama' => optional($mahasiswa)->nama_mahasiswa ?? '',
+                        'mahasiswa_nim' => optional($mahasiswa)->nim ?? '',
+                        'w_ap_kehadiran' => $nilai->w_ap_kehadiran,
+                        'tanggal_hadir' => $nilai->tanggal_hadir ? $nilai->tanggal_hadir->format('Y-m-d') : null,
+                        'w_ap_presentasi' => $nilai->w_ap_presentasi,
+                        'catatan_presentasi' => $nilai->catatan_presentasi,
+                        'kehadiran_bobot' => $nilai->kehadiran_bobot,
+                        'status' => $nilai->status,
+                        'evaluator_nama' => optional($nilai->evaluator)->nama_user ?? '',
+                        'created_at' => $nilai->created_at,
+                        'updated_at' => $nilai->updated_at,
+                    ];
+                });
 
-        return response()->json([
-            'success' => true,
-            'nilai_ap' => $nilaiAP,
-        ]);
+            return response()->json([
+                'success' => true,
+                'nilai_ap' => $nilaiAP,
+            ]);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Aktivitas list tidak ditemukan',
+            ], 404);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error in getNilaiAPByAktivitasList: '.$e->getMessage(), [
+                'aktivitas_list_id' => $aktivitasList,
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memuat data nilai AP: '.$e->getMessage(),
+            ], 500);
+        }
     }
 
     /**

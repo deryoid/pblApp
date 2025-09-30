@@ -4,7 +4,8 @@ Chart.defaults.global.defaultFontColor = '#858796';
 
 // Pie Chart Example
 var ctx = document.getElementById("myPieChart");
-var myPieChart = new Chart(ctx, {
+if (ctx) {
+  var myPieChart = new Chart(ctx, {
   type: 'doughnut',
   data: {
     labels: ["Direct", "Referral", "Social"],
@@ -33,3 +34,4 @@ var myPieChart = new Chart(ctx, {
     cutoutPercentage: 80,
   },
 });
+}

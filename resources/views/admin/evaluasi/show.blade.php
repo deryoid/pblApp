@@ -662,10 +662,11 @@
                   <div class="align-items-center x-small mt-auto pt-1">
                     @php
                       $badgeId = 'aktivitas-status-'.($alist->uuid ?? $alist->id);
-                      $statusNow = $alist->status_evaluasi ?? 'Draft';
-                      $statusClass = $statusNow === 'Submitted' ? 'badge-success' : 'badge-secondary';
+                      $statusNow = $alist->status_evaluasi ?? 'Belum Evaluasi';
+                      $statusClass = $statusNow === 'Sudah Evaluasi' ? 'badge-success' : 'badge-secondary';
+                      $statusLabel = $statusNow;
                     @endphp
-                    <span id="{{ $badgeId }}" class="badge {{ $statusClass }}">{{ $statusNow }}</span>
+                    <span id="{{ $badgeId }}" class="badge {{ $statusClass }}">{{ $statusLabel }}</span>
                     {{-- Nilai AP --}}
                           <button type="button"
                                   class="btn btn-sm btn-secondary"
@@ -984,8 +985,8 @@
   /* ====== Update status aktivitas ====== */
   const statusUrlTemplate = "{{ route('admin.evaluasi.aktivitas.status', ['list' => '__UUID__']) }}";
   const statusStyles = {
-    'Draft': 'badge-secondary',
-    'Submitted': 'badge-success',
+    'Belum Evaluasi': 'badge-secondary',
+    'Sudah Evaluasi': 'badge-success',
   };
 
   qsa('.js-aktivitas-status').forEach(btn => {
@@ -1000,8 +1001,8 @@
         title: 'Ubah status aktivitas',
         input: 'select',
         inputOptions: {
-          'Draft': 'Draft',
-          'Submitted': 'Submitted',
+          'Belum Evaluasi': 'Belum Evaluasi',
+          'Sudah Evaluasi': 'Sudah Evaluasi',
         },
         inputValue: current,
         showCancelButton: true,
@@ -1090,10 +1091,7 @@
     $('#ep_catatan').val(btn.data('catatan')||'');
   });
 
-  function swalToast(icon, title){
-    Swal.fire({toast:true, position:'top-end', showConfirmButton:false, timer:1800, icon:icon||'success', title:title||'Tersimpan'});
-  }
-
+  
   window.cardGrades = window.cardGrades || @json($cardGrades ?? []);
 
   // Submit EDIT
@@ -1597,7 +1595,13 @@
           'X-Requested-With': 'XMLHttpRequest'
         }
       });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
       const result = await response.json();
+
       if (result.success && Array.isArray(result.nilai_ap)) {
         // Group data by mahasiswa_id
         existingData = result.nilai_ap.reduce((acc, item) => {
@@ -1611,11 +1615,15 @@
         swalToast('success', `Data ${aktivitasNama} berhasil dimuat`);
       } else {
         Swal.close();
+        // Show error if server returns success: false
+        if (result.message) {
+          swalToast('error', result.message);
+        }
       }
     } catch (error) {
-      console.warn('Gagal memuat data nilai AP', error);
+      console.error('Error loading AP data:', error);
       Swal.close();
-      swalToast('error', 'Gagal memuat data yang ada');
+      swalToast('error', `Gagal memuat data: ${error.message}`);
     }
 
     const buildRow = (member) => {
@@ -1825,8 +1833,8 @@
         });
 
         if (!hasAnyData) {
-          Swal.showValidationMessage('Isi minimal satu data nilai AP sebelum menyimpan');
-          return false;
+          // For validation, throw a special error that we can catch and handle silently
+          throw new Error('VALIDATION_FAILED');
         }
 
         return fetch(storeUrl, {
@@ -1858,14 +1866,31 @@
             return result;
           })
           .catch(error => {
+            // Handle validation failures silently
+            if (error.message === 'VALIDATION_FAILED') {
+              return false; // Silent validation failure
+            }
+            // Show actual errors
             Swal.showValidationMessage(error.message || 'Terjadi kesalahan saat menyimpan');
             throw error;
           });
       }
     }).then((result) => {
-      if (result && result.value) {
-        const { data } = result.value;
+      // Handle cancel actions silently
+      if (!result || result.dismissed) {
+        // User cancelled - no action needed
+        return;
+      }
 
+      const data = result.value;
+
+      // Check if data exists and has success property
+      if (!data) {
+        // Validation failed or cancelled silently
+        return;
+      }
+
+      if (data.success) {
         // Show detailed success alert with more information
         Swal.fire({
           icon: 'success',
@@ -1886,13 +1911,39 @@
 
         // Also show brief toast for quick feedback
         setTimeout(() => {
-          swalToast('success', data.message || 'Nilai AP berhasil disimpan');
+          // Try the custom swalToast function first
+          try {
+            swalToast('success', data.message || 'Nilai AP berhasil disimpan');
+          } catch (toastError) {
+            // Fallback to basic SweetAlert2 toast
+            Swal.fire({
+              toast: true,
+              position: 'top-end',
+              icon: 'success',
+              title: data.message || 'Nilai AP berhasil disimpan',
+              showConfirmButton: false,
+              timer: 3000,
+              timerProgressBar: true
+            });
+          }
         }, 500);
+      } else {
+        // Show error alert if success is false
+        Swal.fire({
+          icon: 'error',
+          title: 'Gagal!',
+          text: data?.message || 'Terjadi kesalahan saat menyimpan nilai AP',
+          confirmButtonColor: '#dc3545'
+        });
       }
     }).catch(error => {
-      if (error && typeof error.message === 'string') {
-        console.warn('Grade AP error:', error.message);
-      }
+      // Show error alert for any exceptions
+      Swal.fire({
+        icon: 'error',
+        title: 'Error!',
+        text: error.message || 'Terjadi kesalahan tak terduga',
+        confirmButtonColor: '#dc3545'
+      });
     });
   };
 
@@ -2408,33 +2459,10 @@
     });
   }
 
-  // Debug script untuk aktivitas data
-  console.log('=== DEBUG AKTIVITAS DATA ===');
-  console.log('Raw aktivitasLists data:', @json($aktivitasLists));
-
-  @php
-    $debugInfo = [
-      'total_lists' => count($aktivitasLists),
-      'total_cards' => $aktivitasLists->sum(fn($list) => count($list->cards)),
-      'list_details' => $aktivitasLists->map(function($list) {
-        return [
-          'id' => $list->id,
-          'name' => $list->name,
-          'total_cards' => count($list->cards),
-          'valid_cards' => $list->cards->filter(fn($card) => $card->list_aktivitas_id == $list->id)->count(),
-          'card_ids' => $list->cards->pluck('id'),
-          'card_list_ids' => $list->cards->pluck('list_aktivitas_id'),
-        ];
-      })
-    ];
-  @endphp
-
-  console.log('Debug info:', @json($debugInfo));
-
+  
   // Validasi struktur di DOM
   document.addEventListener('DOMContentLoaded', function() {
     const columns = document.querySelectorAll('.board-column');
-    console.log(`Found ${columns.length} activity columns`);
 
     columns.forEach((col, index) => {
       const listId = col.getAttribute('data-col-id');
@@ -2444,14 +2472,7 @@
         return cardListId === listId;
       });
 
-      console.log(`Column ${index + 1} (ID: ${listId}):`);
-      console.log(`  - Total cards: ${cards.length}`);
-      console.log(`  - Valid cards: ${validCards.length}`);
-      console.log(`  - Invalid cards: ${cards.length - validCards.length}`);
-
-      if (cards.length !== validCards.length) {
-        console.warn(`  ⚠️  Found ${cards.length - validCards.length} cards in wrong column!`);
-      }
+      // Debug info removed - DOM validation completed silently
     });
   });
 })();
