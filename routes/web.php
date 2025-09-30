@@ -157,7 +157,9 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
 
         // CRUD Evaluasi Nilai AP
         Route::get('nilai-ap/show-by-evaluasi-master/{evaluasiMaster}', [AdminEval::class, 'getNilaiAPByEvaluasiMaster'])->name('nilai-ap.show-by-evaluasi-master');
+        Route::get('nilai-ap/show-by-aktivitas-list/{aktivitasList}', [AdminEval::class, 'getNilaiAPByAktivitasList'])->name('nilai-ap.show-by-aktivitas-list');
         Route::post('nilai-ap', [AdminEval::class, 'storeNilaiAP'])->name('nilai-ap.store');
+        Route::post('nilai-ap/per-aktivitas-list', [AdminEval::class, 'storeNilaiAPPerAktivitasList'])->name('nilai-ap.store-per-aktivitas-list');
         Route::put('nilai-ap/{nilaiAP}', [AdminEval::class, 'updateNilaiAP'])->name('nilai-ap.update');
         Route::delete('nilai-ap/{nilaiAP}', [AdminEval::class, 'destroyNilaiAP'])->name('nilai-ap.destroy');
         Route::post('nilai-ap/batch-store', [AdminEval::class, 'batchStoreNilaiAP'])->name('nilai-ap.batch-store');

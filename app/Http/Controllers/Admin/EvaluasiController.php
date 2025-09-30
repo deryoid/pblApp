@@ -1549,6 +1549,166 @@ class EvaluasiController extends Controller
     }
 
     /**
+     * Get EvaluasiNilaiAP by aktivitas list
+     */
+    public function getNilaiAPByAktivitasList($aktivitasList)
+    {
+        $aktivitasList = AktivitasList::where('uuid', $aktivitasList)->orWhere('id', $aktivitasList)->firstOrFail();
+
+        $nilaiAP = EvaluasiNilaiAP::where('aktivitas_list_id', $aktivitasList->id)
+            ->with([
+                'mahasiswa:id,nim,nama_mahasiswa',
+                'evaluator:id,nama_user',
+                'aktivitasList:id,title,name',
+            ])
+            ->get()
+            ->map(function ($nilai) {
+                $mahasiswa = $nilai->mahasiswa;
+                $aktivitasList = $nilai->aktivitasList;
+
+                return [
+                    'id' => $nilai->uuid,
+                    'mahasiswa_id' => $nilai->mahasiswa_id,
+                    'aktivitas_list_id' => $nilai->aktivitas_list_id,
+                    'mahasiswa_nama' => optional($mahasiswa)->nama ?? optional($mahasiswa)->nama_mahasiswa ?? '',
+                    'mahasiswa_nim' => optional($mahasiswa)->nim ?? '',
+                    'w_ap_kehadiran' => $nilai->w_ap_kehadiran,
+                    'tanggal_hadir' => $nilai->tanggal_hadir ? $nilai->tanggal_hadir->format('Y-m-d') : null,
+                    'w_ap_presentasi' => $nilai->w_ap_presentasi,
+                    'catatan_presentasi' => $nilai->catatan_presentasi,
+                    'kehadiran_bobot' => $nilai->kehadiran_bobot,
+                    'status' => $nilai->status,
+                    'evaluator_nama' => optional($nilai->evaluator)->nama_user ?? '',
+                    'created_at' => $nilai->created_at,
+                    'updated_at' => $nilai->updated_at,
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'nilai_ap' => $nilaiAP,
+        ]);
+    }
+
+    /**
+     * Store EvaluasiNilaiAP per aktivitas list (update existing data)
+     */
+    public function storeNilaiAPPerAktivitasList(Request $request)
+    {
+        try {
+            // Validate batch data
+            $validated = $request->validate([
+                'nilai_ap' => 'required|array|min:1',
+                'nilai_ap.*.id' => 'nullable|string|uuid',
+                'nilai_ap.*.mahasiswa_id' => 'required|exists:mahasiswa,id',
+                'nilai_ap.*.aktivitas_list_id' => 'required|exists:aktivitas_lists,id',
+                'nilai_ap.*.w_ap_kehadiran' => 'nullable|string|in:Hadir,Tidak Hadir,Izin,Sakit,Dispensasi,Terlambat,Tanpa Keterangan',
+                'nilai_ap.*.tanggal_hadir' => 'nullable|date',
+                'nilai_ap.*.w_ap_presentasi' => 'nullable|numeric|min:0|max:100',
+                'nilai_ap.*.status' => 'nullable|string|in:Draft,Submitted,Reviewed',
+            ]);
+
+            $savedItems = [];
+            $updatedCount = 0;
+            $createdCount = 0;
+
+            foreach ($validated['nilai_ap'] as $item) {
+                // Skip if no data to save
+                if (empty($item['w_ap_kehadiran']) && empty($item['w_ap_presentasi'])) {
+                    continue;
+                }
+
+                // Get related data from aktivitas_list
+                $aktivitasList = \App\Models\AktivitasList::find($item['aktivitas_list_id']);
+                if (! $aktivitasList) {
+                    continue;
+                }
+
+                // Get or create evaluasi_master for this kelompok and periode
+                $evaluasiMaster = \App\Models\EvaluasiMaster::ensureForKelompok(
+                    $aktivitasList->periode_id,
+                    $aktivitasList->kelompok_id,
+                    Auth::id()
+                );
+
+                $saveData = [
+                    'periode_id' => $aktivitasList->periode_id,
+                    'kelompok_id' => $aktivitasList->kelompok_id,
+                    'evaluasi_master_id' => $evaluasiMaster->id,
+                    'mahasiswa_id' => $item['mahasiswa_id'],
+                    'aktivitas_list_id' => $item['aktivitas_list_id'],
+                    'w_ap_kehadiran' => $item['w_ap_kehadiran'] ?? null,
+                    'tanggal_hadir' => $item['tanggal_hadir'] ?? null,
+                    'w_ap_presentasi' => $item['w_ap_presentasi'] ?? null,
+                    'status' => $item['status'] ?? 'Submitted',
+                ];
+
+                // Add evaluator_id if logged in
+                if (Auth::check()) {
+                    $saveData['evaluator_id'] = Auth::id();
+                }
+
+                // Check if record exists
+                if (! empty($item['id'])) {
+                    // Update existing record by UUID
+                    $nilaiAP = EvaluasiNilaiAP::where('uuid', $item['id'])->first();
+                    if ($nilaiAP) {
+                        $nilaiAP->update($saveData);
+                        $updatedCount++;
+                    } else {
+                        // Create new if UUID not found
+                        $nilaiAP = EvaluasiNilaiAP::create($saveData);
+                        $createdCount++;
+                    }
+                } else {
+                    // Create or update by unique constraint: evaluasi_master_id, mahasiswa_id, aktivitas_list_id
+                    // Since evaluasi_master_id is null for AP, we use mahasiswa_id and aktivitas_list_id
+                    $nilaiAP = EvaluasiNilaiAP::updateOrCreate(
+                        [
+                            'mahasiswa_id' => $item['mahasiswa_id'],
+                            'aktivitas_list_id' => $item['aktivitas_list_id'],
+                        ],
+                        $saveData
+                    );
+                    if ($nilaiAP->wasRecentlyCreated) {
+                        $createdCount++;
+                    } else {
+                        $updatedCount++;
+                    }
+                }
+                $savedItems[] = [
+                    'id' => $nilaiAP->uuid,
+                    'mahasiswa_id' => $nilaiAP->mahasiswa_id,
+                    'aktivitas_list_id' => $nilaiAP->aktivitas_list_id,
+                    'w_ap_kehadiran' => $nilaiAP->w_ap_kehadiran,
+                    'w_ap_presentasi' => $nilaiAP->w_ap_presentasi,
+                    'tanggal_hadir' => $nilaiAP->tanggal_hadir,
+                    'status' => $nilaiAP->status,
+                ];
+            }
+
+            $message = "Nilai AP berhasil disimpan ({$updatedCount} update, {$createdCount} baru)";
+
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'nilai_ap' => $savedItems,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error in storeNilaiAPPerAktivitasList: '.$e->getMessage(), [
+                'request' => $request->all(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menyimpan data: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * Store new EvaluasiNilaiAP
      */
     public function storeNilaiAP(Request $request)
@@ -1562,18 +1722,10 @@ class EvaluasiController extends Controller
 
             // Validate batch data with correct kehadiran values
             $validated = $request->validate([
-                'evaluasi_master_id' => [
-                    'required',
-                    'string',
-                    'uuid',
-                    function ($attribute, $value, $fail) {
-                        if (! EvaluasiMaster::where('uuid', $value)->exists()) {
-                            $fail('The selected evaluasi master id is invalid.');
-                        }
-                    },
-                ],
+                'evaluasi_master_id' => 'nullable|string|uuid',
                 'sesi_id' => 'nullable|string|uuid',
                 'nilai_ap' => 'required|array|min:1',
+                'nilai_ap.*.id' => 'nullable|string|uuid',
                 'nilai_ap.*.mahasiswa_id' => 'required|exists:mahasiswa,id',
                 'nilai_ap.*.aktivitas_list_id' => 'required|exists:aktivitas_lists,id',
                 'nilai_ap.*.w_ap_kehadiran' => 'nullable|string|in:Hadir,Tidak Hadir,Izin,Sakit,Dispensasi,Terlambat,Tanpa Keterangan',
@@ -1631,7 +1783,15 @@ class EvaluasiController extends Controller
                     ],
                     $saveData
                 );
-                $savedItems[] = $nilaiAP;
+                $savedItems[] = [
+                    'id' => $nilaiAP->uuid,
+                    'mahasiswa_id' => $nilaiAP->mahasiswa_id,
+                    'aktivitas_list_id' => $nilaiAP->aktivitas_list_id,
+                    'w_ap_kehadiran' => $nilaiAP->w_ap_kehadiran,
+                    'w_ap_presentasi' => $nilaiAP->w_ap_presentasi,
+                    'tanggal_hadir' => $nilaiAP->tanggal_hadir,
+                    'status' => $nilaiAP->status,
+                ];
             }
 
             $message = 'Nilai AP berhasil disimpan untuk '.count($savedItems).' mahasiswa';

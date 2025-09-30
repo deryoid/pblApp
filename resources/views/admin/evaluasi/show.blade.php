@@ -666,7 +666,21 @@
                       $statusClass = $statusNow === 'Submitted' ? 'badge-success' : 'badge-secondary';
                     @endphp
                     <span id="{{ $badgeId }}" class="badge {{ $statusClass }}">{{ $statusNow }}</span>
-                    
+                    {{-- Nilai AP --}}
+                          <button type="button"
+                                  class="btn btn-sm btn-secondary"
+                                  title="Nilai AP"
+                                  onclick="gradeAP('{{ $alist->id }}','{{ addslashes($alist->title ?? $alist->name ?? 'Aktivitas') }}')">
+                                  <i class="fas fa-clipboard-list" aria-hidden="true"></i>
+                          </button>
+                          <button type="button"
+                                  class="btn btn-sm btn-success js-aktivitas-status"
+                                  data-uuid="{{ $alist->uuid ?? $alist->id }}"
+                                  data-status="{{ $statusNow }}"
+                                  data-target="#{{ $badgeId }}"
+                                  title="Update Status">
+                            <i class="fas fa-sync-alt" aria-hidden="true"></i>
+                          </button>
                   </div>
                 </div>
 
@@ -732,24 +746,6 @@
                               <i class="fas fa-book-open" aria-hidden="true"></i>
                             </a>
                           @endif
-                          {{-- Nilai AP --}}
-                          <button type="button"
-                                  class="btn btn-sm btn-secondary"
-                                  title="Nilai AP"
-                                  onclick="gradeAP('{{ $sesi->uuid }}','{{ addslashes($kelompok->nama_kelompok) }}')">
-                                  <i class="fas fa-clipboard-list" aria-hidden="true"></i>
-                          {{-- Nilai AP --}}
-                          </button>
-                          <button type="button"
-                                  class="btn btn-sm btn-success js-aktivitas-status"
-                                  data-uuid="{{ $alist->uuid ?? $alist->id }}"
-                                  data-status="{{ $statusNow }}"
-                                  data-target="#{{ $badgeId }}"
-                                  title="Update Status">
-                            <i class="fas fa-sync-alt" aria-hidden="true"></i>
-                          </button>
-
-                         
                           </div>
                         </div>
                       </div>
@@ -1423,7 +1419,7 @@
 
     Swal.fire({
       html: modalHtml,
-      width: '100%',
+      width: '800px',
       showConfirmButton: true,
       confirmButtonText: ' Simpan Nilai',
       confirmButtonColor: '#28a745',
@@ -1558,9 +1554,9 @@
     });
   };
 
-  // Grade Nilai AP per evaluasi master per mahasiswa per aktivitas list
-  window.gradeAP = async function(evaluasiMasterId, kelompokNama) {
-    if (!evaluasiMasterId) {
+  // Grade Nilai AP per aktivitas list per mahasiswa
+  window.gradeAP = async function(aktivitasListId, aktivitasNama) {
+    if (!aktivitasListId) {
       return;
     }
 
@@ -1570,20 +1566,8 @@
       @endforeach
     ];
 
-    // Get aktivitas lists data
-    const aktivitasLists = [
-      @foreach($aktivitasLists as $alist)
-        {
-          id: '{{ $alist->id }}',
-          uuid: '{{ $alist->uuid }}',
-          title: '{{ $alist->title ?? $alist->name ?? 'Minggu' }}',
-          status_evaluasi: '{{ $alist->status_evaluasi ?? 'Draft' }}'
-        },
-      @endforeach
-    ];
-
-    const fetchUrl = "{{ route('admin.evaluasi.nilai-ap.show-by-evaluasi-master', ['evaluasiMaster' => '__ID__']) }}".replace('__ID__', evaluasiMasterId);
-    const storeUrl = "{{ route('admin.evaluasi.nilai-ap.store') }}";
+    const fetchUrl = "{{ route('admin.evaluasi.nilai-ap.show-by-aktivitas-list', ['aktivitasList' => '__ID__']) }}".replace('__ID__', aktivitasListId);
+    const storeUrl = "{{ route('admin.evaluasi.nilai-ap.store-per-aktivitas-list') }}";
     const styleId = 'grade-ap-modal-styles';
 
     // Get AP weights from config
@@ -1593,6 +1577,19 @@
     };
 
     let existingData = {};
+    let dataLoaded = false;
+
+    // Show loading indicator
+    Swal.fire({
+      title: 'Memuat data...',
+      text: `Mengambil data nilai AP untuk ${aktivitasNama}`,
+      allowOutsideClick: false,
+      showConfirmButton: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
     try {
       const response = await fetch(fetchUrl, {
         headers: {
@@ -1602,118 +1599,97 @@
       });
       const result = await response.json();
       if (result.success && Array.isArray(result.nilai_ap)) {
-        // Group data by mahasiswa_id and aktivitas_list_id
+        // Group data by mahasiswa_id
         existingData = result.nilai_ap.reduce((acc, item) => {
-          const key = `${item.mahasiswa_id}_${item.aktivitas_list_id}`;
-          acc[key] = item;
+          acc[item.mahasiswa_id] = item;
           return acc;
         }, {});
+        dataLoaded = true;
+
+        // Show success notification for data loading
+        Swal.close();
+        swalToast('success', `Data ${aktivitasNama} berhasil dimuat`);
+      } else {
+        Swal.close();
       }
     } catch (error) {
       console.warn('Gagal memuat data nilai AP', error);
+      Swal.close();
+      swalToast('error', 'Gagal memuat data yang ada');
     }
 
     const buildRow = (member) => {
-      let columnsHtml = '';
-
-      // Create one column per minggu
-      Object.keys(mingguGroups).forEach(mingguKey => {
-        const aktivitasInMinggu = mingguGroups[mingguKey];
-        const firstAktivitas = aktivitasInMinggu[0];
-        const key = `${member.id}_${firstAktivitas.id}`;
-        const current = existingData[key] || {};
-
-        columnsHtml += `
-          <td style="text-align: center; vertical-align: middle; padding: 8px;">
-            <div style="margin-bottom: 8px;">
-              <select class="form-control form-control-sm"
-                      data-member="${member.id}"
-                      data-aktivitas="${firstAktivitas.id}"
-                      data-field="w_ap_kehadiran"
-                      style="font-size: 0.8rem;">
-                <option value="">-</option>
-                <option value="Hadir" ${current.w_ap_kehadiran === 'Hadir' ? 'selected' : ''}>Hadir</option>
-                <option value="Tidak Hadir" ${current.w_ap_kehadiran === 'Tidak Hadir' ? 'selected' : ''}>Tidak Hadir</option>
-                <option value="Izin" ${current.w_ap_kehadiran === 'Izin' ? 'selected' : ''}>Izin</option>
-                <option value="Sakit" ${current.w_ap_kehadiran === 'Sakit' ? 'selected' : ''}>Sakit</option>
-              </select>
-            </div>
-            <div style="margin-bottom: 8px;">
-              <input type="number"
-                     class="form-control form-control-sm"
-                     data-member="${member.id}"
-                     data-aktivitas="${firstAktivitas.id}"
-                     data-field="w_ap_presentasi"
-                     min="0"
-                     max="100"
-                     value="${current.w_ap_presentasi || ''}"
-                     placeholder="0-100"
-                     style="text-align: center; font-size: 0.8rem;">
-            </div>
-            <div>
-              <input type="date"
-                     class="form-control form-control-sm"
-                     data-member="${member.id}"
-                     data-aktivitas="${firstAktivitas.id}"
-                     data-field="tanggal_hadir"
-                     value="${current.tanggal_hadir || ''}"
-                     style="font-size: 0.8rem;">
-            </div>
-          </td>`;
-      });
+      const current = existingData[member.id] || {};
 
       return `
         <tr data-member="${member.id}">
-          <td style="vertical-align: middle; background: #f8f9fa; font-weight: 600;">
-            <div>${member.nama}</div>
-            <small style="color: #6b7280;">${member.nim}</small>
+          <td style="vertical-align: middle; background: #f8f9fa; font-weight: 500; width: 160px; padding: 6px 8px;">
+            <div style="font-size: 0.8rem; margin-bottom: 2px;">${member.nama}</div>
+            <small style="color: #6b7280; font-size: 0.75rem;">${member.nim}</small>
           </td>
-          ${columnsHtml}
-          <td style="text-align: center; vertical-align: middle; font-weight: 600; background: #f8f9fa;">
-            <span class="badge badge-info total-badge">-</span>
+          <td style="vertical-align: top; padding: 4px; border-right: 1px solid #dee2e6;">
+            <!-- Kehadiran -->
+            <div style="margin-bottom: 2px;">
+              <small style="color: #1976d2; font-weight: 500; font-size: 0.75rem;">Kehadiran</small>
+            </div>
+            <select class="form-control form-control-sm"
+                    data-member="${member.id}"
+                    data-field="w_ap_kehadiran"
+                    style="font-size: 0.75rem; margin-bottom: 2px; height: 28px; padding: 2px 4px;">
+              <option value="">-</option>
+              <option value="Hadir" ${current.w_ap_kehadiran === 'Hadir' ? 'selected' : ''}>Hadir</option>
+              <option value="Tidak Hadir" ${current.w_ap_kehadiran === 'Tidak Hadir' ? 'selected' : ''}>Tidak Hadir</option>
+              <option value="Izin" ${current.w_ap_kehadiran === 'Izin' ? 'selected' : ''}>Izin</option>
+              <option value="Sakit" ${current.w_ap_kehadiran === 'Sakit' ? 'selected' : ''}>Sakit</option>
+            </select>
+            <input type="date"
+                   class="form-control form-control-sm"
+                   data-member="${member.id}"
+                   data-field="tanggal_hadir"
+                   value="${current.tanggal_hadir || ''}"
+                   style="font-size: 0.7rem; height: 26px; padding: 2px 4px;">
+          </td>
+          <td style="vertical-align: top; padding: 4px;">
+            <!-- Presentasi -->
+            <div style="margin-bottom: 2px;">
+              <small style="color: #7b1fa2; font-weight: 500; font-size: 0.75rem;">Presentasi</small>
+            </div>
+            <input type="number"
+                   class="form-control form-control-sm"
+                   data-member="${member.id}"
+                   data-field="w_ap_presentasi"
+                   min="0"
+                   max="100"
+                   value="${current.w_ap_presentasi || ''}"
+                   placeholder="0-100"
+                   style="text-align: center; font-size: 0.8rem; height: 28px; padding: 2px 4px; margin-bottom: 2px;">
+            <small style="color: #6c757d; font-size: 0.65rem;">0-100</small>
+          </td>
+          <td style="text-align: center; vertical-align: middle; font-weight: 500; background: #f8f9fa; width: 60px; padding: 4px;">
+            <span class="badge badge-info total-badge" style="font-size: 0.75rem; padding: 4px 6px;">-</span>
           </td>
         </tr>`;
     };
 
-    // Group aktivitas lists by minggu (title/name)
-    const mingguGroups = {};
-    aktivitasLists.forEach(aktivitas => {
-      const mingguKey = aktivitas.title || aktivitas.name || 'Minggu';
-      if (!mingguGroups[mingguKey]) {
-        mingguGroups[mingguKey] = [];
-      }
-      mingguGroups[mingguKey].push(aktivitas);
-    });
-
-    // Build header columns - one per minggu
-    let headerColumns = '';
-    Object.keys(mingguGroups).forEach(mingguKey => {
-      headerColumns += `
-        <th style="min-width: 200px; text-align: center; background: #17a2b8; color: white; border-color: #138496;">
-          <div>${mingguKey}</div>
-          <small style="font-weight: normal; opacity: 0.8; font-size: 0.7rem;">
-            K: ${apWeights.kehadiran}% • P: ${apWeights.presentasi}%
-          </small>
-        </th>`;
-    });
-
     const modalHtml = `
       <div class="grade-ap-modal-container">
-        <div class="text-center mb-4">
-          <h4 style="margin: 0; font-size: 1.3rem; font-weight: 700; color: #2c3e50;">Nilai AP - ${kelompokNama}</h4>
-          <p style="margin: 0.5rem 0 0 0; color: #6b7280; font-size: 1rem;">Penilaian Aktifitas Partisipatif per Mahasiswa per Minggu</p>
-          <small style="color: #28a745; font-weight: 600;">
-            Bobot: Kehadiran ${apWeights.kehadiran}% • Presentasi ${apWeights.presentasi}%
-          </small>
+        <div class="text-center mb-2">
+          <h4 style="margin: 0; font-size: 1rem; font-weight: 600; color: #2c3e50;">Nilai AP - ${aktivitasNama}</h4>
+          <small style="color: #6c757d; font-size: 0.8rem;">Bobot: Kehadiran ${apWeights.kehadiran}% • Presentasi ${apWeights.presentasi}%</small>
         </div>
 
-        <div class="table-responsive" style="max-height: 65vh; overflow-y: auto;">
-          <table class="table table-bordered" style="font-size: 0.8rem; margin-bottom: 0;">
-            <thead class="thead-info sticky-top">
+        <div class="table-responsive" style="max-height: 55vh; overflow-y: auto;">
+          <table class="table table-bordered table-sm" style="font-size: 0.75rem; margin-bottom: 0;">
+            <thead class="sticky-top bg-light">
               <tr>
-                <th style="min-width: 180px; background: #17a2b8; color: white; border-color: #138496;">Mahasiswa</th>
-                ${headerColumns}
-                <th style="min-width: 120px; text-align: center; background: #17a2b8; color: white; border-color: #138496;">Total</th>
+                <th style="width: 160px; background: #f8f9fa; padding: 4px 8px; font-size: 0.8rem;">Mahasiswa</th>
+                <th style="text-align: center; background: #e3f2fd; color: #1976d2; padding: 4px; font-size: 0.8rem;">
+                  Kehadiran
+                </th>
+                <th style="text-align: center; background: #f3e5f5; color: #7b1fa2; padding: 4px; font-size: 0.8rem;">
+                  Presentasi
+                </th>
+                <th style="text-align: center; background: #f8f9fa; width: 60px; padding: 4px; font-size: 0.8rem;">Total</th>
               </tr>
             </thead>
             <tbody>
@@ -1722,22 +1698,22 @@
           </table>
         </div>
 
-        <div class="d-flex justify-content-between align-items-center mt-4">
+        <div class="d-flex justify-content-between align-items-center mt-3">
           <div class="text-left">
             <small class="text-muted">
-              <strong>Keterangan:</strong> Setiap kolom minggu memiliki 3 komponen: Kehadiran, Presentasi (0-100), dan Tanggal<br>
-              Total dihitung otomatis dari rata-rata semua minggu (Bobot: Kehadiran {{ config('evaluasi.defaults.w_ap_kehadiran', 50) }}%, Presentasi {{ config('evaluasi.defaults.w_ap_presentasi', 50) }}%)
+              Keterangan: Kehadiran (status + tanggal), Presentasi (nilai 0-100)<br>
+              Total = (Kehadiran × ${apWeights.kehadiran}%) + (Presentasi × ${apWeights.presentasi}%)
             </small>
           </div>
           <div class="text-right">
-            <small class="text-muted">Total Mahasiswa: ${members.length} • Total Minggu: ${Object.keys(mingguGroups).length}</small>
+            <small class="text-muted">Total: ${members.length} mahasiswa</small>
           </div>
         </div>
       </div>`;
 
     Swal.fire({
       html: modalHtml,
-      width: '100%',
+      width: '800px',
       showConfirmButton: true,
       confirmButtonText: ' Simpan Nilai AP',
       confirmButtonColor: '#28a745',
@@ -1754,37 +1730,32 @@
 
         // Auto-calculate total when values change
         const calculateRowTotal = (row) => {
-          const kehadiranInputs = row.querySelectorAll('select[data-field="w_ap_kehadiran"]');
-          const presentasiInputs = row.querySelectorAll('input[data-field="w_ap_presentasi"]');
+          const kehadiranInput = row.querySelector('select[data-field="w_ap_kehadiran"]');
+          const presentasiInput = row.querySelector('input[data-field="w_ap_presentasi"]');
           const totalBadge = row.querySelector('.total-badge');
 
-          let totalScore = 0;
-          let validCount = 0;
+          const kehadiran = kehadiranInput.value;
+          const presentasi = parseFloat(presentasiInput?.value) || 0;
 
-          kehadiranInputs.forEach((input, index) => {
-            const kehadiran = input.value;
-            const presentasi = parseFloat(presentasiInputs[index]?.value) || 0;
+          // Only calculate if there's data (kehadiran filled or presentasi has value)
+          if (kehadiran || presentasi > 0) {
+            const kehadiranBobot = kehadiran ? {
+              'Hadir': 100,
+              'Izin': 70,
+              'Sakit': 60,
+              'Terlambat': 50,
+              'Tidak Hadir': 0,
+              'Tanpa Keterangan': 0
+            }[kehadiran] || 0 : 0;
 
-            // Only calculate if there's data (kehadiran filled or presentasi has value)
-            if (kehadiran || presentasi > 0) {
-              const kehadiranBobot = kehadiran ? {
-                'Hadir': 100,
-                'Izin': 70,
-                'Sakit': 60,
-                'Terlambat': 50,
-                'Tidak Hadir': 0,
-                'Tanpa Keterangan': 0
-              }[kehadiran] || 0 : 0;
-
-              const mingguScore = (kehadiranBobot * apWeights.kehadiran / 100) + (presentasi * apWeights.presentasi / 100);
-              totalScore += mingguScore;
-              validCount++;
-            }
-          });
-
-          const average = validCount > 0 ? Math.round(totalScore / validCount) : 0;
-          totalBadge.textContent = average || '-';
-          totalBadge.className = `badge ${average >= 70 ? 'badge-success' : average >= 50 ? 'badge-warning' : 'badge-danger'} total-badge`;
+            const totalScore = (kehadiranBobot * apWeights.kehadiran / 100) + (presentasi * apWeights.presentasi / 100);
+            const finalScore = Math.round(totalScore);
+            totalBadge.textContent = finalScore || '-';
+            totalBadge.className = `badge ${finalScore >= 70 ? 'badge-success' : finalScore >= 50 ? 'badge-warning' : 'badge-danger'} total-badge`;
+          } else {
+            totalBadge.textContent = '-';
+            totalBadge.className = 'badge badge-info total-badge';
+          }
         };
 
         // Add event listeners to all inputs
@@ -1818,6 +1789,7 @@
         const popup = Swal.getPopup();
         const rows = Array.from(popup.querySelectorAll('tbody tr'));
         const items = [];
+        let hasAnyData = false;
 
         rows.forEach(row => {
           const memberId = row.getAttribute('data-member');
@@ -1825,48 +1797,34 @@
             return;
           }
 
-          // Group aktivitas lists by minggu and process only the first aktivitas per minggu
-          const mingguGroups = {};
-          aktivitasLists.forEach(aktivitas => {
-            const mingguKey = aktivitas.title || aktivitas.name || 'Minggu';
-            if (!mingguGroups[mingguKey]) {
-              mingguGroups[mingguKey] = [];
-            }
-            mingguGroups[mingguKey].push(aktivitas);
-          });
+          // Get all inputs for this member
+          const kehadiranSelect = row.querySelector(`select[data-member="${memberId}"][data-field="w_ap_kehadiran"]`);
+          const presentasiInput = row.querySelector(`input[data-member="${memberId}"][data-field="w_ap_presentasi"]`);
+          const tanggalInput = row.querySelector(`input[data-member="${memberId}"][data-field="tanggal_hadir"]`);
 
-          // Process each minggu (only the first aktivitas in each minggu)
-          Object.keys(mingguGroups).forEach(mingguKey => {
-            const aktivitasInMinggu = mingguGroups[mingguKey];
-            const firstAktivitas = aktivitasInMinggu[0];
+          // Get values
+          const kehadiran = kehadiranSelect?.value.trim() || '';
+          const presentasi = presentasiInput?.value.trim() || '';
+          const tanggal = tanggalInput?.value.trim() || '';
 
-            // Get all inputs for this member and first aktivitas in the minggu
-            const kehadiranSelect = row.querySelector(`select[data-member="${memberId}"][data-aktivitas="${firstAktivitas.id}"][data-field="w_ap_kehadiran"]`);
-            const presentasiInput = row.querySelector(`input[data-member="${memberId}"][data-aktivitas="${firstAktivitas.id}"][data-field="w_ap_presentasi"]`);
-            const tanggalInput = row.querySelector(`input[data-member="${memberId}"][data-aktivitas="${firstAktivitas.id}"][data-field="tanggal_hadir"]`);
-
-            // Get values
-            const kehadiran = kehadiranSelect?.value.trim() || '';
-            const presentasi = presentasiInput?.value.trim() || '';
-            const tanggal = tanggalInput?.value.trim() || '';
-
-            // Create item for each minggu
-            const key = `${memberId}_${firstAktivitas.id}`;
-            const existing = existingData[key] || {};
+          // Only create item if there's any data
+          if (kehadiran || presentasi || tanggal) {
+            hasAnyData = true;
+            const existing = existingData[memberId] || {};
 
             items.push({
               id: existing.id || null,
               mahasiswa_id: memberId,
-              aktivitas_list_id: firstAktivitas.id,
+              aktivitas_list_id: parseInt(aktivitasListId),
               w_ap_kehadiran: kehadiran || null,
               w_ap_presentasi: presentasi ? parseFloat(presentasi) : null,
               tanggal_hadir: tanggal || null,
               status: 'Submitted'
             });
-          });
+          }
         });
 
-        if (items.length === 0) {
+        if (!hasAnyData) {
           Swal.showValidationMessage('Isi minimal satu data nilai AP sebelum menyimpan');
           return false;
         }
@@ -1880,7 +1838,6 @@
             'X-Requested-With': 'XMLHttpRequest'
           },
           body: JSON.stringify({
-            evaluasi_master_id: evaluasiMasterId,
             nilai_ap: items
           })
         })
@@ -1908,7 +1865,29 @@
     }).then((result) => {
       if (result && result.value) {
         const { data } = result.value;
-        swalToast('success', data.message || 'Nilai AP berhasil disimpan');
+
+        // Show detailed success alert with more information
+        Swal.fire({
+          icon: 'success',
+          title: 'Penilaian AP Berhasil!',
+          html: `
+            <div class="text-left">
+              <p><strong>${aktivitasNama}</strong></p>
+              <p class="mb-2">${data.message || 'Nilai AP berhasil disimpan'}</p>
+              ${dataLoaded ? '<p class="text-muted small"><em>Data yang ada telah diperbarui</em></p>' : ''}
+            </div>
+          `,
+          timer: 4000,
+          timerProgressBar: true,
+          showConfirmButton: true,
+          confirmButtonText: 'OK',
+          confirmButtonColor: '#28a745'
+        });
+
+        // Also show brief toast for quick feedback
+        setTimeout(() => {
+          swalToast('success', data.message || 'Nilai AP berhasil disimpan');
+        }, 500);
       }
     }).catch(error => {
       if (error && typeof error.message === 'string') {
