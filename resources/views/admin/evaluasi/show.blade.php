@@ -659,44 +659,14 @@
                     {{ $alist->title ?? $alist->name ?? 'Minggu' }}
                     <span class="badge badge-soft mr-2">{{ count($validCards) }}</span>
                   </h6>
-                  <div class="d-flex align-items-center mt-1">
-                    
+                  <div class="align-items-center x-small mt-auto pt-1">
                     @php
                       $badgeId = 'aktivitas-status-'.($alist->uuid ?? $alist->id);
                       $statusNow = $alist->status_evaluasi ?? 'Draft';
                       $statusClass = $statusNow === 'Submitted' ? 'badge-success' : 'badge-secondary';
                     @endphp
                     <span id="{{ $badgeId }}" class="badge {{ $statusClass }}">{{ $statusNow }}</span>
-                           <small class="column-actions">
-                    <div class="btn-group btn-group-sm" role="group">
-                      @if(!empty($alist->link_drive_logbook))
-                        <a href="{{ $alist->link_drive_logbook }}"
-                          target="_blank"
-                          rel="noopener"
-                          class="btn btn-primary"
-                          title="Lihat Logbook">
-                          <i class="fas fa-book-open" aria-hidden="true"></i>
-                        </a>
-                      @endif
-
-                      <button type="button"
-                              class="btn btn-circle btn-success js-aktivitas-status"
-                              data-uuid="{{ $alist->uuid ?? $alist->id }}"
-                              data-status="{{ $statusNow }}"
-                              data-target="#{{ $badgeId }}"
-                              title="Update Status">
-                        <i class="fas fa-sync-alt" aria-hidden="true"></i>
-                      </button>
-
-                      {{-- Nilai AP --}}
-                      <button type="button"
-                              class="btn btn-circle btn-info"
-                              title="Nilai AP"
-                              onclick="gradeAP('{{ $sesi->uuid }}','{{ addslashes($kelompok->nama_kelompok) }}')">
-                      {{-- Nilai AP --}}
-                      </button>
-                    </div>
-                  </small>
+                    
                   </div>
                 </div>
 
@@ -746,15 +716,44 @@
                       <!-- Footer actions -->
                       <div class="card-actions mt-auto pt-2 border-top-light">
                         <div class="d-flex justify-content-end align-items-center gap-2">
-                          @if($ac->bukti_kegiatan)
-                            <a href="{{ $ac->bukti_kegiatan }}" target="_blank" rel="noopener"
-                               class="btn btn-circle btn-sm btn-outline-primary" title="Bukti aktivitas">
-                              <i class="fas fa-link" aria-hidden="true"></i>
+                          <div class="ml-auto btn-group btn-group-sm">
+                            @if($ac->bukti_kegiatan)
+                              <a href="{{ $ac->bukti_kegiatan }}" target="_blank" rel="noopener"
+                                class="btn btn-sm btn-dark" title="Bukti aktivitas">
+                                <i class="fas fa-link" aria-hidden="true"></i>
+                              </a>
+                            @endif
+                            @if(!empty($alist->link_drive_logbook))
+                            <a href="{{ $alist->link_drive_logbook }}"
+                              target="_blank"
+                              rel="noopener"
+                              class="btn btn-dark"
+                              title="Lihat Logbook">
+                              <i class="fas fa-book-open" aria-hidden="true"></i>
                             </a>
                           @endif
+                          {{-- Nilai AP --}}
+                          <button type="button"
+                                  class="btn btn-sm btn-secondary"
+                                  title="Nilai AP"
+                                  onclick="gradeAP('{{ $sesi->uuid }}','{{ addslashes($kelompok->nama_kelompok) }}')">
+                                  <i class="fas fa-clipboard-list" aria-hidden="true"></i>
+                          {{-- Nilai AP --}}
+                          </button>
+                          <button type="button"
+                                  class="btn btn-sm btn-success js-aktivitas-status"
+                                  data-uuid="{{ $alist->uuid ?? $alist->id }}"
+                                  data-status="{{ $statusNow }}"
+                                  data-target="#{{ $badgeId }}"
+                                  title="Update Status">
+                            <i class="fas fa-sync-alt" aria-hidden="true"></i>
+                          </button>
+
+                         
+                          </div>
                         </div>
                       </div>
-
+                        
                     </div>
                   </div>
                 @empty
