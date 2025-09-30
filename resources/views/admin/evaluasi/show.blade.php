@@ -457,9 +457,9 @@
                           <div class="mt-2 per-mahasiswa-wrapper per-mahasiswa-wrapper-dosen">
                             <div class="d-flex justify-content-between align-items-center text-muted text-uppercase small">
                               <span>Nilai Dosen per Mahasiswa</span>
-                              <div class="d-flex align-items-center">
-                                <span class="badge badge-light border mr-2">{{ $evalSummary['count'] }} </span>
-                                <button class="btn btn-sm btn-circle btn-secondary toggle-detail" type="button" data-toggle="collapse" data-target="#detail-dosen-{{ $card->id }}" aria-expanded="false" aria-controls="detail-dosen-{{ $card->id }}">
+                              <div class="d-flex align-items-center gap-2">
+                                <span class="badge badge-light border">{{ $evalSummary['count'] }}</span>
+                                <button class="btn btn-circle btn-secondary btn-sm toggle-detail" type="button" data-toggle="collapse" data-target="#detail-dosen-{{ $card->id }}" aria-expanded="false" aria-controls="detail-dosen-{{ $card->id }}" title="Detail Nilai">
                                   <i class="fas fa-list"></i>
                                 </button>
                               </div>
@@ -498,10 +498,12 @@
                           <div class="mt-2 per-mahasiswa-wrapper per-mahasiswa-wrapper-mitra">
                             <div class="d-flex justify-content-between align-items-center text-muted text-uppercase small">
                               <span>Nilai Mitra per Mahasiswa</span>
-                              <span class="badge badge-light border">{{ $mitraSummary['count'] }}</span>
-                              <button type="button" class="btn btn-sm btn-circle btn-secondary toggle-detail" data-toggle="collapse" data-target="#mitraPerMhsCollapse" aria-expanded="false" aria-controls="mitraPerMhsCollapse">
-                                <i class="fas fa-list"></i>
-                              </button>
+                              <div class="d-flex align-items-center gap-2">
+                                <span class="badge badge-light border">{{ $mitraSummary['count'] }}</span>
+                                <button type="button" class="btn btn-circle btn-secondary btn-sm toggle-detail" data-toggle="collapse" data-target="#mitraPerMhsCollapse" aria-expanded="false" aria-controls="mitraPerMhsCollapse" title="Detail Nilai">
+                                  <i class="fas fa-list"></i>
+                                </button>
+                              </div>
                             </div>
                             <div id="mitraPerMhsCollapse" class="collapse mt-2 rounded bg-white" style="border:1px solid var(--border);">
                               @foreach($evalMitraDetails as $index => $detail)
@@ -546,11 +548,10 @@
                           {{-- Drive --}}
                           @php $drive = $card->link_drive_proyek ?? $card->drive_link ?? null; @endphp
                           @if(!empty($drive))
-                            <a href="{{ $drive }}" class="btn btn-sm btn-circle btn-dark" target="_blank" rel="noopener" title="Drive">
+                            <a href="{{ $drive }}" class="btn btn-dark" target="_blank" rel="noopener" title="Drive">
                               <i class="fab fa-google-drive" aria-hidden="true"></i>
                             </a>
                           @endif
-
 
                           {{-- Nilai Dosen --}}
                           <button type="button"
@@ -644,57 +645,76 @@
         <div class="board-wrapper">
           <div id="actBoard" class="board">
           @forelse ($aktivitasLists as $alist)
+            @php
+              // Filter cards untuk memastikan hanya cards yang benar-benar belong to this list
+              $validCards = $alist->cards->filter(function($card) use ($alist) {
+                return $card->list_aktivitas_id == $alist->id;
+              });
+            @endphp
             <div class="board-column" data-col-id="{{ $alist->id }}">
               <!-- Column header -->
               <div class="board-col-head d-flex align-items-center justify-content-between">
                 <div class="d-flex flex-column">
                   <h6 class="mb-1 text-uppercase font-weight-bold truncate">
                     {{ $alist->title ?? $alist->name ?? 'Minggu' }}
-                    <span class="badge badge-soft mr-2">{{ count($alist->cards) }}</span>
+                    <span class="badge badge-soft mr-2">{{ count($validCards) }}</span>
                   </h6>
                   <div class="d-flex align-items-center mt-1">
                     
                     @php
                       $badgeId = 'aktivitas-status-'.($alist->uuid ?? $alist->id);
-                      $statusNow = $alist->status_evaluasi ?? 'Belum Evaluasi';
-                      $statusClass = $statusNow === 'Sudah Evaluasi' ? 'badge-success' : 'badge-secondary';
+                      $statusNow = $alist->status_evaluasi ?? 'Draft';
+                      $statusClass = $statusNow === 'Submitted' ? 'badge-success' : 'badge-secondary';
                     @endphp
                     <span id="{{ $badgeId }}" class="badge {{ $statusClass }}">{{ $statusNow }}</span>
+                           <small class="column-actions">
+                    <div class="btn-group btn-group-sm" role="group">
+                      @if(!empty($alist->link_drive_logbook))
+                        <a href="{{ $alist->link_drive_logbook }}"
+                          target="_blank"
+                          rel="noopener"
+                          class="btn btn-primary"
+                          title="Lihat Logbook">
+                          <i class="fas fa-book-open" aria-hidden="true"></i>
+                        </a>
+                      @endif
+
+                      <button type="button"
+                              class="btn btn-circle btn-success js-aktivitas-status"
+                              data-uuid="{{ $alist->uuid ?? $alist->id }}"
+                              data-status="{{ $statusNow }}"
+                              data-target="#{{ $badgeId }}"
+                              title="Update Status">
+                        <i class="fas fa-sync-alt" aria-hidden="true"></i>
+                      </button>
+
+                      {{-- Nilai AP --}}
+                      <button type="button"
+                              class="btn btn-circle btn-info"
+                              title="Nilai AP"
+                              onclick="gradeAP('{{ $sesi->uuid }}','{{ addslashes($kelompok->nama_kelompok) }}')">
+                      {{-- Nilai AP --}}
+                      </button>
+                    </div>
+                  </small>
                   </div>
                 </div>
 
-                <div class="d-flex align-items-center">
-                  @if(!empty($alist->link_drive_logbook))
-                    <a href="{{ $alist->link_drive_logbook }}"
-                       target="_blank"
-                       rel="noopener"
-                       class="btn btn-sm btn-circle btn-primary mr-2"
-                       title="Lihat Logbook">
-                      <i class="fas fa-book-open" aria-hidden="true"></i>
-                    </a>
-                  @endif
-
-                  <button type="button"
-                          class="btn btn-sm btn-circle btn-success js-aktivitas-status"
-                          data-uuid="{{ $alist->uuid ?? $alist->id }}"
-                          data-status="{{ $statusNow }}"
-                          data-target="#{{ $badgeId }}">
-                    <i class="fas fa-sync-alt" aria-hidden="true"></i> 
-                  </button>
-                </div>
+         
               </div>
 
               <!-- Activities list -->
               <div class="board-list act-list" data-list-id="{{ $alist->id }}">
-                @forelse ($alist->cards as $ac)
+                @forelse ($validCards as $ac)
                   @php
+                    // Validasi tambahan untuk data
                     $tgl = optional($ac->tanggal_aktivitas)->format('d M Y');
                     $cName = optional($ac->createdBy)->nama_user ?? optional($ac->createdBy)->name ?? optional($ac->createdBy)->nama ?? '-';
                     $uName = optional($ac->updatedBy)->nama_user ?? optional($ac->updatedBy)->name ?? optional($ac->updatedBy)->nama ?? '-';
                     $cAt = optional($ac->created_at)->format('d M Y H:i') ?? '-';
                     $uAt = optional($ac->updated_at)->format('d M Y H:i') ?? '-';
                   @endphp
-                  <div class="card board-card shadow-sm mb-2 hover-raise" data-card-id="{{ $ac->id }}">
+                  <div class="card board-card shadow-sm mb-2 hover-raise" data-card-id="{{ $ac->id }}" data-list-aktivitas-id="{{ $ac->list_aktivitas_id }}">
                     <div class="card-body p-3 d-flex flex-column">
 
                       <!-- Date chip -->
@@ -724,13 +744,12 @@
                       </div>
 
                       <!-- Footer actions -->
-                      <div class="d-flex align-items-center mt-auto pt-2 border-top-light">
-                        <span class="text-muted small"></span>
-                        <div class="ml-auto">
+                      <div class="card-actions mt-auto pt-2 border-top-light">
+                        <div class="d-flex justify-content-end align-items-center gap-2">
                           @if($ac->bukti_kegiatan)
                             <a href="{{ $ac->bukti_kegiatan }}" target="_blank" rel="noopener"
-                               class="btn btn-sm btn-outline-primary" title="Bukti aktivitas">
-                              <i class="fas fa-link" aria-hidden="true"></i> Bukti
+                               class="btn btn-circle btn-sm btn-outline-primary" title="Bukti aktivitas">
+                              <i class="fas fa-link" aria-hidden="true"></i>
                             </a>
                           @endif
                         </div>
@@ -970,14 +989,14 @@
   /* ====== Update status aktivitas ====== */
   const statusUrlTemplate = "{{ route('admin.evaluasi.aktivitas.status', ['list' => '__UUID__']) }}";
   const statusStyles = {
-    'Belum Evaluasi': 'badge-secondary',
-    'Sudah Evaluasi': 'badge-success',
+    'Draft': 'badge-secondary',
+    'Submitted': 'badge-success',
   };
 
   qsa('.js-aktivitas-status').forEach(btn => {
     btn.addEventListener('click', () => {
       const uuid = btn.getAttribute('data-uuid');
-      const current = btn.getAttribute('data-status') || 'Belum Evaluasi';
+      const current = btn.getAttribute('data-status') || 'Draft';
       if (!uuid) {
         return;
       }
@@ -986,8 +1005,8 @@
         title: 'Ubah status aktivitas',
         input: 'select',
         inputOptions: {
-          'Belum Evaluasi': 'Belum Evaluasi',
-          'Sudah Evaluasi': 'Sudah Evaluasi',
+          'Draft': 'Draft',
+          'Submitted': 'Submitted',
         },
         inputValue: current,
         showCancelButton: true,
@@ -1540,6 +1559,365 @@
     });
   };
 
+  // Grade Nilai AP per evaluasi master per mahasiswa per aktivitas list
+  window.gradeAP = async function(evaluasiMasterId, kelompokNama) {
+    if (!evaluasiMasterId) {
+      return;
+    }
+
+    const members = [
+      @foreach($members as $m)
+        { id: '{{ $m->id }}', nim: '{{ $m->nim }}', nama: '{{ $m->nama }}' },
+      @endforeach
+    ];
+
+    // Get aktivitas lists data
+    const aktivitasLists = [
+      @foreach($aktivitasLists as $alist)
+        {
+          id: '{{ $alist->id }}',
+          uuid: '{{ $alist->uuid }}',
+          title: '{{ $alist->title ?? $alist->name ?? 'Minggu' }}',
+          status_evaluasi: '{{ $alist->status_evaluasi ?? 'Draft' }}'
+        },
+      @endforeach
+    ];
+
+    const fetchUrl = "{{ route('admin.evaluasi.nilai-ap.show-by-evaluasi-master', ['evaluasiMaster' => '__ID__']) }}".replace('__ID__', evaluasiMasterId);
+    const storeUrl = "{{ route('admin.evaluasi.nilai-ap.store') }}";
+    const styleId = 'grade-ap-modal-styles';
+
+    // Get AP weights from config
+    const apWeights = {
+      kehadiran: {{ config('evaluasi.defaults.w_ap_kehadiran', 50) }},
+      presentasi: {{ config('evaluasi.defaults.w_ap_presentasi', 50) }}
+    };
+
+    let existingData = {};
+    try {
+      const response = await fetch(fetchUrl, {
+        headers: {
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      });
+      const result = await response.json();
+      if (result.success && Array.isArray(result.nilai_ap)) {
+        // Group data by mahasiswa_id and aktivitas_list_id
+        existingData = result.nilai_ap.reduce((acc, item) => {
+          const key = `${item.mahasiswa_id}_${item.aktivitas_list_id}`;
+          acc[key] = item;
+          return acc;
+        }, {});
+      }
+    } catch (error) {
+      console.warn('Gagal memuat data nilai AP', error);
+    }
+
+    const buildRow = (member) => {
+      let columnsHtml = '';
+
+      // Create one column per minggu
+      Object.keys(mingguGroups).forEach(mingguKey => {
+        const aktivitasInMinggu = mingguGroups[mingguKey];
+        const firstAktivitas = aktivitasInMinggu[0];
+        const key = `${member.id}_${firstAktivitas.id}`;
+        const current = existingData[key] || {};
+
+        columnsHtml += `
+          <td style="text-align: center; vertical-align: middle; padding: 8px;">
+            <div style="margin-bottom: 8px;">
+              <select class="form-control form-control-sm"
+                      data-member="${member.id}"
+                      data-aktivitas="${firstAktivitas.id}"
+                      data-field="w_ap_kehadiran"
+                      style="font-size: 0.8rem;">
+                <option value="">-</option>
+                <option value="Hadir" ${current.w_ap_kehadiran === 'Hadir' ? 'selected' : ''}>Hadir</option>
+                <option value="Tidak Hadir" ${current.w_ap_kehadiran === 'Tidak Hadir' ? 'selected' : ''}>Tidak Hadir</option>
+                <option value="Izin" ${current.w_ap_kehadiran === 'Izin' ? 'selected' : ''}>Izin</option>
+                <option value="Sakit" ${current.w_ap_kehadiran === 'Sakit' ? 'selected' : ''}>Sakit</option>
+              </select>
+            </div>
+            <div style="margin-bottom: 8px;">
+              <input type="number"
+                     class="form-control form-control-sm"
+                     data-member="${member.id}"
+                     data-aktivitas="${firstAktivitas.id}"
+                     data-field="w_ap_presentasi"
+                     min="0"
+                     max="100"
+                     value="${current.w_ap_presentasi || ''}"
+                     placeholder="0-100"
+                     style="text-align: center; font-size: 0.8rem;">
+            </div>
+            <div>
+              <input type="date"
+                     class="form-control form-control-sm"
+                     data-member="${member.id}"
+                     data-aktivitas="${firstAktivitas.id}"
+                     data-field="tanggal_hadir"
+                     value="${current.tanggal_hadir || ''}"
+                     style="font-size: 0.8rem;">
+            </div>
+          </td>`;
+      });
+
+      return `
+        <tr data-member="${member.id}">
+          <td style="vertical-align: middle; background: #f8f9fa; font-weight: 600;">
+            <div>${member.nama}</div>
+            <small style="color: #6b7280;">${member.nim}</small>
+          </td>
+          ${columnsHtml}
+          <td style="text-align: center; vertical-align: middle; font-weight: 600; background: #f8f9fa;">
+            <span class="badge badge-info total-badge">-</span>
+          </td>
+        </tr>`;
+    };
+
+    // Group aktivitas lists by minggu (title/name)
+    const mingguGroups = {};
+    aktivitasLists.forEach(aktivitas => {
+      const mingguKey = aktivitas.title || aktivitas.name || 'Minggu';
+      if (!mingguGroups[mingguKey]) {
+        mingguGroups[mingguKey] = [];
+      }
+      mingguGroups[mingguKey].push(aktivitas);
+    });
+
+    // Build header columns - one per minggu
+    let headerColumns = '';
+    Object.keys(mingguGroups).forEach(mingguKey => {
+      headerColumns += `
+        <th style="min-width: 200px; text-align: center; background: #17a2b8; color: white; border-color: #138496;">
+          <div>${mingguKey}</div>
+          <small style="font-weight: normal; opacity: 0.8; font-size: 0.7rem;">
+            K: ${apWeights.kehadiran}% • P: ${apWeights.presentasi}%
+          </small>
+        </th>`;
+    });
+
+    const modalHtml = `
+      <div class="grade-ap-modal-container">
+        <div class="text-center mb-4">
+          <h4 style="margin: 0; font-size: 1.3rem; font-weight: 700; color: #2c3e50;">Nilai AP - ${kelompokNama}</h4>
+          <p style="margin: 0.5rem 0 0 0; color: #6b7280; font-size: 1rem;">Penilaian Aktifitas Partisipatif per Mahasiswa per Minggu</p>
+          <small style="color: #28a745; font-weight: 600;">
+            Bobot: Kehadiran ${apWeights.kehadiran}% • Presentasi ${apWeights.presentasi}%
+          </small>
+        </div>
+
+        <div class="table-responsive" style="max-height: 65vh; overflow-y: auto;">
+          <table class="table table-bordered" style="font-size: 0.8rem; margin-bottom: 0;">
+            <thead class="thead-info sticky-top">
+              <tr>
+                <th style="min-width: 180px; background: #17a2b8; color: white; border-color: #138496;">Mahasiswa</th>
+                ${headerColumns}
+                <th style="min-width: 120px; text-align: center; background: #17a2b8; color: white; border-color: #138496;">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${members.map(buildRow).join('')}
+            </tbody>
+          </table>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mt-4">
+          <div class="text-left">
+            <small class="text-muted">
+              <strong>Keterangan:</strong> Setiap kolom minggu memiliki 3 komponen: Kehadiran, Presentasi (0-100), dan Tanggal<br>
+              Total dihitung otomatis dari rata-rata semua minggu (Bobot: Kehadiran {{ config('evaluasi.defaults.w_ap_kehadiran', 50) }}%, Presentasi {{ config('evaluasi.defaults.w_ap_presentasi', 50) }}%)
+            </small>
+          </div>
+          <div class="text-right">
+            <small class="text-muted">Total Mahasiswa: ${members.length} • Total Minggu: ${Object.keys(mingguGroups).length}</small>
+          </div>
+        </div>
+      </div>`;
+
+    Swal.fire({
+      html: modalHtml,
+      width: '100%',
+      showConfirmButton: true,
+      confirmButtonText: ' Simpan Nilai AP',
+      confirmButtonColor: '#28a745',
+      showCancelButton: true,
+      cancelButtonText: ' Batal',
+      showCloseButton: true,
+      allowOutsideClick: () => !Swal.isLoading(),
+      customClass: {
+        container: 'grade-ap-modal',
+        popup: 'swal2-popup'
+      },
+      didOpen: () => {
+        const popup = Swal.getPopup();
+
+        // Auto-calculate total when values change
+        const calculateRowTotal = (row) => {
+          const kehadiranInputs = row.querySelectorAll('select[data-field="w_ap_kehadiran"]');
+          const presentasiInputs = row.querySelectorAll('input[data-field="w_ap_presentasi"]');
+          const totalBadge = row.querySelector('.total-badge');
+
+          let totalScore = 0;
+          let validCount = 0;
+
+          kehadiranInputs.forEach((input, index) => {
+            const kehadiran = input.value;
+            const presentasi = parseFloat(presentasiInputs[index]?.value) || 0;
+
+            // Only calculate if there's data (kehadiran filled or presentasi has value)
+            if (kehadiran || presentasi > 0) {
+              const kehadiranBobot = kehadiran ? {
+                'Hadir': 100,
+                'Izin': 70,
+                'Sakit': 60,
+                'Terlambat': 50,
+                'Tidak Hadir': 0,
+                'Tanpa Keterangan': 0
+              }[kehadiran] || 0 : 0;
+
+              const mingguScore = (kehadiranBobot * apWeights.kehadiran / 100) + (presentasi * apWeights.presentasi / 100);
+              totalScore += mingguScore;
+              validCount++;
+            }
+          });
+
+          const average = validCount > 0 ? Math.round(totalScore / validCount) : 0;
+          totalBadge.textContent = average || '-';
+          totalBadge.className = `badge ${average >= 70 ? 'badge-success' : average >= 50 ? 'badge-warning' : 'badge-danger'} total-badge`;
+        };
+
+        // Add event listeners to all inputs
+        popup.querySelectorAll('select[data-field="w_ap_kehadiran"], input[data-field="w_ap_presentasi"], input[data-field="tanggal_hadir"]').forEach(input => {
+          input.addEventListener('change', () => {
+            const row = input.closest('tr');
+            calculateRowTotal(row);
+          });
+        });
+
+        // Calculate initial totals
+        popup.querySelectorAll('tbody tr').forEach(row => {
+          calculateRowTotal(row);
+        });
+
+        if (!document.querySelector(`#${styleId}`)) {
+          const style = document.createElement('style');
+          style.id = styleId;
+          style.textContent = `
+            .grade-ap-modal .swal2-popup { padding: 0; border-radius: 0.5rem; max-width: none; width: 100%; }
+            .grade-ap-modal .form-control { transition: all 0.2s ease; }
+            .grade-ap-modal .form-control:focus { border-color: #36b9cc; box-shadow: 0 0 0 0.2rem rgba(54,185,204,0.25); }
+            .grade-ap-modal .form-control:hover { border-color: #36b9cc; }
+            .grade-ap-modal .table { background: white; }
+            .grade-ap-modal .table th { position: sticky; top: 0; z-index: 10; }
+          `;
+          document.head.appendChild(style);
+        }
+      },
+      preConfirm: () => {
+        const popup = Swal.getPopup();
+        const rows = Array.from(popup.querySelectorAll('tbody tr'));
+        const items = [];
+
+        rows.forEach(row => {
+          const memberId = row.getAttribute('data-member');
+          if (!memberId) {
+            return;
+          }
+
+          // Group aktivitas lists by minggu and process only the first aktivitas per minggu
+          const mingguGroups = {};
+          aktivitasLists.forEach(aktivitas => {
+            const mingguKey = aktivitas.title || aktivitas.name || 'Minggu';
+            if (!mingguGroups[mingguKey]) {
+              mingguGroups[mingguKey] = [];
+            }
+            mingguGroups[mingguKey].push(aktivitas);
+          });
+
+          // Process each minggu (only the first aktivitas in each minggu)
+          Object.keys(mingguGroups).forEach(mingguKey => {
+            const aktivitasInMinggu = mingguGroups[mingguKey];
+            const firstAktivitas = aktivitasInMinggu[0];
+
+            // Get all inputs for this member and first aktivitas in the minggu
+            const kehadiranSelect = row.querySelector(`select[data-member="${memberId}"][data-aktivitas="${firstAktivitas.id}"][data-field="w_ap_kehadiran"]`);
+            const presentasiInput = row.querySelector(`input[data-member="${memberId}"][data-aktivitas="${firstAktivitas.id}"][data-field="w_ap_presentasi"]`);
+            const tanggalInput = row.querySelector(`input[data-member="${memberId}"][data-aktivitas="${firstAktivitas.id}"][data-field="tanggal_hadir"]`);
+
+            // Get values
+            const kehadiran = kehadiranSelect?.value.trim() || '';
+            const presentasi = presentasiInput?.value.trim() || '';
+            const tanggal = tanggalInput?.value.trim() || '';
+
+            // Create item for each minggu
+            const key = `${memberId}_${firstAktivitas.id}`;
+            const existing = existingData[key] || {};
+
+            items.push({
+              id: existing.id || null,
+              mahasiswa_id: memberId,
+              aktivitas_list_id: firstAktivitas.id,
+              w_ap_kehadiran: kehadiran || null,
+              w_ap_presentasi: presentasi ? parseFloat(presentasi) : null,
+              tanggal_hadir: tanggal || null,
+              status: 'Submitted'
+            });
+          });
+        });
+
+        if (items.length === 0) {
+          Swal.showValidationMessage('Isi minimal satu data nilai AP sebelum menyimpan');
+          return false;
+        }
+
+        return fetch(storeUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: JSON.stringify({
+            evaluasi_master_id: evaluasiMasterId,
+            nilai_ap: items
+          })
+        })
+          .then(res => {
+            if (!res.ok) {
+              return res.json().then(err => {
+                throw new Error(err.message || 'Gagal menyimpan data');
+              }).catch(() => {
+                throw new Error('Gagal menyimpan data');
+              });
+            }
+            return res.json();
+          })
+          .then(result => {
+            if (!result.success) {
+              throw new Error(result.message || 'Gagal menyimpan data');
+            }
+            return result;
+          })
+          .catch(error => {
+            Swal.showValidationMessage(error.message || 'Terjadi kesalahan saat menyimpan');
+            throw error;
+          });
+      }
+    }).then((result) => {
+      if (result && result.value) {
+        const { data } = result.value;
+        swalToast('success', data.message || 'Nilai AP berhasil disimpan');
+      }
+    }).catch(error => {
+      if (error && typeof error.message === 'string') {
+        console.warn('Grade AP error:', error.message);
+      }
+    });
+  };
+
   // Modal Detail Proyek untuk Evaluasi Dosen - sinkron dengan schema evaluasi_dosen
   window.showProjectDetail = async function(cardId, cardTitle) {
     if (!cardId) {
@@ -2051,6 +2429,53 @@
       title: message
     });
   }
+
+  // Debug script untuk aktivitas data
+  console.log('=== DEBUG AKTIVITAS DATA ===');
+  console.log('Raw aktivitasLists data:', @json($aktivitasLists));
+
+  @php
+    $debugInfo = [
+      'total_lists' => count($aktivitasLists),
+      'total_cards' => $aktivitasLists->sum(fn($list) => count($list->cards)),
+      'list_details' => $aktivitasLists->map(function($list) {
+        return [
+          'id' => $list->id,
+          'name' => $list->name,
+          'total_cards' => count($list->cards),
+          'valid_cards' => $list->cards->filter(fn($card) => $card->list_aktivitas_id == $list->id)->count(),
+          'card_ids' => $list->cards->pluck('id'),
+          'card_list_ids' => $list->cards->pluck('list_aktivitas_id'),
+        ];
+      })
+    ];
+  @endphp
+
+  console.log('Debug info:', @json($debugInfo));
+
+  // Validasi struktur di DOM
+  document.addEventListener('DOMContentLoaded', function() {
+    const columns = document.querySelectorAll('.board-column');
+    console.log(`Found ${columns.length} activity columns`);
+
+    columns.forEach((col, index) => {
+      const listId = col.getAttribute('data-col-id');
+      const cards = col.querySelectorAll('.board-card');
+      const validCards = Array.from(cards).filter(card => {
+        const cardListId = card.getAttribute('data-list-aktivitas-id');
+        return cardListId === listId;
+      });
+
+      console.log(`Column ${index + 1} (ID: ${listId}):`);
+      console.log(`  - Total cards: ${cards.length}`);
+      console.log(`  - Valid cards: ${validCards.length}`);
+      console.log(`  - Invalid cards: ${cards.length - validCards.length}`);
+
+      if (cards.length !== validCards.length) {
+        console.warn(`  ⚠️  Found ${cards.length - validCards.length} cards in wrong column!`);
+      }
+    });
+  });
 })();
 </script>
 @endpush

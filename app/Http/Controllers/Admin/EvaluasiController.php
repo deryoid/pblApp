@@ -9,6 +9,7 @@ use App\Models\EvaluasiAbsensi;
 use App\Models\EvaluasiDosen;
 use App\Models\EvaluasiMaster;
 use App\Models\EvaluasiMitra;
+use App\Models\EvaluasiNilaiAP;
 use App\Models\EvaluasiNilaiDetail;
 use App\Models\EvaluasiProyekNilai;
 use App\Models\EvaluasiSesiIndikator;
@@ -18,10 +19,10 @@ use App\Models\KunjunganMitra;
 use App\Models\Periode;
 use App\Models\ProjectCard;
 use App\Models\ProjectList;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
@@ -209,9 +210,8 @@ class EvaluasiController extends Controller
         return view('admin.evaluasi.nilai-final', compact('mahasiswaNilai', 'periodes', 'kelompoks', 'periodeId', 'kelompokId'));
     }
 
-    
     /** ===== DETAIL KELOMPOK ===== */
-    public function showKelompok(Kelompok $kelompok, Request $request)
+    public function showKelompok(Kelompok $kelompok)
     {
         $activePeriode = Periode::where('status_periode', 'Aktif')->orderByDesc('id')->first();
         abort_unless($activePeriode, 404, 'Periode aktif tidak ditemukan');
@@ -313,24 +313,32 @@ class EvaluasiController extends Controller
         // Project lists/cards
         $proyekLists = ProjectList::with(['cards' => function ($q) use ($kelompok, $activePeriode) {
             $q->where('kelompok_id', $kelompok->id)
-              ->where('periode_id', $activePeriode->id)
-              ->orderBy('position');
+                ->where('periode_id', $activePeriode->id)
+                ->orderBy('position');
         }])->where('kelompok_id', $kelompok->id)
-          ->where('periode_id', $activePeriode->id)
-          ->orderBy('position')
-          ->get();
+            ->where('periode_id', $activePeriode->id)
+            ->orderBy('position')
+            ->get();
 
         $proyek_total_cards = $proyekLists->sum(fn ($list) => $list->cards->count());
 
         // Aktivitas lists
         $aktivitasLists = AktivitasList::with(['cards' => function ($q) use ($kelompok, $activePeriode) {
             $q->where('kelompok_id', $kelompok->id)
-              ->where('periode_id', $activePeriode->id)
-              ->orderBy('position');
+                ->where('periode_id', $activePeriode->id)
+                ->orderBy('position');
         }])->where('kelompok_id', $kelompok->id)
-          ->where('periode_id', $activePeriode->id)
-          ->orderBy('position')
-          ->get();
+            ->where('periode_id', $activePeriode->id)
+            ->orderBy('position')
+            ->get()
+            ->map(function ($list) {
+                // Filter cards untuk memastikan hanya cards yang benar-benar belong to this list
+                $list->cards = $list->cards->filter(function ($card) use ($list) {
+                    return $card->list_aktivitas_id == $list->id;
+                });
+
+                return $list;
+            });
 
         $aktivitas_total = $aktivitasLists->sum(fn ($list) => $list->cards->count());
 
@@ -471,8 +479,7 @@ class EvaluasiController extends Controller
     }
 
     /** ===== AKSI STATUS SESI ===== */
-    
-    
+
     /** ===== PENGATURAN ===== */
     public function settings()
     {
@@ -549,13 +556,13 @@ class EvaluasiController extends Controller
 
         $proyekLists = ProjectList::with(['cards' => function ($q) use ($kelompok, $activePeriode) {
             $q->where('kelompok_id', $kelompok->id)
-              ->where('periode_id', $activePeriode->id)
+                ->where('periode_id', $activePeriode->id)
                 ->orderBy('tanggal_mulai')
                 ->orderBy('due_date');
         }])->where('kelompok_id', $kelompok->id)
-          ->where('periode_id', $activePeriode->id)
-          ->orderBy('position')
-          ->get();
+            ->where('periode_id', $activePeriode->id)
+            ->orderBy('position')
+            ->get();
 
         return view('admin.evaluasi.project-timeline', [
             'kelompok' => $kelompok,
@@ -666,23 +673,23 @@ class EvaluasiController extends Controller
 
         $proyekLists = ProjectList::with(['cards' => function ($q) use ($kelompok, $activePeriode) {
             $q->where('kelompok_id', $kelompok->id)
-              ->where('periode_id', $activePeriode->id)
+                ->where('periode_id', $activePeriode->id)
                 ->orderBy('tanggal_mulai')
                 ->orderBy('due_date');
         }])->where('kelompok_id', $kelompok->id)
-          ->where('periode_id', $activePeriode->id)
-          ->orderBy('position')
-          ->get();
+            ->where('periode_id', $activePeriode->id)
+            ->orderBy('position')
+            ->get();
 
         $aktivitasLists = AktivitasList::with(['cards' => function ($q) use ($kelompok, $activePeriode) {
             $q->where('kelompok_id', $kelompok->id)
-              ->where('periode_id', $activePeriode->id)
+                ->where('periode_id', $activePeriode->id)
                 ->orderBy('tanggal_mulai')
                 ->orderBy('due_date');
         }])->where('kelompok_id', $kelompok->id)
-          ->where('periode_id', $activePeriode->id)
-          ->orderBy('position')
-          ->get();
+            ->where('periode_id', $activePeriode->id)
+            ->orderBy('position')
+            ->get();
 
         $fileName = 'proyek_'.Str::slug($kelompok->nama_kelompok).'_'.date('Y-m-d').'.xlsx';
 
@@ -690,7 +697,6 @@ class EvaluasiController extends Controller
     }
 
     /** ===== UTIL (opsional) ===== */
-    
     public function updateProject(Request $request, ProjectCard $card)
     {
         $data = $request->validate([
@@ -1190,7 +1196,7 @@ class EvaluasiController extends Controller
     /**
      * Get evaluations by project card
      */
-    public function getPenilaianDosenByProject(Request $request, $project)
+    public function getPenilaianDosenByProject($project)
     {
         $projectCard = ProjectCard::where('uuid', $project)->orWhere('id', $project)->firstOrFail();
 
@@ -1230,7 +1236,7 @@ class EvaluasiController extends Controller
         ]);
     }
 
-    public function getPenilaianMitraByProject(Request $request, $project)
+    public function getPenilaianMitraByProject($project)
     {
         $projectCard = ProjectCard::where('uuid', $project)->orWhere('id', $project)->firstOrFail();
 
@@ -1492,6 +1498,338 @@ class EvaluasiController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal menghapus nilai: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /** ===== EVALUASI NILAI AP CRUD ===== */
+
+    /**
+     * Get EvaluasiNilaiAP by evaluasi master
+     */
+    public function getNilaiAPByEvaluasiMaster($evaluasiMaster)
+    {
+        $evaluasiMaster = EvaluasiMaster::where('uuid', $evaluasiMaster)->orWhere('id', $evaluasiMaster)->firstOrFail();
+
+        $nilaiAP = EvaluasiNilaiAP::where('evaluasi_master_id', $evaluasiMaster->id)
+            ->with([
+                'mahasiswa:id,nim,nama_mahasiswa',
+                'evaluator:id,nama_user',
+                'aktivitasList:id,title,name',
+            ])
+            ->get()
+            ->map(function ($nilai) {
+                $mahasiswa = $nilai->mahasiswa;
+                $aktivitasList = $nilai->aktivitasList;
+                $mingguKey = $aktivitasList ? ($aktivitasList->title ?? $aktivitasList->name ?? 'Minggu') : 'Minggu';
+
+                return [
+                    'id' => $nilai->uuid,
+                    'mahasiswa_id' => $nilai->mahasiswa_id,
+                    'aktivitas_list_id' => $nilai->aktivitas_list_id,
+                    'minggu' => $mingguKey,
+                    'mahasiswa_nama' => optional($mahasiswa)->nama ?? optional($mahasiswa)->nama_mahasiswa ?? '',
+                    'mahasiswa_nim' => optional($mahasiswa)->nim ?? '',
+                    'w_ap_kehadiran' => $nilai->w_ap_kehadiran,
+                    'tanggal_hadir' => $nilai->tanggal_hadir ? $nilai->tanggal_hadir->format('Y-m-d') : null,
+                    'w_ap_presentasi' => $nilai->w_ap_presentasi,
+                    'catatan_presentasi' => $nilai->catatan_presentasi,
+                    'kehadiran_bobot' => $nilai->kehadiran_bobot,
+                    'status' => $nilai->status,
+                    'evaluator_nama' => optional($nilai->evaluator)->nama_user ?? '',
+                    'created_at' => $nilai->created_at,
+                    'updated_at' => $nilai->updated_at,
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'nilai_ap' => $nilaiAP,
+        ]);
+    }
+
+    /**
+     * Store new EvaluasiNilaiAP
+     */
+    public function storeNilaiAP(Request $request)
+    {
+        try {
+            // Log the incoming request for debugging
+            Log::info('storeNilaiAP request data', [
+                'request_data' => $request->all(),
+                'content_type' => $request->header('Content-Type'),
+            ]);
+
+            // Validate batch data with correct kehadiran values
+            $validated = $request->validate([
+                'evaluasi_master_id' => [
+                    'required',
+                    'string',
+                    'uuid',
+                    function ($attribute, $value, $fail) {
+                        if (! EvaluasiMaster::where('uuid', $value)->exists()) {
+                            $fail('The selected evaluasi master id is invalid.');
+                        }
+                    },
+                ],
+                'sesi_id' => 'nullable|string|uuid',
+                'nilai_ap' => 'required|array|min:1',
+                'nilai_ap.*.mahasiswa_id' => 'required|exists:mahasiswa,id',
+                'nilai_ap.*.aktivitas_list_id' => 'required|exists:aktivitas_lists,id',
+                'nilai_ap.*.w_ap_kehadiran' => 'nullable|string|in:Hadir,Tidak Hadir,Izin,Sakit,Dispensasi,Terlambat,Tanpa Keterangan',
+                'nilai_ap.*.tanggal_hadir' => 'nullable|date',
+                'nilai_ap.*.w_ap_presentasi' => 'nullable|numeric|min:0|max:100',
+                'nilai_ap.*.status' => 'nullable|string|in:Draft,Submitted,Reviewed',
+            ]);
+
+            $evaluasiMaster = EvaluasiMaster::where('uuid', $validated['evaluasi_master_id'])->first();
+            $savedItems = [];
+            $skippedCount = 0;
+
+            foreach ($validated['nilai_ap'] as $item) {
+                // Check if mahasiswa belongs to kelompok
+                $mahasiswa = \App\Models\Mahasiswa::find($item['mahasiswa_id']);
+                $isInKelompok = $mahasiswa->kelompoks()
+                    ->where('kelompok.id', $evaluasiMaster->kelompok_id)
+                    ->where('kelompok_mahasiswa.periode_id', $evaluasiMaster->periode_id)
+                    ->exists();
+
+                if (! $isInKelompok) {
+                    $skippedCount++;
+
+                    continue;
+                }
+
+                // Skip if no data to save
+                if (empty($item['w_ap_kehadiran']) && empty($item['w_ap_presentasi'])) {
+                    continue;
+                }
+
+                $saveData = [
+                    'evaluasi_master_id' => $evaluasiMaster->id,
+                    'periode_id' => $evaluasiMaster->periode_id,
+                    'kelompok_id' => $evaluasiMaster->kelompok_id,
+                    'mahasiswa_id' => $item['mahasiswa_id'],
+                    'aktivitas_list_id' => $item['aktivitas_list_id'],
+                    'w_ap_kehadiran' => $item['w_ap_kehadiran'] ?? null,
+                    'tanggal_hadir' => $item['tanggal_hadir'] ?? null,
+                    'w_ap_presentasi' => $item['w_ap_presentasi'] ?? null,
+                    'status' => ! empty($item['w_ap_kehadiran']) || ! empty($item['w_ap_presentasi']) ? 'Submitted' : 'Draft',
+                ];
+
+                // Add evaluator_id if logged in
+                if (Auth::check()) {
+                    $saveData['evaluator_id'] = Auth::id();
+                }
+
+                // Create or update nilai AP
+                $nilaiAP = EvaluasiNilaiAP::updateOrCreate(
+                    [
+                        'evaluasi_master_id' => $saveData['evaluasi_master_id'],
+                        'mahasiswa_id' => $saveData['mahasiswa_id'],
+                        'aktivitas_list_id' => $saveData['aktivitas_list_id'],
+                    ],
+                    $saveData
+                );
+                $savedItems[] = $nilaiAP;
+            }
+
+            $message = 'Nilai AP berhasil disimpan untuk '.count($savedItems).' mahasiswa';
+            if ($skippedCount > 0) {
+                $message .= " ({$skippedCount} data dilewati)";
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'saved_count' => count($savedItems),
+                'skipped_count' => $skippedCount,
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('Validation error in storeNilaiAP', [
+                'errors' => $e->errors(),
+                'request_data' => $request->all(),
+                'validated' => $validated ?? [],
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error: '.json_encode($e->errors()),
+                'errors' => $e->errors(),
+                'request_data' => $request->all(),
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error in storeNilaiAP', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'request_data' => $request->all(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menyimpan nilai AP: '.$e->getMessage(),
+                'debug_data' => $request->all(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Update existing EvaluasiNilaiAP
+     */
+    public function updateNilaiAP(Request $request, $nilaiAP)
+    {
+        try {
+            $nilai = EvaluasiNilaiAP::where('uuid', $nilaiAP)->orWhere('id', $nilaiAP)->firstOrFail();
+
+            $validated = $request->validate([
+                'w_ap_kehadiran' => 'required|string|in:Hadir,Dispensasi,Terlambat,Sakit,Tanpa Keterangan',
+                'tanggal_hadir' => 'nullable|date',
+                'w_ap_presentasi' => 'nullable|numeric|min:0|max:100',
+                'catatan_presentasi' => 'nullable|string|max:1000',
+                'evaluator_id' => 'nullable|exists:users,id',
+                'status' => 'required|string|in:Draft,Submitted,Reviewed',
+            ]);
+
+            $nilai->update($validated);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Nilai AP berhasil diperbarui',
+                'kehadiran_bobot' => $nilai->kehadiran_bobot,
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error: '.json_encode($e->errors()),
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memperbarui nilai AP: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Delete EvaluasiNilaiAP
+     */
+    public function destroyNilaiAP($nilaiAP)
+    {
+        try {
+            $nilai = EvaluasiNilaiAP::where('uuid', $nilaiAP)->orWhere('id', $nilaiAP)->firstOrFail();
+            $nilai->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Nilai AP berhasil dihapus',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menghapus nilai AP: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Batch store multiple EvaluasiNilaiAP
+     */
+    public function batchStoreNilaiAP(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'evaluasi_master_id' => [
+                    'required',
+                    'string',
+                    function ($attribute, $value, $fail) {
+                        if (! EvaluasiMaster::where('uuid', $value)->exists()) {
+                            $fail('The selected evaluasi master id is invalid.');
+                        }
+                    },
+                ],
+                'nilai_ap' => 'required|array',
+                'nilai_ap.*.mahasiswa_id' => 'required|exists:mahasiswa,id',
+                'nilai_ap.*.aktivitas_list_id' => 'required|exists:aktivitas_lists,id',
+                'nilai_ap.*.w_ap_kehadiran' => 'nullable|string|in:Hadir,Tidak Hadir,Izin,Sakit,Dispensasi,Terlambat,Tanpa Keterangan',
+                'nilai_ap.*.tanggal_hadir' => 'nullable|date',
+                'nilai_ap.*.w_ap_presentasi' => 'nullable|numeric|min:0|max:100',
+                'nilai_ap.*.catatan_presentasi' => 'nullable|string|max:1000',
+                'nilai_ap.*.status' => 'nullable|string|in:Draft,Submitted,Reviewed',
+            ]);
+
+            $evaluasiMaster = EvaluasiMaster::where('uuid', $validated['evaluasi_master_id'])->first();
+            $savedNilaiAP = [];
+            $successCount = 0;
+            $errorCount = 0;
+
+            foreach ($validated['nilai_ap'] as $nilaiAPData) {
+                try {
+                    // Check if mahasiswa belongs to kelompok
+                    $mahasiswa = \App\Models\Mahasiswa::find($nilaiAPData['mahasiswa_id']);
+                    $isInKelompok = $mahasiswa->kelompoks()
+                        ->where('kelompok.id', $evaluasiMaster->kelompok_id)
+                        ->where('kelompok_mahasiswa.periode_id', $evaluasiMaster->periode_id)
+                        ->exists();
+
+                    if (! $isInKelompok) {
+                        $errorCount++;
+
+                        continue;
+                    }
+
+                    // Add default values
+                    $nilaiAPData['evaluasi_master_id'] = $evaluasiMaster->id;
+                    $nilaiAPData['periode_id'] = $evaluasiMaster->periode_id;
+                    $nilaiAPData['kelompok_id'] = $evaluasiMaster->kelompok_id;
+                    $nilaiAPData['evaluator_id'] = Auth::id();
+                    $nilaiAPData['status'] = $nilaiAPData['status'] ?? 'Draft';
+
+                    // Create or update nilai AP
+                    $nilaiAP = EvaluasiNilaiAP::updateOrCreate(
+                        [
+                            'evaluasi_master_id' => $nilaiAPData['evaluasi_master_id'],
+                            'mahasiswa_id' => $nilaiAPData['mahasiswa_id'],
+                            'aktivitas_list_id' => $nilaiAPData['aktivitas_list_id'],
+                        ],
+                        $nilaiAPData
+                    );
+
+                    $savedNilaiAP[] = [
+                        'uuid' => $nilaiAP->uuid,
+                        'kehadiran_bobot' => $nilaiAP->kehadiran_bobot,
+                    ];
+                    $successCount++;
+
+                } catch (\Exception $e) {
+                    Log::error('Error creating nilai AP in batch', [
+                        'error' => $e->getMessage(),
+                        'data' => $nilaiAPData,
+                    ]);
+                    $errorCount++;
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => "Berhasil menyimpan {$successCount} nilai AP".($errorCount > 0 ? " dengan {$errorCount} error" : ''),
+                'nilai_ap' => $savedNilaiAP,
+                'success_count' => $successCount,
+                'error_count' => $errorCount,
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error: '.json_encode($e->errors()),
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menyimpan nilai AP batch: '.$e->getMessage(),
             ], 500);
         }
     }

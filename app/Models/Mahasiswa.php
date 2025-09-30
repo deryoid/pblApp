@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Str;
@@ -13,9 +13,9 @@ class Mahasiswa extends Model
     use HasFactory;
 
     protected $table = 'mahasiswa';
-    protected $guarded = ['id','uuid'];   // semua kolom boleh diisi mass assignment
 
- 
+    protected $guarded = ['id', 'uuid'];   // semua kolom boleh diisi mass assignment
+
     protected static function booted()
     {
         static::creating(function ($m) {
@@ -35,15 +35,20 @@ class Mahasiswa extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function kelas(): BelongsTo 
+    public function kelas(): BelongsTo
     {
-        return $this->belongsTo(Kelas::class); 
+        return $this->belongsTo(Kelas::class);
     }
 
     public function kelompoks(): BelongsToMany
     {
         return $this->belongsToMany(Kelompok::class, 'kelompok_mahasiswa')
-            ->withPivot(['periode_id','kelas_id','role'])
+            ->withPivot(['periode_id', 'kelas_id', 'role'])
             ->withTimestamps();
+    }
+
+    public function nilaiAP()
+    {
+        return $this->hasMany(EvaluasiNilaiAP::class, 'mahasiswa_id');
     }
 }
