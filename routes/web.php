@@ -130,6 +130,7 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
         Route::post('lists/reorder', [AdminEval::class, 'reorderProjectLists'])->name('lists.reorder');
 
         // Quick action: progress & status kartu
+        Route::get('project/{card}', [AdminEval::class, 'showProject'])->name('project.show');
         Route::post('project/{card}/progress', [AdminEval::class, 'updateProjectProgress'])->name('project.progress');
         Route::delete('project/{card}', [AdminEval::class, 'destroyProject'])->name('project.destroy');
         Route::post('project/{card}/update', [AdminEval::class, 'updateProject'])->name('project.update');

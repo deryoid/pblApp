@@ -553,12 +553,19 @@
                             </a>
                           @endif
 
+                          {{-- Detail Lengkap --}}
+                          <button type="button"
+                                  class="btn btn-circle btn-info"
+                                  title="Detail Lengkap"
+                                  onclick="showProjectCardDetail('{{ $card->uuid }}','{{ addslashes($card->title) }}', {{ $card->list_id }})">
+                            <i class="fas fa-info-circle" aria-hidden="true"></i>
+                          </button>
                           {{-- Nilai Dosen --}}
                           <button type="button"
-                                  class="btn btn-circle btn-secondary"
+                                  class="btn btn-circle btn-primary"
                                   title="Nilai Dosen"
                                   onclick="showProjectDetail('{{ $card->uuid }}','{{ addslashes($card->title) }}')">
-                            <i class="fas fa-clipboard-list" aria-hidden="true"></i>
+                            <i class="fas fa-chalkboard-teacher" aria-hidden="true"></i>
                           </button>
 
                           {{-- Nilai Mitra --}}
@@ -767,6 +774,28 @@
           @endforelse
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{{-- Modal Detail Project Card --}}
+<div class="modal fade" id="modalProjectCardDetail" tabindex="-1" role="dialog" aria-labelledby="modalProjectCardDetailLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalProjectCardDetailLabel">
+          <i class="fas fa-info-circle mr-2"></i>Detail Project Card
+        </h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Tutup">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body" id="modalProjectCardContent">
+        <!-- Content will be loaded dynamically -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
       </div>
     </div>
   </div>
@@ -1156,6 +1185,258 @@
         .fail(()=> Swal.fire('Gagal', 'Gagal menghapus proyek.', 'error'));
     });
   };
+
+  // Show Project Card Detail
+  window.showProjectCardDetail = async function(cardId, cardTitle, listId) {
+    if (!cardId) {
+      return;
+    }
+
+    // Show loading
+    const modal = $('#modalProjectCardDetail');
+    const modalContent = $('#modalProjectCardContent');
+    modalContent.html('<div class="text-center p-4"><i class="fas fa-spinner fa-spin fa-2x"></i><p class="mt-2">Memuat detail...</p></div>');
+    modal.modal('show');
+
+    try {
+      // Fetch project card details
+      const detailUrl = "{{ route('admin.evaluasi.project.show', ['card' => '__ID__']) }}".replace('__ID__', cardId);
+      const detailRes = await fetch(detailUrl);
+      const detailData = await detailRes.json();
+
+      if (!detailData.success) {
+        throw new Error(detailData.message || 'Gagal memuat data project');
+      }
+
+      const card = detailData.project;
+
+      // Build detail HTML
+      let html = `
+        <div class="row">
+          <div class="col-md-12">
+            <h5 class="font-weight-bold mb-3">${card.title || 'Project Card'}</h5>
+
+            <!-- Status and Progress -->
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <div class="d-flex align-items-center mb-2">
+                  <span class="badge badge-${getStatusClass(card.status_proyek || card.status)} mr-2">
+                    ${card.status_proyek || card.status || 'Proses'}
+                  </span>
+                  <span class="text-muted">Progress: ${card.progress || 0}%</span>
+                </div>
+                <div class="progress" style="height: 10px;">
+                  <div class="progress-bar bg-${card.progress == 100 ? 'success' : 'info'}"
+                       style="width: ${card.progress || 0}%"></div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="small text-muted">List Project</div>
+                <div class="font-weight-bold">${getListName(listId)}</div>
+              </div>
+            </div>
+
+            <!-- Project List Information -->
+            <div class="mb-4">
+              <h6 class="font-weight-bold mb-3">Informasi Project List</h6>
+              <div class="row">
+                <div class="col-md-12">
+                  ${getProjectListsInfo(listId)}
+                </div>
+              </div>
+            </div>
+
+            <!-- Dates -->
+            <div class="mb-3">
+              <h6 class="font-weight-bold mb-2">Timeline</h6>
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="small text-muted">Mulai</div>
+                  <div>${formatDate(card.tanggal_mulai) || '-'}</div>
+                </div>
+                <div class="col-md-6">
+                  <div class="small text-muted">Selesai</div>
+                  <div>${formatDate(card.tanggal_selesai || card.due_date) || '-'}</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Description -->
+            ${card.description ? `
+              <div class="mb-3">
+                <h6 class="font-weight-bold mb-2">Deskripsi</h6>
+                <div class="text-muted">${card.description}</div>
+              </div>
+            ` : ''}
+
+            <!-- Partner and Scheme -->
+            ${(card.nama_mitra || card.skema_pbl) ? `
+              <div class="mb-3">
+                <h6 class="font-weight-bold mb-2">Informasi Tambahan</h6>
+                <div class="row">
+                  ${card.nama_mitra ? `
+                    <div class="col-md-6">
+                      <div class="small text-muted">Mitra</div>
+                      <div>${card.nama_mitra}</div>
+                      ${card.kontak_mitra ? `<div class="small text-muted">Kontak: ${card.kontak_mitra}</div>` : ''}
+                    </div>
+                  ` : ''}
+                  ${card.skema_pbl ? `
+                    <div class="col-md-6">
+                      <div class="small text-muted">Skema PBL</div>
+                      <div>${card.skema_pbl}</div>
+                    </div>
+                  ` : ''}
+                </div>
+              </div>
+            ` : ''}
+
+            <!-- Labels -->
+            ${card.labels && card.labels.length > 0 ? `
+              <div class="mb-3">
+                <h6 class="font-weight-bold mb-2">Labels</h6>
+                <div>
+                  ${card.labels.map(label => `<span class="badge badge-secondary mr-1">${label}</span>`).join('')}
+                </div>
+              </div>
+            ` : ''}
+
+            <!-- Costs -->
+            ${(card.biaya_barang || card.biaya_jasa) ? `
+              <div class="mb-3">
+                <h6 class="font-weight-bold mb-2">Biaya</h6>
+                <div class="row">
+                  ${card.biaya_barang ? `
+                    <div class="col-md-6">
+                      <div class="small text-muted">Biaya Barang</div>
+                      <div>Rp ${formatNumber(card.biaya_barang)}</div>
+                    </div>
+                  ` : ''}
+                  ${card.biaya_jasa ? `
+                    <div class="col-md-6">
+                      <div class="small text-muted">Biaya Jasa</div>
+                      <div>Rp ${formatNumber(card.biaya_jasa)}</div>
+                    </div>
+                  ` : ''}
+                </div>
+              </div>
+            ` : ''}
+
+            <!-- Notes -->
+            ${(card.kendala || card.catatan) ? `
+              <div class="mb-3">
+                <h6 class="font-weight-bold mb-2">Catatan</h6>
+                ${card.kendala ? `
+                  <div class="mb-2">
+                    <div class="small text-muted">Kendala</div>
+                    <div class="text-muted">${card.kendala}</div>
+                  </div>
+                ` : ''}
+                ${card.catatan ? `
+                  <div>
+                    <div class="small text-muted">Catatan Proyek</div>
+                    <div class="text-muted">${card.catatan}</div>
+                  </div>
+                ` : ''}
+              </div>
+            ` : ''}
+
+            <!-- Links -->
+            ${card.link_drive_proyek ? `
+              <div class="mb-3">
+                <h6 class="font-weight-bold mb-2">Link</h6>
+                <a href="${card.link_drive_proyek}" target="_blank" class="btn btn-sm btn-outline-primary">
+                  <i class="fas fa-external-link-alt mr-1"></i> Buka Drive
+                </a>
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      `;
+
+      modalContent.html(html);
+
+    } catch (error) {
+      console.error('Error loading project card detail:', error);
+      modalContent.html(`
+        <div class="alert alert-danger">
+          <i class="fas fa-exclamation-triangle mr-2"></i>
+          Gagal memuat detail: ${error.message}
+        </div>
+      `);
+    }
+  };
+
+  // Helper functions for detail modal
+  function getStatusClass(status) {
+    switch(status) {
+      case 'Selesai': return 'success';
+      case 'Dibatalkan': return 'danger';
+      default: return 'info';
+    }
+  }
+
+  function formatDate(dateStr) {
+    if (!dateStr) return null;
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('id-ID', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  }
+
+  function formatNumber(num) {
+    return parseInt(num).toLocaleString('id-ID');
+  }
+
+  function getListName(listId) {
+    // This should be populated from the lists data
+    const listEl = document.querySelector(`[data-col-id="${listId}"] h6`);
+    return listEl ? listEl.textContent.trim() : `List ${listId}`;
+  }
+
+  function getProjectListsInfo(currentListId) {
+    const lists = [];
+
+    // Collect all project lists from the board
+    document.querySelectorAll('#board .board-column').forEach(col => {
+      const listId = col.getAttribute('data-col-id');
+      const listNameEl = col.querySelector('.board-col-head h6');
+      const listName = listNameEl ? listNameEl.textContent.trim() : `List ${listId}`;
+      const cardCountEl = col.querySelector('.board-col-head .badge');
+      const cardCount = cardCountEl ? parseInt(cardCountEl.textContent.trim()) : 0;
+
+      lists.push({
+        id: listId,
+        name: listName,
+        cardCount: cardCount
+      });
+    });
+
+    if (lists.length === 0) {
+      return '<p class="text-muted">Tidak ada project list tersedia</p>';
+    }
+
+    let html = '<div class="table-responsive"><table class="table table-sm table-bordered">';
+    html += '<thead class="thead-light"><tr><th>Nama List</th><th>Jumlah Card</th><th>Status</th></tr></thead><tbody>';
+
+    lists.forEach(list => {
+      const isCurrentList = String(list.id) === String(currentListId);
+      const statusBadge = isCurrentList
+        ? '<span class="badge badge-primary">Current</span>'
+        : '<span class="badge badge-secondary">Other</span>';
+
+      html += `<tr>
+        <td class="font-weight-bold">${list.name}</td>
+        <td class="text-center">${list.cardCount}</td>
+        <td class="text-center">${statusBadge}</td>
+      </tr>`;
+    });
+
+    html += '</tbody></table></div>';
+    return html;
+  }
 
   // Grade Mitra per proyek per mahasiswa
   window.gradeMitra = async function(cardId, cardTitle) {
@@ -1752,11 +2033,11 @@
               'Izin': 70,
               'Sakit': 60,
               'Terlambat': 50,
-              'Tidak Hadir': 0,
               'Tanpa Keterangan': 0
             }[kehadiran] || 0 : 0;
 
-            const totalScore = (kehadiranBobot * apWeights.kehadiran / 100) + (presentasi * apWeights.presentasi / 100);
+            // Use bobot from aktivitas_list
+            const totalScore = (kehadiranBobot * bobotKehadiriran / 100) + (presentasi * bobotPresentasi / 100);
             const finalScore = Math.round(totalScore);
             totalBadge.textContent = finalScore || '-';
             totalBadge.className = `badge ${finalScore >= 70 ? 'badge-success' : finalScore >= 50 ? 'badge-warning' : 'badge-danger'} total-badge`;
@@ -1767,7 +2048,7 @@
         };
 
         // Add event listeners to all inputs
-        popup.querySelectorAll('select[data-field="w_ap_kehadiran"], input[data-field="w_ap_presentasi"], input[data-field="tanggal_hadir"]').forEach(input => {
+        popup.querySelectorAll('select[data-field="w_ap_kehadiran"], input[data-field="w_ap_presentasi"]').forEach(input => {
           input.addEventListener('change', () => {
             const row = input.closest('tr');
             calculateRowTotal(row);
@@ -1808,26 +2089,24 @@
           // Get all inputs for this member
           const kehadiranSelect = row.querySelector(`select[data-member="${memberId}"][data-field="w_ap_kehadiran"]`);
           const presentasiInput = row.querySelector(`input[data-member="${memberId}"][data-field="w_ap_presentasi"]`);
-          const tanggalInput = row.querySelector(`input[data-member="${memberId}"][data-field="tanggal_hadir"]`);
 
           // Get values
           const kehadiran = kehadiranSelect?.value.trim() || '';
           const presentasi = presentasiInput?.value.trim() || '';
-          const tanggal = tanggalInput?.value.trim() || '';
 
           // Only create item if there's any data
-          if (kehadiran || presentasi || tanggal) {
+          if (kehadiran || presentasi) {
             hasAnyData = true;
             const existing = existingData[memberId] || {};
 
             items.push({
-              id: existing.id || null,
               mahasiswa_id: memberId,
               aktivitas_list_id: parseInt(aktivitasListId),
               w_ap_kehadiran: kehadiran || null,
+              tanggal_hadir: existing.tanggal_hadir || null,
               w_ap_presentasi: presentasi ? parseFloat(presentasi) : null,
-              tanggal_hadir: tanggal || null,
-              status: 'Submitted'
+              status: existing.status || 'Submitted',
+              catatan: existing.catatan || null
             });
           }
         });

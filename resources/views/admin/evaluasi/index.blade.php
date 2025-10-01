@@ -8,6 +8,19 @@
   .table td { vertical-align: middle; }
   .small-muted { font-size:.85rem; color:#6c757d; }
   .truncate { max-width:220px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .activity-box {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    margin: 0 1px;
+    border-radius: 2px;
+  }
+  .activity-box.evaluated {
+    background-color: #28a745;
+  }
+  .activity-box.unevaluated {
+    background-color: #343a40;
+  }
 </style>
 @endpush
 
@@ -56,6 +69,7 @@
             <tr>
               <th>Kelompok</th>
               <th>Anggota</th>
+              <th>Evaluasi</th>
               <th style="width:80px; text-align: center;">Aksi</th>
             </tr>
           </thead>
@@ -85,6 +99,19 @@
                       @else
                         <span class="text-muted small">—</span>
                       @endif
+                </td>
+                <td>
+                  <div class="d-flex align-items-center">
+                    <span class="badge mr-2">
+                      Evaluasi : 
+                    </span>
+                    <div class="activity-boxes">
+                      {!! $k->activity_boxes !!}
+                    </div>
+                    <span class="small-muted ml-2">
+                      {{ $k->evaluated_activities_count }}/{{ $k->total_activities }}
+                    </span>
+                  </div>
                 </td>
                 <td align="center">
                   {{-- Detail --}}

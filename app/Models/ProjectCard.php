@@ -53,6 +53,11 @@ class ProjectCard extends Model
         return $this->belongsTo(\App\Models\ProjectList::class, 'list_id');
     }
 
+    public function projectList()
+    {
+        return $this->belongsTo(\App\Models\ProjectList::class, 'list_id');
+    }
+
     public function createdBy()
     {
         return $this->belongsTo(\App\Models\User::class, 'created_by');

@@ -171,30 +171,149 @@ class EvaluasiController extends Controller
         $periodeId = $request->get('periode_id');
         $kelompokId = $request->get('kelompok_id');
 
-        $query = EvaluasiDosen::with([
+        // Get all project lists untuk periode dan kelompok yang dipilih
+        $projectLists = ProjectList::when($periodeId, fn ($q) => $q->where('periode_id', $periodeId))
+            ->when($kelompokId, fn ($q) => $q->where('kelompok_id', $kelompokId))
+            ->with(['cards'])
+            ->orderBy('position')
+            ->get();
+
+        // Get evaluations dengan relasi yang lengkap
+        $evaluationsDosen = EvaluasiDosen::with([
             'mahasiswa:id,nama_mahasiswa,nim',
             'kelompok:id,nama_kelompok',
-            'projectCard:id,title',
+            'projectCard:id,title,list_id',
             'evaluator:id,nama_user',
         ])
             ->when($periodeId, fn ($q) => $q->where('periode_id', $periodeId))
             ->when($kelompokId, fn ($q) => $q->where('kelompok_id', $kelompokId))
-            ->orderByDesc('updated_at');
+            ->get();
 
-        $evaluations = $query->get();
+        $evaluationsMitra = EvaluasiMitra::with([
+            'mahasiswa:id,nama_mahasiswa,nim',
+            'kelompok:id,nama_kelompok',
+            'projectCard:id,title,list_id',
+            'evaluator:id,nama_user',
+        ])
+            ->when($periodeId, fn ($q) => $q->where('periode_id', $periodeId))
+            ->when($kelompokId, fn ($q) => $q->where('kelompok_id', $kelompokId))
+            ->get();
 
-        // Group by mahasiswa untuk menampilkan semua nilai per mahasiswa
-        $mahasiswaNilai = $evaluations->groupBy('mahasiswa_id')->map(function ($group) {
+        // Get data absensi dan presensi (AP)
+        $nilaiAP = EvaluasiNilaiAP::with([
+            'mahasiswa:id,nama_mahasiswa,nim',
+            'kelompok:id,nama_kelompok',
+        ])
+            ->when($periodeId, fn ($q) => $q->where('periode_id', $periodeId))
+            ->when($kelompokId, fn ($q) => $q->where('kelompok_id', $kelompokId))
+            ->get();
+
+        // Group by mahasiswa dan hitung nilai final berdasarkan list
+        $mahasiswaNilai = $evaluationsDosen->groupBy('mahasiswa_id')->map(function ($group) use ($evaluationsMitra, $projectLists, $nilaiAP) {
             $mahasiswa = $group->first()->mahasiswa;
+            $kelompok = $group->first()->kelompok;
+            $mahasiswaId = $mahasiswa->id;
+
+            // Get evaluations mitra untuk mahasiswa ini
+            $evalMitraMahasiswa = $evaluationsMitra->where('mahasiswa_id', $mahasiswaId);
+
+            // Group evaluations by list untuk perhitungan yang akurat
+            $listEvaluations = $group->groupBy('projectCard.list_id')->map(function ($listGroup) use ($evalMitraMahasiswa, $projectLists) {
+                $listId = $listGroup->first()->projectCard->list_id;
+                $projectList = $projectLists->get($listId);
+
+                return [
+                    'list' => $projectList,
+                    'evaluations' => $listGroup->map(function ($eval) use ($evalMitraMahasiswa) {
+                        $evalMitra = $evalMitraMahasiswa->firstWhere('project_card_id', $eval->project_card_id);
+
+                        // Hitung nilai final untuk card ini (dosen 80%, mitra 20%)
+                        $nilaiDosen = $eval->nilai_akhir ?? 0;
+                        $nilaiMitra = $evalMitra->nilai_akhir ?? 0;
+                        $nilaiCard = ($nilaiDosen * 0.8) + ($nilaiMitra * 0.2);
+
+                        return [
+                            'project' => $eval->projectCard,
+                            'nilai_dosen' => $nilaiDosen,
+                            'nilai_mitra' => $nilaiMitra,
+                            'nilai_card' => $nilaiCard,
+                            'grade' => $eval->grade,
+                            'status' => $eval->status,
+                            'tanggal_evaluasi' => $eval->tanggal_evaluasi,
+                            'evaluator_dosen' => $eval->evaluator,
+                            'evaluator_mitra' => $evalMitra?->evaluator,
+                        ];
+                    }),
+                ];
+            });
+
+            // Hitung rata-rata per list
+            $listAverages = $listEvaluations->map(function ($listData) {
+                $evaluations = $listData['evaluations'];
+                $count = $evaluations->count();
+
+                if ($count === 0) {
+                    return null;
+                }
+
+                return [
+                    'list' => $listData['list'],
+                    'avg_dosen' => $evaluations->avg('nilai_dosen'),
+                    'avg_mitra' => $evaluations->avg('nilai_mitra'),
+                    'avg_card' => $evaluations->avg('nilai_card'),
+                    'count' => $count,
+                ];
+            })->filter();
+
+            // Hitung nilai final mahasiswa (rata-rata dari semua list)
+            $finalAvgDosen = $listAverages->avg('avg_dosen');
+            $finalAvgMitra = $listAverages->avg('avg_mitra');
+            $finalNilaiProject = ($finalAvgDosen * 0.8) + ($finalAvgMitra * 0.2);
+
+            // Ambil nilai AP untuk mahasiswa ini
+            $mahasiswaNilaiAP = $nilaiAP->where('mahasiswa_id', $mahasiswaId);
+            $totalAP = $mahasiswaNilaiAP->sum('nilai');
+            $countAP = $mahasiswaNilaiAP->count();
+            $averageAP = $countAP > 0 ? $totalAP / $countAP : 0;
+
+            // Hitung nilai akhir dengan bobot: 30% AP + 70% Project
+            $finalNilaiAkhir = ($averageAP * 0.3) + ($finalNilaiProject * 0.7);
+
+            // Tentukan grade berdasarkan nilai akhir
+            $finalGrade = $this->calculateGrade($finalNilaiAkhir);
 
             return [
                 'mahasiswa' => $mahasiswa,
-                'kelompok' => $group->first()->kelompok,
-                'evaluations' => $group->map(function ($eval) {
+                'kelompok' => $kelompok,
+                'list_evaluations' => $listEvaluations,
+                'list_averages' => $listAverages,
+                'final_calculation' => [
+                    'avg_dosen' => $finalAvgDosen,
+                    'avg_mitra' => $finalAvgMitra,
+                    'nilai_project' => $finalNilaiProject,
+                    'nilai_ap' => [
+                        'total' => $totalAP,
+                        'count' => $countAP,
+                        'average' => round($averageAP, 2),
+                    ],
+                    'nilai_akhir' => $finalNilaiAkhir,
+                    'grade' => $finalGrade,
+                    'total_lists' => $listAverages->count(),
+                    'total_cards' => $listEvaluations->sum(function ($listData) {
+                        return is_array($listData['evaluations']) ? count($listData['evaluations']) : $listData['evaluations']->count();
+                    }),
+                ],
+                // Legacy evaluations untuk kompatibilitas dengan view yang ada
+                'evaluations' => $group->map(function ($eval) use ($evalMitraMahasiswa) {
+                    $evalMitra = $evalMitraMahasiswa->firstWhere('project_card_id', $eval->project_card_id);
+                    $nilaiDosen = $eval->nilai_akhir ?? 0;
+                    $nilaiMitra = $evalMitra->nilai_akhir ?? 0;
+                    $nilaiCard = ($nilaiDosen * 0.8) + ($nilaiMitra * 0.2);
+
                     return [
                         'project' => $eval->projectCard,
-                        'nilai_akhir' => $eval->nilai_akhir,
-                        'grade' => $eval->grade,
+                        'nilai_akhir' => $nilaiCard,
+                        'grade' => $this->calculateGrade($nilaiCard),
                         'status' => $eval->status,
                         'tanggal_evaluasi' => $eval->tanggal_evaluasi,
                         'evaluator' => $eval->evaluator,
@@ -208,6 +327,31 @@ class EvaluasiController extends Controller
             ->orderBy('nama_kelompok')->get(['id', 'nama_kelompok']);
 
         return view('admin.evaluasi.nilai-final', compact('mahasiswaNilai', 'periodes', 'kelompoks', 'periodeId', 'kelompokId'));
+    }
+
+    /**
+     * Helper function to calculate grade based on score
+     */
+    private function calculateGrade($score)
+    {
+        if ($score === null) {
+            return null;
+        }
+
+        if ($score >= 85) {
+            return 'A';
+        }
+        if ($score >= 75) {
+            return 'B';
+        }
+        if ($score >= 65) {
+            return 'C';
+        }
+        if ($score >= 55) {
+            return 'D';
+        }
+
+        return 'E';
     }
 
     /** ===== DETAIL KELOMPOK ===== */
@@ -663,6 +807,17 @@ class EvaluasiController extends Controller
         ]);
 
         return response()->json(['success' => true, 'status' => $card->status]);
+    }
+
+    /** ===== Show project details ===== */
+    public function showProject(ProjectCard $card)
+    {
+        $card->load(['projectList', 'createdBy', 'updatedBy']);
+
+        return response()->json([
+            'success' => true,
+            'project' => $card,
+        ]);
     }
 
     /** ===== PROJECT EXPORT ===== */

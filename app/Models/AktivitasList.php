@@ -17,6 +17,8 @@ class AktivitasList extends Model
     protected $casts = [
         'rentang_tanggal' => 'string',
         'status_evaluasi' => 'string',
+        'w_ap_kehadiran' => 'decimal:2',
+        'w_ap_presentasi' => 'decimal:2',
     ];
 
     protected static function booted(): void
@@ -42,6 +44,29 @@ class AktivitasList extends Model
     public function cards()
     {
         return $this->hasMany(AktivitasCard::class, 'list_aktivitas_id')
-                    ->orderBy('position');
+            ->orderBy('position');
+    }
+
+    public function kelompok()
+    {
+        return $this->belongsTo(Kelompok::class);
+    }
+
+    public function periode()
+    {
+        return $this->belongsTo(Periode::class);
+    }
+
+    public function presensi()
+    {
+        return $this->hasMany(AktivitasPresensi::class);
+    }
+
+    public function getBobotAPAttribute()
+    {
+        return [
+            'kehadiran' => $this->w_ap_kehadiran ?? 50,
+            'presentasi' => $this->w_ap_presentasi ?? 50,
+        ];
     }
 }

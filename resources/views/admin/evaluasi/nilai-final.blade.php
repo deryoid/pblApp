@@ -17,6 +17,318 @@
     </div>
 
     <div class="row">
+        <!-- Card Arahan Penilaian -->
+        <div class="col-12">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex align-items-center">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-graduation-cap mr-2"></i>Arahan Penilaian Project Based Learning
+                    </h6>
+                    <button class="btn btn-sm btn-outline-primary ml-auto" type="button" data-toggle="collapse" data-target="#guidelinesCollapse">
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                </div>
+                <div class="collapse show" id="guidelinesCollapse">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-12">
+                                <h6 class="font-weight-bold text-info mb-3">
+                                    <i class="fas fa-percentage mr-2"></i>Komponen Penilaian
+                                </h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <span><strong>Penilaian Project</strong></span>
+                                                <span class="badge badge-primary">70%</span>
+                                            </div>
+                                            <small class="text-muted ml-3">
+                                                • Dosen (80%) • Mitra Industri (20%)
+                                            </small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="mb-3">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <span><strong>Partisipasi Aktivitas</strong></span>
+                                                <span class="badge badge-success">30%</span>
+                                            </div>
+                                            <small class="text-muted ml-3">
+                                                • Kehadiran (50%) • Presentasi (50%)
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <!-- AP Assessment Details -->
+                        <div class="row">
+                            <div class="col-12">
+                                <h6 class="font-weight-bold text-success mb-3">
+                                    <i class="fas fa-user-check mr-2"></i>Penilaian Aktivitas Partisipatif (AP) - Detail Komponen
+                                </h6>
+                                <div class="card border-success mb-4">
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <!-- Kehadiran -->
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                                        <span><strong>Kehadiran</strong></span>
+                                                        <span class="badge badge-success">50% dari AP</span>
+                                                    </div>
+                                                    <small class="text-muted">
+                                                        • Kehadiran perkuliahan<br>
+                                                        • Kehadiran bimbingan proyek<br>
+                                                        • Kehadiran kegiatan industri<br>
+                                                        • Ketepatan waktu
+                                                    </small>
+                                                </div>
+                                            </div>
+                                            <!-- Presentasi -->
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                                        <span><strong>Presentasi & Partisipasi</strong></span>
+                                                        <span class="badge badge-success">50% dari AP</span>
+                                                    </div>
+                                                    <small class="text-muted">
+                                                        • Kualitas presentasi<br>
+                                                        • Kemampuan menjawab pertanyaan<br>
+                                                        • Partisipasi diskusi<br>
+                                                        • Kontribusi tim
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="alert alert-warning mt-3">
+                                            <strong class="small"><i class="fas fa-info-circle mr-1"></i>Petunjuk Pemberian Nilai AP:</strong><br>
+                                            <small>
+                                            <strong>1. Kehadiran (50% dari AP):</strong><br>
+                                            • Hadir semua sesi: 90-100<br>
+                                            • Hadir 80-90% sesi: 80-89<br>
+                                            • Hadir 70-79% sesi: 70-79<br>
+                                            • Hadir 60-69% sesi: 60-69<br>
+                                            • Hadir <60% sesi: <60<br><br>
+
+                                            <strong>2. Presentasi & Partisipasi (50% dari AP):</strong><br>
+                                            • Sangat aktif dan presentasi excellent: 90-100<br>
+                                            • Aktif dan presentasi baik: 80-89<br>
+                                            • Cukup aktif dan presentasi cukup: 70-79<br>
+                                            • Kurang aktif: 60-69<br>
+                                            • Pasif dan tidak presentasi: <60<br><br>
+
+                                            <strong>Contoh Perhitungan:</strong><br>
+                                            Mahasiswa dengan kehadiran 85 dan presentasi 90:<br>
+                                            Nilai AP = (85 × 50%) + (90 × 50%) = 87.5<br>
+                                            Kontribusi ke Nilai Akhir = 87.5 × 30% = 26.25
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-12">
+                                <h6 class="font-weight-bold text-primary mb-3">
+                                    <i class="fas fa-project-diagram mr-2"></i>Penilaian Project - Detail Komponen
+                                </h6>
+
+                                <!-- Struktur Hierarki Penilaian -->
+                                <div class="alert alert-secondary mb-4">
+                                    <strong class="small"><i class="fas fa-sitemap mr-2"></i>Struktur Hierarki Penilaian:</strong><br>
+                                    <small>
+                                    <strong>Project List</strong> (Kolom Proyek) → <strong>Project Cards</strong> (Item/Kartu Proyek) → <strong>Evaluasi</strong> per Mahasiswa<br>
+                                    Setiap list berisi beberapa cards, dan nilai perhitungan dimulai dari tingkat list
+                                    </small>
+                                </div>
+
+                                <!-- Card untuk Penilaian Project -->
+                                <div class="card border-primary mb-4">
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <!-- Evaluasi Dosen -->
+                                            <div class="col-md-8">
+                                                <h6 class="font-weight-bold text-info mb-3">
+                                                    <i class="fas fa-chalkboard-teacher mr-2"></i>Evaluasi Dosen per Project List (80% dari Nilai Project)
+                                                </h6>
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm table-striped">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Kriteria</th>
+                                                                <th>Bobot</th>
+                                                                <th>Deskripsi Penilaian</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr>
+                                                                <td><strong>Kualitas Hasil</strong></td>
+                                                                <td><span class="badge badge-primary">30%</span></td>
+                                                                <td class="small">
+                                                                    • Kesesuaian output dengan tujuan proyek<br>
+                                                                    • Kualitas hasil kerja dan deliverables<br>
+                                                                    • Pencapaian target yang ditetapkan
+                                                                </td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td><strong>Kompleksitas Teknis</strong></td>
+                                                                <td><span class="badge badge-primary">20%</span></td>
+                                                                <td class="small">
+                                                                    • Tingkat kesulitan teknis yang dihadapi<br>
+                                                                    • Pemilihan teknologi dan tools<br>
+                                                                    • Solusi teknis yang diterapkan
+                                                                </td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td><strong>Kebutuhan Pengguna</strong></td>
+                                                                <td><span class="badge badge-primary">15%</span></td>
+                                                                <td class="small">
+                                                                    • User experience dan interface<br>
+                                                                    • Respons terhadap feedback user<br>
+                                                                    • Kesesuaian dengan kebutuhan end-user
+                                                                </td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td><strong>Efisiensi</strong></td>
+                                                                <td><span class="badge badge-primary">10%</span></td>
+                                                                <td class="small">
+                                                                    • Manajemen waktu dan jadwal<br>
+                                                                    • Penggunaan sumber daya<br>
+                                                                    • Optimasi proses kerja
+                                                                </td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td><strong>Dokumentasi</strong></td>
+                                                                <td><span class="badge badge-primary">15%</span></td>
+                                                                <td class="small">
+                                                                    • Kualitas laporan dan dokumentasi<br>
+                                                                    • Keterbacaan dan organisasi dokumen<br>
+                                                                    • Kelengkapan catatan proses
+                                                                </td>
+                                                            </tr>
+                                                            <tr>
+                                                                <td><strong>Inisiatif</strong></td>
+                                                                <td><span class="badge badge-primary">10%</span></td>
+                                                                <td class="small">
+                                                                    • Kemandirian dalam problem solving<br>
+                                                                    • Kreativitas dan inovasi<br>
+                                                                    • Proaktif dalam pengembangan
+                                                                </td>
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+
+                                            <!-- Evaluasi Mitra -->
+                                            <div class="col-md-4">
+                                                <h6 class="font-weight-bold text-success mb-3">
+                                                    <i class="fas fa-building mr-2"></i>Evaluasi Mitra Industri per Project List (20% dari Nilai Project)
+                                                </h6>
+                                                <div class="card border-success">
+                                                    <div class="card-body">
+                                                        <div class="mb-3">
+                                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                                <span><strong>Komunikasi & Sikap</strong></span>
+                                                                <span class="badge badge-success">50%</span>
+                                                            </div>
+                                                            <small class="text-muted">
+                                                                • Etika komunikasi profesional<br>
+                                                                • Sikap kerjasama tim<br>
+                                                                • Adaptasi di lingkungan kerja<br>
+                                                                • Respon terhadap instruksi
+                                                            </small>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                                <span><strong>Hasil Pekerjaan</strong></span>
+                                                                <span class="badge badge-success">50%</span>
+                                                            </div>
+                                                            <small class="text-muted">
+                                                                • Kualitas output kerja<br>
+                                                                • Konsistensi performa<br>
+                                                                • Kontribusi pada proyek<br>
+                                                                • Pemenuhan standar industri
+                                                            </small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Contoh Perhitungan -->
+                                                <div class="alert alert-info mt-3 mb-0">
+                                                    <strong class="small">Contoh Perhitungan:</strong><br>
+                                                    <small>
+                                                    <strong>Mahasiswa A memiliki 2 Project Lists:</strong><br><br>
+                                                    <strong>List 1 (2 Cards):</strong><br>
+                                                    • Card 1: Dosen = 85, Mitra = 90<br>
+                                                    • Card 2: Dosen = 80, Mitra = 85<br>
+                                                    <strong>→ Rata-rata List 1:</strong> Dosen = 82.5, Mitra = 87.5<br><br>
+                                                    <strong>List 2 (3 Cards):</strong><br>
+                                                    • Card 1: Dosen = 90, Mitra = 95<br>
+                                                    • Card 2: Dosen = 75, Mitra = 80<br>
+                                                    • Card 3: Dosen = 85, Mitra = 90<br>
+                                                    <strong>→ Rata-rata List 2:</strong> Dosen = 83.3, Mitra = 88.3<br><br>
+                                                    <strong>Rata-rata Antar List:</strong><br>
+                                                    • Dosen = (82.5 + 83.3) ÷ 2 = 82.9<br>
+                                                    • Mitra = (87.5 + 88.3) ÷ 2 = 87.9<br><br>
+                                                    <strong>Nilai Project:</strong><br>
+                                                    (82.9 × 80%) + (87.9 × 20%) = 83.9
+                                                    </small>
+                                                </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Formula Perhitungan -->
+                                                <div class="alert alert-primary mt-3 mb-0">
+                                                    <strong class="small">Formula Nilai Project per Mahasiswa:</strong><br>
+                                                    <small>
+                                                    <strong>Step 1:</strong> Hitung rata-rata per List:<br>
+                                                    • Setiap List = ∑(nilai_akhir semua card di list tersebut) ÷ jumlah card per list<br><br>
+                                                    <strong>Step 2:</strong> Hitung rata-rata antar List:<br>
+                                                    • Nilai Dosen = ∑(rata-rata semua list) ÷ jumlah list<br>
+                                                    • Nilai Mitra = ∑(rata-rata semua list) ÷ jumlah list<br><br>
+                                                    <strong>Step 3:</strong> Gabungkan nilai:<br>
+                                                    (Rata-rata Dosen × 80%) + (Rata-rata Mitra × 20%)<br>
+                                                    = <strong>Nilai Project Mahasiswa</strong>
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <h6 class="font-weight-bold text-info mb-3">
+                                    <i class="fas fa-handshake mr-2"></i>Kriteria Penilaian Mitra Industri
+                                </h6>
+                                <ul class="list-unstyled small">
+                                    <li class="mb-2"><strong>Komunikasi & Sikap (50%):</strong> Interaksi di lapangan</li>
+                                    <li class="mb-2"><strong>Hasil Pekerjaan (50%):</strong> Kualitas deliverables</li>
+                                </ul>
+
+                                <h6 class="font-weight-bold text-info mb-3 mt-4">
+                                    <i class="fas fa-calendar-check mr-2"></i>Skor Kehadiran
+                                </h6>
+                                <ul class="list-unstyled small">
+                                    <li class="mb-1"><span class="badge badge-success">Hadir</span> = 100</li>
+                                    <li class="mb-1"><span class="badge badge-info">Izin</span> = 70</li>
+                                    <li class="mb-1"><span class="badge badge-warning">Sakit</span> = 60</li>
+                                    <li class="mb-1"><span class="badge badge-secondary">Terlambat</span> = 50</li>
+                                    <li class="mb-1"><span class="badge badge-danger">Tanpa Keterangan</span> = 0</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="col-12">
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
@@ -69,63 +381,158 @@
                                         <th>NIM</th>
                                         <th>Nama Mahasiswa</th>
                                         <th>Kelompok</th>
-                                        <th>Project</th>
+                                        <th>Nilai AP</th>
+                                        <th>Detail Perhitungan</th>
                                         <th>Nilai Akhir</th>
-                                        <th>Grade</th>
-                                        <th>Status</th>
-                                        <th>Tanggal Evaluasi</th>
-                                        <th>Evaluator</th>
+                                        <th>Total Lists</th>
+                                        <th>Total Cards</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <?php $no = 1; ?>
                                     @foreach($mahasiswaNilai as $mahasiswaId => $data)
-                                        @foreach($data['evaluations'] as $index => $evaluation)
-                                            <tr>
-                                                @if($index == 0)
-                                                    <td rowspan="{{ count($data['evaluations']) }}">{{ $no++ }}</td>
-                                                    <td rowspan="{{ count($data['evaluations']) }}">{{ $data['mahasiswa']->nim }}</td>
-                                                    <td rowspan="{{ count($data['evaluations']) }}">{{ $data['mahasiswa']->nama_mahasiswa }}</td>
-                                                    <td rowspan="{{ count($data['evaluations']) }}">{{ $data['kelompok']->nama_kelompok }}</td>
+                                        <tr>
+                                            <td>{{ $no++ }}</td>
+                                            <td>{{ $data['mahasiswa']->nim }}</td>
+                                            <td>{{ $data['mahasiswa']->nama_mahasiswa }}</td>
+                                            <td>{{ $data['kelompok']->nama_kelompok }}</td>
+                                            <td>
+                                                <!-- Nilai AP -->
+                                                <div class="nilai-ap-info">
+                                                    @if($data['final_calculation']['nilai_ap']['count'] > 0)
+                                                        <div class="p-2 bg-info text-white rounded">
+                                                            <small><strong>Absensi & Presensi</strong></small><br>
+                                                            <small>
+                                                                Rata-rata: {{ number_format($data['final_calculation']['nilai_ap']['average'], 2) }}<br>
+                                                                ({{ $data['final_calculation']['nilai_ap']['count'] }} aktivitas)
+                                                            </small>
+                                                            <!-- Detail Presensi per Aktivitas -->
+                                                            <div class="mt-2">
+                                                                <button class="btn btn-sm btn-outline-light" onclick="toggleDetailAP('{{ $data['mahasiswa']->id }}')">
+                                                                    <i class="fas fa-eye"></i> Detail
+                                                                </button>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- Hidden Detail -->
+                                                        <div id="detail-ap-{{ $data['mahasiswa']->id }}" class="mt-2 d-none">
+                                                            <div class="small bg-light text-dark p-2 rounded">
+                                                                <strong>Detail per Aktivitas:</strong>
+                                                                @foreach($data['final_calculation']['nilai_ap']['presensi_data'] as $presensi)
+                                                                    <div class="border-bottom pb-1 mb-1">
+                                                                        <strong>{{ $presensi->aktivitasList->name }}</strong><br>
+                                                                        Kehadiran: {{ $presensi->kehadiran }} ({{ $presensi->nilai_kehadiran_konversi }})<br>
+                                                                        Presentasi: {{ $presensi->nilai_presentasi }}<br>
+                                                                        Final AP: {{ $presensi->nilai_final_ap }}
+                                                                    </div>
+                                                                @endforeach
+                                                            </div>
+                                                        </div>
+                                                    @else
+                                                        <div class="p-2 bg-secondary text-white rounded">
+                                                            <small>Belum ada nilai AP</small>
+                                                        </div>
+                                                    @endif
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <!-- Detail Perhitungan per List -->
+                                                <div class="calculation-details">
+                                                    <div class="mb-2">
+                                                        <small class="text-muted">Rata-rata per List:</small>
+                                                        @foreach($data['list_averages'] as $listAvg)
+                                                            <div class="small mb-1 p-2 bg-light rounded">
+                                                                <strong>{{ $listAvg['list']->name ?: 'Project List #'.$listAvg['list']->id }}</strong>
+                                                                <div class="text-muted">
+                                                                    Dosen: {{ number_format($listAvg['avg_dosen'], 1) }},
+                                                                    Mitra: {{ number_format($listAvg['avg_mitra'], 1) }},
+                                                                    Proyek: {{ number_format($listAvg['avg_card'], 1) }}
+                                                                    ({{ $listAvg['count'] }} cards)
+                                                                </div>
+                                                            </div>
+                                                        @endforeach
+                                                    </div>
+                                                    <div class="final-calculation p-2 bg-primary text-white rounded">
+                                                        <small><strong>Nilai Project:</strong></small><br>
+                                                        <small>
+                                                            Dosen: {{ number_format($data['final_calculation']['avg_dosen'], 1) }} × 80%<br>
+                                                            Mitra: {{ number_format($data['final_calculation']['avg_mitra'], 1) }} × 20%<br>
+                                                            = <strong>{{ number_format($data['final_calculation']['nilai_project'], 2) }}</strong>
+                                                        </small>
+                                                    </div>
+                                                    <div class="final-calculation mt-2 p-2 bg-success text-white rounded">
+                                                        <small><strong>Nilai Akhir:</strong></small><br>
+                                                        <small>
+                                                            AP (30%): {{ number_format($data['final_calculation']['nilai_ap']['average'], 2) }} × 30%<br>
+                                                            Project (70%): {{ number_format($data['final_calculation']['nilai_project'], 2) }} × 70%<br>
+                                                            = <strong>{{ number_format($data['final_calculation']['nilai_akhir'], 2) }}</strong>
+                                                        </small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                @if($data['final_calculation']['nilai_akhir'])
+                                                    {{ number_format($data['final_calculation']['nilai_akhir'], 2) }}
+                                                @else
+                                                    -
                                                 @endif
-                                                <td>{{ $evaluation['project']->title }}</td>
-                                                <td>
-                                                    @if($evaluation['nilai_akhir'])
-                                                        <span class="badge bg-primary">{{ number_format($evaluation['nilai_akhir'], 2) }}</span>
-                                                    @else
-                                                        <span class="badge bg-secondary">-</span>
-                                                    @endif
-                                                </td>
-                                                <td>
-                                                    @if($evaluation['grade'])
-                                                        <span class="badge @if($evaluation['grade'] == 'A') bg-success @elseif($evaluation['grade'] == 'B') bg-info @elseif($evaluation['grade'] == 'C') bg-warning @elseif($evaluation['grade'] == 'D') bg-danger @else bg-secondary @endif">
-                                                            {{ $evaluation['grade'] }}
-                                                        </span>
-                                                    @else
-                                                        <span class="badge bg-secondary">-</span>
-                                                    @endif
-                                                </td>
-                                                <td>
-                                                    <span class="badge @if($evaluation['status'] == 'submitted') bg-success @elseif($evaluation['status'] == 'locked') bg-danger @else bg-secondary @endif">
-                                                        {{ ucfirst($evaluation['status']) }}
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    @if($evaluation['tanggal_evaluasi'])
-                                                        {{ date('d/m/Y', strtotime($evaluation['tanggal_evaluasi'])) }}
-                                                    @else
-                                                        -
-                                                    @endif
-                                                </td>
-                                                <td>
-                                                    @if($evaluation['evaluator'])
-                                                        {{ $evaluation['evaluator']->name }}
-                                                    @else
-                                                        <span class="text-muted">-</span>
-                                                    @endif
-                                                </td>
-                                            </tr>
-                                        @endforeach
+                                            </td>
+                                            <td>
+                                                {{ $data['final_calculation']['total_lists'] }}
+                                            </td>
+                                            <td>
+                                                {{ $data['final_calculation']['total_cards'] }}
+                                            </td>
+                        
+                                        </tr>
+
+                                        <!-- Optional: Show detailed project breakdown -->
+                                        <tr>
+                                            <td colspan="10" class="p-0">
+                                                <div class="accordion" id="detailAccordion{{ $no }}">
+                                                    <div class="card">
+                                                        <div class="card-header p-2 bg-light" id="heading{{ $no }}">
+                                                            <h6 class="mb-0">
+                                                                <button class="btn btn-sm btn-link text-decoration-none" type="button" data-toggle="collapse" data-target="#collapse{{ $no }}" aria-expanded="false" aria-controls="collapse{{ $no }}">
+                                                                    <i class="fas fa-chevron-down"></i> Detail Project Cards
+                                                                </button>
+                                                            </h6>
+                                                        </div>
+
+                                                        <div id="collapse{{ $no }}" class="collapse" aria-labelledby="heading{{ $no }}" data-parent="#detailAccordion{{ $no }}">
+                                                            <div class="card-body p-3">
+                                                                <div class="table-responsive">
+                                                                    <table class="table table-sm">
+                                                                        <thead>
+                                                                            <tr>
+                                                                                <th>Project</th>
+                                                                                <th>Nilai Dosen</th>
+                                                                                <th>Nilai Mitra</th>
+                                                                            </tr>
+                                                                        </thead>
+                                                                        <tbody>
+                                                                            @foreach($data['evaluations'] as $evaluation)
+                                                                                <tr>
+                                                                                    <td>{{ $evaluation['project']->title }}</td>
+                                                                                    <td>{{ number_format($evaluation['nilai_akhir'], 2) }}</td>
+                                                                                    <td>
+                                                                                        @php
+                                                                                            $evalMitra = $data['list_evaluations']->flatMap->evaluations->first(fn($eval) => $eval['project']->id === $evaluation['project']->id);
+                                                                                            $nilaiMitra = $evalMitra['nilai_mitra'] ?? 0;
+                                                                                        @endphp
+                                                                                        {{ number_format($nilaiMitra, 2) }}
+                                                                                    </td>
+                                                                                </tr>
+                                                                            @endforeach
+                                                                        </tbody>
+                                                                    </table>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
                                     @endforeach
                                 </tbody>
                             </table>
@@ -202,6 +609,23 @@
         font-size: 0.875rem;
         padding: 0.375rem 0.75rem;
     }
+    .calculation-details {
+        font-size: 0.8rem;
+    }
+    .calculation-details .bg-light {
+        border-left: 3px solid #007bff;
+    }
+    .final-calculation {
+        border-left: 3px solid #0056b3;
+    }
+    .accordion .card {
+        border: none;
+        box-shadow: none;
+    }
+    .accordion .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
+    }
 </style>
 @endpush
 
@@ -209,6 +633,15 @@
 <script>
 function resetFilters() {
     window.location.href = '{{ route("admin.evaluasi.nilai-final") }}';
+}
+
+function toggleDetailAP(mahasiswaId) {
+    const detailElement = document.getElementById('detail-ap-' + mahasiswaId);
+    if (detailElement.classList.contains('d-none')) {
+        detailElement.classList.remove('d-none');
+    } else {
+        detailElement.classList.add('d-none');
+    }
 }
 
 // Auto-refresh setiap 30 detik jika ada perubahan data
