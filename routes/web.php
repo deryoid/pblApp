@@ -172,6 +172,18 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
 // Evaluator
 Route::prefix('evaluator')->middleware(['auth', 'evaluator'])->group(function () {
     Route::get('/', fn () => view('evaluator.index'));
+
+    // Kelompok
+    Route::prefix('kelompok')->name('evaluator.kelompok.')->group(function () {
+        Route::get('/', [App\Http\Controllers\Evaluator\KelompokController::class, 'index'])->name('index');
+        Route::get('{kelompok}', [App\Http\Controllers\Evaluator\KelompokController::class, 'show'])->name('show');
+    });
+
+    // Evaluasi
+    Route::prefix('evaluasi')->name('evaluator.evaluasi.')->group(function () {
+        Route::get('/', [App\Http\Controllers\Evaluator\EvaluasiController::class, 'index'])->name('index');
+        Route::get('kelompok/{kelompok}', [App\Http\Controllers\Evaluator\EvaluasiController::class, 'show'])->name('show');
+    });
 });
 
 // Mahasiswa

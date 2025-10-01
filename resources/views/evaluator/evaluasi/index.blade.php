@@ -1,0 +1,146 @@
+@extends('layout.app')
+@section('content')
+@push('styles')
+<style>
+  .badge-soft { background:#eef2ff; color:#4e73df; }
+  .status-badge { font-weight:600; }
+  .table thead th { white-space: nowrap; }
+  .table td { vertical-align: middle; }
+  .small-muted { font-size:.85rem; color:#6c757d; }
+  .truncate { max-width:220px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .activity-box {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    margin: 0 1px;
+    border-radius: 2px;
+  }
+  .activity-box.evaluated {
+    background-color: #28a745;
+  }
+  .activity-box.unevaluated {
+    background-color: #343a40;
+  }
+</style>
+@endpush
+
+<div class="container-fluid">
+  {{-- Header + Filter --}}
+  <div class="d-flex align-items-center mb-3 flex-wrap">
+    <div class="d-flex align-items-baseline mr-3 mb-2 mb-md-0">
+      <h1 class="h3 text-gray-800 mb-0">Evaluasi</h1>
+      <span class="ml-3 small text-muted">
+        <strong>Periode:</strong>
+        <span class="badge badge-light border">
+          {{ optional($periodeAktif)->periode ?? '—' }}
+        </span>
+      </span>
+    </div>
+
+    <div class="ml-auto d-flex align-items-center">
+      <span class="badge badge-soft mr-2">Total Kelompok: {{ $kelompoks->count() }}</span>
+    </div>
+  </div>
+
+  <div class="card shadow-sm">
+    <div class="card-body">
+      <div class="d-flex align-items-center mb-2">
+        <div class="small-muted">
+          Menampilkan {{ $kelompoks->count() }} kelompok
+          @if(!$periodeAktif) • <span class="text-warning">Tidak ada periode aktif</span> @endif
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-sm table-hover" id="tbl-evaluasi">
+          <thead class="thead-light">
+            <tr>
+              <th>Kelompok</th>
+              <th>Anggota</th>
+              <th>Evaluasi</th>
+              <th style="width:80px; text-align: center;">Aksi</th>
+            </tr>
+          </thead>
+          <tbody>
+            @forelse ($kelompoks as $k)
+              @php
+                $searchStr = strtolower(
+                                  trim(
+                                    (string)($k->nama_kelompok ?? '').' '.
+                                    (string)($k->ketua_nama ?? '')
+                                  )
+                                );
+              @endphp
+              <tr data-search="{{ $searchStr }}">
+                <td>
+                  <div class="font-weight-bold">{{ $k->nama_kelompok }}</div>
+                  <div class="small-muted truncate">Ketua: {{ $k->ketua_nama ?? '-' }}</div>
+                </td>
+                <td align="center">
+                  {{-- Jumlah anggota --}}
+                      @if($k->mahasiswas && $k->mahasiswas->count())
+                        <div class="text-left">
+                          @foreach($k->mahasiswas as $m)
+                            <span class="d-block small">{{ $loop->iteration }}. {{ $m->nama_mahasiswa ?? $m->nama }}</span>
+                          @endforeach
+                        </div>
+                      @else
+                        <span class="text-muted small">—</span>
+                      @endif
+                </td>
+                <td>
+                  <div class="d-flex align-items-center">
+                    <span class="badge mr-2">
+                      Evaluasi :
+                    </span>
+                    <div class="activity-boxes">
+                      {!! $k->activity_boxes !!}
+                    </div>
+                    <span class="small-muted ml-2">
+                      {{ $k->evaluated_activities_count }}/{{ $k->total_activities }}
+                    </span>
+                  </div>
+                </td>
+                <td align="center">
+                  {{-- Detail --}}
+                  <a href="{{ route('evaluator.evaluasi.show', $k->uuid) }}"
+                     class="btn btn-circle btn-primary btn-sm" title="Detail"><i class="fas fa-user-check"></i>
+                  </a>
+                </td>
+              </tr>
+            @empty
+              <tr>
+                <td colspan="4" class="text-center text-muted">Belum ada data.</td>
+              </tr>
+            @endforelse
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+(function(){
+  // Initialize DataTables if available
+  let dataTable = null;
+  try {
+    dataTable = $('#tbl-evaluasi').DataTable({
+      paging: true,
+      info: true,
+      searching: true,
+      ordering: true,
+      lengthChange: false,
+      pageLength: 20,
+      columnDefs: [ { orderable: false, targets: -1 } ]
+    });
+  } catch (e) {
+    // DataTables not loaded; fallback to no client-side plugin
+  }
+})();
+</script>
+@endpush
+@endsection

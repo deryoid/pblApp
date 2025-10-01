@@ -92,29 +92,24 @@
 
     {{-- =================== EVALUATOR =================== --}}
     @elseif ($role === 'evaluator')
-        <div class="sidebar-heading">Evaluator</div>
+        <div class="sidebar-heading">Pusat Data</div>
 
-        {{-- (Opsional) Master ringan untuk evaluator — hapus jika tak perlu --}}
-        @php $isMasterEval = request()->routeIs('periode.*','kelas.*','user.*'); @endphp
-        <li class="nav-item {{ $isMasterEval ? 'active' : '' }}">
-            <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseMasterEvaluator"
-               aria-expanded="{{ $isMasterEval ? 'true' : 'false' }}" aria-controls="collapseMasterEvaluator">
-                <i class="fas fa-fw fa-sitemap"></i>
-                <span>Data Master</span>
+        {{-- Kelompok PBL --}}
+        <li class="nav-item {{ request()->routeIs('evaluator.kelompok.*') ? 'active' : '' }}">
+            <a class="nav-link" href="{{ route('evaluator.kelompok.index') }}">
+                <i class="fas fa-fw fa-users"></i>
+                <span>Kelompok</span>
             </a>
-            <div id="collapseMasterEvaluator" class="collapse {{ $isMasterEval ? 'show' : '' }}" data-parent="#accordionSidebar">
-                <div class="bg-white py-2 collapse-inner rounded">
-                    <a class="collapse-item {{ request()->routeIs('periode.*') ? 'active' : '' }}" href="{{ route('periode.index') }}">Periode</a>
-                    <a class="collapse-item {{ request()->routeIs('kelas.*') ? 'active' : '' }}" href="{{ route('kelas.index') }}">Kelas</a>
-                    <a class="collapse-item {{ request()->routeIs('user.*') ? 'active' : '' }}" href="{{ route('user.index') }}">Pengguna</a>
-                </div>
-            </div>
         </li>
 
-        {{-- Evaluasi untuk Evaluator --}}
+        <!-- Divider -->
+        <hr class="sidebar-divider">
+        <div class="sidebar-heading">PBL</div>
+
+        {{-- Evaluasi --}}
         <li class="nav-item {{ request()->routeIs('evaluator.evaluasi.*') ? 'active' : '' }}">
             <a class="nav-link" href="{{ route('evaluator.evaluasi.index') }}">
-                <i class="fas fa-fw fa-clipboard-check"></i>
+                <i class="fas fa-fw fa-project-diagram"></i>
                 <span>Evaluasi</span>
             </a>
         </li>
