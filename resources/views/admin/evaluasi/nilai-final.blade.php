@@ -383,7 +383,7 @@
                                         <th>Kelompok</th>
                                         <th>Nilai AP</th>
                                         <th>Detail Perhitungan</th>
-                                        <th>Nilai Akhir</th>
+                                        {{-- <th>Nilai Akhir</th> --}}
                                         <th>Total Lists</th>
                                         <th>Total Cards</th>
                                     </tr>
@@ -420,10 +420,10 @@
                                                                 <strong>Detail per Aktivitas:</strong>
                                                                 @foreach($data['final_calculation']['nilai_ap']['presensi_data'] as $presensi)
                                                                     <div class="border-bottom pb-1 mb-1">
-                                                                        <strong>{{ $presensi->aktivitasList->name }}</strong><br>
-                                                                        Kehadiran: {{ $presensi->kehadiran }} ({{ $presensi->nilai_kehadiran_konversi }})<br>
-                                                                        Presentasi: {{ $presensi->nilai_presentasi }}<br>
-                                                                        Final AP: {{ $presensi->nilai_final_ap }}
+                                                                        <strong>{{ $presensi->aktivitas_list->name }}</strong><br>
+                                                                        Kehadiran: {{ $presensi->w_ap_kehadiran }} ({{ $presensi->kehadiran_value }}) × 50%<br>
+                                                                        Presentasi: {{ $presensi->w_ap_presentasi }} × 50%<br>
+                                                                        Final AP: {{ number_format($presensi->nilai_final_ap, 2) }}
                                                                     </div>
                                                                 @endforeach
                                                             </div>
@@ -460,6 +460,7 @@
                                                             = <strong>{{ number_format($data['final_calculation']['nilai_project'], 2) }}</strong>
                                                         </small>
                                                     </div>
+                                                    {{-- Final calculation hidden
                                                     <div class="final-calculation mt-2 p-2 bg-success text-white rounded">
                                                         <small><strong>Nilai Akhir:</strong></small><br>
                                                         <small>
@@ -468,8 +469,10 @@
                                                             = <strong>{{ number_format($data['final_calculation']['nilai_akhir'], 2) }}</strong>
                                                         </small>
                                                     </div>
+                                                    --}}
                                                 </div>
                                             </td>
+                                            {{-- Nilai Akhir column hidden
                                             <td>
                                                 @if($data['final_calculation']['nilai_akhir'])
                                                     {{ number_format($data['final_calculation']['nilai_akhir'], 2) }}
@@ -477,6 +480,7 @@
                                                     -
                                                 @endif
                                             </td>
+                                            --}}
                                             <td>
                                                 {{ $data['final_calculation']['total_lists'] }}
                                             </td>

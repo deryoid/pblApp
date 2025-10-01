@@ -203,6 +203,7 @@ class EvaluasiController extends Controller
         $nilaiAP = EvaluasiNilaiAP::with([
             'mahasiswa:id,nama_mahasiswa,nim',
             'kelompok:id,nama_kelompok',
+            'aktivitasList:id,name',
         ])
             ->when($periodeId, fn ($q) => $q->where('periode_id', $periodeId))
             ->when($kelompokId, fn ($q) => $q->where('kelompok_id', $kelompokId))
@@ -270,10 +271,42 @@ class EvaluasiController extends Controller
             $finalAvgMitra = $listAverages->avg('avg_mitra');
             $finalNilaiProject = ($finalAvgDosen * 0.8) + ($finalAvgMitra * 0.2);
 
-            // Ambil nilai AP untuk mahasiswa ini
+            // Ambil nilai AP untuk mahasiswa ini dan hitung berdasarkan kehadiran dan presentasi
             $mahasiswaNilaiAP = $nilaiAP->where('mahasiswa_id', $mahasiswaId);
-            $totalAP = $mahasiswaNilaiAP->sum('nilai');
-            $countAP = $mahasiswaNilaiAP->count();
+            $totalAP = 0;
+            $countAP = 0;
+            $presensiData = [];
+
+            foreach ($mahasiswaNilaiAP as $nilaiAPRecord) {
+                // Konversi kehadiran ke nilai numerik
+                $kehadiranValue = match ($nilaiAPRecord->w_ap_kehadiran) {
+                    'Hadir' => 100,
+                    'Izin' => 70,
+                    'Sakit' => 60,
+                    'Terlambat' => 50,
+                    'Tanpa Keterangan' => 0,
+                    default => 0,
+                };
+
+                // Nilai presentasi sudah dalam bentuk numerik
+                $presentasiValue = $nilaiAPRecord->w_ap_presentasi ?? 0;
+
+                // Hitung nilai AP per aktivitas: 50% kehadiran + 50% presentasi
+                $nilaiAPItem = ($kehadiranValue * 0.5) + ($presentasiValue * 0.5);
+                $totalAP += $nilaiAPItem;
+                $countAP++;
+
+                // Tambahkan data detail untuk view
+                $presensiData[] = (object) [
+                    'aktivitas_list' => $nilaiAPRecord->aktivitasList,
+                    'w_ap_kehadiran' => $nilaiAPRecord->w_ap_kehadiran,
+                    'w_ap_presentasi' => $nilaiAPRecord->w_ap_presentasi,
+                    'kehadiran_value' => $kehadiranValue,
+                    'presentasi_value' => $presentasiValue,
+                    'nilai_final_ap' => $nilaiAPItem,
+                ];
+            }
+
             $averageAP = $countAP > 0 ? $totalAP / $countAP : 0;
 
             // Hitung nilai akhir dengan bobot: 30% AP + 70% Project
@@ -295,6 +328,7 @@ class EvaluasiController extends Controller
                         'total' => $totalAP,
                         'count' => $countAP,
                         'average' => round($averageAP, 2),
+                        'presensi_data' => $presensiData,
                     ],
                     'nilai_akhir' => $finalNilaiAkhir,
                     'grade' => $finalGrade,
