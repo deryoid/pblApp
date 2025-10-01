@@ -309,6 +309,25 @@ class EvaluasiController extends Controller
 
             $averageAP = $countAP > 0 ? $totalAP / $countAP : 0;
 
+            // Hitung rata-rata kehadiran dan presentasi untuk tampilan
+            $totalKehadiran = 0;
+            $totalPresentasi = 0;
+            foreach ($mahasiswaNilaiAP as $nilaiAPRecord) {
+                $kehadiranValue = match ($nilaiAPRecord->w_ap_kehadiran) {
+                    'Hadir' => 100,
+                    'Izin' => 70,
+                    'Sakit' => 60,
+                    'Terlambat' => 50,
+                    'Tanpa Keterangan' => 0,
+                    default => 0,
+                };
+                $presentasiValue = $nilaiAPRecord->w_ap_presentasi ?? 0;
+                $totalKehadiran += $kehadiranValue;
+                $totalPresentasi += $presentasiValue;
+            }
+            $avgKehadiran = $countAP > 0 ? $totalKehadiran / $countAP : 0;
+            $avgPresentasi = $countAP > 0 ? $totalPresentasi / $countAP : 0;
+
             // Hitung nilai akhir dengan bobot: 30% AP + 70% Project
             $finalNilaiAkhir = ($averageAP * 0.3) + ($finalNilaiProject * 0.7);
 
@@ -328,6 +347,8 @@ class EvaluasiController extends Controller
                         'total' => $totalAP,
                         'count' => $countAP,
                         'average' => round($averageAP, 2),
+                        'avg_kehadiran' => round($avgKehadiran, 2),
+                        'avg_presentasi' => round($avgPresentasi, 2),
                         'presensi_data' => $presensiData,
                     ],
                     'nilai_akhir' => $finalNilaiAkhir,

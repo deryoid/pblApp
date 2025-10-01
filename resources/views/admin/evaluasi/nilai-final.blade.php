@@ -422,11 +422,8 @@
                                         <th width="12%">NIM</th>
                                         <th width="20%">Nama Mahasiswa</th>
                                         <th width="15%">Kelompok</th>
-                                        <th width="18%">Nilai AP</th>
-                                        <th width="25%">Detail Perhitungan</th>
-                                        {{-- <th>Nilai Akhir</th> --}}
-                                        <th width="5%" class="text-center">Lists</th>
-                                        <th width="5%" class="text-center">Cards</th>
+                                        <th width="18%">Nilai Aktifitas Partisipatif</th>
+                                        <th width="25%">Nilai Proyek</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -439,35 +436,28 @@
                                             <td>{{ $data['kelompok']->nama_kelompok }}</td>
                                             <td>
                                                 <!-- Nilai AP -->
-                                                <div class="nilai-ap-info">
+                                                <div class="calculation-details">
                                                     @if($data['final_calculation']['nilai_ap']['count'] > 0)
-                                                        <div class="p-2 bg-info text-white rounded">
-                                                            <small><strong>Absensi & Presensi</strong></small><br>
-                                                            <small>
-                                                                Rata-rata: {{ number_format($data['final_calculation']['nilai_ap']['average'], 2) }}<br>
-                                                                ({{ $data['final_calculation']['nilai_ap']['count'] }} aktivitas)
-                                                            </small>
-                                                            <!-- Detail Presensi per Aktivitas -->
-                                                            <div class="mt-2">
-                                                                <button class="btn btn-sm btn-outline-light" onclick="toggleDetailAP('{{ $data['mahasiswa']->id }}')">
-                                                                    <i class="fas fa-eye"></i> Detail
-                                                                </button>
-                                                            </div>
-                                                        </div>
-
-                                                        <!-- Hidden Detail -->
-                                                        <div id="detail-ap-{{ $data['mahasiswa']->id }}" class="mt-2 d-none">
-                                                            <div class="small bg-light text-dark p-2 rounded">
-                                                                <strong>Detail per Aktivitas:</strong>
-                                                                @foreach($data['final_calculation']['nilai_ap']['presensi_data'] as $presensi)
-                                                                    <div class="border-bottom pb-1 mb-1">
-                                                                        <strong>{{ $presensi->aktivitas_list->name }}</strong><br>
-                                                                        Kehadiran: {{ $presensi->w_ap_kehadiran }} ({{ $presensi->kehadiran_value }}) × 50%<br>
-                                                                        Presentasi: {{ $presensi->w_ap_presentasi }} × 50%<br>
+                                                        <div class="mb-2">
+                                                            <small class="text-muted">Rata-rata per Aktivitas:</small>
+                                                            @foreach($data['final_calculation']['nilai_ap']['presensi_data'] as $presensi)
+                                                                <div class="small mb-1 p-2 bg-light rounded">
+                                                                    <strong>{{ $presensi->aktivitas_list->name }}</strong>
+                                                                    <div class="text-muted">
+                                                                        Kehadiran: {{ $presensi->w_ap_kehadiran }} ({{ $presensi->kehadiran_value }}) × 50%,
+                                                                        Presentasi: {{ $presensi->w_ap_presentasi }} × 50%,
                                                                         Final AP: {{ number_format($presensi->nilai_final_ap, 2) }}
                                                                     </div>
-                                                                @endforeach
-                                                            </div>
+                                                                </div>
+                                                            @endforeach
+                                                        </div>
+                                                        <div class="final-calculation p-2 bg-success text-white rounded">
+                                                            <small><strong>Nilai Aktifitas Partisipatif:</strong></small><br>
+                                                            <small>
+                                                                Kehadiran: {{ number_format($data['final_calculation']['nilai_ap']['avg_kehadiran'], 1) }} × 50%<br>
+                                                                Presentasi: {{ number_format($data['final_calculation']['nilai_ap']['avg_presentasi'], 1) }} × 50%<br>
+                                                                = <strong>{{ number_format($data['final_calculation']['nilai_ap']['average'], 2) }}</strong>
+                                                            </small>
                                                         </div>
                                                     @else
                                                         <div class="p-2 bg-secondary text-white rounded">
@@ -480,7 +470,7 @@
                                                   <!-- Detail Perhitungan per List -->
                                                 <div class="calculation-details">
                                                     <div class="mb-2">
-                                                        <small class="text-muted">Rata-rata per List:</small>
+                                                        <small class="text-muted">Rata-rata per List Proyek:</small>
                                                         @foreach($data['list_averages'] as $listAvg)
                                                             <div class="small mb-1 p-2 bg-light rounded">
                                                                 <strong>{{ $listAvg['list']->name ?: 'Project List #'.$listAvg['list']->id }}</strong>
@@ -494,7 +484,7 @@
                                                         @endforeach
                                                     </div>
                                                     <div class="final-calculation p-2 bg-primary text-white rounded">
-                                                        <small><strong>Nilai Project:</strong></small><br>
+                                                        <small><strong>Nilai Proyek:</strong></small><br>
                                                         <small>
                                                             Dosen: {{ number_format($data['final_calculation']['avg_dosen'], 1) }} × 80%<br>
                                                             Mitra: {{ number_format($data['final_calculation']['avg_mitra'], 1) }} × 20%<br>
@@ -503,122 +493,11 @@
                                                     </div>
                                                 </div>
                                             </td>
-                                            {{-- Nilai Akhir column hidden
-                                            <td>
-                                                @if($data['final_calculation']['nilai_akhir'])
-                                                    {{ number_format($data['final_calculation']['nilai_akhir'], 2) }}
-                                                @else
-                                                    -
-                                                @endif
-                                            </td>
-                                            --}}
-                                            <td class="text-center">
-                                                <div class="nilai-card p-2 bg-light text-center">
-                                                    <div class="h5 mb-0 text-primary">{{ $data['final_calculation']['total_lists'] }}</div>
-                                                    <small class="text-muted">Lists</small>
-                                                </div>
-                                            </td>
-                                            <td class="text-center">
-                                                <div class="nilai-card p-2 bg-light text-center">
-                                                    <div class="h5 mb-0 text-success">{{ $data['final_calculation']['total_cards'] }}</div>
-                                                    <small class="text-muted">Cards</small>
-                                                </div>
-                                            </td>
                         
-                                        </tr>
-
-                                        <!-- Optional: Show detailed project breakdown -->
-                                        <tr>
-                                            <td colspan="10" class="p-0">
-                                                <div class="accordion" id="detailAccordion{{ $no }}">
-                                                    <div class="card">
-                                                        <div class="card-header p-2 bg-light" id="heading{{ $no }}">
-                                                            <h6 class="mb-0">
-                                                                <button class="btn btn-sm btn-link text-decoration-none" type="button" data-toggle="collapse" data-target="#collapse{{ $no }}" aria-expanded="false" aria-controls="collapse{{ $no }}">
-                                                                    <i class="fas fa-chevron-down"></i> Detail Project Cards
-                                                                </button>
-                                                            </h6>
-                                                        </div>
-
-                                                        <div id="collapse{{ $no }}" class="collapse" aria-labelledby="heading{{ $no }}" data-parent="#detailAccordion{{ $no }}">
-                                                            <div class="card-body p-3">
-                                                                <div class="table-responsive">
-                                                                    <table class="table table-sm">
-                                                                        <thead>
-                                                                            <tr>
-                                                                                <th>Project</th>
-                                                                                <th>Nilai Dosen</th>
-                                                                                <th>Nilai Mitra</th>
-                                                                            </tr>
-                                                                        </thead>
-                                                                        <tbody>
-                                                                            @foreach($data['evaluations'] as $evaluation)
-                                                                                <tr>
-                                                                                    <td>{{ $evaluation['project']->title }}</td>
-                                                                                    <td>{{ number_format($evaluation['nilai_akhir'], 2) }}</td>
-                                                                                    <td>
-                                                                                        @php
-                                                                                            $evalMitra = $data['list_evaluations']->flatMap->evaluations->first(fn($eval) => $eval['project']->id === $evaluation['project']->id);
-                                                                                            $nilaiMitra = $evalMitra['nilai_mitra'] ?? 0;
-                                                                                        @endphp
-                                                                                        {{ number_format($nilaiMitra, 2) }}
-                                                                                    </td>
-                                                                                </tr>
-                                                                            @endforeach
-                                                                        </tbody>
-                                                                    </table>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </td>
                                         </tr>
                                     @endforeach
                                 </tbody>
                             </table>
-                        </div>
-
-                        <!-- Ringkasan Statistik -->
-                        <div class="row mt-4">
-                            <div class="col-md-3">
-                                <div class="info-box bg-info">
-                                    <span class="info-box-icon"><i class="fas fa-users"></i></span>
-                                    <div class="info-box-content">
-                                        <span class="info-box-text">Total Mahasiswa</span>
-                                        <span class="info-box-number">{{ $mahasiswaNilai->count() }}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="info-box bg-success">
-                                    <span class="info-box-icon"><i class="fas fa-check"></i></span>
-                                    <div class="info-box-content">
-                                        <span class="info-box-text">Sudah Dinilai</span>
-                                        <span class="info-box-number">{{ $mahasiswaNilai->where('evaluations.0.status', 'submitted')->count() }}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="info-box bg-warning">
-                                    <span class="info-box-icon"><i class="fas fa-edit"></i></span>
-                                    <div class="info-box-content">
-                                        <span class="info-box-text">Draft</span>
-                                        <span class="info-box-number">{{ $mahasiswaNilai->where('evaluations.0.status', 'draft')->count() }}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="info-box bg-primary">
-                                    <span class="info-box-icon"><i class="fas fa-trophy"></i></span>
-                                    <div class="info-box-content">
-                                        <span class="info-box-text">Rata-rata Nilai</span>
-                                        <span class="info-box-number">
-                                            {{ $mahasiswaNilai->flatMap->evaluations->whereNotNull('nilai_akhir')->avg('nilai_akhir') ? number_format($mahasiswaNilai->flatMap->evaluations->whereNotNull('nilai_akhir')->avg('nilai_akhir'), 2) : '0' }}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                     @else
                         <div class="alert alert-info">
