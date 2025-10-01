@@ -40,6 +40,12 @@ class Mahasiswa extends Model
         return $this->belongsTo(Kelas::class);
     }
 
+    public function kelasFromKelompok()
+    {
+        return $this->kelompoks->first()->pivot->kelas_id ?
+            Kelas::find($this->kelompoks->first()->pivot->kelas_id) : null;
+    }
+
     public function kelompoks(): BelongsToMany
     {
         return $this->belongsToMany(Kelompok::class, 'kelompok_mahasiswa')

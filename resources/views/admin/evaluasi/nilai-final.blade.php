@@ -419,9 +419,10 @@
                                 <thead class="thead-dark">
                                     <tr>
                                         <th width="5%">No</th>
+                                        <th width="15%">Kelompok</th>
                                         <th width="12%">NIM</th>
                                         <th width="20%">Nama Mahasiswa</th>
-                                        <th width="15%">Kelompok</th>
+                                        <th width="15%">Kelas</th>
                                         <th width="18%">Nilai Aktifitas Partisipatif</th>
                                         <th width="25%">Nilai Proyek</th>
                                     </tr>
@@ -431,9 +432,10 @@
                                     @foreach($mahasiswaNilai as $mahasiswaId => $data)
                                         <tr>
                                             <td>{{ $no++ }}</td>
+                                            <td>{{ $data['kelompok']->nama_kelompok }}</td>
                                             <td>{{ $data['mahasiswa']->nim }}</td>
                                             <td>{{ $data['mahasiswa']->nama_mahasiswa }}</td>
-                                            <td>{{ $data['kelompok']->nama_kelompok }}</td>
+                                            <td>{{ $data['mahasiswa']->kelasFromKelompok()->kelas ?? '-' }}</td>
                                             <td>
                                                 <!-- Nilai AP -->
                                                 <div class="calculation-details">

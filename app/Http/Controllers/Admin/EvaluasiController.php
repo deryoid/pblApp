@@ -181,6 +181,7 @@ class EvaluasiController extends Controller
         // Get evaluations dengan relasi yang lengkap
         $evaluationsDosen = EvaluasiDosen::with([
             'mahasiswa:id,nama_mahasiswa,nim',
+            'mahasiswa.kelompoks',
             'kelompok:id,nama_kelompok',
             'projectCard:id,title,list_id',
             'evaluator:id,nama_user',
@@ -191,6 +192,7 @@ class EvaluasiController extends Controller
 
         $evaluationsMitra = EvaluasiMitra::with([
             'mahasiswa:id,nama_mahasiswa,nim',
+            'mahasiswa.kelompoks',
             'kelompok:id,nama_kelompok',
             'projectCard:id,title,list_id',
             'evaluator:id,nama_user',
@@ -202,6 +204,7 @@ class EvaluasiController extends Controller
         // Get data absensi dan presensi (AP)
         $nilaiAP = EvaluasiNilaiAP::with([
             'mahasiswa:id,nama_mahasiswa,nim',
+            'mahasiswa.kelompoks',
             'kelompok:id,nama_kelompok',
             'aktivitasList:id,name',
         ])
