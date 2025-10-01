@@ -14,12 +14,12 @@ class PeriodeSeeder extends Seeder
     {
         Periode::create([
             'periode'        => '25/26-1',
-            'status_periode' => 'Tidak Aktif',
+            'status_periode' => 'Aktif',
         ]);
 
         Periode::create([
             'periode'    => '25/26-2',
-            'status_periode' => 'Aktif',
+            'status_periode' => 'Tidak Aktif',
         ]);
     }
 }
