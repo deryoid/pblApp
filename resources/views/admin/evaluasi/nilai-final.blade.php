@@ -4,6 +4,47 @@
 
 @section('content')
 <div class="container-fluid">
+    @push('styles')
+    <style>
+        .nilai-card {
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+        .nilai-card:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+        .info-badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+        .calculation-breakdown {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-left: 4px solid #007bff;
+        }
+        .ap-detail-item {
+            border-left: 3px solid #17a2b8;
+            background: #f8f9fa;
+            transition: background-color 0.2s;
+        }
+        .ap-detail-item:hover {
+            background: #e9ecef;
+        }
+        .progress-indicator {
+            height: 6px;
+            border-radius: 3px;
+            background: #e9ecef;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #28a745, #20c997);
+            transition: width 0.3s ease;
+        }
+    </style>
+    @endpush
     <!-- Page Heading -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800">
@@ -374,18 +415,18 @@
                     <!-- Tabel Nilai Final -->
                     @if($mahasiswaNilai->count() > 0)
                         <div class="table-responsive">
-                            <table class="table table-bordered table-striped">
+                            <table class="table table-bordered table-striped nilai-card">
                                 <thead class="thead-dark">
                                     <tr>
-                                        <th>No</th>
-                                        <th>NIM</th>
-                                        <th>Nama Mahasiswa</th>
-                                        <th>Kelompok</th>
-                                        <th>Nilai AP</th>
-                                        <th>Detail Perhitungan</th>
+                                        <th width="5%">No</th>
+                                        <th width="12%">NIM</th>
+                                        <th width="20%">Nama Mahasiswa</th>
+                                        <th width="15%">Kelompok</th>
+                                        <th width="18%">Nilai AP</th>
+                                        <th width="25%">Detail Perhitungan</th>
                                         {{-- <th>Nilai Akhir</th> --}}
-                                        <th>Total Lists</th>
-                                        <th>Total Cards</th>
+                                        <th width="5%" class="text-center">Lists</th>
+                                        <th width="5%" class="text-center">Cards</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -436,7 +477,7 @@
                                                 </div>
                                             </td>
                                             <td>
-                                                <!-- Detail Perhitungan per List -->
+                                                  <!-- Detail Perhitungan per List -->
                                                 <div class="calculation-details">
                                                     <div class="mb-2">
                                                         <small class="text-muted">Rata-rata per List:</small>
@@ -460,16 +501,6 @@
                                                             = <strong>{{ number_format($data['final_calculation']['nilai_project'], 2) }}</strong>
                                                         </small>
                                                     </div>
-                                                    {{-- Final calculation hidden
-                                                    <div class="final-calculation mt-2 p-2 bg-success text-white rounded">
-                                                        <small><strong>Nilai Akhir:</strong></small><br>
-                                                        <small>
-                                                            AP (30%): {{ number_format($data['final_calculation']['nilai_ap']['average'], 2) }} × 30%<br>
-                                                            Project (70%): {{ number_format($data['final_calculation']['nilai_project'], 2) }} × 70%<br>
-                                                            = <strong>{{ number_format($data['final_calculation']['nilai_akhir'], 2) }}</strong>
-                                                        </small>
-                                                    </div>
-                                                    --}}
                                                 </div>
                                             </td>
                                             {{-- Nilai Akhir column hidden
@@ -481,11 +512,17 @@
                                                 @endif
                                             </td>
                                             --}}
-                                            <td>
-                                                {{ $data['final_calculation']['total_lists'] }}
+                                            <td class="text-center">
+                                                <div class="nilai-card p-2 bg-light text-center">
+                                                    <div class="h5 mb-0 text-primary">{{ $data['final_calculation']['total_lists'] }}</div>
+                                                    <small class="text-muted">Lists</small>
+                                                </div>
                                             </td>
-                                            <td>
-                                                {{ $data['final_calculation']['total_cards'] }}
+                                            <td class="text-center">
+                                                <div class="nilai-card p-2 bg-light text-center">
+                                                    <div class="h5 mb-0 text-success">{{ $data['final_calculation']['total_cards'] }}</div>
+                                                    <small class="text-muted">Cards</small>
+                                                </div>
                                             </td>
                         
                                         </tr>
@@ -641,10 +678,37 @@ function resetFilters() {
 
 function toggleDetailAP(mahasiswaId) {
     const detailElement = document.getElementById('detail-ap-' + mahasiswaId);
+    const iconElement = document.getElementById('icon-ap-' + mahasiswaId);
+    const textElement = document.getElementById('text-ap-' + mahasiswaId);
+
     if (detailElement.classList.contains('d-none')) {
         detailElement.classList.remove('d-none');
+        iconElement.classList.remove('fa-chevron-down');
+        iconElement.classList.add('fa-chevron-up');
+        textElement.textContent = 'Tutup Detail';
     } else {
         detailElement.classList.add('d-none');
+        iconElement.classList.remove('fa-chevron-up');
+        iconElement.classList.add('fa-chevron-down');
+        textElement.textContent = 'Lihat Detail';
+    }
+}
+
+function toggleDetailProject(mahasiswaId) {
+    const detailElement = document.getElementById('detail-project-' + mahasiswaId);
+    const iconElement = document.getElementById('icon-project-' + mahasiswaId);
+    const textElement = document.getElementById('text-project-' + mahasiswaId);
+
+    if (detailElement.classList.contains('d-none')) {
+        detailElement.classList.remove('d-none');
+        iconElement.classList.remove('fa-chevron-down');
+        iconElement.classList.add('fa-chevron-up');
+        textElement.textContent = 'Tutup Detail';
+    } else {
+        detailElement.classList.add('d-none');
+        iconElement.classList.remove('fa-chevron-up');
+        iconElement.classList.add('fa-chevron-down');
+        textElement.textContent = 'Lihat Detail';
     }
 }
 
