@@ -102,13 +102,21 @@ class EvaluasiController extends Controller
             ->get();
         $sesiMap = $sesiAll->sortByDesc('id')->keyBy('kelompok_id');
 
-        // Sort kelompoks: incomplete evaluations first, then by name
+        // Sort kelompoks: incomplete evaluations first, then by name using natural sort
         $sortedKelompoks = $allKelompoks->sortBy(function ($kelompok) use ($sesiMap) {
             $sesi = $sesiMap->get($kelompok->id);
             $hasCompletedEval = $sesi && $sesi->status === 'Selesai';
 
-            // Priority: incomplete evaluations first, then by name
+            // Priority: incomplete evaluations first, then by name using natural sort for proper numeric ordering
             return [$hasCompletedEval ? 1 : 0, $kelompok->nama_kelompok];
+        })->values();
+
+        // Apply natural sorting for proper numeric ordering (Kelompok 1, Kelompok 2, Kelompok 11, etc.)
+        $sortedKelompoks = $sortedKelompoks->sortBy(function ($kelompok) {
+            // Extract numeric part from nama_kelompok for proper sorting
+            preg_match('/\d+/', $kelompok->nama_kelompok, $matches);
+            $number = isset($matches[0]) ? (int) $matches[0] : 0;
+            return $number;
         })->values();
 
         // Convert to paginator manually to maintain pagination - show more data per page
