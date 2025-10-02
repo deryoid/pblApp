@@ -66,24 +66,29 @@ if (!function_exists('avatarUrl')) {
   <div class="board-wrapper">
     <div id="board" class="board d-flex">
       @foreach ($lists as $list)
-        <div class="board-column" data-col-id="{{ $list['id'] }}">
+        <div class="board-column {{ ($list['status_evaluasi'] ?? 'Belum Evaluasi') === 'Sudah Evaluasi' ? 'list-evaluated' : '' }}" data-col-id="{{ $list['id'] }}">
         {{-- HEAD: Judul, aksi, dan meta --}}
         <div class="board-col-head">
           {{-- Baris 1: Judul + Aksi --}}
           <div class="d-flex align-items-center">
+            @if(($list['status_evaluasi'] ?? 'Belum Evaluasi') === 'Sudah Evaluasi')
+              <span class="badge badge-warning mr-2" title="Sudah dievaluasi - tidak dapat diubah">
+                <i class="fas fa-lock mr-1"></i>Sudah Evaluasi
+              </span>
+            @endif
             <h6 class="mb-0 text-uppercase text-dark font-weight-bold truncate">
               {{ $list['title'] }}
             </h6>
 
             <div class="ml-auto btn-group btn-group-sm" role="group">
-              <button class="btn btn-success btn-add-card"
+              <button class="btn btn-success btn-add-card {{ ($list['status_evaluasi'] ?? 'Belum Evaluasi') === 'Sudah Evaluasi' ? 'disabled' : '' }}"
                       data-list-id="{{ $list['id'] }}"
                       data-toggle="modal" data-target="#modalAddCard"
                       title="Tambah Aktivitas">
                 <i class="fas fa-plus mr-1"></i> Aktivitas
               </button>
 
-              <button class="btn btn-primary btn-edit-list"
+              <button class="btn btn-primary btn-edit-list {{ ($list['status_evaluasi'] ?? 'Belum Evaluasi') === 'Sudah Evaluasi' ? 'disabled' : '' }}"
                       data-list-id="{{ $list['id'] }}"
                       data-list-name="{{ $list['title'] }}"
                       data-list-rentang="{{ $list['rentang_tanggal'] }}"
@@ -98,7 +103,7 @@ if (!function_exists('avatarUrl')) {
                     action="{{ route('aktivitas.lists.destroy', ['list' => $list['id']]) }}"
                     class="m-0">
                 @csrf @method('DELETE')
-                <button type="button" class="btn btn-danger ml-1 btn-delete-list" title="Hapus kolom">
+                <button type="button" class="btn btn-danger ml-1 btn-delete-list {{ ($list['status_evaluasi'] ?? 'Belum Evaluasi') === 'Sudah Evaluasi' ? 'disabled' : '' }}" title="Hapus kolom">
                   <i class="fas fa-trash"></i>
                 </button>
               </form>
@@ -133,7 +138,7 @@ if (!function_exists('avatarUrl')) {
           {{-- BODY: Kartu --}}
           <div class="board-list" data-list-id="{{ $list['id'] }}">
             @forelse ($list['cards'] as $card)
-              <div class="card board-card mb-2 shadow-xs"
+              <div class="card board-card mb-2 shadow-xs {{ ($list['status_evaluasi'] ?? 'Belum Evaluasi') === 'Sudah Evaluasi' ? 'card-disabled' : '' }}"
                    data-card-id="{{ $card['id'] }}"
                    data-title-search="{{ strtolower(($card['description'] ?? '') . ' ' . ($card['tanggal_aktivitas'] ?? '')) }}"
                    data-desc="{{ $card['description'] ?? '' }}"
@@ -143,13 +148,13 @@ if (!function_exists('avatarUrl')) {
                   {{-- 1) Tombol aksi di kanan atas --}}
                   <div class="d-flex align-items-center mb-1">
                     <div class="ml-auto d-flex align-items-center">
-                      <button type="button" class="btn btn-primary btn-circle btn-icon-only btn-sm btn-edit-card mr-1"
+                      <button type="button" class="btn btn-primary btn-circle btn-icon-only btn-sm btn-edit-card mr-1 {{ ($list['status_evaluasi'] ?? 'Belum Evaluasi') === 'Sudah Evaluasi' ? 'disabled' : '' }}"
                               title="Ubah" data-toggle="modal" data-target="#modalEditCard">
                         <i class="fas fa-edit"></i>
                       </button>
                       <form method="POST" action="{{ route('aktivitas.cards.destroy', ['card' => $card['id']]) }}" class="m-0 d-inline">
                         @csrf @method('DELETE')
-                        <button type="button" class="btn btn-danger btn-circle btn-icon-only btn-sm btn-delete-card" title="Hapus">
+                        <button type="button" class="btn btn-danger btn-circle btn-icon-only btn-sm btn-delete-card {{ ($list['status_evaluasi'] ?? 'Belum Evaluasi') === 'Sudah Evaluasi' ? 'disabled' : '' }}" title="Hapus">
                           <i class="fas fa-trash"></i>
                         </button>
                       </form>
@@ -387,6 +392,98 @@ if (!function_exists('avatarUrl')) {
   /* Judul penuh pada kartu */
   .card-title-full{ font-size:.95rem; line-height:1.3; }
 
+  /* List dan Card yang sudah dievaluasi */
+  .list-evaluated {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
+    border-radius: 0.75rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05) !important;
+  }
+
+  .list-evaluated .board-col-head {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%) !important;
+    border: 1px solid #dee2e6 !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.03) !important;
+    position: relative;
+  }
+
+  .list-evaluated .board-col-head::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #28a745 0%, #20c997 50%, #17a2b8 100%);
+    border-radius: 0.75rem 0.75rem 0 0;
+  }
+
+  .card-disabled {
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%) !important;
+    border-left: 4px solid #28a745 !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04) !important;
+    border-radius: 0.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card-disabled::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, rgba(40, 167, 69, 0.1) 0%, rgba(32, 201, 151, 0.05) 100%);
+    border-radius: 0 0.5rem 0 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .card-disabled::after {
+    content: '✓';
+    position: absolute;
+    top: 2px;
+    right: 8px;
+    color: #28a745;
+    font-size: 16px;
+    font-weight: bold;
+    z-index: 1;
+  }
+
+  .card-disabled:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.15) !important;
+    transition: all 0.2s ease !important;
+  }
+
+  /* Disable tombol untuk list yang sudah dievaluasi */
+  .btn.disabled {
+    background-color: #e9ecef !important;
+    color: #6c757d !important;
+    border-color: #dee2e6 !important;
+    opacity: 0.7;
+    cursor: not-allowed;
+    pointer-events: none;
+    position: relative;
+  }
+
+  .btn.disabled:hover {
+    background-color: #e9ecef !important;
+    transform: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Badge yang lebih bagus untuk evaluasi */
+  .list-evaluated .badge-warning {
+    background: linear-gradient(135deg, #ffc107 0%, #ffb300 100%) !important;
+    color: #212529 !important;
+    border: none !important;
+    box-shadow: 0 2px 4px rgba(255, 193, 7, 0.3) !important;
+    font-weight: 600;
+    padding: 0.35rem 0.65rem;
+  }
+
 </style>
 @endpush
 
@@ -402,6 +499,8 @@ if (!function_exists('avatarUrl')) {
     new Sortable(listEl, {
       group: 'board', animation: 150,
       ghostClass: 'sortable-ghost', chosenClass: 'sortable-chosen', dragClass: 'sortable-drag',
+      filter: '.card-disabled',
+      preventOnFilter: false,
       onEnd: function(evt){
         const cardEl = evt.item;
         const cardId = cardEl.getAttribute('data-card-id');
@@ -418,6 +517,8 @@ if (!function_exists('avatarUrl')) {
   if (boardEl) {
     new Sortable(boardEl, {
       group:'board-columns', animation:150, handle:'.board-col-head',
+      filter: '.list-evaluated',
+      preventOnFilter: false,
       onEnd: function(){
         const ids = Array.from(boardEl.querySelectorAll('.board-column')).map(col => col.getAttribute('data-col-id'));
         $.post(reorderListsUrl, { list_ids: ids, _token: '{{ csrf_token() }}' })
@@ -439,26 +540,46 @@ if (!function_exists('avatarUrl')) {
   }
 
   // Tambah card -> isi list id
-  $(document).on('click', '.btn-add-card', function(){
+  $(document).on('click', '.btn-add-card', function(e){
+    if($(this).hasClass('disabled')) {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
     $('#addCardListId').val($(this).data('list-id'));
   });
 
   // Hapus card
-  $(document).on('click', '.btn-delete-card', function(){
+  $(document).on('click', '.btn-delete-card', function(e){
+    if($(this).hasClass('disabled')) {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
     const form = $(this).closest('form');
     Swal.fire({ title:'Hapus Aktivitas?', icon:'warning', showCancelButton:true, confirmButtonText:'Ya, hapus' })
       .then(r=>{ if(r.isConfirmed) form.submit(); });
   });
 
   // Hapus list
-  $(document).on('click', '.btn-delete-list', function(){
+  $(document).on('click', '.btn-delete-list', function(e){
+    if($(this).hasClass('disabled')) {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
     const form = $(this).closest('form');
     Swal.fire({ title:'Hapus kolom?', text:'Kolom harus kosong.', icon:'warning', showCancelButton:true, confirmButtonText:'Ya, hapus' })
       .then(r=>{ if(r.isConfirmed) form.submit(); });
   });
 
   // Edit card -> isi modal
-  $(document).on('click', '.btn-edit-card', function(){
+  $(document).on('click', '.btn-edit-card', function(e){
+    if($(this).hasClass('disabled')) {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
     const card = $(this).closest('.board-card');
     const id   = card.data('card-id');
     const tgl  = card.data('tanggal')||'';
@@ -469,7 +590,12 @@ if (!function_exists('avatarUrl')) {
   });
 
   // Edit list -> isi modal
-  $(document).on('click', '.btn-edit-list', function(){
+  $(document).on('click', '.btn-edit-list', function(e){
+    if($(this).hasClass('disabled')) {
+      e.preventDefault();
+      e.stopPropagation();
+      return false;
+    }
     const id      = $(this).data('list-id');
     const name    = $(this).data('list-name')    || '';
     const rentang = $(this).data('list-rentang') || '';

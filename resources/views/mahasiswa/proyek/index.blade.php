@@ -483,20 +483,68 @@
 
   /* Card yang sudah selesai */
   .card-completed {
-    opacity: 0.7;
-    cursor: not-allowed !important;
-    border-left-color: #28a745 !important;
-    background-color: #f8f9fa !important;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%) !important;
+    border-left: 4px solid #28a745 !important;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04) !important;
+    border-radius: 0.75rem;
+    position: relative;
+    overflow: hidden;
   }
+
+  .card-completed::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, rgba(40, 167, 69, 0.1) 0%, rgba(32, 201, 151, 0.05) 100%);
+    border-radius: 0 0.75rem 0 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .card-completed::after {
+    content: '✓';
+    position: absolute;
+    top: 2px;
+    right: 8px;
+    color: #28a745;
+    font-size: 18px;
+    font-weight: bold;
+    z-index: 1;
+  }
+
   .card-completed:hover {
-    transform: none !important;
-    box-shadow: 0 1px 3px rgba(0,0,0,.06) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.15) !important;
+    transition: all 0.2s ease !important;
   }
+
   .card-completed .btn-edit-card,
   .card-completed .btn-delete-card {
-    opacity: 0.5;
+    background-color: #e9ecef !important;
+    color: #6c757d !important;
+    border-color: #dee2e6 !important;
+    opacity: 0.7;
     cursor: not-allowed;
     pointer-events: none;
+  }
+
+  .card-completed .btn-edit-card:hover,
+  .card-completed .btn-delete-card:hover {
+    background-color: #e9ecef !important;
+    transform: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Badge yang lebih bagus untuk proyek selesai */
+  .card-completed .badge-success {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important;
+    box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3) !important;
+    font-weight: 600;
+    padding: 0.35rem 0.65rem;
   }
 </style>
 @endpush
