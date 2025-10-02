@@ -2523,55 +2523,103 @@
     const buildRow = member => {
       const current = existingEvaluations[member.id] || {};
       return `
-        <tr data-member="${member.id}" data-evaluation-id="${current.id || ''}">
-          <td style="vertical-align: middle; background: #f8f9fa; font-weight: 600;">
-            <div>${member.nama}</div>
-            <small style="color: #6b7280;">${member.nim}</small>
+        <tr data-member="${member.id}" data-evaluation-id="${current.id || ''}" style="transition: all 0.2s ease;">
+          <td style="vertical-align: middle; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); font-weight: 700; padding: 16px; border-left: 4px solid #3498db;">
+            <div style="font-size: 1rem; margin-bottom: 4px; color: #2c3e50;">${member.nama}</div>
+            <small style="color: #6c757d; font-size: 0.85rem; font-weight: 500;">
+              <i class="fas fa-id-card mr-1"></i>${member.nim}
+            </small>
           </td>
-          ${dosenItems.map(item => {
+          ${dosenItems.map((item, index) => {
             const raw = current[item.kode];
             // Handle null, undefined, and empty string - only show value if it's 0 or a positive number
             const value = (raw === 0 || (raw && raw !== '' && !isNaN(raw))) ? raw : '';
+            const colors = [
+              '#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c'
+            ];
+            const color = colors[index % colors.length];
             return `
-              <td style="text-align: center; vertical-align: middle;">
-                <input type="number"
-                       class="form-control form-control-sm grade-input"
-                       data-member="${member.id}"
-                       data-item="${item.kode}"
-                       data-card="${cardId}"
-                       min="0" max="100"
-                       value="${value}"
-                       placeholder="-"
-                       style="text-align: center;">
+              <td style="text-align: center; vertical-align: middle; padding: 12px 8px; background: #ffffff;">
+                <div class="form-group mb-0">
+                  <label style="font-size: 0.8rem; font-weight: 600; color: ${color}; margin-bottom: 6px; display: block;">
+                    <i class="fas fa-star mr-1"></i>${item.nama}
+                  </label>
+                  <div class="input-group" style="max-width: 120px; margin: 0 auto;">
+                    <input type="number"
+                           class="form-control form-control-sm grade-input"
+                           data-member="${member.id}"
+                           data-item="${item.kode}"
+                           data-card="${cardId}"
+                           min="0" max="100"
+                           value="${value}"
+                           placeholder="0-100"
+                           style="text-align: center; font-size: 0.9rem; height: 38px; padding: 6px 8px; border-radius: 6px 0 0 6px; border: 2px solid ${color}20; transition: all 0.2s ease;">
+                    <div class="input-group-append">
+                      <span class="input-group-text" style="background: ${color}; color: white; border: none; padding: 0 12px; font-size: 0.75rem; font-weight: 700;">
+                        <i class="fas fa-percentage"></i>
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </td>`;
           }).join('')}
-          <td style="text-align: center; vertical-align: middle; font-weight: 600; background: #f8f9fa;">-</td>
-          <td style="text-align: center; vertical-align: middle; font-weight: 600; background: #e3f2fd;">-</td>
+          <td style="text-align: center; vertical-align: middle; font-weight: 700; background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); padding: 16px; border-left: 1px solid #dee2e6;">
+            <div class="d-flex flex-column align-items-center">
+              <span class="average-badge badge" style="font-size: 0.9rem; padding: 6px 12px; min-width: 60px; background: #6f42c1; color: white;">-</span>
+              <small style="color: #5a2d91; font-size: 0.7rem; margin-top: 4px; font-weight: 600;">Rata-rata</small>
+            </div>
+          </td>
+          <td style="text-align: center; vertical-align: middle; font-weight: 700; background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%); padding: 16px; border-left: 1px solid #dee2e6;">
+            <div class="d-flex flex-column align-items-center">
+              <span class="final-badge badge" style="font-size: 0.9rem; padding: 6px 12px; min-width: 60px; background: #fd7e14; color: white;">-</span>
+              <small style="color: #e8590c; font-size: 0.7rem; margin-top: 4px; font-weight: 600;">Final</small>
+            </div>
+          </td>
         </tr>`;
     };
 
     const modalHtml = `
       <div class="project-detail-modal">
         <div class="text-center mb-4">
-          <h4 style="margin: 0; font-size: 1.3rem; font-weight: 700; color: #2c3e50;">${cardTitle}</h4>
-          <p style="margin: 0.5rem 0 0 0; color: #6b7280; font-size: 1rem;">Evaluasi Dosen per Mahasiswa</p>
-          <small style="color: #28a745; font-weight: 600;">Total Bobot: ${totalBobot}%</small>
+          <h4 style="margin: 0; font-size: 1.4rem; font-weight: 800; color: #2c3e50; margin-bottom: 12px;">
+            <i class="fas fa-chalkboard-teacher mr-2" style="color: #3498db;"></i>${cardTitle}
+          </h4>
+          <div class="mb-3">
+            <span class="badge" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 8px 16px; font-size: 0.9rem;">
+              <i class="fas fa-graduation-cap mr-1"></i>Evaluasi Dosen per Mahasiswa
+            </span>
+          </div>
+          <div>
+            <span class="badge" style="background: linear-gradient(135deg, #17a2b8 0%, #138496 100%); color: white; padding: 6px 12px; font-size: 0.85rem;">
+              <i class="fas fa-weight mr-1"></i>Total Bobot: ${totalBobot}%
+            </span>
+          </div>
         </div>
-        <div class="table-responsive" style="max-height: 65vh; overflow-y: auto;">
-          <table class="table table-bordered" style="font-size: 0.9rem; margin-bottom: 0;">
-            <thead class="thead-dark sticky-top">
+        <div class="table-responsive" style="max-height: 65vh; overflow-y: auto; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+          <table class="table table-bordered" style="font-size: 0.9rem; margin-bottom: 0; border-collapse: separate; border-spacing: 0;">
+            <thead class="sticky-top" style="top: 0; z-index: 10;">
               <tr>
-                <th style="min-width: 180px; background: #343a40; color: white; border-color: #454d55;">Mahasiswa</th>
+                <th style="min-width: 200px; background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); color: white; padding: 16px; font-size: 1rem; font-weight: 700; border: none; text-align: left;">
+                  <i class="fas fa-user-graduate mr-2"></i>Mahasiswa
+                </th>
                 ${dosenItems.map(item => `
-                  <th style="min-width: 140px; text-align: center; background: #343a40; color: white; border-color: #454d55;">
-                    <div>${item.nama}</div>
-                    <small style="font-weight: normal; opacity: 0.8;">Bobot: ${item.bobot}%</small>
-                    <div style="font-size: 0.7rem; opacity: 0.6; margin-top: 2px;">Input 1-100</div>
+                  <th style="min-width: 150px; text-align: center; background: linear-gradient(135deg, #17a2b8 0%, #138496 100%); color: white; padding: 16px 12px; font-size: 0.9rem; font-weight: 600; border: none;">
+                    <div style="font-weight: 700; margin-bottom: 4px;">${item.nama}</div>
+                    <div style="background: rgba(255,255,255,0.2); padding: 4px 8px; border-radius: 4px; margin-bottom: 4px;">
+                      <i class="fas fa-percentage mr-1"></i>Bobot: ${item.bobot}%
+                    </div>
+                    <small style="font-weight: 500; opacity: 0.9;">Rentang: 1-100</small>
                   </th>
                 `).join('')}
-                <th style="min-width: 100px; text-align: center; background: #343a40; color: white; border-color: #454d55;">Rata-rata</th>
-                <th style="min-width: 120px; text-align: center; background: #343a40; color: white; border-color: #454d55;">
-                  Final<br><small style="font-weight: normal; opacity: 0.8;">(Weighted)</small>
+                <th style="min-width: 120px; text-align: center; background: linear-gradient(135deg, #6f42c1 0%, #5a2d91 100%); color: white; padding: 16px; font-size: 0.9rem; font-weight: 600; border: none;">
+                  <i class="fas fa-calculator mr-1 d-block mb-1"></i>
+                  Rata-rata
+                  <small style="font-weight: 400; opacity: 0.9;">(Simple Average)</small>
+                </th>
+                <th style="min-width: 140px; text-align: center; background: linear-gradient(135deg, #fd7e14 0%, #e8590c 100%); color: white; padding: 16px; font-size: 0.9rem; font-weight: 600; border: none;">
+                  <i class="fas fa-award mr-1 d-block mb-1"></i>
+                  Final
+                  <small style="font-weight: 400; opacity: 0.9;">(Weighted Score)</small>
                 </th>
               </tr>
             </thead>
@@ -2581,14 +2629,32 @@
           </table>
         </div>
 
-        <div class="d-flex justify-content-between align-items-center mt-4">
+        <div class="d-flex justify-content-between align-items-center mt-4" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); padding: 20px; border-radius: 12px; border: 1px solid #dee2e6;">
           <div class="text-left">
-            <small class="text-muted">
-              <strong>Keterangan:</strong> Input nilai 1-100 untuk setiap kriteria • Sistem akan menghitung otomatis
-            </small>
+            <div style="margin-bottom: 8px;">
+              <span style="font-weight: 700; color: #495057; font-size: 0.95rem;">
+                <i class="fas fa-info-circle mr-2 text-info"></i>Panduan Penilaian:
+              </span>
+            </div>
+            <div style="display: flex; gap: 25px; flex-wrap: wrap;">
+              <div style="display: flex; align-items: center;">
+                <i class="fas fa-star mr-2" style="color: #3498db;"></i>
+                <span style="font-size: 0.85rem; color: #6c757d;">Input nilai 1-100 untuk setiap kriteria</span>
+              </div>
+              <div style="display: flex; align-items: center;">
+                <i class="fas fa-calculator mr-2" style="color: #6f42c1;"></i>
+                <span style="font-size: 0.85rem; color: #6c757d;">Rata-rata dihitung otomatis</span>
+              </div>
+              <div style="display: flex; align-items: center;">
+                <i class="fas fa-award mr-2" style="color: #fd7e14;"></i>
+                <span style="font-size: 0.85rem; color: #6c757d;">Final score berdasarkan bobot</span>
+              </div>
+            </div>
           </div>
           <div class="text-right">
-            <small class="text-muted">Total Mahasiswa: ${members.length}</small>
+            <div class="badge" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 10px 18px; font-size: 0.9rem; font-weight: 700; border-radius: 8px;">
+              <i class="fas fa-users mr-1"></i>Total: ${members.length} Mahasiswa
+            </div>
           </div>
         </div>
       </div>
@@ -2763,24 +2829,66 @@
       style.textContent = `
         .project-detail-modal .swal2-popup {
           padding: 0;
-          border-radius: 0.75rem;
+          border-radius: 16px;
           max-height: 90vh;
+          box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        }
+        .project-detail-modal .swal2-html-container {
+          padding: 0;
+          margin: 0;
         }
         .project-detail-modal .table {
           margin-bottom: 0;
+          background: white;
         }
         .project-detail-modal .table th,
         .project-detail-modal .table td {
-          padding: 0.5rem;
+          padding: 0;
           vertical-align: middle;
+          border: none;
         }
-        .project-detail-modal .form-control-sm {
-          height: 30px;
-          font-size: 0.8rem;
+        .project-detail-modal .table tbody tr {
+          transition: all 0.3s ease;
         }
-        .project-detail-modal .form-control-sm.border-success {
-          border: 2px solid #28a745;
-          background-color: #f8fff9;
+        .project-detail-modal .table tbody tr:hover {
+          background-color: #f8f9fa;
+          transform: scale(1.01);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .project-detail-modal .grade-input {
+          transition: all 0.3s ease;
+          border: 2px solid transparent;
+        }
+        .project-detail-modal .grade-input:focus {
+          border-color: #667eea;
+          box-shadow: 0 0 0 0.2rem rgba(102,126,234,0.25);
+          transform: translateY(-1px);
+        }
+        .project-detail-modal .grade-input:hover {
+          border-color: #667eea;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .project-detail-modal .badge {
+          font-weight: 700;
+          border-radius: 8px;
+          transition: all 0.2s ease;
+        }
+        .project-detail-modal .badge:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        .project-detail-modal .input-group-text {
+          border-radius: 0 8px 8px 0;
+          font-weight: 700;
+        }
+        .project-detail-modal .form-group label {
+          margin-bottom: 8px;
+          font-weight: 700;
+        }
+        .project-detail-modal .input-group {
+          box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+          border-radius: 8px;
+          overflow: hidden;
         }
       `;
       document.head.appendChild(style);
@@ -2811,20 +2919,34 @@
       }
     });
 
-    const avgCell = row.children[inputs.length + 1];
-    const finalCell = row.children[inputs.length + 2];
+    const avgCell = row.querySelector('.average-badge');
+    const finalCell = row.querySelector('.final-badge');
 
     row.dataset.averageScore = count > 0 ? (total / count).toFixed(2) : '';
     row.dataset.finalScore = weightedTotal > 0 ? weightedTotal.toFixed(2) : '';
 
-    avgCell.innerHTML = count > 0 ? (total / count).toFixed(1) : '-';
+    // Update average badge
+    if (count > 0) {
+      const avgScore = (total / count).toFixed(1);
+      avgCell.textContent = avgScore;
+      avgCell.style.background = avgScore >= 80 ? '#28a745' : avgScore >= 60 ? '#ffc107' : '#dc3545';
+    } else {
+      avgCell.textContent = '-';
+      avgCell.style.background = '#6c757d';
+    }
 
+    // Update final badge
     if (weightedTotal > 0) {
       const final = weightedTotal.toFixed(1);
       const grade = getGradeFromScore(weightedTotal);
-      finalCell.innerHTML = `${final} <br><small class="badge badge-${getGradeColor(grade)}">${grade}</small>`;
+      const gradeColor = getGradeColor(grade);
+      finalCell.textContent = `${final} (${grade})`;
+      finalCell.style.background = gradeColor === 'success' ? '#28a745' :
+                                      gradeColor === 'warning' ? '#ffc107' :
+                                      gradeColor === 'danger' ? '#dc3545' : '#6c757d';
     } else {
-      finalCell.innerHTML = '-';
+      finalCell.textContent = '-';
+      finalCell.style.background = '#fd7e14';
     }
   }
 
