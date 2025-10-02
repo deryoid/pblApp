@@ -91,7 +91,7 @@
                             @foreach($kelompok->aktivitasLists as $aktivitas)
                             <tr>
                                 <td>{{ $loop->iteration }}</td>
-                                <td>{{ $aktivitas->name }}</td>
+                                <td>{{ $aktivitas->nama_aktivitas ?? $aktivitas->deskripsi ?? ($aktivitas ? 'Aktivitas #' . $aktivitas->id : 'Aktivitas') }}</td>
                                 <td>
                                     <span class="badge {{ $aktivitas->status_evaluasi === 'Sudah Evaluasi' ? 'badge-success' : 'badge-secondary' }}">
                                         {{ $aktivitas->status_evaluasi }}

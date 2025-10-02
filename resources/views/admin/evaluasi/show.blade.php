@@ -318,7 +318,7 @@
               {{-- Head kolom --}}
               <div class="board-col-head d-flex align-items-center justify-content-between">
                 <div class="d-flex align-items-center">
-                  <h6 class="mb-0 text-uppercase font-weight-bold truncate">{{ $list->name }}</h6>
+                  <h6 class="mb-0 text-uppercase font-weight-bold truncate">{{ $list->nama_list ?? $list->deskripsi ?? ($list ? 'Project List #' . $list->id : 'Project List') }}</h6>
                   <span class="badge badge-soft ml-2">{{ count($list->cards) }}</span>
                 </div>
                 <div class="text-right small">
@@ -665,7 +665,7 @@
               <div class="board-col-head d-flex align-items-center justify-content-between">
                 <div class="d-flex flex-column">
                   <h6 class="mb-1 text-uppercase font-weight-bold truncate">
-                    {{ $alist->title ?? $alist->name ?? 'Minggu' }}
+                    {{ $alist->title ?? $alist->nama_aktivitas ?? $alist->deskripsi ?? ($alist ? 'Minggu' : 'Aktivitas') }}
                     <span class="badge badge-soft mr-2">{{ count($validCards) }}</span>
                   </h6>
                   <div class="align-items-center x-small mt-auto pt-1">
@@ -693,7 +693,7 @@
                       <button type="button"
                               class="btn btn-sm btn-primary {{ ($alist->status_evaluasi ?? 'Belum Evaluasi') === 'Sudah Evaluasi' ? 'disabled' : '' }}"
                               title="Nilai AP"
-                              onclick="gradeAP('{{ $alist->id }}','{{ addslashes($alist->title ?? $alist->name ?? 'Aktivitas') }}')">
+                              onclick="gradeAP('{{ $alist->id }}','{{ addslashes($alist->title ?? $alist->nama_aktivitas ?? $alist->deskripsi ?? ($alist ? 'Aktivitas' : 'Aktivitas')) }}')">
                               <i class="fas fa-clipboard-list" aria-hidden="true"></i>
                       </button>
 

@@ -91,14 +91,37 @@ class EvaluasiController extends Controller
             });
         }
 
-        $kelompoks = $query->orderBy('nama_kelompok')->paginate(20)->withQueryString();
+        // Get all kelompoks first for sorting
+        $allKelompoks = $query->get();
+        $kelompokIds = $allKelompoks->pluck('id');
 
-        $kelompokIds = $kelompoks->pluck('id');
+        // Get evaluation data for sorting
         $sesiAll = EvaluasiMaster::query()
             ->when($periodeId, fn ($q) => $q->where('periode_id', $periodeId))
             ->whereIn('kelompok_id', $kelompokIds)
             ->get();
         $sesiMap = $sesiAll->sortByDesc('id')->keyBy('kelompok_id');
+
+        // Sort kelompoks: incomplete evaluations first, then by name
+        $sortedKelompoks = $allKelompoks->sortBy(function ($kelompok) use ($sesiMap) {
+            $sesi = $sesiMap->get($kelompok->id);
+            $hasCompletedEval = $sesi && $sesi->status === 'Selesai';
+
+            // Priority: incomplete evaluations first, then by name
+            return [$hasCompletedEval ? 1 : 0, $kelompok->nama_kelompok];
+        })->values();
+
+        // Convert to paginator manually to maintain pagination - show more data per page
+        $perPage = 100; // Increased from 20 to 100
+        $currentPage = request()->get('page', 1);
+        $currentPageItems = $sortedKelompoks->slice(($currentPage - 1) * $perPage, $perPage)->values();
+        $kelompoks = new \Illuminate\Pagination\LengthAwarePaginator(
+            $currentPageItems,
+            $sortedKelompoks->count(),
+            $perPage,
+            $currentPage,
+            ['path' => request()->url(), 'query' => request()->query()]
+        );
 
         // Perhitungan mingguan (AP) per kelompok
         $sesiByKel = $sesiAll->groupBy('kelompok_id');
@@ -1884,7 +1907,7 @@ class EvaluasiController extends Controller
                     $saveData['evaluator_id'] = Auth::id();
                 }
 
-                Log::info('Saving data for mahasiswa ' . $item['mahasiswa_id'], $saveData);
+                Log::info('Saving data for mahasiswa '.$item['mahasiswa_id'], $saveData);
 
                 // Check if record exists
                 if (! empty($item['id'])) {

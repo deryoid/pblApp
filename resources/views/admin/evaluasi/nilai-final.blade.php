@@ -444,7 +444,7 @@
                                                             <small class="text-muted">Rata-rata per Aktivitas:</small>
                                                             @foreach($data['final_calculation']['nilai_ap']['presensi_data'] as $presensi)
                                                                 <div class="small mb-1 p-2 bg-light rounded">
-                                                                    <strong>{{ $presensi->aktivitas_list->name }}</strong>
+                                                                    <strong>{{ $presensi->aktivitas_list->nama_aktivitas ?? $presensi->aktivitas_list->deskripsi ?? ($presensi->aktivitas_list ? 'Aktivitas #' . $presensi->aktivitas_list->id : 'Aktivitas') }}</strong>
                                                                     <div class="text-muted">
                                                                         Kehadiran: {{ $presensi->w_ap_kehadiran }} ({{ $presensi->kehadiran_value }}) × 50%,
                                                                         Presentasi: {{ $presensi->w_ap_presentasi }} × 50%,
@@ -475,7 +475,7 @@
                                                         <small class="text-muted">Rata-rata per List Proyek:</small>
                                                         @foreach($data['list_averages'] as $listAvg)
                                                             <div class="small mb-1 p-2 bg-light rounded">
-                                                                <strong>{{ $listAvg['list']->name ?: 'Project List #'.$listAvg['list']->id }}</strong>
+                                                                <strong>{{ $listAvg['list']->nama_list ?? $listAvg['list']->deskripsi ?? ($listAvg['list'] ? 'Project List #' . $listAvg['list']->id : 'Project List') }}</strong>
                                                                 <div class="text-muted">
                                                                     Dosen: {{ number_format($listAvg['avg_dosen'], 1) }},
                                                                     Mitra: {{ number_format($listAvg['avg_mitra'], 1) }},

@@ -72,6 +72,11 @@ class Kelompok extends Model
         return $this->hasMany(AktivitasList::class);
     }
 
+    public function evaluasiMasters()
+    {
+        return $this->hasMany(EvaluasiMaster::class);
+    }
+
     // Check evaluation status for the group based on aktivitas_list
     public function getEvaluationStatusAttribute(): string
     {

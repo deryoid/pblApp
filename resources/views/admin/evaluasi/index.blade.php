@@ -149,9 +149,21 @@
       info: true,
       searching: true,
       ordering: true,
-      lengthChange: false,
-      pageLength: 20,
-      columnDefs: [ { orderable: false, targets: -1 } ]
+      lengthChange: true,
+      pageLength: 100, // Increased to match server-side pagination
+      lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "Semua"]],
+      columnDefs: [ { orderable: false, targets: -1 } ],
+      language: {
+        "lengthMenu": "Tampilkan _MENU_ data per halaman",
+        "info": "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
+        "search": "Cari:",
+        "paginate": {
+          "first": "Pertama",
+          "last": "Terakhir",
+          "next": "Selanjutnya",
+          "previous": "Sebelumnya"
+        }
+      }
     });
   } catch (e) {
     // DataTables not loaded; fallback to no client-side plugin

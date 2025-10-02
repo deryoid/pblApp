@@ -18,18 +18,30 @@ class KelompokController extends Controller
         // Jika tidak ada, ambil periode aktif pertama
         $periodeAktif = $periodeWithKelompok ?: Periode::where('status_periode', 'Aktif')->first();
 
-        $kelompoks = Kelompok::with(['periode', 'mahasiswas.user'])
+        $kelompoks = Kelompok::with(['periode', 'mahasiswas', 'evaluasiMasters' => function ($query) use ($periodeAktif) {
+            if ($periodeAktif) {
+                $query->where('periode_id', $periodeAktif->id);
+            }
+        }])
             ->when($periodeAktif, function ($query) use ($periodeAktif) {
                 return $query->where('periode_id', $periodeAktif->id);
             })
-            ->get();
+            ->get()
+            ->sortBy(function ($kelompok) {
+                // Check if there are any completed evaluations
+                $hasCompletedEval = $kelompok->evaluasiMasters->contains('status', 'Selesai');
+
+                // Priority: incomplete evaluations first, then by name
+                return [$hasCompletedEval ? 1 : 0, $kelompok->nama_kelompok];
+            })
+            ->values();
 
         return view('evaluator.kelompok.index', compact('kelompoks', 'periodeAktif'));
     }
 
     public function show(Kelompok $kelompok)
     {
-        $kelompok->load(['periode', 'mahasiswas.user', 'aktivitasLists']);
+        $kelompok->load(['periode', 'mahasiswas', 'aktivitasLists']);
 
         return view('evaluator.kelompok.show', compact('kelompok'));
     }
