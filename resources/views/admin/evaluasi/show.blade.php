@@ -674,21 +674,37 @@
                       $statusLabel = $statusNow;
                     @endphp
                     <span id="{{ $badgeId }}" class="badge {{ $statusClass }}">{{ $statusLabel }}</span>
-                    {{-- Nilai AP --}}
-                          <button type="button"
-                                  class="btn btn-sm btn-secondary"
-                                  title="Nilai AP"
-                                  onclick="gradeAP('{{ $alist->id }}','{{ addslashes($alist->title ?? $alist->name ?? 'Aktivitas') }}')">
-                                  <i class="fas fa-clipboard-list" aria-hidden="true"></i>
-                          </button>
-                          <button type="button"
-                                  class="btn btn-sm btn-success js-aktivitas-status"
-                                  data-uuid="{{ $alist->uuid ?? $alist->id }}"
-                                  data-status="{{ $statusNow }}"
-                                  data-target="#{{ $badgeId }}"
-                                  title="Update Status">
-                            <i class="fas fa-sync-alt" aria-hidden="true"></i>
-                          </button>
+                    {{-- Tombol Aksi --}}
+                    <div class="btn-group btn-group-sm" role="group">
+                      {{-- Nilai AP --}}
+                      <button type="button"
+                              class="btn btn-sm btn-secondary {{ ($alist->status_evaluasi ?? 'Belum Evaluasi') === 'Sudah Evaluasi' ? 'disabled' : '' }}"
+                              title="Nilai AP"
+                              onclick="gradeAP('{{ $alist->id }}','{{ addslashes($alist->title ?? $alist->name ?? 'Aktivitas') }}')">
+                              <i class="fas fa-clipboard-list" aria-hidden="true"></i>
+                      </button>
+
+                      {{-- Lihat Logbook --}}
+                      @if(!empty($alist->link_drive_logbook))
+                      <a href="{{ $alist->link_drive_logbook }}"
+                         target="_blank"
+                         rel="noopener"
+                         class="btn btn-sm btn-info"
+                         title="Lihat Logbook">
+                         <i class="fas fa-book-open" aria-hidden="true"></i>
+                      </a>
+                      @endif
+
+                      {{-- Update Status --}}
+                      <button type="button"
+                              class="btn btn-sm btn-success js-aktivitas-status {{ ($alist->status_evaluasi ?? 'Belum Evaluasi') === 'Sudah Evaluasi' ? 'disabled' : '' }}"
+                              data-uuid="{{ $alist->uuid ?? $alist->id }}"
+                              data-status="{{ $statusNow }}"
+                              data-target="#{{ $badgeId }}"
+                              title="Update Status">
+                        <i class="fas fa-sync-alt" aria-hidden="true"></i>
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -745,16 +761,7 @@
                                 <i class="fas fa-link" aria-hidden="true"></i>
                               </a>
                             @endif
-                            @if(!empty($alist->link_drive_logbook))
-                            <a href="{{ $alist->link_drive_logbook }}"
-                              target="_blank"
-                              rel="noopener"
-                              class="btn btn-dark"
-                              title="Lihat Logbook">
-                              <i class="fas fa-book-open" aria-hidden="true"></i>
-                            </a>
-                          @endif
-                          </div>
+                            </div>
                         </div>
                       </div>
                         
