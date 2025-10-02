@@ -38,7 +38,7 @@ Route::get('/debug-validation', function () {
 });
 
 Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
-    Route::get('/', fn () => view('admin.index'));
+    Route::get('/', [App\Http\Controllers\Admin\DashboardController::class, 'index']);
 
     // User (UUID-based binding)
     Route::get('user', [UserController::class, 'index'])->name('user.index');
@@ -171,7 +171,7 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
 
 // Evaluator
 Route::prefix('evaluator')->middleware(['auth', 'evaluator'])->group(function () {
-    Route::get('/', fn () => view('evaluator.index'));
+    Route::get('/', [App\Http\Controllers\Evaluator\DashboardController::class, 'index']);
 
     // Kelompok
     Route::prefix('kelompok')->name('evaluator.kelompok.')->group(function () {

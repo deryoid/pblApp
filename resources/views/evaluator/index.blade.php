@@ -1,25 +1,87 @@
 @extends('layout.app')
+@section('head')
+<style>
+.timeline {
+    position: relative;
+    padding: 0;
+    list-style: none;
+}
+
+.timeline:before {
+    content: " ";
+    position: absolute;
+    top: 0;
+    left: 20px;
+    height: 100%;
+    width: 2px;
+    background: #e9ecef;
+}
+
+.timeline-item {
+    position: relative;
+    padding-left: 50px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: 10px;
+    top: 5px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 2px #e9ecef;
+}
+
+.timeline-content {
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    border-left: 3px solid #4e73df;
+}
+
+.timeline-title {
+    margin: 0 0 5px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #5a5c69;
+}
+
+.timeline-text {
+    margin: 0;
+    font-size: 12px;
+    color: #858796;
+}
+</style>
+@endsection
 @section('content')
                 <div class="container-fluid">
                     <!-- Page Heading -->
                     <div class="d-sm-flex align-items-center justify-content-between mb-4">
                         <h1 class="h3 mb-0 text-gray-800">Dashboard Evaluator</h1>
-                        <a href="#" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm"><i
-                                class="fas fa-download fa-sm text-white-50"></i> Generate Report</a>
+                        <a href="{{ route('evaluator.evaluasi.index') }}" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
+                            <i class="fas fa-clipboard-check fa-sm text-white-50"></i> Kelola Evaluasi
+                        </a>
                     </div>
 
-                    <!-- Content Row -->
-                    <div class="row">
-
-                        <!-- Earnings (Monthly) Card Example -->
-                        <div class="col-xl-3 col-md-6 mb-4">
-                            <div class="card border-left-primary shadow h-100 py-2">
+                    @if($activePeriode)
+                    <!-- Info Periode Aktif -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card border-left-info shadow h-100 py-3">
                                 <div class="card-body">
                                     <div class="row no-gutters align-items-center">
-                                        <div class="col mr-2">
-                                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                                Earnings (Monthly)</div>
-                                            <div class="h5 mb-0 font-weight-bold text-gray-800">$40,000</div>
+                                        <div class="col">
+                                            <div class="h5 mb-2 font-weight-bold text-gray-800">
+                                                <i class="fas fa-calendar-alt mr-2"></i>Periode Aktif
+                                            </div>
+                                            <div class="text-gray-700">{{ $activePeriode->periode }}</div>
+                                            @if($activePeriode->tanggal_mulai && $activePeriode->tanggal_selesai)
+                                            <div class="small text-muted mt-1">
+                                                {{ \Carbon\Carbon::parse($activePeriode->tanggal_mulai)->format('d M Y') }} -
+                                                {{ \Carbon\Carbon::parse($activePeriode->tanggal_selesai)->format('d M Y') }}
+                                            </div>
+                                            @endif
                                         </div>
                                         <div class="col-auto">
                                             <i class="fas fa-calendar fa-2x text-gray-300"></i>
@@ -28,66 +90,76 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
 
-                        <!-- Earnings (Monthly) Card Example -->
+                    <!-- Data Akademik & Mahasiswa -->
+                    <div class="row">
+                        <!-- Total Kelompok -->
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="card border-left-primary shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Kelompok</div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $totalKelompoks }}</div>
+                                            <div class="small text-muted">{{ $activeKelompoks }} aktif</div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="fas fa-users fa-2x text-gray-300"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Total Mahasiswa -->
                         <div class="col-xl-3 col-md-6 mb-4">
                             <div class="card border-left-success shadow h-100 py-2">
                                 <div class="card-body">
                                     <div class="row no-gutters align-items-center">
                                         <div class="col mr-2">
-                                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                                Earnings (Annual)</div>
-                                            <div class="h5 mb-0 font-weight-bold text-gray-800">$215,000</div>
+                                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Total Mahasiswa</div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $totalMahasiswas }}</div>
+                                            <div class="small text-muted">{{ $activeMahasiswas }} aktif</div>
                                         </div>
                                         <div class="col-auto">
-                                            <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                                            <i class="fas fa-user-graduate fa-2x text-gray-300"></i>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Earnings (Monthly) Card Example -->
-                        <div class="col-xl-3 col-md-6 mb-4">
-                            <div class="card border-left-info shadow h-100 py-2">
-                                <div class="card-body">
-                                    <div class="row no-gutters align-items-center">
-                                        <div class="col mr-2">
-                                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Tasks
-                                            </div>
-                                            <div class="row no-gutters align-items-center">
-                                                <div class="col-auto">
-                                                    <div class="h5 mb-0 mr-3 font-weight-bold text-gray-800">50%</div>
-                                                </div>
-                                                <div class="col">
-                                                    <div class="progress progress-sm mr-2">
-                                                        <div class="progress-bar bg-info" role="progressbar"
-                                                            style="width: 50%" aria-valuenow="50" aria-valuemin="0"
-                                                            aria-valuemax="100"></div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-auto">
-                                            <i class="fas fa-clipboard-list fa-2x text-gray-300"></i>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Pending Requests Card Example -->
+                        <!-- Evaluasi Pending -->
                         <div class="col-xl-3 col-md-6 mb-4">
                             <div class="card border-left-warning shadow h-100 py-2">
                                 <div class="card-body">
                                     <div class="row no-gutters align-items-center">
                                         <div class="col mr-2">
-                                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                                                Pending Requests</div>
-                                            <div class="h5 mb-0 font-weight-bold text-gray-800">18</div>
+                                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Evaluasi Pending</div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $pendingEvaluations }}</div>
+                                            <div class="small text-muted">{{ $completedEvaluations }} selesai</div>
                                         </div>
                                         <div class="col-auto">
-                                            <i class="fas fa-comments fa-2x text-gray-300"></i>
+                                            <i class="fas fa-clock fa-2x text-gray-300"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Total Sesi Evaluasi -->
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="card border-left-info shadow h-100 py-2">
+                                <div class="card-body">
+                                    <div class="row no-gutters align-items-center">
+                                        <div class="col mr-2">
+                                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Total Sesi Evaluasi</div>
+                                            <div class="h5 mb-0 font-weight-bold text-gray-800">{{ $totalSesiEvaluasi }}</div>
+                                            <div class="small text-muted">{{ $activeSesiEvaluasi }} periode ini</div>
+                                        </div>
+                                        <div class="col-auto">
+                                            <i class="fas fa-clipboard-check fa-2x text-gray-300"></i>
                                         </div>
                                     </div>
                                 </div>
@@ -95,236 +167,140 @@
                         </div>
                     </div>
 
-                    <!-- Content Row -->
-
+                    <!-- Progress Evaluasi & Tugas Hari Ini -->
                     <div class="row">
-
-                        <!-- Area Chart -->
-                        <div class="col-xl-8 col-lg-7">
+                        <!-- Progress Evaluasi per Kelompok -->
+                        <div class="col-xl-8">
                             <div class="card shadow mb-4">
-                                <!-- Card Header - Dropdown -->
-                                <div
-                                    class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                                    <h6 class="m-0 font-weight-bold text-primary">Earnings Overview</h6>
-                                    <div class="dropdown no-arrow">
-                                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink"
-                                            data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                            <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
-                                        </a>
-                                        <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
-                                            aria-labelledby="dropdownMenuLink">
-                                            <div class="dropdown-header">Dropdown Header:</div>
-                                            <a class="dropdown-item" href="#">Action</a>
-                                            <a class="dropdown-item" href="#">Another action</a>
-                                            <div class="dropdown-divider"></div>
-                                            <a class="dropdown-item" href="#">Something else here</a>
-                                        </div>
-                                    </div>
+                                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                                    <h6 class="m-0 font-weight-bold text-primary">Progress Evaluasi per Kelompok</h6>
                                 </div>
-                                <!-- Card Body -->
                                 <div class="card-body">
-                                    <div class="chart-area">
-                                        <canvas id="myAreaChart"></canvas>
-                                    </div>
+                                    @if(count($evaluasiProgress) > 0)
+                                        <div class="table-responsive">
+                                            <table class="table table-bordered" width="100%" cellspacing="0">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Kelompok</th>
+                                                        <th>Progress</th>
+                                                        <th>Sesi Selesai</th>
+                                                        <th>Status</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach($evaluasiProgress as $progress)
+                                                        <tr>
+                                                            <td>{{ $progress['nama_kelompok'] }}</td>
+                                                            <td>
+                                                                <div class="progress">
+                                                                    <div class="progress-bar bg-{{ $progress['progress'] == 100 ? 'success' : ($progress['progress'] >= 50 ? 'warning' : 'danger') }}" role="progressbar"
+                                                                         style="width: {{ $progress['progress'] }}%"
+                                                                         aria-valuenow="{{ $progress['progress'] }}"
+                                                                         aria-valuemin="0" aria-valuemax="100">
+                                                                        {{ $progress['progress'] }}%
+                                                                    </div>
+                                                                </div>
+                                                            </td>
+                                                            <td>{{ $progress['selesai_sesi'] }} / {{ $progress['total_sesi'] }}</td>
+                                                            <td>
+                                                                @if($progress['progress'] == 100)
+                                                                    <span class="badge bg-success">Selesai</span>
+                                                                @else
+                                                                    <span class="badge bg-warning">Proses</span>
+                                                                @endif
+                                                            </td>
+                                                        </tr>
+                                                    @endforeach
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    @else
+                                        <p class="text-muted">Belum ada data evaluasi untuk periode aktif.</p>
+                                    @endif
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Pie Chart -->
-                        <div class="col-xl-4 col-lg-5">
+                        <!-- Tugas Evaluasi Hari Ini -->
+                        <div class="col-xl-4">
                             <div class="card shadow mb-4">
-                                <!-- Card Header - Dropdown -->
-                                <div
-                                    class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                                    <h6 class="m-0 font-weight-bold text-primary">Revenue Sources</h6>
-                                    <div class="dropdown no-arrow">
-                                        <a class="dropdown-toggle" href="#" role="button" id="dropdownMenuLink"
-                                            data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                            <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
-                                        </a>
-                                        <div class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
-                                            aria-labelledby="dropdownMenuLink">
-                                            <div class="dropdown-header">Dropdown Header:</div>
-                                            <a class="dropdown-item" href="#">Action</a>
-                                            <a class="dropdown-item" href="#">Another action</a>
-                                            <div class="dropdown-divider"></div>
-                                            <a class="dropdown-item" href="#">Something else here</a>
-                                        </div>
-                                    </div>
+                                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                                    <h6 class="m-0 font-weight-bold text-primary">Jadwal Evaluasi Hari Ini</h6>
                                 </div>
-                                <!-- Card Body -->
                                 <div class="card-body">
-                                    <div class="chart-pie pt-4 pb-2">
-                                        <canvas id="myPieChart"></canvas>
-                                    </div>
-                                    <div class="mt-4 text-center small">
-                                        <span class="mr-2">
-                                            <i class="fas fa-circle text-primary"></i> Direct
-                                        </span>
-                                        <span class="mr-2">
-                                            <i class="fas fa-circle text-success"></i> Social
-                                        </span>
-                                        <span class="mr-2">
-                                            <i class="fas fa-circle text-info"></i> Referral
-                                        </span>
-                                    </div>
+                                    @if(count($todayEvaluations) > 0)
+                                        <div class="timeline">
+                                            @foreach($todayEvaluations as $evaluation)
+                                                <div class="timeline-item mb-3">
+                                                    <div class="timeline-marker bg-{{ $evaluation->status == 'Selesai' ? 'success' : 'primary' }}"></div>
+                                                    <div class="timeline-content">
+                                                        <h6 class="timeline-title">{{ $evaluation->kelompok->nama_kelompok ?? '-' }}</h6>
+                                                        <p class="timeline-text small text-muted mb-1">
+                                                            <i class="fas fa-clock"></i> {{ \Carbon\Carbon::parse($evaluation->tanggal)->format('H:i') }}
+                                                        </p>
+                                                        <span class="badge bg-{{ $evaluation->status == 'Selesai' ? 'success' : 'warning' }}">
+                                                            {{ $evaluation->status }}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <div class="text-center text-muted py-4">
+                                            <i class="fas fa-calendar-check fa-2x mb-2"></i>
+                                            <p>Tidak ada jadwal evaluasi hari ini</p>
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Content Row -->
+                    <!-- Data Tugas Evaluasi -->
                     <div class="row">
-
-                        <!-- Content Column -->
-                        <div class="col-lg-6 mb-4">
-
-                            <!-- Project Card Example -->
+                        <!-- Proyek yang Perlu Dievaluasi -->
+                        <div class="col-xl-6">
                             <div class="card shadow mb-4">
                                 <div class="card-header py-3">
-                                    <h6 class="m-0 font-weight-bold text-primary">Projects</h6>
+                                    <h6 class="m-0 font-weight-bold text-primary">
+                                        <i class="fas fa-tasks mr-2"></i>Proyek yang Perlu Dievaluasi
+                                    </h6>
                                 </div>
-                                <div class="card-body">
-                                    <h4 class="small font-weight-bold">Server Migration <span
-                                            class="float-right">20%</span></h4>
-                                    <div class="progress mb-4">
-                                        <div class="progress-bar bg-danger" role="progressbar" style="width: 20%"
-                                            aria-valuenow="20" aria-valuemin="0" aria-valuemax="100"></div>
-                                    </div>
-                                    <h4 class="small font-weight-bold">Sales Tracking <span
-                                            class="float-right">40%</span></h4>
-                                    <div class="progress mb-4">
-                                        <div class="progress-bar bg-warning" role="progressbar" style="width: 40%"
-                                            aria-valuenow="40" aria-valuemin="0" aria-valuemax="100"></div>
-                                    </div>
-                                    <h4 class="small font-weight-bold">Customer Database <span
-                                            class="float-right">60%</span></h4>
-                                    <div class="progress mb-4">
-                                        <div class="progress-bar" role="progressbar" style="width: 60%"
-                                            aria-valuenow="60" aria-valuemin="0" aria-valuemax="100"></div>
-                                    </div>
-                                    <h4 class="small font-weight-bold">Payout Details <span
-                                            class="float-right">80%</span></h4>
-                                    <div class="progress mb-4">
-                                        <div class="progress-bar bg-info" role="progressbar" style="width: 80%"
-                                            aria-valuenow="80" aria-valuemin="0" aria-valuemax="100"></div>
-                                    </div>
-                                    <h4 class="small font-weight-bold">Account Setup <span
-                                            class="float-right">Complete!</span></h4>
-                                    <div class="progress">
-                                        <div class="progress-bar bg-success" role="progressbar" style="width: 100%"
-                                            aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
-                                    </div>
+                                <div class="card-body text-center">
+                                    <div class="h3 text-warning mb-2">{{ $proyekToEvaluate }}</div>
+                                    <p class="text-muted mb-0">dari {{ $totalProyekCards }} total proyek cards</p>
+                                    <a href="{{ route('evaluator.evaluasi.index') }}" class="btn btn-primary btn-sm mt-3">
+                                        <i class="fas fa-eye"></i> Lihat Detail
+                                    </a>
                                 </div>
                             </div>
-
-                            <!-- Color System -->
-                            <div class="row">
-                                <div class="col-lg-6 mb-4">
-                                    <div class="card bg-primary text-white shadow">
-                                        <div class="card-body">
-                                            Primary
-                                            <div class="text-white-50 small">#4e73df</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-lg-6 mb-4">
-                                    <div class="card bg-success text-white shadow">
-                                        <div class="card-body">
-                                            Success
-                                            <div class="text-white-50 small">#1cc88a</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-lg-6 mb-4">
-                                    <div class="card bg-info text-white shadow">
-                                        <div class="card-body">
-                                            Info
-                                            <div class="text-white-50 small">#36b9cc</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-lg-6 mb-4">
-                                    <div class="card bg-warning text-white shadow">
-                                        <div class="card-body">
-                                            Warning
-                                            <div class="text-white-50 small">#f6c23e</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-lg-6 mb-4">
-                                    <div class="card bg-danger text-white shadow">
-                                        <div class="card-body">
-                                            Danger
-                                            <div class="text-white-50 small">#e74a3b</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-lg-6 mb-4">
-                                    <div class="card bg-secondary text-white shadow">
-                                        <div class="card-body">
-                                            Secondary
-                                            <div class="text-white-50 small">#858796</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-lg-6 mb-4">
-                                    <div class="card bg-light text-black shadow">
-                                        <div class="card-body">
-                                            Light
-                                            <div class="text-black-50 small">#f8f9fc</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-lg-6 mb-4">
-                                    <div class="card bg-dark text-white shadow">
-                                        <div class="card-body">
-                                            Dark
-                                            <div class="text-white-50 small">#5a5c69</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
                         </div>
 
-                        <div class="col-lg-6 mb-4">
-
-                            <!-- Illustrations -->
+                        <!-- Aktivitas yang Perlu Dievaluasi -->
+                        <div class="col-xl-6">
                             <div class="card shadow mb-4">
                                 <div class="card-header py-3">
-                                    <h6 class="m-0 font-weight-bold text-primary">Illustrations</h6>
+                                    <h6 class="m-0 font-weight-bold text-primary">
+                                        <i class="fas fa-clipboard-list mr-2"></i>Aktivitas yang Perlu Dievaluasi
+                                    </h6>
                                 </div>
-                                <div class="card-body">
-                                    <div class="text-center">
-                                        <img class="img-fluid px-3 px-sm-4 mt-3 mb-4" style="width: 25rem;"
-                                            src="img/undraw_posting_photo.svg" alt="...">
-                                    </div>
-                                    <p>Add some quality, svg illustrations to your project courtesy of <a
-                                            target="_blank" rel="nofollow" href="https://undraw.co/">unDraw</a>, a
-                                        constantly updated collection of beautiful svg images that you can use
-                                        completely free and without attribution!</p>
-                                    <a target="_blank" rel="nofollow" href="https://undraw.co/">Browse Illustrations on
-                                        unDraw &rarr;</a>
+                                <div class="card-body text-center">
+                                    <div class="h3 text-info mb-2">{{ $aktivitasToEvaluate }}</div>
+                                    <p class="text-muted mb-0">dari {{ $totalAktivitasLists }} total aktivitas lists</p>
+                                    <a href="{{ route('evaluator.evaluasi.index') }}" class="btn btn-primary btn-sm mt-3">
+                                        <i class="fas fa-eye"></i> Lihat Detail
+                                    </a>
                                 </div>
                             </div>
-
-                            <!-- Approach -->
-                            <div class="card shadow mb-4">
-                                <div class="card-header py-3">
-                                    <h6 class="m-0 font-weight-bold text-primary">Development Approach</h6>
-                                </div>
-                                <div class="card-body">
-                                    <p>SB Admin 2 makes extensive use of Bootstrap 4 utility classes in order to reduce
-                                        CSS bloat and poor page performance. Custom CSS classes are used to create
-                                        custom components and custom utility classes.</p>
-                                    <p class="mb-0">Before working with this theme, you should become familiar with the
-                                        Bootstrap framework, especially the utility classes.</p>
-                                </div>
-                            </div>
-
                         </div>
                     </div>
+                    @else
+                    <div class="text-center mt-5">
+                        <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                        <h4 class="text-gray-800">Belum Ada Periode Aktif</h4>
+                        <p class="text-gray-600">Dashboard evaluator hanya tersedia saat ada periode aktif.</p>
+                    </div>
+                    @endif
 
                 </div>
-                @endsection
+@endsection
