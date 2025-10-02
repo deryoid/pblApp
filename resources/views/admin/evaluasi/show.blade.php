@@ -1951,66 +1951,51 @@
       const current = existingData[member.id] || {};
 
       return `
-        <tr data-member="${member.id}" style="transition: all 0.2s ease;">
-          <td style="vertical-align: middle; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); font-weight: 600; width: 200px; padding: 12px 16px; border-left: 4px solid #3498db;">
-            <div style="font-size: 0.95rem; margin-bottom: 4px; color: #2c3e50;">${member.nama}</div>
-            <small style="color: #6c757d; font-size: 0.8rem; font-weight: 500;"><i class="fas fa-id-card mr-1"></i>${member.nim}</small>
+        <tr data-member="${member.id}">
+          <td style="vertical-align: middle; background: #f8f9fa; font-weight: 600; padding: 12px; width: 200px;">
+            <div>${member.nama}</div>
+            <small class="text-muted">${member.nim}</small>
           </td>
-          <td style="vertical-align: middle; padding: 12px 8px; border-right: 1px solid #dee2e6; background: #ffffff;">
+          <td style="vertical-align: middle; padding: 8px;">
             <div class="form-group mb-2">
-              <label style="font-size: 0.8rem; font-weight: 600; color: #3498db; margin-bottom: 4px; display: block;">
-                <i class="fas fa-user-check mr-1"></i>Status Kehadiran
-              </label>
+              <label style="font-size: 0.8rem; font-weight: 600;">Status Kehadiran</label>
               <select class="form-control form-control-sm"
                       data-member="${member.id}"
-                      data-field="w_ap_kehadiran"
-                      style="font-size: 0.85rem; height: 36px; padding: 6px 8px; border-radius: 6px; border: 1px solid #ced4da; transition: all 0.2s ease;">
+                      data-field="w_ap_kehadiran">
                 <option value="">Pilih Status</option>
-                <option value="Hadir" ${current.w_ap_kehadiran === 'Hadir' ? 'selected' : ''}>✅ Hadir</option>
-                <option value="Tidak Hadir" ${current.w_ap_kehadiran === 'Tidak Hadir' ? 'selected' : ''}>❌ Tidak Hadir</option>
-                <option value="Izin" ${current.w_ap_kehadiran === 'Izin' ? 'selected' : ''}>📄 Izin</option>
-                <option value="Sakit" ${current.w_ap_kehadiran === 'Sakit' ? 'selected' : ''}>🏥 Sakit</option>
+                <option value="Hadir" ${current.w_ap_kehadiran === 'Hadir' ? 'selected' : ''}>Hadir</option>
+                <option value="Tidak Hadir" ${current.w_ap_kehadiran === 'Tidak Hadir' ? 'selected' : ''}>Tidak Hadir</option>
+                <option value="Izin" ${current.w_ap_kehadiran === 'Izin' ? 'selected' : ''}>Izin</option>
+                <option value="Sakit" ${current.w_ap_kehadiran === 'Sakit' ? 'selected' : ''}>Sakit</option>
               </select>
             </div>
             <div class="form-group mb-0">
-              <label style="font-size: 0.75rem; font-weight: 500; color: #6c757d; margin-bottom: 2px; display: block;">
-                <i class="fas fa-calendar-alt mr-1"></i>Tanggal
-              </label>
+              <label style="font-size: 0.8rem;">Tanggal</label>
               <input type="date"
                      class="form-control form-control-sm"
                      data-member="${member.id}"
                      data-field="tanggal_hadir"
-                     value="${current.tanggal_hadir || ''}"
-                     style="font-size: 0.8rem; height: 32px; padding: 4px 6px; border-radius: 6px; border: 1px solid #ced4da;">
+                     value="${current.tanggal_hadir || ''}">
             </div>
           </td>
-          <td style="vertical-align: middle; padding: 12px 8px; background: #ffffff;">
+          <td style="vertical-align: middle; padding: 8px;">
             <div class="form-group mb-0">
-              <label style="font-size: 0.8rem; font-weight: 600; color: #9b59b6; margin-bottom: 4px; display: block;">
-                <i class="fas fa-presentation mr-1"></i>Nilai Presentasi
-              </label>
-              <div class="input-group" style="max-width: 120px; margin: 0 auto;">
-                <input type="number"
-                       class="form-control form-control-sm"
-                       data-member="${member.id}"
-                       data-field="w_ap_presentasi"
-                       min="0"
-                       max="100"
-                       value="${current.w_ap_presentasi || ''}"
-                       placeholder="0-100"
-                       style="text-align: center; font-size: 0.9rem; height: 36px; padding: 6px 8px; border-radius: 6px 0 0 6px; border: 1px solid #ced4da; border-right: none; transition: all 0.2s ease;">
-                <div class="input-group-append">
-                  <span class="input-group-text" style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%); color: white; border: none; padding: 0 12px; font-size: 0.75rem; font-weight: 600;">%</span>
-                </div>
-              </div>
-              <small style="color: #6c757d; font-size: 0.7rem; display: block; text-align: center; margin-top: 2px;">Rentang: 0-100</small>
+              <label style="font-size: 0.8rem; font-weight: 600;">Nilai Presentasi</label>
+              <input type="number"
+                     class="form-control form-control-sm"
+                     data-member="${member.id}"
+                     data-field="w_ap_presentasi"
+                     min="0"
+                     max="100"
+                     value="${current.w_ap_presentasi || ''}"
+                     placeholder="0-100"
+                     style="width: 100px; text-align: center;">
+              <small class="text-muted d-block text-center mt-1">Rentang: 0-100</small>
             </div>
           </td>
-          <td style="text-align: center; vertical-align: middle; font-weight: 600; background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%); width: 100px; padding: 12px 8px; border-left: 1px solid #dee2e6;">
-            <div class="d-flex flex-column align-items-center">
-              <span class="badge total-badge" style="font-size: 0.85rem; padding: 6px 10px; min-width: 50px;">-</span>
-              <small style="color: #155724; font-size: 0.7rem; margin-top: 4px; font-weight: 500;">Total Nilai</small>
-            </div>
+          <td style="text-align: center; vertical-align: middle; font-weight: 600; background: #e9ecef; padding: 12px; width: 100px;">
+            <span class="badge badge-secondary total-badge">-</span>
+            <div class="small text-muted mt-1">Total Nilai</div>
           </td>
         </tr>`;
     };
@@ -2018,36 +2003,20 @@
     const modalHtml = `
       <div class="grade-ap-modal-container">
         <div class="text-center mb-4">
-          <h4 style="margin: 0; font-size: 1.2rem; font-weight: 700; color: #2c3e50; margin-bottom: 8px;">Nilai AP - ${aktivitasNama}</h4>
+          <h4 style="margin: 0; font-size: 1.3rem; font-weight: 600; color: #2c3e50; margin-bottom: 8px;">Nilai AP - ${aktivitasNama}</h4>
           <div class="mb-3">
-            <span class="badge" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 6px 12px; font-size: 0.85rem;">
-              <i class="fas fa-weight mr-1"></i>Bobot: Kehadiran ${apWeights.kehadiran}% • Presentasi ${apWeights.presentasi}%
-            </span>
+            <span class="badge badge-info">Bobot: Kehadiran ${apWeights.kehadiran}% • Presentasi ${apWeights.presentasi}%</span>
           </div>
         </div>
 
-        <div class="table-responsive" style="max-height: 60vh; overflow-y: auto; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-          <table class="table table-bordered" style="font-size: 0.9rem; margin-bottom: 0; border-collapse: separate; border-spacing: 0;">
-            <thead class="sticky-top" style="top: 0; z-index: 10;">
+        <div class="table-responsive" style="max-height: 60vh; overflow-y: auto;">
+          <table class="table table-bordered" style="font-size: 0.9rem;">
+            <thead class="sticky-top">
               <tr>
-                <th style="width: 200px; background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); color: white; padding: 12px 16px; font-size: 0.95rem; font-weight: 600; border: none; text-align: left;">
-                  <i class="fas fa-user-graduate mr-2"></i>Mahasiswa
-                </th>
-                <th style="width: 180px; text-align: center; background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); color: white; padding: 12px 8px; font-size: 0.9rem; font-weight: 600; border: none;">
-                  <i class="fas fa-user-check mr-1 d-block mb-1"></i>
-                  <div>Kehadiran</div>
-                  <small style="font-weight: 400; opacity: 0.9;">Status & Tanggal</small>
-                </th>
-                <th style="width: 140px; text-align: center; background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%); color: white; padding: 12px 8px; font-size: 0.9rem; font-weight: 600; border: none;">
-                  <i class="fas fa-presentation mr-1 d-block mb-1"></i>
-                  <div>Presentasi</div>
-                  <small style="font-weight: 400; opacity: 0.9;">0-100</small>
-                </th>
-                <th style="width: 100px; text-align: center; background: linear-gradient(135deg, #27ae60 0%, #229954 100%); color: white; padding: 12px 8px; font-size: 0.9rem; font-weight: 600; border: none;">
-                  <i class="fas fa-calculator mr-1 d-block mb-1"></i>
-                  <div>Total</div>
-                  <small style="font-weight: 400; opacity: 0.9;">Nilai</small>
-                </th>
+                <th style="width: 200px; background: #343a40; color: white; padding: 12px;">Mahasiswa</th>
+                <th style="text-align: center; background: #17a2b8; color: white; padding: 12px;">Kehadiran</th>
+                <th style="text-align: center; background: #17a2b8; color: white; padding: 12px;">Presentasi</th>
+                <th style="text-align: center; background: #28a745; color: white; padding: 12px; width: 100px;">Total</th>
               </tr>
             </thead>
             <tbody>
@@ -2056,32 +2025,14 @@
           </table>
         </div>
 
-        <div class="d-flex justify-content-between align-items-center mt-4" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); padding: 16px; border-radius: 8px; border: 1px solid #dee2e6;">
+        <div class="d-flex justify-content-between align-items-center mt-4">
           <div class="text-left">
-            <div style="margin-bottom: 8px;">
-              <span style="font-weight: 600; color: #495057; font-size: 0.9rem;">
-                <i class="fas fa-info-circle mr-2 text-primary"></i>Panduan Penilaian:
-              </span>
-            </div>
-            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
-              <div style="display: flex; align-items: center;">
-                <i class="fas fa-user-check mr-2" style="color: #3498db;"></i>
-                <span style="font-size: 0.8rem; color: #6c757d;">Kehadiran: Status + Tanggal</span>
-              </div>
-              <div style="display: flex; align-items: center;">
-                <i class="fas fa-presentation mr-2" style="color: #9b59b6;"></i>
-                <span style="font-size: 0.8rem; color: #6c757d;">Presentasi: Nilai 0-100</span>
-              </div>
-              <div style="display: flex; align-items: center;">
-                <i class="fas fa-calculator mr-2" style="color: #27ae60;"></i>
-                <span style="font-size: 0.8rem; color: #6c757d;">Total = (Kehadiran × ${apWeights.kehadiran}%) + (Presentasi × ${apWeights.presentasi}%)</span>
-              </div>
-            </div>
+            <small class="text-muted">
+              <strong>Keterangan:</strong> Pilih status kehadiran • Isi nilai presentasi 0-100 • Sistem menghitung total otomatis
+            </small>
           </div>
           <div class="text-right">
-            <div class="badge" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 8px 16px; font-size: 0.85rem; font-weight: 600;">
-              <i class="fas fa-users mr-1"></i>Total: ${members.length} Mahasiswa
-            </div>
+            <small class="text-muted">Total Mahasiswa: ${members.length}</small>
           </div>
         </div>
       </div>`;
@@ -2090,16 +2041,12 @@
       html: modalHtml,
       width: '800px',
       showConfirmButton: true,
-      confirmButtonText: ' Simpan Nilai AP',
+      confirmButtonText: ' Simpan Nilai',
       confirmButtonColor: '#28a745',
       showCancelButton: true,
       cancelButtonText: ' Batal',
       showCloseButton: true,
       allowOutsideClick: () => !Swal.isLoading(),
-      customClass: {
-        container: 'grade-ap-modal',
-        popup: 'swal2-popup'
-      },
       didOpen: () => {
         const popup = Swal.getPopup();
 
@@ -2189,13 +2136,7 @@
               border: 1px solid #e9ecef;
               vertical-align: middle;
             }
-            .grade-ap-modal .table tbody tr:hover {
-              background-color: #f8f9fa;
-              transform: scale(1.01);
-              box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-              transition: all 0.2s ease;
-            }
-            .grade-ap-modal .badge {
+              .grade-ap-modal .badge {
               font-weight: 600;
               border-radius: 6px;
             }
@@ -2552,57 +2493,37 @@
     const buildRow = member => {
       const current = existingEvaluations[member.id] || {};
       return `
-        <tr data-member="${member.id}" data-evaluation-id="${current.id || ''}" style="transition: all 0.2s ease;">
-          <td style="vertical-align: middle; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); font-weight: 700; padding: 16px; border-left: 4px solid #3498db;">
-            <div style="font-size: 1rem; margin-bottom: 4px; color: #2c3e50;">${member.nama}</div>
-            <small style="color: #6c757d; font-size: 0.85rem; font-weight: 500;">
-              <i class="fas fa-id-card mr-1"></i>${member.nim}
-            </small>
+        <tr data-member="${member.id}" data-evaluation-id="${current.id || ''}">
+          <td style="vertical-align: middle; background: #f8f9fa; font-weight: 600; padding: 12px; width: 200px;">
+            <div>${member.nama}</div>
+            <small class="text-muted">${member.nim}</small>
           </td>
-          ${dosenItems.map((item, index) => {
+          ${dosenItems.map(item => {
             const raw = current[item.kode];
-            // Handle null, undefined, and empty string - only show value if it's 0 or a positive number
             const value = (raw === 0 || (raw && raw !== '' && !isNaN(raw))) ? raw : '';
-            const colors = [
-              '#3498db', '#e74c3c', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c'
-            ];
-            const color = colors[index % colors.length];
             return `
-              <td style="text-align: center; vertical-align: middle; padding: 12px 8px; background: #ffffff;">
+              <td style="text-align: center; vertical-align: middle; padding: 8px;">
                 <div class="form-group mb-0">
-                  <label style="font-size: 0.8rem; font-weight: 600; color: ${color}; margin-bottom: 6px; display: block;">
-                    <i class="fas fa-star mr-1"></i>${item.nama}
-                  </label>
-                  <div class="input-group" style="max-width: 120px; margin: 0 auto;">
-                    <input type="number"
-                           class="form-control form-control-sm grade-input"
-                           data-member="${member.id}"
-                           data-item="${item.kode}"
-                           data-card="${cardId}"
-                           min="0" max="100"
-                           value="${value}"
-                           placeholder="0-100"
-                           style="text-align: center; font-size: 0.9rem; height: 38px; padding: 6px 8px; border-radius: 6px 0 0 6px; border: 2px solid ${color}20; transition: all 0.2s ease;">
-                    <div class="input-group-append">
-                      <span class="input-group-text" style="background: ${color}; color: white; border: none; padding: 0 12px; font-size: 0.75rem; font-weight: 700;">
-                        <i class="fas fa-percentage"></i>
-                      </span>
-                    </div>
-                  </div>
+                  <label style="font-size: 0.8rem; font-weight: 600;">${item.nama}</label>
+                  <input type="number"
+                         class="form-control form-control-sm grade-input"
+                         data-member="${member.id}"
+                         data-item="${item.kode}"
+                         data-card="${cardId}"
+                         min="0" max="100"
+                         value="${value}"
+                         placeholder="0-100"
+                         style="width: 80px; text-align: center;">
                 </div>
               </td>`;
           }).join('')}
-          <td style="text-align: center; vertical-align: middle; font-weight: 700; background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); padding: 16px; border-left: 1px solid #dee2e6;">
-            <div class="d-flex flex-column align-items-center">
-              <span class="average-badge badge" style="font-size: 0.9rem; padding: 6px 12px; min-width: 60px; background: #6f42c1; color: white;">-</span>
-              <small style="color: #5a2d91; font-size: 0.7rem; margin-top: 4px; font-weight: 600;">Rata-rata</small>
-            </div>
+          <td style="text-align: center; vertical-align: middle; font-weight: 600; background: #e9ecef; padding: 12px; width: 100px;">
+            <span class="average-badge badge badge-info">-</span>
+            <div class="small text-muted mt-1">Rata-rata</div>
           </td>
-          <td style="text-align: center; vertical-align: middle; font-weight: 700; background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%); padding: 16px; border-left: 1px solid #dee2e6;">
-            <div class="d-flex flex-column align-items-center">
-              <span class="final-badge badge" style="font-size: 0.9rem; padding: 6px 12px; min-width: 60px; background: #fd7e14; color: white;">-</span>
-              <small style="color: #e8590c; font-size: 0.7rem; margin-top: 4px; font-weight: 600;">Final</small>
-            </div>
+          <td style="text-align: center; vertical-align: middle; font-weight: 600; background: #e9ecef; padding: 12px; width: 100px;">
+            <span class="final-badge badge badge-warning">-</span>
+            <div class="small text-muted mt-1">Final</div>
           </td>
         </tr>`;
     };
@@ -2610,46 +2531,25 @@
     const modalHtml = `
       <div class="project-detail-modal">
         <div class="text-center mb-4">
-          <h4 style="margin: 0; font-size: 1.4rem; font-weight: 800; color: #2c3e50; margin-bottom: 12px;">
-            <i class="fas fa-chalkboard-teacher mr-2" style="color: #3498db;"></i>${cardTitle}
-          </h4>
+          <h4 style="margin: 0; font-size: 1.3rem; font-weight: 600; color: #2c3e50; margin-bottom: 8px;">${cardTitle}</h4>
           <div class="mb-3">
-            <span class="badge" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 8px 16px; font-size: 0.9rem;">
-              <i class="fas fa-graduation-cap mr-1"></i>Evaluasi Dosen per Mahasiswa
-            </span>
-          </div>
-          <div>
-            <span class="badge" style="background: linear-gradient(135deg, #17a2b8 0%, #138496 100%); color: white; padding: 6px 12px; font-size: 0.85rem;">
-              <i class="fas fa-weight mr-1"></i>Total Bobot: ${totalBobot}%
-            </span>
+            <span class="badge badge-success">Evaluasi Dosen per Mahasiswa</span>
+            <span class="badge badge-info ml-2">Total Bobot: ${totalBobot}%</span>
           </div>
         </div>
-        <div class="table-responsive" style="max-height: 65vh; overflow-y: auto; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-          <table class="table table-bordered" style="font-size: 0.9rem; margin-bottom: 0; border-collapse: separate; border-spacing: 0;">
-            <thead class="sticky-top" style="top: 0; z-index: 10;">
+        <div class="table-responsive" style="max-height: 65vh; overflow-y: auto;">
+          <table class="table table-bordered" style="font-size: 0.9rem;">
+            <thead class="sticky-top">
               <tr>
-                <th style="min-width: 200px; background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); color: white; padding: 16px; font-size: 1rem; font-weight: 700; border: none; text-align: left;">
-                  <i class="fas fa-user-graduate mr-2"></i>Mahasiswa
-                </th>
+                <th style="width: 200px; background: #343a40; color: white; padding: 12px;">Mahasiswa</th>
                 ${dosenItems.map(item => `
-                  <th style="min-width: 150px; text-align: center; background: linear-gradient(135deg, #17a2b8 0%, #138496 100%); color: white; padding: 16px 12px; font-size: 0.9rem; font-weight: 600; border: none;">
-                    <div style="font-weight: 700; margin-bottom: 4px;">${item.nama}</div>
-                    <div style="background: rgba(255,255,255,0.2); padding: 4px 8px; border-radius: 4px; margin-bottom: 4px;">
-                      <i class="fas fa-percentage mr-1"></i>Bobot: ${item.bobot}%
-                    </div>
-                    <small style="font-weight: 500; opacity: 0.9;">Rentang: 1-100</small>
+                  <th style="text-align: center; background: #17a2b8; color: white; padding: 12px;">
+                    <div>${item.nama}</div>
+                    <small>Bobot: ${item.bobot}%</small>
                   </th>
                 `).join('')}
-                <th style="min-width: 120px; text-align: center; background: linear-gradient(135deg, #6f42c1 0%, #5a2d91 100%); color: white; padding: 16px; font-size: 0.9rem; font-weight: 600; border: none;">
-                  <i class="fas fa-calculator mr-1 d-block mb-1"></i>
-                  Rata-rata
-                  <small style="font-weight: 400; opacity: 0.9;">(Simple Average)</small>
-                </th>
-                <th style="min-width: 140px; text-align: center; background: linear-gradient(135deg, #fd7e14 0%, #e8590c 100%); color: white; padding: 16px; font-size: 0.9rem; font-weight: 600; border: none;">
-                  <i class="fas fa-award mr-1 d-block mb-1"></i>
-                  Final
-                  <small style="font-weight: 400; opacity: 0.9;">(Weighted Score)</small>
-                </th>
+                <th style="text-align: center; background: #6f42c1; color: white; padding: 12px; width: 100px;">Rata-rata</th>
+                <th style="text-align: center; background: #fd7e14; color: white; padding: 12px; width: 100px;">Final</th>
               </tr>
             </thead>
             <tbody>
@@ -2658,32 +2558,14 @@
           </table>
         </div>
 
-        <div class="d-flex justify-content-between align-items-center mt-4" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); padding: 20px; border-radius: 12px; border: 1px solid #dee2e6;">
+        <div class="d-flex justify-content-between align-items-center mt-4">
           <div class="text-left">
-            <div style="margin-bottom: 8px;">
-              <span style="font-weight: 700; color: #495057; font-size: 0.95rem;">
-                <i class="fas fa-info-circle mr-2 text-info"></i>Panduan Penilaian:
-              </span>
-            </div>
-            <div style="display: flex; gap: 25px; flex-wrap: wrap;">
-              <div style="display: flex; align-items: center;">
-                <i class="fas fa-star mr-2" style="color: #3498db;"></i>
-                <span style="font-size: 0.85rem; color: #6c757d;">Input nilai 1-100 untuk setiap kriteria</span>
-              </div>
-              <div style="display: flex; align-items: center;">
-                <i class="fas fa-calculator mr-2" style="color: #6f42c1;"></i>
-                <span style="font-size: 0.85rem; color: #6c757d;">Rata-rata dihitung otomatis</span>
-              </div>
-              <div style="display: flex; align-items: center;">
-                <i class="fas fa-award mr-2" style="color: #fd7e14;"></i>
-                <span style="font-size: 0.85rem; color: #6c757d;">Final score berdasarkan bobot</span>
-              </div>
-            </div>
+            <small class="text-muted">
+              <strong>Keterangan:</strong> Input nilai 1-100 • Rata-rata dihitung otomatis • Final score berdasarkan bobot
+            </small>
           </div>
           <div class="text-right">
-            <div class="badge" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 10px 18px; font-size: 0.9rem; font-weight: 700; border-radius: 8px;">
-              <i class="fas fa-users mr-1"></i>Total: ${members.length} Mahasiswa
-            </div>
+            <small class="text-muted">Total Mahasiswa: ${members.length}</small>
           </div>
         </div>
       </div>
@@ -2691,19 +2573,15 @@
 
     Swal.fire({
       html: modalHtml,
-      width: '95%',
+      width: '900px',
       showConfirmButton: true,
-      confirmButtonText: 'Simpan Semua Nilai',
+      confirmButtonText: ' Simpan Nilai',
       confirmButtonColor: '#28a745',
       showCancelButton: true,
       cancelButtonText: ' Batal',
       showCloseButton: true,
       showLoaderOnConfirm: true,
       allowOutsideClick: () => !Swal.isLoading(),
-      customClass: {
-        container: 'project-detail-modal',
-        popup: 'swal2-popup'
-      },
       didOpen: () => {
         document.querySelectorAll('.grade-input').forEach(input => {
           input.addEventListener('input', function() {
