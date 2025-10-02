@@ -1922,74 +1922,103 @@
       const current = existingData[member.id] || {};
 
       return `
-        <tr data-member="${member.id}">
-          <td style="vertical-align: middle; background: #f8f9fa; font-weight: 500; width: 160px; padding: 6px 8px;">
-            <div style="font-size: 0.8rem; margin-bottom: 2px;">${member.nama}</div>
-            <small style="color: #6b7280; font-size: 0.75rem;">${member.nim}</small>
+        <tr data-member="${member.id}" style="transition: all 0.2s ease;">
+          <td style="vertical-align: middle; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); font-weight: 600; width: 200px; padding: 12px 16px; border-left: 4px solid #3498db;">
+            <div style="font-size: 0.95rem; margin-bottom: 4px; color: #2c3e50;">${member.nama}</div>
+            <small style="color: #6c757d; font-size: 0.8rem; font-weight: 500;"><i class="fas fa-id-card mr-1"></i>${member.nim}</small>
           </td>
-          <td style="vertical-align: top; padding: 4px; border-right: 1px solid #dee2e6;">
-            <!-- Kehadiran -->
-            <div style="margin-bottom: 2px;">
-              <small style="color: #1976d2; font-weight: 500; font-size: 0.75rem;">Kehadiran</small>
+          <td style="vertical-align: middle; padding: 12px 8px; border-right: 1px solid #dee2e6; background: #ffffff;">
+            <div class="form-group mb-2">
+              <label style="font-size: 0.8rem; font-weight: 600; color: #3498db; margin-bottom: 4px; display: block;">
+                <i class="fas fa-user-check mr-1"></i>Status Kehadiran
+              </label>
+              <select class="form-control form-control-sm"
+                      data-member="${member.id}"
+                      data-field="w_ap_kehadiran"
+                      style="font-size: 0.85rem; height: 36px; padding: 6px 8px; border-radius: 6px; border: 1px solid #ced4da; transition: all 0.2s ease;">
+                <option value="">Pilih Status</option>
+                <option value="Hadir" ${current.w_ap_kehadiran === 'Hadir' ? 'selected' : ''}>✅ Hadir</option>
+                <option value="Tidak Hadir" ${current.w_ap_kehadiran === 'Tidak Hadir' ? 'selected' : ''}>❌ Tidak Hadir</option>
+                <option value="Izin" ${current.w_ap_kehadiran === 'Izin' ? 'selected' : ''}>📄 Izin</option>
+                <option value="Sakit" ${current.w_ap_kehadiran === 'Sakit' ? 'selected' : ''}>🏥 Sakit</option>
+              </select>
             </div>
-            <select class="form-control form-control-sm"
-                    data-member="${member.id}"
-                    data-field="w_ap_kehadiran"
-                    style="font-size: 0.75rem; margin-bottom: 2px; height: 28px; padding: 2px 4px;">
-              <option value="">-</option>
-              <option value="Hadir" ${current.w_ap_kehadiran === 'Hadir' ? 'selected' : ''}>Hadir</option>
-              <option value="Tidak Hadir" ${current.w_ap_kehadiran === 'Tidak Hadir' ? 'selected' : ''}>Tidak Hadir</option>
-              <option value="Izin" ${current.w_ap_kehadiran === 'Izin' ? 'selected' : ''}>Izin</option>
-              <option value="Sakit" ${current.w_ap_kehadiran === 'Sakit' ? 'selected' : ''}>Sakit</option>
-            </select>
-            <input type="date"
-                   class="form-control form-control-sm"
-                   data-member="${member.id}"
-                   data-field="tanggal_hadir"
-                   value="${current.tanggal_hadir || ''}"
-                   style="font-size: 0.7rem; height: 26px; padding: 2px 4px;">
-          </td>
-          <td style="vertical-align: top; padding: 4px;">
-            <!-- Presentasi -->
-            <div style="margin-bottom: 2px;">
-              <small style="color: #7b1fa2; font-weight: 500; font-size: 0.75rem;">Presentasi</small>
+            <div class="form-group mb-0">
+              <label style="font-size: 0.75rem; font-weight: 500; color: #6c757d; margin-bottom: 2px; display: block;">
+                <i class="fas fa-calendar-alt mr-1"></i>Tanggal
+              </label>
+              <input type="date"
+                     class="form-control form-control-sm"
+                     data-member="${member.id}"
+                     data-field="tanggal_hadir"
+                     value="${current.tanggal_hadir || ''}"
+                     style="font-size: 0.8rem; height: 32px; padding: 4px 6px; border-radius: 6px; border: 1px solid #ced4da;">
             </div>
-            <input type="number"
-                   class="form-control form-control-sm"
-                   data-member="${member.id}"
-                   data-field="w_ap_presentasi"
-                   min="0"
-                   max="100"
-                   value="${current.w_ap_presentasi || ''}"
-                   placeholder="0-100"
-                   style="text-align: center; font-size: 0.8rem; height: 28px; padding: 2px 4px; margin-bottom: 2px;">
-            <small style="color: #6c757d; font-size: 0.65rem;">0-100</small>
           </td>
-          <td style="text-align: center; vertical-align: middle; font-weight: 500; background: #f8f9fa; width: 60px; padding: 4px;">
-            <span class="badge badge-info total-badge" style="font-size: 0.75rem; padding: 4px 6px;">-</span>
+          <td style="vertical-align: middle; padding: 12px 8px; background: #ffffff;">
+            <div class="form-group mb-0">
+              <label style="font-size: 0.8rem; font-weight: 600; color: #9b59b6; margin-bottom: 4px; display: block;">
+                <i class="fas fa-presentation mr-1"></i>Nilai Presentasi
+              </label>
+              <div class="input-group" style="max-width: 120px; margin: 0 auto;">
+                <input type="number"
+                       class="form-control form-control-sm"
+                       data-member="${member.id}"
+                       data-field="w_ap_presentasi"
+                       min="0"
+                       max="100"
+                       value="${current.w_ap_presentasi || ''}"
+                       placeholder="0-100"
+                       style="text-align: center; font-size: 0.9rem; height: 36px; padding: 6px 8px; border-radius: 6px 0 0 6px; border: 1px solid #ced4da; border-right: none; transition: all 0.2s ease;">
+                <div class="input-group-append">
+                  <span class="input-group-text" style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%); color: white; border: none; padding: 0 12px; font-size: 0.75rem; font-weight: 600;">%</span>
+                </div>
+              </div>
+              <small style="color: #6c757d; font-size: 0.7rem; display: block; text-align: center; margin-top: 2px;">Rentang: 0-100</small>
+            </div>
+          </td>
+          <td style="text-align: center; vertical-align: middle; font-weight: 600; background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%); width: 100px; padding: 12px 8px; border-left: 1px solid #dee2e6;">
+            <div class="d-flex flex-column align-items-center">
+              <span class="badge total-badge" style="font-size: 0.85rem; padding: 6px 10px; min-width: 50px;">-</span>
+              <small style="color: #155724; font-size: 0.7rem; margin-top: 4px; font-weight: 500;">Total Nilai</small>
+            </div>
           </td>
         </tr>`;
     };
 
     const modalHtml = `
       <div class="grade-ap-modal-container">
-        <div class="text-center mb-2">
-          <h4 style="margin: 0; font-size: 1rem; font-weight: 600; color: #2c3e50;">Nilai AP - ${aktivitasNama}</h4>
-          <small style="color: #6c757d; font-size: 0.8rem;">Bobot: Kehadiran ${apWeights.kehadiran}% • Presentasi ${apWeights.presentasi}%</small>
+        <div class="text-center mb-4">
+          <h4 style="margin: 0; font-size: 1.2rem; font-weight: 700; color: #2c3e50; margin-bottom: 8px;">Nilai AP - ${aktivitasNama}</h4>
+          <div class="mb-3">
+            <span class="badge" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 6px 12px; font-size: 0.85rem;">
+              <i class="fas fa-weight mr-1"></i>Bobot: Kehadiran ${apWeights.kehadiran}% • Presentasi ${apWeights.presentasi}%
+            </span>
+          </div>
         </div>
 
-        <div class="table-responsive" style="max-height: 55vh; overflow-y: auto;">
-          <table class="table table-bordered table-sm" style="font-size: 0.75rem; margin-bottom: 0;">
-            <thead class="sticky-top bg-light">
+        <div class="table-responsive" style="max-height: 60vh; overflow-y: auto; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+          <table class="table table-bordered" style="font-size: 0.9rem; margin-bottom: 0; border-collapse: separate; border-spacing: 0;">
+            <thead class="sticky-top" style="top: 0; z-index: 10;">
               <tr>
-                <th style="width: 160px; background: #f8f9fa; padding: 4px 8px; font-size: 0.8rem;">Mahasiswa</th>
-                <th style="text-align: center; background: #e3f2fd; color: #1976d2; padding: 4px; font-size: 0.8rem;">
-                  Kehadiran
+                <th style="width: 200px; background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); color: white; padding: 12px 16px; font-size: 0.95rem; font-weight: 600; border: none; text-align: left;">
+                  <i class="fas fa-user-graduate mr-2"></i>Mahasiswa
                 </th>
-                <th style="text-align: center; background: #f3e5f5; color: #7b1fa2; padding: 4px; font-size: 0.8rem;">
-                  Presentasi
+                <th style="width: 180px; text-align: center; background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); color: white; padding: 12px 8px; font-size: 0.9rem; font-weight: 600; border: none;">
+                  <i class="fas fa-user-check mr-1 d-block mb-1"></i>
+                  <div>Kehadiran</div>
+                  <small style="font-weight: 400; opacity: 0.9;">Status & Tanggal</small>
                 </th>
-                <th style="text-align: center; background: #f8f9fa; width: 60px; padding: 4px; font-size: 0.8rem;">Total</th>
+                <th style="width: 140px; text-align: center; background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%); color: white; padding: 12px 8px; font-size: 0.9rem; font-weight: 600; border: none;">
+                  <i class="fas fa-presentation mr-1 d-block mb-1"></i>
+                  <div>Presentasi</div>
+                  <small style="font-weight: 400; opacity: 0.9;">0-100</small>
+                </th>
+                <th style="width: 100px; text-align: center; background: linear-gradient(135deg, #27ae60 0%, #229954 100%); color: white; padding: 12px 8px; font-size: 0.9rem; font-weight: 600; border: none;">
+                  <i class="fas fa-calculator mr-1 d-block mb-1"></i>
+                  <div>Total</div>
+                  <small style="font-weight: 400; opacity: 0.9;">Nilai</small>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -1998,15 +2027,32 @@
           </table>
         </div>
 
-        <div class="d-flex justify-content-between align-items-center mt-3">
+        <div class="d-flex justify-content-between align-items-center mt-4" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); padding: 16px; border-radius: 8px; border: 1px solid #dee2e6;">
           <div class="text-left">
-            <small class="text-muted">
-              Keterangan: Kehadiran (status + tanggal), Presentasi (nilai 0-100)<br>
-              Total = (Kehadiran × ${apWeights.kehadiran}%) + (Presentasi × ${apWeights.presentasi}%)
-            </small>
+            <div style="margin-bottom: 8px;">
+              <span style="font-weight: 600; color: #495057; font-size: 0.9rem;">
+                <i class="fas fa-info-circle mr-2 text-primary"></i>Panduan Penilaian:
+              </span>
+            </div>
+            <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+              <div style="display: flex; align-items: center;">
+                <i class="fas fa-user-check mr-2" style="color: #3498db;"></i>
+                <span style="font-size: 0.8rem; color: #6c757d;">Kehadiran: Status + Tanggal</span>
+              </div>
+              <div style="display: flex; align-items: center;">
+                <i class="fas fa-presentation mr-2" style="color: #9b59b6;"></i>
+                <span style="font-size: 0.8rem; color: #6c757d;">Presentasi: Nilai 0-100</span>
+              </div>
+              <div style="display: flex; align-items: center;">
+                <i class="fas fa-calculator mr-2" style="color: #27ae60;"></i>
+                <span style="font-size: 0.8rem; color: #6c757d;">Total = (Kehadiran × ${apWeights.kehadiran}%) + (Presentasi × ${apWeights.presentasi}%)</span>
+              </div>
+            </div>
           </div>
           <div class="text-right">
-            <small class="text-muted">Total: ${members.length} mahasiswa</small>
+            <div class="badge" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 8px 16px; font-size: 0.85rem; font-weight: 600;">
+              <i class="fas fa-users mr-1"></i>Total: ${members.length} Mahasiswa
+            </div>
           </div>
         </div>
       </div>`;
@@ -2047,8 +2093,8 @@
               'Tanpa Keterangan': 0
             }[kehadiran] || 0 : 0;
 
-            // Use bobot from aktivitas_list
-            const totalScore = (kehadiranBobot * bobotKehadiriran / 100) + (presentasi * bobotPresentasi / 100);
+            // Use bobot from config
+            const totalScore = (kehadiranBobot * apWeights.kehadiran / 100) + (presentasi * apWeights.presentasi / 100);
             const finalScore = Math.round(totalScore);
             totalBadge.textContent = finalScore || '-';
             totalBadge.className = `badge ${finalScore >= 70 ? 'badge-success' : finalScore >= 50 ? 'badge-warning' : 'badge-danger'} total-badge`;
@@ -2075,12 +2121,63 @@
           const style = document.createElement('style');
           style.id = styleId;
           style.textContent = `
-            .grade-ap-modal .swal2-popup { padding: 0; border-radius: 0.5rem; max-width: none; width: 100%; }
-            .grade-ap-modal .form-control { transition: all 0.2s ease; }
-            .grade-ap-modal .form-control:focus { border-color: #36b9cc; box-shadow: 0 0 0 0.2rem rgba(54,185,204,0.25); }
-            .grade-ap-modal .form-control:hover { border-color: #36b9cc; }
-            .grade-ap-modal .table { background: white; }
-            .grade-ap-modal .table th { position: sticky; top: 0; z-index: 10; }
+            .grade-ap-modal .swal2-popup {
+              padding: 0;
+              border-radius: 12px;
+              max-width: none;
+              width: 100%;
+              box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            }
+            .grade-ap-modal .swal2-html-container {
+              padding: 0;
+              margin: 0;
+            }
+            .grade-ap-modal .form-control {
+              transition: all 0.3s ease;
+              border: 1px solid #ced4da;
+            }
+            .grade-ap-modal .form-control:focus {
+              border-color: #667eea;
+              box-shadow: 0 0 0 0.2rem rgba(102,126,234,0.25);
+              transform: translateY(-1px);
+            }
+            .grade-ap-modal .form-control:hover {
+              border-color: #667eea;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            }
+            .grade-ap-modal .table {
+              background: white;
+              border-radius: 8px;
+              overflow: hidden;
+            }
+            .grade-ap-modal .table th {
+              position: sticky;
+              top: 0;
+              z-index: 10;
+              border: none;
+            }
+            .grade-ap-modal .table td {
+              border: 1px solid #e9ecef;
+              vertical-align: middle;
+            }
+            .grade-ap-modal .table tbody tr:hover {
+              background-color: #f8f9fa;
+              transform: scale(1.01);
+              box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+              transition: all 0.2s ease;
+            }
+            .grade-ap-modal .badge {
+              font-weight: 600;
+              border-radius: 6px;
+            }
+            .grade-ap-modal .input-group-text {
+              border-radius: 0 6px 6px 0;
+              font-weight: 600;
+            }
+            .grade-ap-modal .form-group label {
+              margin-bottom: 6px;
+              font-weight: 600;
+            }
           `;
           document.head.appendChild(style);
         }
@@ -2100,10 +2197,12 @@
           // Get all inputs for this member
           const kehadiranSelect = row.querySelector(`select[data-member="${memberId}"][data-field="w_ap_kehadiran"]`);
           const presentasiInput = row.querySelector(`input[data-member="${memberId}"][data-field="w_ap_presentasi"]`);
+          const tanggalInput = row.querySelector(`input[data-member="${memberId}"][data-field="tanggal_hadir"]`);
 
           // Get values
           const kehadiran = kehadiranSelect?.value.trim() || '';
           const presentasi = presentasiInput?.value.trim() || '';
+          const tanggal = tanggalInput?.value.trim() || '';
 
           // Only create item if there's any data
           if (kehadiran || presentasi) {
@@ -2114,10 +2213,24 @@
               mahasiswa_id: memberId,
               aktivitas_list_id: parseInt(aktivitasListId),
               w_ap_kehadiran: kehadiran || null,
-              tanggal_hadir: existing.tanggal_hadir || null,
+              tanggal_hadir: tanggal || null,
               w_ap_presentasi: presentasi ? parseFloat(presentasi) : null,
-              status: existing.status || 'Submitted',
-              catatan: existing.catatan || null
+              status: 'Submitted',
+              catatan: null
+            });
+
+            // Debug log
+            console.log('Saving item for member', memberId, {
+              kehadiran,
+              tanggal,
+              presentasi,
+              kehadiranBobot: kehadiran ? {
+                'Hadir': 100,
+                'Izin': 70,
+                'Sakit': 60,
+                'Terlambat': 50,
+                'Tanpa Keterangan': 0
+              }[kehadiran] || 0 : 0
             });
           }
         });
@@ -2126,6 +2239,10 @@
           // For validation, throw a special error that we can catch and handle silently
           throw new Error('VALIDATION_FAILED');
         }
+
+        console.log('Sending data to server:', {
+          nilai_ap: items
+        });
 
         return fetch(storeUrl, {
           method: 'POST',

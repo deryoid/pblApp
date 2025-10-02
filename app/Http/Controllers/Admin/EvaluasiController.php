@@ -1826,6 +1826,9 @@ class EvaluasiController extends Controller
     public function storeNilaiAPPerAktivitasList(Request $request)
     {
         try {
+            // Log incoming data for debugging
+            Log::info('storeNilaiAPPerAktivitasList called with data:', $request->all());
+
             // Validate batch data
             $validated = $request->validate([
                 'nilai_ap' => 'required|array|min:1',
@@ -1837,6 +1840,8 @@ class EvaluasiController extends Controller
                 'nilai_ap.*.w_ap_presentasi' => 'nullable|numeric|min:0|max:100',
                 'nilai_ap.*.status' => 'nullable|string|in:Draft,Submitted,Reviewed',
             ]);
+
+            Log::info('Validated data:', $validated);
 
             $savedItems = [];
             $updatedCount = 0;
@@ -1877,6 +1882,8 @@ class EvaluasiController extends Controller
                 if (Auth::check()) {
                     $saveData['evaluator_id'] = Auth::id();
                 }
+
+                Log::info('Saving data for mahasiswa ' . $item['mahasiswa_id'], $saveData);
 
                 // Check if record exists
                 if (! empty($item['id'])) {
