@@ -98,7 +98,7 @@
         <li class="nav-item {{ request()->routeIs('evaluator.kelompok.*') ? 'active' : '' }}">
             <a class="nav-link" href="{{ route('evaluator.kelompok.index') }}">
                 <i class="fas fa-fw fa-users"></i>
-                <span>Kelompok</span>
+                <span>Kelompok PBL</span>
             </a>
         </li>
 
@@ -107,7 +107,7 @@
         <div class="sidebar-heading">PBL</div>
 
         {{-- Evaluasi --}}
-        <li class="nav-item {{ request()->routeIs('evaluator.evaluasi.*') ? 'active' : '' }}">
+        <li class="nav-item {{ request()->routeIs('evaluator.evaluasi.index','evaluator.evaluasi.kelompok.show','evaluator.evaluasi.nilai-final') ? 'active' : '' }}">
             <a class="nav-link" href="{{ route('evaluator.evaluasi.index') }}">
                 <i class="fas fa-fw fa-project-diagram"></i>
                 <span>Evaluasi</span>

@@ -5,11 +5,15 @@ namespace App\Http\Controllers\Evaluator;
 use App\Http\Controllers\Controller;
 use App\Models\Kelompok;
 use App\Models\Periode;
+use Illuminate\Http\Request;
 
 class KelompokController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        // Ambil semua periode untuk dropdown
+        $periodes = Periode::orderByDesc('id')->get(['id', 'periode', 'status_periode']);
+
         // Ambil periode aktif yang paling sering digunakan oleh kelompok
         $periodeWithKelompok = Periode::where('status_periode', 'Aktif')
             ->whereHas('kelompoks')
@@ -18,13 +22,21 @@ class KelompokController extends Controller
         // Jika tidak ada, ambil periode aktif pertama
         $periodeAktif = $periodeWithKelompok ?: Periode::where('status_periode', 'Aktif')->first();
 
-        $kelompoks = Kelompok::with(['periode', 'mahasiswas', 'evaluasiMasters' => function ($query) use ($periodeAktif) {
-            if ($periodeAktif) {
-                $query->where('periode_id', $periodeAktif->id);
+        // Ambil periode yang dipilih dari request
+        $qPeriode = $request->get('periode_id');
+        if ($qPeriode) {
+            $selectedPeriode = Periode::find($qPeriode);
+        } else {
+            $selectedPeriode = $periodeAktif;
+        }
+
+        $kelompoks = Kelompok::with(['periode', 'mahasiswas', 'evaluasiMasters' => function ($query) use ($selectedPeriode) {
+            if ($selectedPeriode) {
+                $query->where('periode_id', $selectedPeriode->id);
             }
         }])
-            ->when($periodeAktif, function ($query) use ($periodeAktif) {
-                return $query->where('periode_id', $periodeAktif->id);
+            ->when($selectedPeriode, function ($query) use ($selectedPeriode) {
+                return $query->where('periode_id', $selectedPeriode->id);
             })
             ->get()
             ->sortBy(function ($kelompok) {
@@ -36,7 +48,7 @@ class KelompokController extends Controller
             })
             ->values();
 
-        return view('evaluator.kelompok.index', compact('kelompoks', 'periodeAktif'));
+        return view('evaluator.kelompok.index', compact('kelompoks', 'periodeAktif', 'periodes', 'qPeriode'));
     }
 
     public function show(Kelompok $kelompok)

@@ -47,25 +47,8 @@
     </div>
   </div>
 
-  {{-- Filter --}}
-  <div class="row mb-3">
-    <div class="col-md-4">
-      <form method="GET" action="{{ route('evaluator.evaluasi.index') }}">
-        <div class="input-group">
-          <input type="text" name="q" class="form-control" placeholder="Cari nama kelompok atau ketua..." value="{{ request('q') }}">
-          <select name="periode_id" class="form-control" style="max-width:150px;">
-            <option value="">Semua Periode</option>
-            @foreach($periodes as $p)
-              <option value="{{ $p->id }}" {{ $periodeId == $p->id ? 'selected' : '' }}>{{ $p->periode }}</option>
-            @endforeach
-          </select>
-          <button class="btn btn-outline-secondary" type="submit">
-            <i class="fas fa-search"></i>
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
+  @php
+  @endphp
 
   <div class="card shadow-sm">
     <div class="card-body">
@@ -86,8 +69,6 @@
               <th>Kelompok</th>
               <th>Anggota</th>
               <th>Evaluasi</th>
-              <th>Kehadiran</th>
-              <th>Keaktifan</th>
               <th style="width:80px; text-align: center;">Aksi</th>
             </tr>
           </thead>
@@ -97,22 +78,21 @@
                 $searchStr     = strtolower(
                                   trim(
                                     (string)($k->nama_kelompok ?? '').' '.
-                                    (string)($k->mahasiswas->firstWhere('pivot.role', 'ketua')?->nama_mahasiswa ?? '')
+                                    (string)($k->ketua_nama ?? '')
                                   )
                                 );
-                $weeklyData = $weeklyMap[$k->id] ?? [];
               @endphp
               <tr data-search="{{ $searchStr }}">
                 <td>
                   <div class="font-weight-bold">{{ $k->nama_kelompok }}</div>
-                  <div class="small-muted truncate">Ketua: {{ $k->mahasiswas->firstWhere('pivot.role', 'ketua')?->nama_mahasiswa ?? '-' }}</div>
+                  <div class="small-muted truncate">Ketua: {{ $k->ketua_nama ?? '-' }}</div>
                 </td>
                 <td align="center">
                   {{-- Jumlah anggota --}}
                       @if($k->mahasiswas && $k->mahasiswas->count())
                         <div class="text-left">
                           @foreach($k->mahasiswas as $m)
-                            <span class="d-block small">{{ $loop->iteration }}. {{ $m->nama_mahasiswa }}</span>
+                            <span class="d-block small">{{ $loop->iteration }}. {{ $m->nama }}</span>
                           @endforeach
                         </div>
                       @else
@@ -122,67 +102,30 @@
                 <td>
                   <div class="d-flex align-items-center">
                     <span class="badge mr-2">
-                      Evaluasi :
+                      Evaluasi : 
                     </span>
                     <div class="activity-boxes">
-                      {{-- Menampilkan aktivitas boxes --}}
-                      @php
-                      $evalCount = $weeklyData['eval_count'] ?? 0;
-                      $avgKehadiran = $weeklyData['avg_kehadiran'] ?? 0;
-                      $avgKeaktifan = $weeklyData['avg_keaktifan'] ?? 0;
-                      @endphp
-                      @for($i = 1; $i <= max($evalCount, 1); $i++)
-                        <div class="activity-box {{ $i <= $evalCount ? 'evaluated' : 'unevaluated' }}"></div>
-                      @endfor
+                      {!! $k->activity_boxes !!}
                     </div>
                     <span class="small-muted ml-2">
-                      {{ $evalCount }} sesi
+                      {{ $k->evaluated_activities_count }}/{{ $k->total_activities }}
                     </span>
-                  </div>
-                </td>
-                <td>
-                  <div class="text-center">
-                    <div class="progress" style="height: 8px;">
-                      <div class="progress-bar bg-{{ $avgKehadiran >= 75 ? 'success' : ($avgKehadiran >= 50 ? 'warning' : 'danger') }}"
-                           style="width: {{ $avgKehadiran }}%"
-                           title="{{ $avgKehadiran }}%">
-                      </div>
-                    </div>
-                    <small class="text-muted">{{ $avgKehadiran }}%</small>
-                  </div>
-                </td>
-                <td>
-                  <div class="text-center">
-                    <div class="progress" style="height: 8px;">
-                      <div class="progress-bar bg-{{ $avgKeaktifan >= 75 ? 'success' : ($avgKeaktifan >= 50 ? 'warning' : 'danger') }}"
-                           style="width: {{ $avgKeaktifan }}%"
-                           title="{{ $avgKeaktifan }}%">
-                      </div>
-                    </div>
-                    <small class="text-muted">{{ $avgKeaktifan }}%</small>
                   </div>
                 </td>
                 <td align="center">
                   {{-- Detail --}}
                   <a href="{{ route('evaluator.evaluasi.showKelompok', $k->uuid) }}"
-                     class="btn btn-circle btn-primary btn-sm" title="Detail"><i class="fas fa-user-check"></i>
+                     class="btn  btn-circle btn-primary btn-sm" title="Detail"><i class="fas fa-user-check"></i>
                   </a>
                 </td>
               </tr>
             @empty
               <tr>
-                <td colspan="6" class="text-center text-muted">Belum ada data.</td>
+                <td colspan="3" class="text-center text-muted">Belum ada data.</td>
               </tr>
             @endforelse
           </tbody>
         </table>
-      </div>
-
-      {{-- Pagination --}}
-      <div class="d-flex justify-content-between align-items-center mt-3">
-        <div class="text-muted">
-          {{ $kelompoks->links() }}
-        </div>
       </div>
 
     </div>
@@ -223,6 +166,27 @@
     });
   } catch (e) {
     // DataTables not loaded; fallback to no client-side plugin
+  }
+
+
+
+  // Bulk schedule button
+  const btnBulk = document.getElementById('btn-bulk-schedule');
+  if (btnBulk) {
+    btnBulk.addEventListener('click', function(){
+      const selected = Array.from(document.querySelectorAll('.chk-kelompok:checked')).map(n => n.value);
+      if (selected.length === 0) { Swal.fire('Info','Pilih minimal satu kelompok','info'); return; }
+      // Populate hidden inputs in modal form
+      const container = document.getElementById('bulk-selected-inputs');
+      container.innerHTML = '';
+      selected.forEach(id => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'selected_ids[]';
+        input.value = id;
+        container.appendChild(input);
+      });
+    });
   }
 })();
 </script>

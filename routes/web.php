@@ -187,7 +187,6 @@ Route::prefix('evaluator')->middleware(['auth', 'evaluator'])->group(function ()
         Route::post('settings/save', [App\Http\Controllers\Evaluator\EvaluasiController::class, 'saveSettings'])->name('settings.save');
 
         Route::get('kelompok/{kelompok}', [App\Http\Controllers\Evaluator\EvaluasiController::class, 'showKelompok'])->name('showKelompok');
-        Route::get('kelompok/{kelompok}/timeline', [App\Http\Controllers\Evaluator\EvaluasiController::class, 'projectTimeline'])->name('projectTimeline');
         Route::get('kelompok/{kelompok}/export', [App\Http\Controllers\Evaluator\EvaluasiController::class, 'projectExport'])->name('projectExport');
 
         // Project management

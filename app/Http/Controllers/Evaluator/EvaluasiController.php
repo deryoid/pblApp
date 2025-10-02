@@ -116,6 +116,7 @@ class EvaluasiController extends Controller
             // Extract numeric part from nama_kelompok for proper sorting
             preg_match('/\d+/', $kelompok->nama_kelompok, $matches);
             $number = isset($matches[0]) ? (int) $matches[0] : 0;
+
             return $number;
         })->values();
 
@@ -778,29 +779,6 @@ class EvaluasiController extends Controller
         Alert::success('Tersimpan', 'Pengaturan evaluasi berhasil disimpan.');
 
         return back();
-    }
-
-    /** ===== PROJECT TIMELINE ===== */
-    public function projectTimeline(Kelompok $kelompok)
-    {
-        $activePeriode = Periode::where('status_periode', 'Aktif')->orderByDesc('id')->first();
-        abort_unless($activePeriode, 404, 'Periode aktif tidak ditemukan');
-
-        $proyekLists = ProjectList::with(['cards' => function ($q) use ($kelompok, $activePeriode) {
-            $q->where('kelompok_id', $kelompok->id)
-                ->where('periode_id', $activePeriode->id)
-                ->orderBy('tanggal_mulai')
-                ->orderBy('due_date');
-        }])->where('kelompok_id', $kelompok->id)
-            ->where('periode_id', $activePeriode->id)
-            ->orderBy('position')
-            ->get();
-
-        return view('evaluator.evaluasi.project-timeline', [
-            'kelompok' => $kelompok,
-            'periode' => $activePeriode,
-            'proyekLists' => $proyekLists,
-        ]);
     }
 
     /** ===== Drag & Drop: kartu ===== */

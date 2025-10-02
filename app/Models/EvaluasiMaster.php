@@ -11,6 +11,10 @@ class EvaluasiMaster extends Model
 
     protected $guarded = ['id'];
 
+    protected $casts = [
+        'tanggal' => 'date',
+    ];
+
     protected static function booted()
     {
         static::creating(function ($m) {
