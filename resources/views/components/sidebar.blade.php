@@ -158,23 +158,23 @@
                 <span>Kelompok Saya</span>
             </a>
             <div id="collapseKelompokSaya" class="collapse {{ $isKelompokSaya ? 'show' : '' }}" data-parent="#accordionSidebar">
-                <div class="bg-white py-2 collapse-inner rounded">
+                <div class="bg-white py-2 collapse-inner rounded" style="max-width:100%; overflow:hidden;">
                     @if($kelompokSaya)
-                        <h6 class="collapse-header">
+                        <h6 class="collapse-header text-truncate">
                             {{ $kelompokSaya->nama_kelompok }}
                             @if($periodeAktif)
                                 <small class="text-muted"> ({{ $periodeAktif->periode }})</small>
                             @endif
                         </h6>
                         @forelse($anggotaKelompok as $am)
-                            <span class="collapse-item d-flex align-items-center">
+                            <span class="collapse-item d-flex align-items-center text-truncate" title="{{ $am->nama_mahasiswa ?? $am->nama }}">
                                 <img src="{{ ($am->user && $am->user->profile_photo_data_url) ? $am->user->profile_photo_data_url : asset('sbadmin2/img/undraw_profile.svg') }}"
-                                     alt="Foto {{ $am->nama_mahasiswa ?? $am->nama }}" class="rounded-circle mr-2"
+                                     alt="Foto {{ $am->nama_mahasiswa ?? $am->nama }}" class="rounded-circle mr-2 flex-shrink-0"
                                      style="width:24px;height:24px;object-fit:cover;">
-                                <span>{{ $am->nama_mahasiswa ?? $am->nama }}</span>
+                                <span class="text-truncate">{{ $am->nama_mahasiswa ?? $am->nama }}</span>
                                 @php $r = strtolower($am->pivot->role ?? ''); @endphp
                                 @if($r === 'ketua')
-                                    <span class="badge badge-primary ml-auto">Ketua</span>
+                                    <span class="badge badge-primary ml-auto flex-shrink-0">Ketua</span>
                                 @endif
                             </span>
                         @empty
