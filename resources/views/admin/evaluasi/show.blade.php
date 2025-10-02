@@ -1604,43 +1604,62 @@
         return (val === 0 || val) ? val : '';
       };
 
+      // Get profile photo from user data
+      const profilePhoto = member.user?.profile_photo_data_url ||
+                         (member.profile_photo_data_url ||
+                          'https://via.placeholder.com/80x80/3498db/ffffff?text=' + member.nama?.charAt(0)?.toUpperCase());
+
       return `
         <tr data-member="${member.id}" data-evaluation-id="${current.id || ''}">
-          <td style="vertical-align: middle; background: #f8f9fa; font-weight: 600;">
-            <div>${member.nama}</div>
-            <small style="color: #6b7280;">${member.nim}</small>
+          <td style="vertical-align: middle; background: #f8f9fa; font-weight: 600; padding: 12px;">
+            <div class="d-flex align-items-center">
+              <img src="${profilePhoto}"
+                   alt="${member.nama}"
+                   class="rounded-circle mr-3"
+                   style="width: 40px; height: 40px; object-fit: cover; border: 2px solid #dee2e6;"
+                   onerror="this.src='https://via.placeholder.com/40x40/6c757d/ffffff?text=${member.nama?.charAt(0)?.toUpperCase()}';">
+              <div>
+                <div>${member.nama}</div>
+                <small class="text-muted">${member.nim}</small>
+              </div>
+            </div>
           </td>
           ${mitraItems.map(item => `
-            <td style="text-align: center; vertical-align: middle;">
-              <input type="number"
-                     class="form-control form-control-sm grade-input-mitra"
-                     data-member="${member.id}"
-                     data-item="${item.kode}"
-                     min="0" max="100"
-                     value="${valueFor(item.kode)}"
-                     placeholder="-"
-                     style="text-align: center;">
-            </td>
+              <td style="text-align: center; vertical-align: middle; padding: 8px;">
+                <div class="form-group mb-0">
+                  <label style="font-size: 0.8rem; margin-bottom: 4px; display: block;">${item.nama}</label>
+                  <input type="number"
+                         class="form-control form-control-sm grade-input-mitra"
+                         data-member="${member.id}"
+                         data-item="${item.kode}"
+                         min="0" max="100"
+                         value="${valueFor(item.kode)}"
+                         placeholder="0-100"
+                         style="text-align: center; width: 80px;">
+                </div>
+              </td>
           `).join('')}
-          <td style="text-align: center; vertical-align: middle; font-weight: 600; background: #f8f9fa;">
-            <span class="badge badge-info average-badge-mitra">-</span>
+          <td style="text-align: center; vertical-align: middle; font-weight: 600; background: #e9ecef;">
+            <span class="average-badge-mitra badge badge-secondary">-</span>
           </td>
-          <td style="text-align: center; vertical-align: middle; font-weight: 600; background: #e3f2fd;">
-            <span class="badge badge-success percentage-badge-mitra">-</span>
+          <td style="text-align: center; vertical-align: middle; font-weight: 600; background: #d4edda;">
+            <span class="percentage-badge-mitra badge badge-success">-</span>
           </td>
         </tr>`;
     };
 
     const modalHtml = `
       <div class="grade-modal-container">
-        <div class="text-center mb-4">
-          <h4 style="margin: 0; font-size: 1.3rem; font-weight: 700; color: #2c3e50;">${cardTitle}</h4>
-          <p style="margin: 0.5rem 0 0 0; color: #6b7280; font-size: 1rem;">Penilaian Mitra per Mahasiswa</p>
+        <div class="text-center mb-4" style="background: #17a2b8; margin: -1.5rem -1.5rem 1.5rem -1.5rem; padding: 1.5rem 1.5rem; border-radius: 0.5rem 0.5rem 0 0;">
+          <h4 style="margin: 0; font-size: 1.3rem; font-weight: 600; color: white; margin-bottom: 0.5rem;">${cardTitle}</h4>
+          <p style="margin: 0; color: rgba(255,255,255,0.9); font-size: 1rem;">
+            <i class="fas fa-users mr-2"></i>Penilaian Mitra per Mahasiswa
+          </p>
         </div>
 
         <div class="table-responsive" style="max-height: 65vh; overflow-y: auto;">
           <table class="table table-bordered" style="font-size: 0.9rem; margin-bottom: 0;">
-            <thead class="thead-info sticky-top">
+            <thead class="sticky-top">
               <tr>
                 <th style="min-width: 180px; background: #17a2b8; color: white; border-color: #138496;">Mahasiswa</th>
                 ${mitraItems.map(item => `
