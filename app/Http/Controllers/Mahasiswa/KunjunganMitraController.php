@@ -17,9 +17,10 @@ class KunjunganMitraController extends Controller
     public function index()
     {
         $user = Auth::user();
-        $items = KunjunganMitra::with(['periode','kelompok'])
+        $items = KunjunganMitra::with(['periode', 'kelompok'])
             ->where('user_id', $user->id)
             ->latest()->get();
+
         return view('mahasiswa.kunjungan_mitra.index', compact('items'));
     }
 
@@ -29,21 +30,21 @@ class KunjunganMitraController extends Controller
 
         $mhs = Mahasiswa::where('user_id', $user->id)->first();
         // Hanya periode Aktif
-        $periodes = Periode::where('status_periode','Aktif')->orderBy('created_at','desc')->get();
+        $periodes = Periode::where('status_periode', 'Aktif')->orderBy('created_at', 'desc')->get();
 
         // Ambil pasangan (kelompok_id, periode_id) yang dimiliki mahasiswa
         $kelompokOptions = collect();
         if ($mhs) {
             $kelompokOptions = DB::table('kelompok_mahasiswa as km')
-                ->join('kelompok as k','k.id','=','km.kelompok_id')
-                ->join('periode as p','p.id','=','km.periode_id')
+                ->join('kelompok as k', 'k.id', '=', 'km.kelompok_id')
+                ->join('periode as p', 'p.id', '=', 'km.periode_id')
                 ->where('km.mahasiswa_id', $mhs->id)
-                ->select('k.id as kelompok_id','k.nama_kelompok','p.id as periode_id','p.periode as nama_periode')
-                ->orderBy('p.created_at','desc')
+                ->select('k.id as kelompok_id', 'k.nama_kelompok', 'p.id as periode_id', 'p.periode as nama_periode')
+                ->orderBy('p.created_at', 'desc')
                 ->get();
         }
 
-        return view('mahasiswa.kunjungan_mitra.create', compact('periodes','kelompokOptions'));
+        return view('mahasiswa.kunjungan_mitra.create', compact('periodes', 'kelompokOptions'));
     }
 
     public function store(Request $request)
@@ -52,13 +53,13 @@ class KunjunganMitraController extends Controller
         $mhs = Mahasiswa::where('user_id', $user->id)->first();
 
         $validated = $request->validate([
-            'periode_id' => ['required', Rule::exists('periode','id')->where('status_periode','Aktif')],
-            'kelompok_id'=> ['required','exists:kelompok,id'],
-            'perusahaan' => ['required','string','max:255'],
-            'alamat'     => ['required','string','max:255'],
-            'tanggal_kunjungan' => ['required','date'],
-            'status_kunjungan'  => ['required', Rule::in(['Sudah dikunjungi','Proses Pembicaraan','Tidak ada tanggapan','Ditolak'])],
-            'bukti'      => ['nullable','image','mimes:jpeg,png,jpg,gif,webp','max:6144'],
+            'periode_id' => ['required', Rule::exists('periode', 'id')->where('status_periode', 'Aktif')],
+            'kelompok_id' => ['required', 'exists:kelompok,id'],
+            'perusahaan' => ['required', 'string', 'max:255'],
+            'alamat' => ['required', 'string', 'max:255'],
+            'tanggal_kunjungan' => ['required', 'date'],
+            'status_kunjungan' => ['required', Rule::in(['Sudah dikunjungi', 'Proses Pembicaraan', 'Tidak ada tanggapan', 'Ditolak'])],
+            'bukti' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:6144'],
         ]);
 
         // Validasi bahwa mahasiswa tsb memang anggota kelompok di periode tsb
@@ -68,8 +69,9 @@ class KunjunganMitraController extends Controller
                 ->where('kelompok_id', $validated['kelompok_id'])
                 ->where('periode_id', $validated['periode_id'])
                 ->exists();
-            if (!$exists) {
+            if (! $exists) {
                 Alert::toast('Anda bukan anggota kelompok tersebut pada periode terpilih.', 'error');
+
                 return back()->withErrors(['kelompok_id' => 'Anda bukan anggota kelompok tersebut pada periode terpilih.'])->withInput();
             }
         }
@@ -77,12 +79,12 @@ class KunjunganMitraController extends Controller
         $payload = [
             'uuid' => (string) \Illuminate\Support\Str::uuid(),
             'periode_id' => $validated['periode_id'],
-            'kelompok_id'=> $validated['kelompok_id'],
-            'user_id'    => $user->id,
+            'kelompok_id' => $validated['kelompok_id'],
+            'user_id' => $user->id,
             'perusahaan' => $validated['perusahaan'],
-            'alamat'     => $validated['alamat'],
+            'alamat' => $validated['alamat'],
             'tanggal_kunjungan' => $validated['tanggal_kunjungan'],
-            'status_kunjungan'  => $validated['status_kunjungan'],
+            'status_kunjungan' => $validated['status_kunjungan'],
         ];
 
         if ($request->hasFile('bukti')) {
@@ -93,6 +95,7 @@ class KunjunganMitraController extends Controller
 
         KunjunganMitra::create($payload);
         Alert::toast('Data kunjungan berhasil disimpan.', 'success');
+
         return redirect()->route('mahasiswa.kunjungan.index');
     }
 
@@ -100,20 +103,21 @@ class KunjunganMitraController extends Controller
     {
         $this->authorizeView($kunjungan);
         // Hanya periode Aktif
-        $periodes = Periode::where('status_periode','Aktif')->orderBy('created_at','desc')->get();
+        $periodes = Periode::where('status_periode', 'Aktif')->orderBy('created_at', 'desc')->get();
         // kelompok options dibatasi ke milik mahasiswa pembuat
         $mhs = Mahasiswa::where('user_id', Auth::id())->first();
         $kelompokOptions = collect();
         if ($mhs) {
             $kelompokOptions = DB::table('kelompok_mahasiswa as km')
-                ->join('kelompok as k','k.id','=','km.kelompok_id')
-                ->join('periode as p','p.id','=','km.periode_id')
+                ->join('kelompok as k', 'k.id', '=', 'km.kelompok_id')
+                ->join('periode as p', 'p.id', '=', 'km.periode_id')
                 ->where('km.mahasiswa_id', $mhs->id)
-                ->select('k.id as kelompok_id','k.nama_kelompok','p.id as periode_id','p.periode as nama_periode')
-                ->orderBy('p.created_at','desc')
+                ->select('k.id as kelompok_id', 'k.nama_kelompok', 'p.id as periode_id', 'p.periode as nama_periode')
+                ->orderBy('p.created_at', 'desc')
                 ->get();
         }
-        return view('mahasiswa.kunjungan_mitra.edit', compact('kunjungan','periodes','kelompokOptions'));
+
+        return view('mahasiswa.kunjungan_mitra.edit', compact('kunjungan', 'periodes', 'kelompokOptions'));
     }
 
     public function update(Request $request, KunjunganMitra $kunjungan)
@@ -123,14 +127,14 @@ class KunjunganMitraController extends Controller
         $mhs = Mahasiswa::where('user_id', $user->id)->first();
 
         $validated = $request->validate([
-            'periode_id' => ['required', Rule::exists('periode','id')->where('status_periode','Aktif')],
-            'kelompok_id'=> ['required','exists:kelompok,id'],
-            'perusahaan' => ['required','string','max:255'],
-            'alamat'     => ['required','string','max:255'],
-            'tanggal_kunjungan' => ['required','date'],
-            'status_kunjungan'  => ['required', Rule::in(['Sudah dikunjungi','Proses Pembicaraan','Tidak ada tanggapan','Ditolak'])],
-            'bukti'      => ['nullable','image','mimes:jpeg,png,jpg,gif,webp','max:6144'],
-            'remove_bukti' => ['sometimes','boolean']
+            'periode_id' => ['required', Rule::exists('periode', 'id')->where('status_periode', 'Aktif')],
+            'kelompok_id' => ['required', 'exists:kelompok,id'],
+            'perusahaan' => ['required', 'string', 'max:255'],
+            'alamat' => ['required', 'string', 'max:255'],
+            'tanggal_kunjungan' => ['required', 'date'],
+            'status_kunjungan' => ['required', Rule::in(['Sudah dikunjungi', 'Proses Pembicaraan', 'Tidak ada tanggapan', 'Ditolak'])],
+            'bukti' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:6144'],
+            'remove_bukti' => ['sometimes', 'boolean'],
         ]);
 
         if ($mhs) {
@@ -139,19 +143,20 @@ class KunjunganMitraController extends Controller
                 ->where('kelompok_id', $validated['kelompok_id'])
                 ->where('periode_id', $validated['periode_id'])
                 ->exists();
-            if (!$exists) {
+            if (! $exists) {
                 Alert::toast('Anda bukan anggota kelompok tersebut pada periode terpilih.', 'error');
+
                 return back()->withErrors(['kelompok_id' => 'Anda bukan anggota kelompok tersebut pada periode terpilih.'])->withInput();
             }
         }
 
         $kunjungan->fill([
             'periode_id' => $validated['periode_id'],
-            'kelompok_id'=> $validated['kelompok_id'],
+            'kelompok_id' => $validated['kelompok_id'],
             'perusahaan' => $validated['perusahaan'],
-            'alamat'     => $validated['alamat'],
+            'alamat' => $validated['alamat'],
             'tanggal_kunjungan' => $validated['tanggal_kunjungan'],
-            'status_kunjungan'  => $validated['status_kunjungan'],
+            'status_kunjungan' => $validated['status_kunjungan'],
         ]);
 
         if ($request->boolean('remove_bukti')) {
@@ -166,6 +171,7 @@ class KunjunganMitraController extends Controller
 
         $kunjungan->save();
         Alert::toast('Data kunjungan berhasil diperbarui.', 'success');
+
         return redirect()->route('mahasiswa.kunjungan.index');
     }
 
@@ -174,7 +180,40 @@ class KunjunganMitraController extends Controller
         $this->authorizeView($kunjungan);
         $kunjungan->delete();
         Alert::toast('Data kunjungan dihapus.', 'success');
+
         return back();
+    }
+
+    /**
+     * Get bukti kunjungan for AJAX request
+     */
+    public function getBukti($id)
+    {
+        try {
+            $kunjungan = KunjunganMitra::findOrFail($id);
+
+            // Allow access to all kunjungan for dashboard view
+            // No authorization check needed for read-only access
+
+            if (! $kunjungan->bukti_kunjungan) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Bukti kunjungan tidak tersedia',
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'bukti_data_url' => $kunjungan->bukti_data_url,
+                'mime_type' => $kunjungan->bukti_kunjungan_mime,
+                'perusahaan' => $kunjungan->perusahaan,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kunjungan tidak ditemukan',
+            ], 404);
+        }
     }
 
     private function authorizeView(KunjunganMitra $item): void
