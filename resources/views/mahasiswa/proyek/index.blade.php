@@ -135,7 +135,7 @@
               @endphp
 
               <div
-                class="card board-card shadow-xs mb-2 hover-raise"
+                class="card board-card shadow-xs mb-2 hover-raise {{ ($card['status_proyek'] ?? '') === 'Selesai' ? 'card-completed' : '' }}"
                 data-card-id="{{ $card['id'] }}"
                 data-title="{{ $card['title'] }}"
                 data-title-search="{{ strtolower($card['title']) }}"
@@ -156,8 +156,13 @@
                               >
                 <div class="card-body p-2 d-flex flex-column">
 
-                 {{-- HEADER: Aksi (kanan atas) → Judul penuh → Tanggal --}}
+                 {{-- HEADER: Status Lock → Aksi (kanan atas) → Judul penuh → Tanggal --}}
                   <div class="d-flex align-items-center mb-1">
+                    @if(($card['status_proyek'] ?? '') === 'Selesai')
+                      <span class="badge badge-success mr-2" title="Proyek selesai - tidak dapat diubah">
+                        <i class="fas fa-lock mr-1"></i>Selesai
+                      </span>
+                    @endif
                     <div class="ml-auto d-flex align-items-center">
                       <button type="button"
                               class="btn btn-primary btn-icon-only btn-sm btn-circle btn-edit-card mr-1"
@@ -475,6 +480,24 @@
   .border-top-light{border-top:1px solid #f1f2f4}
   .btn-drive{padding:.18rem .5rem}
   .labels-wrap{display:flex;flex-wrap:wrap}
+
+  /* Card yang sudah selesai */
+  .card-completed {
+    opacity: 0.7;
+    cursor: not-allowed !important;
+    border-left-color: #28a745 !important;
+    background-color: #f8f9fa !important;
+  }
+  .card-completed:hover {
+    transform: none !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,.06) !important;
+  }
+  .card-completed .btn-edit-card,
+  .card-completed .btn-delete-card {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
 </style>
 @endpush
 
@@ -500,6 +523,8 @@
   document.querySelectorAll('.board-list').forEach(function(listEl){
     new Sortable(listEl, {
       group:'board',animation:150,ghostClass:'sortable-ghost',chosenClass:'sortable-chosen',dragClass:'sortable-drag',
+      filter: '.card-completed',
+      preventOnFilter: false,
       onEnd:function(evt){
         const cardId = evt.item.getAttribute('data-card-id');
         const toList = evt.to.getAttribute('data-list-id');
