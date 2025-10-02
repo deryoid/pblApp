@@ -65,6 +65,8 @@
         'nim'  => $arr->nim  ?? null,
         'nama' => $arr->nama ?? ($arr->nama_mahasiswa ?? null),
         'kelas'=> optional($arr->kelas ?? null)->kelas ?? ($arr->kelas ?? null),
+        'user' => $arr->user ?? null,
+        'profile_photo_data_url' => optional($arr->user ?? null)->profile_photo_data_url ?? null,
       ];
   });
 
@@ -1468,7 +1470,15 @@
 
     const members = [
       @foreach($members as $m)
-        { id: '{{ $m->id }}', nim: '{{ $m->nim }}', nama: '{{ $m->nama }}' },
+        {
+          id: '{{ $m->id }}',
+          nim: '{{ $m->nim }}',
+          nama: '{{ $m->nama }}',
+          profile_photo_data_url: '{!! $m->user->profile_photo_data_url ?? '' !!}',
+          user: {
+            profile_photo_data_url: '{!! $m->user->profile_photo_data_url ?? '' !!}'
+          }
+        },
       @endforeach
     ];
     const membersMap = members.reduce((acc, member) => {
@@ -1605,9 +1615,9 @@
       };
 
       // Get profile photo from user data
-      const profilePhoto = member.user?.profile_photo_data_url ||
-                         (member.profile_photo_data_url ||
-                          'https://via.placeholder.com/80x80/3498db/ffffff?text=' + member.nama?.charAt(0)?.toUpperCase());
+      const profilePhoto = member.profile_photo_data_url ||
+                         (member.user?.profile_photo_data_url ||
+                          'https://via.placeholder.com/40x40/17a2b8/ffffff?text=' + (member.nama?.charAt(0)?.toUpperCase() || '?'));
 
       return `
         <tr data-member="${member.id}" data-evaluation-id="${current.id || ''}">

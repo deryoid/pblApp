@@ -454,9 +454,10 @@ class EvaluasiController extends Controller
         $anggota = $kelompok->mahasiswas()
             ->wherePivot('periode_id', $activePeriode->id)
             ->with('kelas:id,kelas')
+            ->with('user:id,profile_photo,profile_photo_mime')
             ->withPivot('role') // Include the role field from pivot table
             ->orderBy('nama_mahasiswa')
-            ->get(['mahasiswa.id', 'nim', 'nama_mahasiswa as nama', 'kelas_id']);
+            ->get(['mahasiswa.id', 'nim', 'nama_mahasiswa as nama', 'kelas_id', 'user_id']);
 
         // Load evaluation data per student
         $studentEvaluations = collect();
