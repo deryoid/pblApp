@@ -676,34 +676,38 @@
                     <span id="{{ $badgeId }}" class="badge {{ $statusClass }}">{{ $statusLabel }}</span>
                     {{-- Tombol Aksi --}}
                     <div class="btn-group btn-group-sm" role="group">
+                    {{-- Lihat Logbook --}}
+                      @if(!empty($alist->link_drive_logbook))
+                      <a href="{{ $alist->link_drive_logbook }}"
+                         target="_blank"
+                         rel="noopener"
+                         class="btn btn-sm btn-dark mr-2 ml-2"
+                         title="Lihat Logbook">
+                         <i class="fas fa-book-open" aria-hidden="true"></i> LogBook
+                      </a>
+                      @endif
+
                       {{-- Nilai AP --}}
                       <button type="button"
-                              class="btn btn-sm btn-secondary {{ ($alist->status_evaluasi ?? 'Belum Evaluasi') === 'Sudah Evaluasi' ? 'disabled' : '' }}"
+                              class="btn btn-sm btn-primary {{ ($alist->status_evaluasi ?? 'Belum Evaluasi') === 'Sudah Evaluasi' ? 'disabled' : '' }}"
                               title="Nilai AP"
                               onclick="gradeAP('{{ $alist->id }}','{{ addslashes($alist->title ?? $alist->name ?? 'Aktivitas') }}')">
                               <i class="fas fa-clipboard-list" aria-hidden="true"></i>
                       </button>
 
-                      {{-- Lihat Logbook --}}
-                      @if(!empty($alist->link_drive_logbook))
-                      <a href="{{ $alist->link_drive_logbook }}"
-                         target="_blank"
-                         rel="noopener"
-                         class="btn btn-sm btn-info"
-                         title="Lihat Logbook">
-                         <i class="fas fa-book-open" aria-hidden="true"></i>
-                      </a>
-                      @endif
+                    
 
                       {{-- Update Status --}}
                       <button type="button"
-                              class="btn btn-sm btn-success js-aktivitas-status {{ ($alist->status_evaluasi ?? 'Belum Evaluasi') === 'Sudah Evaluasi' ? 'disabled' : '' }}"
+                              class="btn btn-sm btn-success mr-2 js-aktivitas-status {{ ($alist->status_evaluasi ?? 'Belum Evaluasi') === 'Sudah Evaluasi' ? 'disabled' : '' }}"
                               data-uuid="{{ $alist->uuid ?? $alist->id }}"
                               data-status="{{ $statusNow }}"
                               data-target="#{{ $badgeId }}"
                               title="Update Status">
                         <i class="fas fa-sync-alt" aria-hidden="true"></i>
                       </button>
+
+                      
                     </div>
                   </div>
                 </div>
@@ -758,7 +762,7 @@
                             @if($ac->bukti_kegiatan)
                               <a href="{{ $ac->bukti_kegiatan }}" target="_blank" rel="noopener"
                                 class="btn btn-sm btn-dark" title="Bukti aktivitas">
-                                <i class="fas fa-link" aria-hidden="true"></i>
+                                <i class="fas fa-image" aria-hidden="true"></i> Bukti Kegiatan
                               </a>
                             @endif
                             </div>
