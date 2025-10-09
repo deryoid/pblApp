@@ -34,8 +34,9 @@ class DashboardController extends Controller
 
         // Data Proyek yang perlu dievaluasi
         $totalProyekCards = \App\Models\ProjectCard::count();
+        // Since project_lists table doesn't have status column, count all project cards in active period
         $proyekToEvaluate = $activePeriode ? \App\Models\ProjectCard::whereHas('projectList', function ($query) use ($activePeriode) {
-            $query->where('periode_id', $activePeriode->id)->where('status', '!=', 'Selesai');
+            $query->where('periode_id', $activePeriode->id);
         })->count() : 0;
 
         // Data Aktivitas yang perlu dievaluasi

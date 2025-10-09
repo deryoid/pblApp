@@ -105,7 +105,8 @@ class EvaluasiController extends Controller
         // Sort kelompoks: incomplete evaluations first, then by name using natural sort
         $sortedKelompoks = $allKelompoks->sortBy(function ($kelompok) use ($sesiMap) {
             $sesi = $sesiMap->get($kelompok->id);
-            $hasCompletedEval = $sesi && $sesi->status === 'Selesai';
+            // Since evaluasi_master doesn't have status column, check based on related evaluation data
+            $hasCompletedEval = $sesi && $sesi->nilaiDetails()->exists();
 
             // Priority: incomplete evaluations first, then by name using natural sort for proper numeric ordering
             return [$hasCompletedEval ? 1 : 0, $kelompok->nama_kelompok];
