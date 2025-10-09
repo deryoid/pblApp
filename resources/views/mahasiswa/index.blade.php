@@ -105,24 +105,38 @@
                                     </a>
                                 </div>
                                 <div class="card-body">
-                                    <div class="table-responsive">
-                                        <table class="table table-bordered table-hover" id="kunjunganMitraTable" style="width: 100%;">
-                                            <thead class="thead-light">
-                                                <tr>
-                                                    <th>Tanggal</th>
-                                                    <th>Periode</th>
-                                                    <th>Kelompok</th>
-                                                    <th>Perusahaan</th>
-                                                    <th>Alamat</th>
-                                                    <th>Status</th>
-                                                    <th>Diinput Oleh</th>
-                                                    <th>Bukti</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <!-- Data akan dimuat melalui AJAX -->
-                                            </tbody>
-                                        </table>
+                                    <!-- Search Form -->
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <form id="searchForm" class="d-flex">
+                                                <input type="text" name="search" class="form-control me-2" placeholder="Cari kunjungan..." value="{{ request('search') }}">
+                                                <button type="submit" class="btn btn-primary">
+                                                    <i class="fas fa-search"></i> Cari
+                                                </button>
+                                                @if(request('search'))
+                                                    <a href="{{ request()->url() }}" class="btn btn-secondary ms-2">
+                                                        <i class="fas fa-times"></i> Reset
+                                                    </a>
+                                                @endif
+                                            </form>
+                                        </div>
+                                        <div class="col-md-6 text-end">
+                                            <small class="text-muted">
+                                                <i class="fas fa-info-circle"></i>
+                                                Menampilkan semua data kunjungan mitra ({{ \App\Models\KunjunganMitra::count() }} total data)
+                                            </small>
+                                        </div>
+                                    </div>
+
+                                    <!-- Loading indicator -->
+                                    <div id="loadingIndicator" class="text-center py-4" style="display: none;">
+                                        <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
+                                        <p class="mt-2">Memuat data...</p>
+                                    </div>
+
+                                    <!-- Table Container -->
+                                    <div id="kunjunganTableContainer">
+                                        @include('mahasiswa.partials.kunjungan_table', ['kunjungans' => $kunjungans ?? new \Illuminate\Pagination\LengthAwarePaginator([], 0, 10)])
                                     </div>
                                 </div>
                             </div>
@@ -159,65 +173,62 @@
                 @push('scripts')
                 <script>
                 $(document).ready(function() {
-                    // Initialize DataTable
-                    var table = $('#kunjunganMitraTable').DataTable({
-                        processing: true,
-                        serverSide: true,
-                        ajax: {
-                            url: '{{ route("mahasiswa.kunjungan.data") }}',
-                            type: 'GET',
-                            data: function(d) {
-                                // Add delay for search to reduce server load
-                                if (d.search && d.search.value) {
-                                    d.search_delay = 500; // 500ms delay
-                                }
-                                return d;
-                            },
-                            error: function(xhr, error, thrown) {
-                                console.error('DataTables AJAX Error:', {
-                                    status: xhr.status,
-                                    error: error,
-                                    thrown: thrown,
-                                    response: xhr.responseText
-                                });
-                                $('#kunjunganMitraTable tbody').html(
-                                    '<tr><td colspan="8" class="text-center text-danger">' +
-                                    '<i class="fas fa-exclamation-triangle"></i> ' +
-                                    'Gagal memuat data. Silakan refresh halaman.' +
-                                    '</td></tr>'
-                                );
-                            }
-                        },
-                        columns: [
-                            { data: 'tanggal_kunjungan', name: 'tanggal_kunjungan' },
-                            { data: 'periode_nama', name: 'p.periode' },
-                            { data: 'kelompok_nama', name: 'k.nama_kelompok' },
-                            { data: 'perusahaan', name: 'perusahaan' },
-                            { data: 'alamat', name: 'alamat' },
-                            { data: 'status_kunjungan', name: 'status_kunjungan' },
-                            { data: 'diinput_oleh', name: 'u.nama_user' },
-                            { data: 'bukti', name: 'bukti_kunjungan', orderable: false, searchable: false }
-                        ],
-                        order: [[0, 'desc']], // Sort by date descending by default
-                        pageLength: 10,
-                        responsive: true,
-                        language: {
-                            "processing": "Sedang memuat semua data kunjungan...",
-                            "lengthMenu": [[10, 25, 50, -1], [10, 25, 50, "Semua"]],
-                            "zeroRecords": "Tidak ada data kunjungan mitra di database",
-                            "info": "Menampilkan _START_ sampai _END_ dari _TOTAL_ total kunjungan (SEMUA DATA)",
-                            "infoEmpty": "Tidak ada data kunjungan di database",
-                            "infoFiltered": "(difilter dari _MAX_ total data)",
-                            "search": "Cari di semua data:",
-                            "paginate": {
-                                "first": "Pertama",
-                                "last": "Terakhir",
-                                "next": "Selanjutnya",
-                                "previous": "Sebelumnya"
-                            }
-                        }
+                    // Handle search form submission
+                    $('#searchForm').on('submit', function(e) {
+                        e.preventDefault();
+                        loadKunjunganData();
                     });
+
+                    // Handle pagination links
+                    $(document).on('click', '.pagination a', function(e) {
+                        e.preventDefault();
+                        var url = $(this).attr('href');
+                        loadKunjunganData(url);
+                    });
+
+                    // Load initial data
+                    loadKunjunganData();
                 });
+
+                function loadKunjunganData(url) {
+                    url = url || '{{ route("mahasiswa.kunjungan.data") }}';
+
+                    // Get search value
+                    var searchValue = $('input[name="search"]').val();
+
+                    // Add search parameter to URL
+                    if (searchValue) {
+                        var separator = url.includes('?') ? '&' : '?';
+                        url += separator + 'search=' + encodeURIComponent(searchValue);
+                    }
+
+                    // Show loading
+                    $('#loadingIndicator').show();
+                    $('#kunjunganTableContainer').hide();
+
+                    // Load data via AJAX
+                    $.get(url, function(response) {
+                        if (response.error) {
+                            $('#kunjunganTableContainer').html(
+                                '<div class="alert alert-danger">' + response.message + '</div>'
+                            );
+                        } else {
+                            $('#kunjunganTableContainer').html(response);
+                        }
+                    })
+                    .fail(function(xhr) {
+                        $('#kunjunganTableContainer').html(
+                            '<div class="alert alert-danger">' +
+                            '<i class="fas fa-exclamation-triangle"></i> ' +
+                            'Gagal memuat data. Silakan refresh halaman.' +
+                            '</div>'
+                        );
+                    })
+                    .always(function() {
+                        $('#loadingIndicator').hide();
+                        $('#kunjunganTableContainer').show();
+                    });
+                }
 
                 function showBukti(kunjunganId) {
                     // Loading state

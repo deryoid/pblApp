@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\KunjunganMitra;
 use App\Models\Mahasiswa;
 use App\Models\Periode;
-use DataTables;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -212,22 +211,14 @@ class KunjunganMitraController extends Controller
     }
 
     /**
-     * Get all kunjungan data for DataTable (dashboard)
+     * Get all kunjungan data for pagination (dashboard)
      * Menampilkan SELURUH data kunjungan dari database tanpa filter apapun
-     * Optimized untuk mengurangi memory usage
+     * Menggunakan pagination bawaan Laravel untuk efisiensi memory
      */
     public function getDataForDashboard(Request $request)
     {
-        // Increase memory limit for this operation
-        ini_set('memory_limit', '256M');
-
         try {
-            // Add search delay to reduce server load
-            if ($request->get('search') && $request->get('search')['value']) {
-                usleep(500000); // 500ms delay for search requests
-            }
-
-            // Use simple query without eager loading to reduce memory
+            // Build query dengan join untuk mendapatkan nama periode, kelompok, dan user
             $query = KunjunganMitra::select(
                 'kunjungan_mitra.id',
                 'kunjungan_mitra.tanggal_kunjungan',
@@ -241,53 +232,29 @@ class KunjunganMitraController extends Controller
             )
                 ->leftJoin('periode as p', 'kunjungan_mitra.periode_id', '=', 'p.id')
                 ->leftJoin('kelompok as k', 'kunjungan_mitra.kelompok_id', '=', 'k.id')
-                ->leftJoin('users as u', 'kunjungan_mitra.user_id', '=', 'u.id');
+                ->leftJoin('users as u', 'kunjungan_mitra.user_id', '=', 'u.id')
+                ->orderBy('kunjungan_mitra.tanggal_kunjungan', 'desc')
+                ->orderBy('kunjungan_mitra.created_at', 'desc');
 
-            return DataTables::of($query)
-                ->editColumn('tanggal_kunjungan', function ($item) {
-                    return '<span class="badge badge-info">'.
-                        date('d M Y', strtotime($item->tanggal_kunjungan)).
-                        '</span>';
-                })
-                ->addColumn('periode_nama', function ($item) {
-                    return $item->periode_nama ? '<span class="badge badge-secondary">'.htmlspecialchars($item->periode_nama).'</span>' : '-';
-                })
-                ->addColumn('kelompok_nama', function ($item) {
-                    return $item->kelompok_nama ? '<span class="badge badge-primary">'.htmlspecialchars($item->kelompok_nama).'</span>' : '-';
-                })
-                ->editColumn('perusahaan', function ($item) {
-                    return '<strong>'.htmlspecialchars($item->perusahaan).'</strong>';
-                })
-                ->editColumn('alamat', function ($item) {
-                    return '<small class="text-muted">'.htmlspecialchars(substr($item->alamat, 0, 80)).'</small>';
-                })
-                ->editColumn('status_kunjungan', function ($item) {
-                    $statusBadge = [
-                        'Sudah dikunjungi' => 'success',
-                        'Proses Pembicaraan' => 'info',
-                        'Tidak ada tanggapan' => 'warning',
-                        'Ditolak' => 'danger',
-                    ];
-                    $badgeClass = $statusBadge[$item->status_kunjungan] ?? 'secondary';
+            // Apply search if exists
+            if ($request->filled('search')) {
+                $search = $request->get('search');
+                $query->where(function ($q) use ($search) {
+                    $q->where('kunjungan_mitra.perusahaan', 'like', "%{$search}%")
+                        ->orWhere('kunjungan_mitra.alamat', 'like', "%{$search}%")
+                        ->orWhere('kunjungan_mitra.status_kunjungan', 'like', "%{$search}%")
+                        ->orWhere('p.periode', 'like', "%{$search}%")
+                        ->orWhere('k.nama_kelompok', 'like', "%{$search}%")
+                        ->orWhere('u.nama_user', 'like', "%{$search}%");
+                });
+            }
 
-                    return '<span class="badge badge-'.$badgeClass.'">'.htmlspecialchars($item->status_kunjungan).'</span>';
-                })
-                ->addColumn('diinput_oleh', function ($item) {
-                    return $item->user_nama ? htmlspecialchars($item->user_nama) : '-';
-                })
-                ->addColumn('bukti', function ($item) {
-                    if ($item->bukti_kunjungan) {
-                        return '<button class="btn btn-sm btn-success" onclick="showBukti(\''.$item->id.'\')" title="Lihat Bukti">
-                            <i class="fas fa-image"></i>
-                        </button>';
-                    } else {
-                        return '<span class="text-muted" title="Tidak ada bukti">
-                            <i class="fas fa-times-circle"></i>
-                        </span>';
-                    }
-                })
-                ->rawColumns(['tanggal_kunjungan', 'periode_nama', 'kelompok_nama', 'perusahaan', 'alamat', 'status_kunjungan', 'bukti'])
-                ->make(true);
+            // Apply pagination dengan 10 data per halaman
+            $kunjungans = $query->paginate(10);
+
+            // Return view dengan data pagination
+            return view('mahasiswa.partials.kunjungan_table', compact('kunjungans'))->render();
+
         } catch (\Exception $e) {
             \Log::error('Error in getDataForDashboard', [
                 'error' => $e->getMessage(),
@@ -298,10 +265,7 @@ class KunjunganMitraController extends Controller
             return response()->json([
                 'error' => true,
                 'message' => 'Server error: '.$e->getMessage(),
-                'draw' => $request->get('draw', 0),
-                'recordsTotal' => 0,
-                'recordsFiltered' => 0,
-                'data' => [],
+                'html' => '<div class="alert alert-danger">Gagal memuat data. Silakan refresh halaman.</div>',
             ], 500);
         }
     }
