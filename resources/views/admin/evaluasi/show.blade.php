@@ -556,12 +556,12 @@
                           @endif
 
                           {{-- Detail Lengkap --}}
-                          <button type="button"
+                          {{-- <button type="button"
                                   class="btn btn-circle btn-info"
                                   title="Detail Lengkap"
                                   onclick="showProjectCardDetail('{{ $card->uuid }}','{{ addslashes($card->title) }}', {{ $card->list_id }})">
                             <i class="fas fa-info-circle" aria-hidden="true"></i>
-                          </button>
+                          </button> --}}
                           {{-- Nilai Dosen --}}
                           <button type="button"
                                   class="btn btn-circle btn-primary"
@@ -571,12 +571,12 @@
                           </button>
 
                           {{-- Nilai Mitra --}}
-                          <button type="button"
+                          {{-- <button type="button"
                                   class="btn btn-circle btn-secondary"
                                   title="Nilai Mitra"
                                   onclick="gradeMitra('{{ $card->uuid }}','{{ addslashes($card->title) }}')">
                             <i class="fas fa-handshake" aria-hidden="true"></i>
-                          </button>
+                          </button> --}}
 
                           {{-- Edit --}}
                           <button type="button"
@@ -605,12 +605,12 @@
                           </button>
 
                           {{-- Hapus --}}
-                          <button type="button"
+                          {{-- <button type="button"
                                   class="btn btn-circle btn-danger"
                                   title="Hapus Proyek"
                                   onclick="confirmDeleteProject('{{ $card->uuid }}', '{{ addslashes($card->title) }}')">
                             <i class="fas fa-trash" aria-hidden="true"></i>
-                          </button>
+                          </button> --}}
                         </div>
                       </div>
                     </div>
