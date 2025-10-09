@@ -21,6 +21,11 @@ return Application::configure(basePath: dirname(__DIR__))
         // daftar global kalau perlu
         // $middleware->append(SomeGlobalMiddleware::class);
 
+        // Configure web middleware group
+        $middleware->web(append: [
+            // Add any web-specific middleware here if needed
+        ]);
+
         // daftar alias (kayak $routeMiddleware lama)
         $middleware->alias([
             'admin' => Admin::class,

@@ -270,6 +270,7 @@ Route::prefix('mahasiswa')->middleware(['auth', 'mahasiswa'])->group(function ()
     Route::delete('aktivitas/cards/{card:uuid}', [\App\Http\Controllers\Mahasiswa\AktivitasCardController::class, 'destroy'])->name('aktivitas.cards.destroy');
 });
 
+
 // Profile (semua role)
 Route::middleware(['auth'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

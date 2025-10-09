@@ -166,6 +166,20 @@
                         ajax: {
                             url: '{{ route("mahasiswa.kunjungan.data") }}',
                             type: 'GET',
+                            error: function(xhr, error, thrown) {
+                                console.error('DataTables AJAX Error:', {
+                                    status: xhr.status,
+                                    error: error,
+                                    thrown: thrown,
+                                    response: xhr.responseText
+                                });
+                                $('#kunjunganMitraTable tbody').html(
+                                    '<tr><td colspan="8" class="text-center text-danger">' +
+                                    '<i class="fas fa-exclamation-triangle"></i> ' +
+                                    'Gagal memuat data. Silakan refresh halaman.' +
+                                    '</td></tr>'
+                                );
+                            }
                         },
                         columns: [
                             { data: 'tanggal_kunjungan', name: 'tanggal_kunjungan' },
