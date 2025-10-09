@@ -1975,7 +1975,7 @@
                      class="form-control form-control-sm"
                      data-member="${member.id}"
                      data-field="tanggal_hadir"
-                     value="${current.tanggal_hadir || ''}">
+                     value="${current.tanggal_hadir || '{{ now()->toDateString() }}'}">
             </div>
           </td>
           <td style="vertical-align: middle; padding: 8px;">
