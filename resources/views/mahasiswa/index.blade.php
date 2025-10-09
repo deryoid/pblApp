@@ -166,6 +166,13 @@
                         ajax: {
                             url: '{{ route("mahasiswa.kunjungan.data") }}',
                             type: 'GET',
+                            data: function(d) {
+                                // Add delay for search to reduce server load
+                                if (d.search && d.search.value) {
+                                    d.search_delay = 500; // 500ms delay
+                                }
+                                return d;
+                            },
                             error: function(xhr, error, thrown) {
                                 console.error('DataTables AJAX Error:', {
                                     status: xhr.status,
@@ -192,11 +199,11 @@
                             { data: 'bukti', name: 'bukti_kunjungan', orderable: false, searchable: false }
                         ],
                         order: [[0, 'desc']], // Sort by date descending by default
-                        pageLength: 25,
+                        pageLength: 10,
                         responsive: true,
                         language: {
                             "processing": "Sedang memuat semua data kunjungan...",
-                            "lengthMenu": "Tampilkan _MENU_ data per halaman",
+                            "lengthMenu": [[10, 25, 50, -1], [10, 25, 50, "Semua"]],
                             "zeroRecords": "Tidak ada data kunjungan mitra di database",
                             "info": "Menampilkan _START_ sampai _END_ dari _TOTAL_ total kunjungan (SEMUA DATA)",
                             "infoEmpty": "Tidak ada data kunjungan di database",

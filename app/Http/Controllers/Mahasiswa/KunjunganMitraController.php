@@ -214,32 +214,39 @@ class KunjunganMitraController extends Controller
     /**
      * Get all kunjungan data for DataTable (dashboard)
      * Menampilkan SELURUH data kunjungan dari database tanpa filter apapun
+     * Optimized untuk mengurangi memory usage
      */
     public function getDataForDashboard(Request $request)
     {
-        try {
-            // Debug logging
-            \Log::info('getDataForDashboard called', [
-                'user_id' => Auth::id(),
-                'user_role' => Auth::user() ? Auth::user()->role : 'not logged in',
-                'request_path' => $request->path(),
-                'request_method' => $request->method(),
-            ]);
+        // Increase memory limit for this operation
+        ini_set('memory_limit', '256M');
 
-            // Allow access for any authenticated user for dashboard view
-            // This endpoint shows ALL kunjungan data regardless of user role
-            $query = KunjunganMitra::with(['periode', 'kelompok', 'user'])
-                ->select('kunjungan_mitra.*', 'p.periode as periode_nama', 'k.nama_kelompok as kelompok_nama', 'u.nama_user as user_nama')
+        try {
+            // Add search delay to reduce server load
+            if ($request->get('search') && $request->get('search')['value']) {
+                usleep(500000); // 500ms delay for search requests
+            }
+
+            // Use simple query without eager loading to reduce memory
+            $query = KunjunganMitra::select(
+                'kunjungan_mitra.id',
+                'kunjungan_mitra.tanggal_kunjungan',
+                'kunjungan_mitra.perusahaan',
+                'kunjungan_mitra.alamat',
+                'kunjungan_mitra.status_kunjungan',
+                'kunjungan_mitra.bukti_kunjungan',
+                'p.periode as periode_nama',
+                'k.nama_kelompok as kelompok_nama',
+                'u.nama_user as user_nama'
+            )
                 ->leftJoin('periode as p', 'kunjungan_mitra.periode_id', '=', 'p.id')
                 ->leftJoin('kelompok as k', 'kunjungan_mitra.kelompok_id', '=', 'k.id')
-                ->leftJoin('users as u', 'kunjungan_mitra.user_id', '=', 'u.id')
-                ->orderBy('kunjungan_mitra.tanggal_kunjungan', 'desc')
-                ->orderBy('kunjungan_mitra.created_at', 'desc');
+                ->leftJoin('users as u', 'kunjungan_mitra.user_id', '=', 'u.id');
 
             return DataTables::of($query)
                 ->editColumn('tanggal_kunjungan', function ($item) {
                     return '<span class="badge badge-info">'.
-                        \Carbon\Carbon::parse($item->tanggal_kunjungan)->format('d M Y').
+                        date('d M Y', strtotime($item->tanggal_kunjungan)).
                         '</span>';
                 })
                 ->addColumn('periode_nama', function ($item) {
@@ -252,7 +259,7 @@ class KunjunganMitraController extends Controller
                     return '<strong>'.htmlspecialchars($item->perusahaan).'</strong>';
                 })
                 ->editColumn('alamat', function ($item) {
-                    return '<small class="text-muted">'.htmlspecialchars(\Illuminate\Support\Str::limit($item->alamat, 80)).'</small>';
+                    return '<small class="text-muted">'.htmlspecialchars(substr($item->alamat, 0, 80)).'</small>';
                 })
                 ->editColumn('status_kunjungan', function ($item) {
                     $statusBadge = [
@@ -286,16 +293,15 @@ class KunjunganMitraController extends Controller
                 'error' => $e->getMessage(),
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([
                 'error' => true,
-                'message' => 'Server error: ' . $e->getMessage(),
+                'message' => 'Server error: '.$e->getMessage(),
                 'draw' => $request->get('draw', 0),
                 'recordsTotal' => 0,
                 'recordsFiltered' => 0,
-                'data' => []
+                'data' => [],
             ], 500);
         }
     }
