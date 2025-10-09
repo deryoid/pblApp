@@ -76,7 +76,7 @@
                         </div>
                     @endif
                     <input type="file" name="bukti" class="form-control-file @error('bukti') is-invalid @enderror" accept="image/*">
-                    <small class="text-muted">Maks 6MB. Disimpan di database (BLOB).</small>
+                    <small class="text-muted">Maks 500KB. Format: JPEG, PNG, GIF, WebP. Gambar akan dikompres otomatis jika terlalu besar.</small>
                     @error('bukti') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                 </div>
 

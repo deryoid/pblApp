@@ -46,6 +46,7 @@
                     <div class="form-group col-md-6">
                         <label for="photo">Foto Profil (opsional)</label>
                         <input type="file" name="photo" id="photo" accept="image/*" class="form-control-file @error('photo') is-invalid @enderror">
+                        <small class="text-muted">Maks 4MB. Format: JPEG, PNG, GIF, WebP. Gambar akan dikompres otomatis maks 200KB.</small>
                         @error('photo') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                         @if($user->profile_photo)
                             <div class="mt-2">

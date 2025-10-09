@@ -17,8 +17,32 @@ class KunjunganMitraController extends Controller
     public function index()
     {
         $user = Auth::user();
-        $items = KunjunganMitra::with(['periode', 'kelompok'])
-            ->where('user_id', $user->id)
+        $mhs = Mahasiswa::where('user_id', $user->id)->first();
+
+        // Get all user IDs from the same kelompok as the current mahasiswa
+        $groupMemberIds = collect();
+        if ($mhs) {
+            $groupMemberIds = DB::table('kelompok_mahasiswa')
+                ->where('mahasiswa_id', $mhs->id)
+                ->pluck('kelompok_id', 'periode_id')
+                ->flatMap(function ($kelompokId, $periodeId) {
+                    return DB::table('kelompok_mahasiswa')
+                        ->where('kelompok_id', $kelompokId)
+                        ->where('periode_id', $periodeId)
+                        ->pluck('mahasiswa_id');
+                })
+                ->unique();
+        }
+
+        // Get all user IDs from group members
+        $userIds = DB::table('mahasiswa')
+            ->whereIn('id', $groupMemberIds)
+            ->pluck('user_id')
+            ->push($user->id) // Include current user as fallback
+            ->unique();
+
+        $items = KunjunganMitra::with(['periode', 'kelompok', 'user'])
+            ->whereIn('user_id', $userIds)
             ->latest()->get();
 
         return view('mahasiswa.kunjungan_mitra.index', compact('items'));
@@ -59,7 +83,7 @@ class KunjunganMitraController extends Controller
             'alamat' => ['required', 'string', 'max:255'],
             'tanggal_kunjungan' => ['required', 'date'],
             'status_kunjungan' => ['required', Rule::in(['Sudah dikunjungi', 'Proses Pembicaraan', 'Tidak ada tanggapan', 'Ditolak'])],
-            'bukti' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:6144'],
+            'bukti' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:500'],
         ]);
 
         // Validasi bahwa mahasiswa tsb memang anggota kelompok di periode tsb
@@ -89,8 +113,9 @@ class KunjunganMitraController extends Controller
 
         if ($request->hasFile('bukti')) {
             $file = $request->file('bukti');
-            $payload['bukti_kunjungan'] = file_get_contents($file->getRealPath());
-            $payload['bukti_kunjungan_mime'] = $file->getMimeType();
+            $compressedImage = $this->compressImage($file);
+            $payload['bukti_kunjungan'] = $compressedImage['data'];
+            $payload['bukti_kunjungan_mime'] = $compressedImage['mime'];
         }
 
         KunjunganMitra::create($payload);
@@ -133,7 +158,7 @@ class KunjunganMitraController extends Controller
             'alamat' => ['required', 'string', 'max:255'],
             'tanggal_kunjungan' => ['required', 'date'],
             'status_kunjungan' => ['required', Rule::in(['Sudah dikunjungi', 'Proses Pembicaraan', 'Tidak ada tanggapan', 'Ditolak'])],
-            'bukti' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:6144'],
+            'bukti' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:500'],
             'remove_bukti' => ['sometimes', 'boolean'],
         ]);
 
@@ -165,8 +190,9 @@ class KunjunganMitraController extends Controller
         }
         if ($request->hasFile('bukti')) {
             $file = $request->file('bukti');
-            $kunjungan->bukti_kunjungan = file_get_contents($file->getRealPath());
-            $kunjungan->bukti_kunjungan_mime = $file->getMimeType();
+            $compressedImage = $this->compressImage($file);
+            $kunjungan->bukti_kunjungan = $compressedImage['data'];
+            $kunjungan->bukti_kunjungan_mime = $compressedImage['mime'];
         }
 
         $kunjungan->save();
@@ -221,5 +247,123 @@ class KunjunganMitraController extends Controller
         if ($item->user_id !== Auth::id()) {
             abort(403, 'Tidak diizinkan.');
         }
+    }
+
+    /**
+     * Compress image to reduce file size while maintaining quality
+     */
+    private function compressImage($file): array
+    {
+        $imageData = file_get_contents($file->getRealPath());
+        $mimeType = $file->getMimeType();
+        $maxSize = 500 * 1024; // 500KB
+
+        // If already under 500KB, return as-is
+        if (strlen($imageData) <= $maxSize) {
+            return [
+                'data' => $imageData,
+                'mime' => $mimeType,
+            ];
+        }
+
+        // Create image resource based on mime type
+        $image = null;
+        switch ($mimeType) {
+            case 'image/jpeg':
+                $image = imagecreatefromjpeg($file->getRealPath());
+                break;
+            case 'image/png':
+                $image = imagecreatefrompng($file->getRealPath());
+                break;
+            case 'image/gif':
+                $image = imagecreatefromgif($file->getRealPath());
+                break;
+            case 'image/webp':
+                $image = imagecreatefromwebp($file->getRealPath());
+                break;
+        }
+
+        if (! $image) {
+            // Fallback: return original image if compression fails
+            return [
+                'data' => $imageData,
+                'mime' => $mimeType,
+            ];
+        }
+
+        // Get original dimensions
+        $width = imagesx($image);
+        $height = imagesy($image);
+
+        // Calculate new dimensions if needed (max 1200px width/height)
+        $maxDimension = 1200;
+        if ($width > $maxDimension || $height > $maxDimension) {
+            $ratio = min($maxDimension / $width, $maxDimension / $height);
+            $newWidth = intval($width * $ratio);
+            $newHeight = intval($height * $ratio);
+
+            $newImage = imagecreatetruecolor($newWidth, $newHeight);
+
+            // Handle transparency for PNG
+            if ($mimeType == 'image/png') {
+                imagealphablending($newImage, false);
+                imagesavealpha($newImage, true);
+                $transparent = imagecolorallocatealpha($newImage, 255, 255, 255, 127);
+                imagefilledrectangle($newImage, 0, 0, $newWidth, $newHeight, $transparent);
+            }
+
+            imagecopyresampled($newImage, $image, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+            imagedestroy($image);
+            $image = $newImage;
+        }
+
+        // Start with high quality and reduce if still too large
+        $quality = 85;
+        $compressedData = null;
+
+        while ($quality >= 30) { // Don't go below 30% quality
+            ob_start();
+
+            switch ($mimeType) {
+                case 'image/jpeg':
+                    imagejpeg($image, null, $quality);
+                    break;
+                case 'image/png':
+                    // PNG quality is 0-9 (0 = no compression, 9 = max compression)
+                    $pngQuality = 9 - (($quality / 100) * 9);
+                    imagepng($image, null, intval($pngQuality));
+                    break;
+                case 'image/gif':
+                    imagegif($image);
+                    break;
+                case 'image/webp':
+                    imagewebp($image, null, $quality);
+                    break;
+            }
+
+            $compressedData = ob_get_contents();
+            ob_end_clean();
+
+            if (strlen($compressedData) <= $maxSize) {
+                break;
+            }
+
+            $quality -= 10; // Reduce quality by 10% and try again
+        }
+
+        imagedestroy($image);
+
+        // If compression still fails to reduce size, use original
+        if (! $compressedData || strlen($compressedData) > strlen($imageData)) {
+            return [
+                'data' => $imageData,
+                'mime' => $mimeType,
+            ];
+        }
+
+        return [
+            'data' => $compressedData,
+            'mime' => $mimeType,
+        ];
     }
 }
