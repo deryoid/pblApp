@@ -28,12 +28,9 @@ class DashboardController extends Controller
         $activeSesiEvaluasi = $activePeriode ? \App\Models\EvaluasiMaster::where('periode_id', $activePeriode->id)->count() : 0;
 
         // Progress evaluasi evaluator
-        $pendingEvaluations = $activePeriode ? \App\Models\EvaluasiMaster::where('periode_id', $activePeriode->id)
-            ->where('status', 'Pending')
-            ->count() : 0;
-        $completedEvaluations = $activePeriode ? \App\Models\EvaluasiMaster::where('periode_id', $activePeriode->id)
-            ->where('status', 'Selesai')
-            ->count() : 0;
+        // Since evaluasi_master table doesn't have status column, we'll track based on related data
+        $pendingEvaluations = 0; // No status column, set to 0
+        $completedEvaluations = 0; // No status column, set to 0
 
         // Data Proyek yang perlu dievaluasi
         $totalProyekCards = \App\Models\ProjectCard::count();
@@ -47,11 +44,10 @@ class DashboardController extends Controller
             ->where('status_evaluasi', '!=', 'Sudah Evaluasi')
             ->count() : 0;
 
-        // Jadwal evaluasi hari ini (upcoming)
+        // Jadwal evaluasi (since evaluasi_master doesn't have tanggal column, we'll show recent evaluations)
         $todayEvaluations = $activePeriode ? \App\Models\EvaluasiMaster::where('periode_id', $activePeriode->id)
-            ->whereDate('tanggal', \Carbon\Carbon::today())
-            ->with(['kelompok', 'user'])
-            ->orderBy('tanggal')
+            ->with(['kelompok', 'creator'])
+            ->orderBy('created_at', 'desc')
             ->limit(5)
             ->get() : collect();
 
@@ -62,13 +58,14 @@ class DashboardController extends Controller
             foreach ($kelompoks as $kelompok) {
                 $sesiEvaluasi = \App\Models\EvaluasiMaster::where('kelompok_id', $kelompok->id)->get();
                 $totalSesi = $sesiEvaluasi->count();
-                $selesaiSesi = $sesiEvaluasi->where('status', 'Selesai')->count();
+                // Since evaluasi_master doesn't have status column, we'll show basic info
+                $selesaiSesi = 0; // No status column, set to 0
 
                 $evaluasiProgress[] = [
                     'nama_kelompok' => $kelompok->nama_kelompok,
                     'total_sesi' => $totalSesi,
                     'selesai_sesi' => $selesaiSesi,
-                    'progress' => $totalSesi > 0 ? round(($selesaiSesi / $totalSesi) * 100) : 0,
+                    'progress' => 0, // No status tracking available
                 ];
             }
         }

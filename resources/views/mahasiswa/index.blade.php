@@ -98,99 +98,32 @@
                             <div class="card shadow mb-4">
                                 <div class="card-header py-3 d-flex align-items-center justify-content-between">
                                     <h6 class="m-0 font-weight-bold text-primary">
-                                        <i class="fas fa-building mr-2"></i>Kunjungan Mitra Semua Kelompok
+                                        <i class="fas fa-building mr-2"></i>Kunjungan Mitra Semua Kelompok (SEMUA DATA)
                                     </h6>
                                     <a href="{{ route('mahasiswa.kunjungan.index') }}" class="btn btn-sm btn-outline-primary">
                                         <i class="fas fa-plus mr-1"></i>Tambah Kunjungan
                                     </a>
                                 </div>
                                 <div class="card-body">
-                                    @php
-                                        // Ambil semua kunjungan mitra dari semua kelompok di periode aktif
-                                        $kunjunganMitra = \App\Models\KunjunganMitra::with(['kelompok', 'user'])
-                                            ->when($periodeAktif, function($query) use ($periodeAktif) {
-                                                return $query->where('periode_id', $periodeAktif->id);
-                                            })
-                                            ->orderBy('tanggal_kunjungan', 'desc')
-                                            ->orderBy('created_at', 'desc')
-                                            ->take(10) // Tampilkan 10 terbaru
-                                            ->get();
-                                    @endphp
-
                                     <div class="table-responsive">
-                                        <table class="table table-bordered table-hover">
+                                        <table class="table table-bordered table-hover" id="kunjunganMitraTable" style="width: 100%;">
                                             <thead class="thead-light">
                                                 <tr>
-                                                    <th style="width: 80px;">Tanggal</th>
+                                                    <th>Tanggal</th>
+                                                    <th>Periode</th>
                                                     <th>Kelompok</th>
                                                     <th>Perusahaan</th>
                                                     <th>Alamat</th>
                                                     <th>Status</th>
+                                                    <th>Diinput Oleh</th>
                                                     <th>Bukti</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                @forelse($kunjunganMitra as $kunjungan)
-                                                    <tr>
-                                                        <td>
-                                                            <span class="badge badge-info">
-                                                                {{ \Carbon\Carbon::parse($kunjungan->tanggal_kunjungan)->format('d M Y') }}
-                                                            </span>
-                                                        </td>
-                                                        <td>
-                                                            <span class="badge badge-primary">{{ $kunjungan->kelompok->nama_kelompok ?? '-' }}</span>
-                                                        </td>
-                                                        <td>
-                                                            <strong>{{ $kunjungan->perusahaan }}</strong>
-                                                        </td>
-                                                        <td>
-                                                            <small class="text-muted">{{ Str::limit($kunjungan->alamat, 80) }}</small>
-                                                        </td>
-                                                        <td>
-                                                            @php
-                                                                $statusBadge = [
-                                                                    'Sudah dikunjungi' => 'success',
-                                                                    'Proses Pembicaraan' => 'info',
-                                                                    'Tidak ada tanggapan' => 'warning',
-                                                                    'Ditolak' => 'danger'
-                                                                ];
-                                                                $badgeClass = $statusBadge[$kunjungan->status_kunjungan] ?? 'secondary';
-                                                            @endphp
-                                                            <span class="badge badge-{{ $badgeClass }}">
-                                                                {{ $kunjungan->status_kunjungan }}
-                                                            </span>
-                                                        </td>
-                                                        <td class="text-center">
-                                                            @if($kunjungan->bukti_kunjungan)
-                                                                <button class="btn btn-sm btn-success" onclick="showBukti('{{ $kunjungan->id }}')" title="Lihat Bukti">
-                                                                    <i class="fas fa-image"></i>
-                                                                </button>
-                                                            @else
-                                                                <span class="text-muted" title="Tidak ada bukti">
-                                                                    <i class="fas fa-times-circle"></i>
-                                                                </span>
-                                                            @endif
-                                                        </td>
-                                                    </tr>
-                                                @empty
-                                                    <tr>
-                                                        <td colspan="6" class="text-center text-muted py-4">
-                                                            <i class="fas fa-building fa-2x mb-2"></i><br>
-                                                            Belum ada data kunjungan mitra
-                                                        </td>
-                                                    </tr>
-                                                @endforelse
+                                                <!-- Data akan dimuat melalui AJAX -->
                                             </tbody>
                                         </table>
                                     </div>
-
-                                    @if($kunjunganMitra->count() >= 10)
-                                    <div class="text-center mt-3">
-                                        <a href="{{ route('mahasiswa.kunjungan.index') }}" class="btn btn-sm btn-outline-secondary">
-                                            <i class="fas fa-list mr-1"></i>Lihat Semua Kunjungan
-                                        </a>
-                                    </div>
-                                    @endif
                                 </div>
                             </div>
                         </div>
@@ -225,6 +158,46 @@
 
                 @push('scripts')
                 <script>
+                $(document).ready(function() {
+                    // Initialize DataTable
+                    var table = $('#kunjunganMitraTable').DataTable({
+                        processing: true,
+                        serverSide: true,
+                        ajax: {
+                            url: '{{ route("mahasiswa.kunjungan.data") }}',
+                            type: 'GET',
+                        },
+                        columns: [
+                            { data: 'tanggal_kunjungan', name: 'tanggal_kunjungan' },
+                            { data: 'periode_nama', name: 'p.periode' },
+                            { data: 'kelompok_nama', name: 'k.nama_kelompok' },
+                            { data: 'perusahaan', name: 'perusahaan' },
+                            { data: 'alamat', name: 'alamat' },
+                            { data: 'status_kunjungan', name: 'status_kunjungan' },
+                            { data: 'diinput_oleh', name: 'u.nama_user' },
+                            { data: 'bukti', name: 'bukti_kunjungan', orderable: false, searchable: false }
+                        ],
+                        order: [[0, 'desc']], // Sort by date descending by default
+                        pageLength: 25,
+                        responsive: true,
+                        language: {
+                            "processing": "Sedang memuat semua data kunjungan...",
+                            "lengthMenu": "Tampilkan _MENU_ data per halaman",
+                            "zeroRecords": "Tidak ada data kunjungan mitra di database",
+                            "info": "Menampilkan _START_ sampai _END_ dari _TOTAL_ total kunjungan (SEMUA DATA)",
+                            "infoEmpty": "Tidak ada data kunjungan di database",
+                            "infoFiltered": "(difilter dari _MAX_ total data)",
+                            "search": "Cari di semua data:",
+                            "paginate": {
+                                "first": "Pertama",
+                                "last": "Terakhir",
+                                "next": "Selanjutnya",
+                                "previous": "Sebelumnya"
+                            }
+                        }
+                    });
+                });
+
                 function showBukti(kunjunganId) {
                     // Loading state
                     $('#buktiContent').html('<div class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Memuat bukti...</div>');

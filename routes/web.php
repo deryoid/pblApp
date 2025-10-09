@@ -236,6 +236,9 @@ Route::prefix('mahasiswa')->middleware(['auth', 'mahasiswa'])->group(function ()
     // AJAX endpoint for kunjungan bukti
     Route::get('kunjungan/{id}/bukti', [\App\Http\Controllers\Mahasiswa\KunjunganMitraController::class, 'getBukti'])->name('mahasiswa.kunjungan.bukti');
 
+    // AJAX endpoint for dashboard data
+    Route::get('kunjungan/data', [\App\Http\Controllers\Mahasiswa\KunjunganMitraController::class, 'getDataForDashboard'])->name('mahasiswa.kunjungan.data');
+
     // Board Proyek
     Route::get('proyek', [\App\Http\Controllers\Mahasiswa\ProyekController::class, 'index'])->name('proyek.index');
     Route::post('proyek/reorder', [\App\Http\Controllers\Mahasiswa\ProyekController::class, 'reorder'])->name('proyek.reorder');

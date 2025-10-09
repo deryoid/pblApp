@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\KunjunganMitra;
 use App\Models\Mahasiswa;
 use App\Models\Periode;
+use DataTables;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -208,6 +209,69 @@ class KunjunganMitraController extends Controller
         Alert::toast('Data kunjungan dihapus.', 'success');
 
         return back();
+    }
+
+    /**
+     * Get all kunjungan data for DataTable (dashboard)
+     * Menampilkan SELURUH data kunjungan dari database tanpa filter apapun
+     */
+    public function getDataForDashboard(Request $request)
+    {
+        // Query untuk mengambil SEMUA data kunjungan dari database
+        // Tidak ada filter user, kelompok, atau periode
+        $query = KunjunganMitra::with(['periode', 'kelompok', 'user'])
+            ->select('kunjungan_mitra.*', 'p.periode as periode_nama', 'k.nama_kelompok as kelompok_nama', 'u.nama_user as user_nama')
+            ->leftJoin('periode as p', 'kunjungan_mitra.periode_id', '=', 'p.id')
+            ->leftJoin('kelompok as k', 'kunjungan_mitra.kelompok_id', '=', 'k.id')
+            ->leftJoin('users as u', 'kunjungan_mitra.user_id', '=', 'u.id')
+            ->orderBy('kunjungan_mitra.tanggal_kunjungan', 'desc')
+            ->orderBy('kunjungan_mitra.created_at', 'desc');
+
+        return DataTables::of($query)
+            ->editColumn('tanggal_kunjungan', function ($item) {
+                return '<span class="badge badge-info">'.
+                    \Carbon\Carbon::parse($item->tanggal_kunjungan)->format('d M Y').
+                    '</span>';
+            })
+            ->addColumn('periode_nama', function ($item) {
+                return $item->periode_nama ? '<span class="badge badge-secondary">'.htmlspecialchars($item->periode_nama).'</span>' : '-';
+            })
+            ->addColumn('kelompok_nama', function ($item) {
+                return $item->kelompok_nama ? '<span class="badge badge-primary">'.htmlspecialchars($item->kelompok_nama).'</span>' : '-';
+            })
+            ->editColumn('perusahaan', function ($item) {
+                return '<strong>'.htmlspecialchars($item->perusahaan).'</strong>';
+            })
+            ->editColumn('alamat', function ($item) {
+                return '<small class="text-muted">'.htmlspecialchars(\Illuminate\Support\Str::limit($item->alamat, 80)).'</small>';
+            })
+            ->editColumn('status_kunjungan', function ($item) {
+                $statusBadge = [
+                    'Sudah dikunjungi' => 'success',
+                    'Proses Pembicaraan' => 'info',
+                    'Tidak ada tanggapan' => 'warning',
+                    'Ditolak' => 'danger',
+                ];
+                $badgeClass = $statusBadge[$item->status_kunjungan] ?? 'secondary';
+
+                return '<span class="badge badge-'.$badgeClass.'">'.htmlspecialchars($item->status_kunjungan).'</span>';
+            })
+            ->addColumn('diinput_oleh', function ($item) {
+                return $item->user_nama ? htmlspecialchars($item->user_nama) : '-';
+            })
+            ->addColumn('bukti', function ($item) {
+                if ($item->bukti_kunjungan) {
+                    return '<button class="btn btn-sm btn-success" onclick="showBukti(\''.$item->id.'\')" title="Lihat Bukti">
+                        <i class="fas fa-image"></i>
+                    </button>';
+                } else {
+                    return '<span class="text-muted" title="Tidak ada bukti">
+                        <i class="fas fa-times-circle"></i>
+                    </span>';
+                }
+            })
+            ->rawColumns(['tanggal_kunjungan', 'periode_nama', 'kelompok_nama', 'perusahaan', 'alamat', 'status_kunjungan', 'bukti'])
+            ->make(true);
     }
 
     /**
