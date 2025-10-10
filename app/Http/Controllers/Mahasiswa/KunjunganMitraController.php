@@ -246,18 +246,24 @@ class KunjunganMitraController extends Controller
      * Get all kunjungan data for pagination (dashboard)
      * Menampilkan SELURUH data kunjungan dari database tanpa filter apapun
      * Menggunakan pagination bawaan Laravel untuk efisiensi memory
+     * Optimized for memory usage with chunked queries
      */
     public function getDataForDashboard(Request $request)
     {
         try {
+            // Free up memory before processing
+            gc_collect_cycles();
+
             // Build query dengan join untuk mendapatkan nama periode, kelompok, dan user
+            // Using select without bukti_kunjungan to reduce memory usage
             $query = KunjunganMitra::select(
                 'kunjungan_mitra.id',
+                'kunjungan_mitra.uuid',
                 'kunjungan_mitra.tanggal_kunjungan',
                 'kunjungan_mitra.perusahaan',
                 'kunjungan_mitra.alamat',
                 'kunjungan_mitra.status_kunjungan',
-                'kunjungan_mitra.bukti_kunjungan',
+                // 'kunjungan_mitra.bukti_kunjungan', // Exclude to save memory
                 'p.periode as periode_nama',
                 'k.nama_kelompok as kelompok_nama',
                 'u.nama_user as user_nama'
@@ -281,11 +287,21 @@ class KunjunganMitraController extends Controller
                 });
             }
 
-            // Apply pagination dengan 10 data per halaman
+            // Apply pagination dengan 10 data per halaman untuk efisiensi memory
             $kunjungans = $query->paginate(10);
 
+            // Free memory after query
+            unset($query);
+            gc_collect_cycles();
+
             // Return view dengan data pagination
-            return view('mahasiswa.partials.kunjungan_table', compact('kunjungans'))->render();
+            $html = view('mahasiswa.partials.kunjungan_table', compact('kunjungans'))->render();
+
+            // Free memory after render
+            unset($kunjungans);
+            gc_collect_cycles();
+
+            return $html;
 
         } catch (\Exception $e) {
             \Log::error('Error in getDataForDashboard', [
@@ -293,6 +309,9 @@ class KunjunganMitraController extends Controller
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
             ]);
+
+            // Force garbage collection on error
+            gc_collect_cycles();
 
             return response()->json([
                 'error' => true,
@@ -362,7 +381,8 @@ class KunjunganMitraController extends Controller
         }
 
         // Increase memory limit temporarily for image processing
-        ini_set('memory_limit', '256M');
+        $currentLimit = ini_get('memory_limit');
+        ini_set('memory_limit', '512M');
 
         try {
             // Get image dimensions without loading full image
@@ -421,7 +441,9 @@ class KunjunganMitraController extends Controller
             ];
         } finally {
             // Restore original memory limit
-            ini_restore('memory_limit');
+            ini_set('memory_limit', $currentLimit);
+            // Force garbage collection
+            gc_collect_cycles();
         }
     }
 

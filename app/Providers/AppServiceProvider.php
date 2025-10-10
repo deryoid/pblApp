@@ -21,7 +21,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Increase memory limit for handling large images and datasets
+        $memoryLimit = config('app.memory_limit', '512M');
+        ini_set('memory_limit', $memoryLimit);
     }
 
     /**
