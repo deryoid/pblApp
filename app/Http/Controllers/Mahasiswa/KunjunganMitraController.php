@@ -83,8 +83,24 @@ class KunjunganMitraController extends Controller
             'alamat' => ['required', 'string', 'max:255'],
             'tanggal_kunjungan' => ['required', 'date'],
             'status_kunjungan' => ['required', Rule::in(['Sudah dikunjungi', 'Proses Pembicaraan', 'Tidak ada tanggapan', 'Ditolak'])],
-            'bukti' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:500'],
+            'bukti' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:5120'], // 5MB max
         ]);
+
+        // Additional validation for image dimensions to prevent memory issues
+        if ($request->hasFile('bukti')) {
+            $file = $request->file('bukti');
+            $imageInfo = getimagesize($file->getRealPath());
+
+            if ($imageInfo) {
+                list($width, $height) = $imageInfo;
+                $maxPixels = 50 * 1000000; // 50 megapixels
+
+                if ($width * $height > $maxPixels) {
+                    Alert::toast('Gambar terlalu besar. Maksimal 50 megapixels.', 'error');
+                    return back()->withErrors(['bukti' => 'Gambar terlalu besar. Maksimal 50 megapixels.'])->withInput();
+                }
+            }
+        }
 
         // Validasi bahwa mahasiswa tsb memang anggota kelompok di periode tsb
         if ($mhs) {
@@ -158,9 +174,25 @@ class KunjunganMitraController extends Controller
             'alamat' => ['required', 'string', 'max:255'],
             'tanggal_kunjungan' => ['required', 'date'],
             'status_kunjungan' => ['required', Rule::in(['Sudah dikunjungi', 'Proses Pembicaraan', 'Tidak ada tanggapan', 'Ditolak'])],
-            'bukti' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:500'],
+            'bukti' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:5120'], // 5MB max
             'remove_bukti' => ['sometimes', 'boolean'],
         ]);
+
+        // Additional validation for image dimensions to prevent memory issues
+        if ($request->hasFile('bukti')) {
+            $file = $request->file('bukti');
+            $imageInfo = getimagesize($file->getRealPath());
+
+            if ($imageInfo) {
+                list($width, $height) = $imageInfo;
+                $maxPixels = 50 * 1000000; // 50 megapixels
+
+                if ($width * $height > $maxPixels) {
+                    Alert::toast('Gambar terlalu besar. Maksimal 50 megapixels.', 'error');
+                    return back()->withErrors(['bukti' => 'Gambar terlalu besar. Maksimal 50 megapixels.'])->withInput();
+                }
+            }
+        }
 
         if ($mhs) {
             $exists = DB::table('kelompok_mahasiswa')
@@ -311,77 +343,142 @@ class KunjunganMitraController extends Controller
 
     /**
      * Compress image to reduce file size while maintaining quality
+     * Optimized for memory usage with large files
      */
     private function compressImage($file): array
     {
-        $imageData = file_get_contents($file->getRealPath());
         $mimeType = $file->getMimeType();
+        $filePath = $file->getRealPath();
         $maxSize = 500 * 1024; // 500KB
-
-        // If already under 500KB, return as-is
-        if (strlen($imageData) <= $maxSize) {
-            return [
-                'data' => $imageData,
-                'mime' => $mimeType,
-            ];
-        }
-
-        // Create image resource based on mime type
-        $image = null;
-        switch ($mimeType) {
-            case 'image/jpeg':
-                $image = imagecreatefromjpeg($file->getRealPath());
-                break;
-            case 'image/png':
-                $image = imagecreatefrompng($file->getRealPath());
-                break;
-            case 'image/gif':
-                $image = imagecreatefromgif($file->getRealPath());
-                break;
-            case 'image/webp':
-                $image = imagecreatefromwebp($file->getRealPath());
-                break;
-        }
-
-        if (! $image) {
-            // Fallback: return original image if compression fails
-            return [
-                'data' => $imageData,
-                'mime' => $mimeType,
-            ];
-        }
-
-        // Get original dimensions
-        $width = imagesx($image);
-        $height = imagesy($image);
-
-        // Calculate new dimensions if needed (max 1200px width/height)
         $maxDimension = 1200;
-        if ($width > $maxDimension || $height > $maxDimension) {
-            $ratio = min($maxDimension / $width, $maxDimension / $height);
-            $newWidth = intval($width * $ratio);
-            $newHeight = intval($height * $ratio);
 
-            $newImage = imagecreatetruecolor($newWidth, $newHeight);
+        // Check file size first before loading into memory
+        $fileSize = filesize($filePath);
+        if ($fileSize <= $maxSize) {
+            return [
+                'data' => file_get_contents($filePath),
+                'mime' => $mimeType,
+            ];
+        }
 
-            // Handle transparency for PNG
-            if ($mimeType == 'image/png') {
-                imagealphablending($newImage, false);
-                imagesavealpha($newImage, true);
-                $transparent = imagecolorallocatealpha($newImage, 255, 255, 255, 127);
-                imagefilledrectangle($newImage, 0, 0, $newWidth, $newHeight, $transparent);
+        // Increase memory limit temporarily for image processing
+        ini_set('memory_limit', '256M');
+
+        try {
+            // Get image dimensions without loading full image
+            $imageInfo = getimagesize($filePath);
+            if (!$imageInfo) {
+                throw new \Exception('Unable to read image dimensions');
             }
 
-            imagecopyresampled($newImage, $image, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
-            imagedestroy($image);
-            $image = $newImage;
+            list($width, $height) = $imageInfo;
+
+            // If image is already small enough, just load with GD
+            if ($width <= $maxDimension && $height <= $maxDimension) {
+                $image = $this->createImageResource($filePath, $mimeType);
+                if (!$image) {
+                    throw new \Exception('Unable to create image resource');
+                }
+            } else {
+                // Calculate new dimensions
+                $ratio = min($maxDimension / $width, $maxDimension / $height);
+                $newWidth = intval($width * $ratio);
+                $newHeight = intval($height * $ratio);
+
+                // Create resized image directly
+                $image = $this->createResizedImage($filePath, $mimeType, $newWidth, $newHeight);
+                if (!$image) {
+                    throw new \Exception('Unable to resize image');
+                }
+            }
+
+            // Try to compress with decreasing quality
+            $compressedData = $this->compressImageData($image, $mimeType, $maxSize);
+
+            // Clean up memory
+            if ($image) {
+                imagedestroy($image);
+            }
+
+            // If compression failed or resulted in larger file, return original
+            if (!$compressedData || strlen($compressedData) > $fileSize) {
+                return [
+                    'data' => file_get_contents($filePath),
+                    'mime' => $mimeType,
+                ];
+            }
+
+            return [
+                'data' => $compressedData,
+                'mime' => $mimeType,
+            ];
+
+        } catch (\Exception $e) {
+            // Fallback to original file if anything fails
+            return [
+                'data' => file_get_contents($filePath),
+                'mime' => $mimeType,
+            ];
+        } finally {
+            // Restore original memory limit
+            ini_restore('memory_limit');
+        }
+    }
+
+    /**
+     * Create image resource from file
+     */
+    private function createImageResource($filePath, $mimeType)
+    {
+        switch ($mimeType) {
+            case 'image/jpeg':
+                return imagecreatefromjpeg($filePath);
+            case 'image/png':
+                return imagecreatefrompng($filePath);
+            case 'image/gif':
+                return imagecreatefromgif($filePath);
+            case 'image/webp':
+                return imagecreatefromwebp($filePath);
+            default:
+                return null;
+        }
+    }
+
+    /**
+     * Create resized image resource
+     */
+    private function createResizedImage($filePath, $mimeType, $newWidth, $newHeight)
+    {
+        $sourceImage = $this->createImageResource($filePath, $mimeType);
+        if (!$sourceImage) {
+            return null;
         }
 
-        // Start with high quality and reduce if still too large
+        $newImage = imagecreatetruecolor($newWidth, $newHeight);
+
+        // Handle transparency for PNG
+        if ($mimeType == 'image/png') {
+            imagealphablending($newImage, false);
+            imagesavealpha($newImage, true);
+            $transparent = imagecolorallocatealpha($newImage, 255, 255, 255, 127);
+            imagefilledrectangle($newImage, 0, 0, $newWidth, $newHeight, $transparent);
+        }
+
+        imagecopyresampled($newImage, $sourceImage, 0, 0, 0, 0, $newWidth, $newHeight, imagesx($sourceImage), imagesy($sourceImage));
+        imagedestroy($sourceImage);
+
+        return $newImage;
+    }
+
+    /**
+     * Compress image data with quality reduction
+     */
+    private function compressImageData($image, $mimeType, $maxSize)
+    {
         $quality = 85;
         $compressedData = null;
 
-        while ($quality >= 30) { // Don't go below 30% quality
+        while ($quality >= 30) {
             ob_start();
 
             switch ($mimeType) {
@@ -389,7 +486,6 @@ class KunjunganMitraController extends Controller
                     imagejpeg($image, null, $quality);
                     break;
                 case 'image/png':
-                    // PNG quality is 0-9 (0 = no compression, 9 = max compression)
                     $pngQuality = 9 - (($quality / 100) * 9);
                     imagepng($image, null, intval($pngQuality));
                     break;
@@ -408,22 +504,9 @@ class KunjunganMitraController extends Controller
                 break;
             }
 
-            $quality -= 10; // Reduce quality by 10% and try again
+            $quality -= 10;
         }
 
-        imagedestroy($image);
-
-        // If compression still fails to reduce size, use original
-        if (! $compressedData || strlen($compressedData) > strlen($imageData)) {
-            return [
-                'data' => $imageData,
-                'mime' => $mimeType,
-            ];
-        }
-
-        return [
-            'data' => $compressedData,
-            'mime' => $mimeType,
-        ];
+        return $compressedData;
     }
 }

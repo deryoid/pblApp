@@ -68,7 +68,7 @@
                 <div class="form-group">
                     <label>Bukti Kunjungan (Foto)</label>
                     <input type="file" name="bukti" class="form-control-file @error('bukti') is-invalid @enderror" accept="image/*">
-                    <small class="text-muted">Maks 500KB. Format: JPEG, PNG, GIF, WebP. Gambar akan dikompres otomatis jika terlalu besar.</small>
+                    <small class="text-muted">Maks 5MB. Format: JPEG, PNG, GIF, WebP. Maksimal 50 megapixels. Gambar akan dikompres otomatis ke 500KB.</small>
                     @error('bukti') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                 </div>
 
