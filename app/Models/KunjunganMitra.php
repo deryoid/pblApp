@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 class KunjunganMitra extends Model
@@ -18,6 +19,18 @@ class KunjunganMitra extends Model
     {
         static::creating(function (self $m) {
             if (empty($m->uuid)) $m->uuid = (string) Str::uuid();
+        });
+
+        static::saved(function (self $m) {
+            if ($m->user_id) {
+                Cache::forget('mahasiswa_dashboard_' . $m->user_id);
+            }
+        });
+
+        static::deleted(function (self $m) {
+            if ($m->user_id) {
+                Cache::forget('mahasiswa_dashboard_' . $m->user_id);
+            }
         });
     }
 

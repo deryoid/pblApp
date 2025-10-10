@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 class Mahasiswa extends Model
@@ -21,6 +22,18 @@ class Mahasiswa extends Model
         static::creating(function ($m) {
             if (empty($m->uuid)) {
                 $m->uuid = (string) Str::uuid(); // isi internal, bukan dari request
+            }
+        });
+
+        static::updated(function ($m) {
+            if ($m->user_id) {
+                Cache::forget('mahasiswa_dashboard_' . $m->user_id);
+            }
+        });
+
+        static::deleted(function ($m) {
+            if ($m->user_id) {
+                Cache::forget('mahasiswa_dashboard_' . $m->user_id);
             }
         });
     }

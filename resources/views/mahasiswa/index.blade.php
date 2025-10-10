@@ -13,29 +13,48 @@
 
                     {{-- Info Periode Aktif & Kelompok Saya --}}
                     @php
-                        $mhs = \App\Models\Mahasiswa::where('user_id', Auth::id())->first();
-                        $periodeAktif = \App\Models\Periode::where('status_periode','Aktif')->orderByDesc('created_at')->first();
-                        $kelompokSaya = null;
-                        $anggotaKelompok = collect();
-                        $labelPeriode = $periodeAktif? $periodeAktif->periode : null;
-                        if ($mhs) {
-                            if ($periodeAktif) {
-                                $kelompokSaya = $mhs->kelompoks()->wherePivot('periode_id', $periodeAktif->id)->first();
-                                if ($kelompokSaya) {
-                                    $anggotaKelompok = $kelompokSaya->mahasiswas()
-                                        ->wherePivot('periode_id', $periodeAktif->id)
-                                        ->with('user')
-                                        ->get();
+                        // Cache the queries for better performance
+                        $cacheKey = 'mahasiswa_dashboard_' . Auth::id();
+                        $dashboardData = \Illuminate\Support\Facades\Cache::remember($cacheKey, 300, function () {
+                            $mhs = \App\Models\Mahasiswa::where('user_id', Auth::id())->first();
+                            $periodeAktif = \App\Models\Periode::where('status_periode','Aktif')->orderByDesc('created_at')->first();
+                            $kelompokSaya = null;
+                            $anggotaKelompok = collect();
+                            $labelPeriode = $periodeAktif? $periodeAktif->periode : null;
+
+                            if ($mhs) {
+                                if ($periodeAktif) {
+                                    $kelompokSaya = $mhs->kelompoks()->wherePivot('periode_id', $periodeAktif->id)->first();
+                                    if ($kelompokSaya) {
+                                        $anggotaKelompok = $kelompokSaya->mahasiswas()
+                                            ->wherePivot('periode_id', $periodeAktif->id)
+                                            ->with('user')
+                                            ->get();
+                                    }
+                                }
+                                // fallback: pakai keanggotaan terbaru jika tidak ada di periode aktif
+                                if (!$kelompokSaya) {
+                                    $kelompokSaya = $mhs->kelompoks()->latest('kelompok_mahasiswa.created_at')->first();
+                                    if ($kelompokSaya) {
+                                        $anggotaKelompok = $kelompokSaya->mahasiswas()->with('user')->get();
+                                    }
                                 }
                             }
-                            // fallback: pakai keanggotaan terbaru jika tidak ada di periode aktif
-                            if (!$kelompokSaya) {
-                                $kelompokSaya = $mhs->kelompoks()->latest('kelompok_mahasiswa.created_at')->first();
-                                if ($kelompokSaya) {
-                                    $anggotaKelompok = $kelompokSaya->mahasiswas()->with('user')->get();
-                                }
-                            }
-                        }
+
+                            return [
+                                'mhs' => $mhs,
+                                'periodeAktif' => $periodeAktif,
+                                'kelompokSaya' => $kelompokSaya,
+                                'anggotaKelompok' => $anggotaKelompok,
+                                'labelPeriode' => $labelPeriode
+                            ];
+                        });
+
+                        $mhs = $dashboardData['mhs'];
+                        $periodeAktif = $dashboardData['periodeAktif'];
+                        $kelompokSaya = $dashboardData['kelompokSaya'];
+                        $anggotaKelompok = $dashboardData['anggotaKelompok'];
+                        $labelPeriode = $dashboardData['labelPeriode'];
                     @endphp
 
                     <div class="row mb-3">
@@ -123,7 +142,7 @@
                                         <div class="col-md-6 text-end">
                                             <small class="text-muted">
                                                 <i class="fas fa-info-circle"></i>
-                                                Menampilkan semua data kunjungan mitra ({{ \App\Models\KunjunganMitra::count() }} total data)
+                                                Menampilkan semua data kunjungan mitra
                                             </small>
                                         </div>
                                     </div>
