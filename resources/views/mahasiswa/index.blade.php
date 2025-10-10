@@ -13,7 +13,7 @@
 
                     {{-- Info Periode Aktif & Kelompok Saya --}}
                     @php
-                        // Cache the queries for better performance
+                        // Cache the queries for better performance (excluding binary data)
                         $cacheKey = 'mahasiswa_dashboard_' . Auth::id();
                         $dashboardData = \Illuminate\Support\Facades\Cache::remember($cacheKey, 300, function () {
                             $mhs = \App\Models\Mahasiswa::where('user_id', Auth::id())->first();
@@ -28,7 +28,10 @@
                                     if ($kelompokSaya) {
                                         $anggotaKelompok = $kelompokSaya->mahasiswas()
                                             ->wherePivot('periode_id', $periodeAktif->id)
-                                            ->with('user')
+                                            ->with(['user' => function($query) {
+                                                // Exclude large binary fields from cache
+                                                $query->select('id', 'uuid', 'nama_user', 'email', 'username', 'role', 'no_hp', 'created_at', 'updated_at');
+                                            }])
                                             ->get();
                                     }
                                 }
@@ -36,7 +39,10 @@
                                 if (!$kelompokSaya) {
                                     $kelompokSaya = $mhs->kelompoks()->latest('kelompok_mahasiswa.created_at')->first();
                                     if ($kelompokSaya) {
-                                        $anggotaKelompok = $kelompokSaya->mahasiswas()->with('user')->get();
+                                        $anggotaKelompok = $kelompokSaya->mahasiswas()->with(['user' => function($query) {
+                                            // Exclude large binary fields from cache
+                                            $query->select('id', 'uuid', 'nama_user', 'email', 'username', 'role', 'no_hp', 'created_at', 'updated_at');
+                                        }])->get();
                                     }
                                 }
                             }

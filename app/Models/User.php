@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 class User extends Authenticatable
@@ -30,6 +31,26 @@ class User extends Authenticatable
         'password',
         'remember_token',
         'profile_photo',
+        'profile_photo_mime',
+    ];
+
+    /**
+     * The attributes that should be visible in arrays/JSON serialization.
+     *
+     * @var list<string>
+     */
+    protected $visible = [
+        'id',
+        'uuid',
+        'nama_user',
+        'email',
+        'username',
+        'role',
+        'no_hp',
+        'email_verified_at',
+        'created_at',
+        'updated_at',
+        'profile_photo_data_url', // Safe accessor method
     ];
 
     /**
@@ -58,6 +79,16 @@ class User extends Authenticatable
             if (empty($user->uuid)) {
                 $user->uuid = (string) Str::uuid();
             }
+        });
+
+        static::updated(function (self $user) {
+            // Clear dashboard cache when user data changes
+            Cache::forget('mahasiswa_dashboard_' . $user->id);
+        });
+
+        static::deleted(function (self $user) {
+            // Clear dashboard cache when user is deleted
+            Cache::forget('mahasiswa_dashboard_' . $user->id);
         });
     }
 
