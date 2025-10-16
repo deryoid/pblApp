@@ -78,37 +78,28 @@ class NilaiController extends Controller
             ->when($periodeId, fn ($q) => $q->where('periode_id', $periodeId))
             ->get();
 
-        // Get unique mahasiswa from evaluations (only those in same kelompoks as current mahasiswa)
-        $mahasiswaIds = $evaluationsDosen->pluck('mahasiswa_id')
-            ->merge($evaluationsMitra->pluck('mahasiswa_id'))
-            ->merge($nilaiAP->pluck('mahasiswa_id'))
-            ->unique()
-            ->values();
+        // Filter evaluations to only show current mahasiswa's data
+        $evaluationsDosen = $evaluationsDosen->where('mahasiswa_id', $mhs->id);
+        $evaluationsMitra = $evaluationsMitra->where('mahasiswa_id', $mhs->id);
+        $nilaiAP = $nilaiAP->where('mahasiswa_id', $mhs->id);
 
-        // Filter to only show mahasiswa in same kelompoks as current mahasiswa
-        $kelompokMahasiswaIds = $mhs->kelompoks()
-            ->when($periodeId, fn ($q) => $q->wherePivot('periode_id', $periodeId))
-            ->get()
-            ->flatMap(function ($kelompok) {
-                return $kelompok->mahasiswas->pluck('id');
-            })
-            ->unique();
+        // Only use current mahasiswa ID
+        $mahasiswaIds = collect([$mhs->id]);
 
         // Filter mahasiswa by kelas if kelas_id is selected
         if ($kelasId) {
             // Get mahasiswa IDs from kelompok_mahasiswa with selected kelas_id
             $mahasiswaIdsWithKelas = \DB::table('kelompok_mahasiswa')
                 ->where('kelas_id', $kelasId)
+                ->where('mahasiswa_id', $mhs->id)
                 ->when($periodeId, fn ($q) => $q->where('periode_id', $periodeId))
                 ->pluck('mahasiswa_id')
                 ->unique();
 
             $mahasiswaIds = $mahasiswaIds->intersect($mahasiswaIdsWithKelas);
-            $kelompokMahasiswaIds = $kelompokMahasiswaIds->intersect($mahasiswaIdsWithKelas);
         }
 
         $mahasiswas = Mahasiswa::whereIn('id', $mahasiswaIds)
-            ->whereIn('id', $kelompokMahasiswaIds)
             ->with(['kelompoks' => function ($q) use ($periodeId) {
                 if ($periodeId) {
                     $q->wherePivot('periode_id', $periodeId);
