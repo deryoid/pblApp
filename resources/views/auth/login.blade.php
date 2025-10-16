@@ -106,6 +106,13 @@
                                             Masuk
                                         </button>
                                     </form>
+                                    <hr>
+                                    <div class="text-center">
+                                        <a href="/kunjungan-mitra" class="btn btn-outline-info btn-sm">
+                                            <i class="fas fa-eye mr-1"></i>
+                                            Lihat Data Kunjungan Mitra (Public)
+                                        </a>
+                                    </div>
                                     {{-- <div class="text-center">
                                         <a class="small" href="forgot-password.html">Forgot Password?</a>
                                     </div>

@@ -18,6 +18,11 @@ Route::get('/', function () {
 Route::post('/login', [LoginController::class, 'login'])->name('login.attempt');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
+// Public route untuk kunjungan mitra
+Route::get('/kunjungan-mitra', [\App\Http\Controllers\Public\KunjunganMitraController::class, 'index'])->name('public.kunjungan.index');
+Route::get('/kunjungan-mitra/data', [\App\Http\Controllers\Public\KunjunganMitraController::class, 'getData'])->name('public.kunjungan.data');
+Route::get('/kunjungan-mitra/{id}/bukti', [\App\Http\Controllers\Public\KunjunganMitraController::class, 'getBukti'])->name('public.kunjungan.bukti');
+
 // Debug route for testing validation
 Route::get('/debug-validation', function () {
     $evaluasiMaster = \App\Models\EvaluasiMaster::first();
@@ -269,7 +274,6 @@ Route::prefix('mahasiswa')->middleware(['auth', 'mahasiswa'])->group(function ()
     Route::put('aktivitas/cards/{card:uuid}', [\App\Http\Controllers\Mahasiswa\AktivitasCardController::class, 'update'])->name('aktivitas.cards.update');
     Route::delete('aktivitas/cards/{card:uuid}', [\App\Http\Controllers\Mahasiswa\AktivitasCardController::class, 'destroy'])->name('aktivitas.cards.destroy');
 });
-
 
 // Profile (semua role)
 Route::middleware(['auth'])->group(function () {
