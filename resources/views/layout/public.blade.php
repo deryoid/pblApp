@@ -7,7 +7,10 @@
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <title>Kunjungan Mitra - PBL App</title>
+    <!-- CSRF Token -->
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
+    <title>@yield('title', 'PBL App')</title>
 
     <!-- Custom fonts for this template-->
     <link href="{{ asset('sbadmin2/vendor/fontawesome-free/css/all.min.css') }}" rel="stylesheet" type="text/css">
@@ -32,13 +35,13 @@
                     <div class="container">
                         <a class="navbar-brand" href="/">
                             <i class="fas fa-bolt text-warning mr-2"></i>
-                            <strong>PBL App - Kunjungan Mitra</strong>
+                            <strong>PBL App</strong>
                         </a>
-                        <div class="ml-auto">
+                        {{-- <div class="ml-auto">
                             <a href="{{ route('login') }}" class="btn btn-primary btn-sm">
                                 <i class="fas fa-sign-in-alt mr-1"></i> Login
                             </a>
-                        </div>
+                        </div> --}}
                     </div>
                 </nav>
 

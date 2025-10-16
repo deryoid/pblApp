@@ -68,6 +68,11 @@ class ProjectCard extends Model
         return $this->belongsTo(\App\Models\User::class, 'updated_by');
     }
 
+    public function evaluasiMitra()
+    {
+        return $this->hasMany(\App\Models\EvaluasiMitra::class, 'project_card_id');
+    }
+
     public function getRouteKeyName(): string
     {
         return 'uuid';

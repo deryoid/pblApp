@@ -127,9 +127,9 @@
                                         <div>
                                             <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Quick Links</div>
                                             <div class="h6 mb-0 font-weight-bold text-gray-800">
-                                                <a href="/kunjungan-mitra" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                <a href="/kunjungan-mitra" target="_blank" class="btn btn-sm btn-info">
                                                     <i class="fas fa-external-link-alt mr-1"></i>
-                                                    Lihat Data Kunjungan Mitra (Public)
+                                                    Lihat Data Kunjungan Mitra
                                                 </a>
                                             </div>
                                         </div>

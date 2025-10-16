@@ -24,6 +24,17 @@ class Kelompok extends Model
         return 'uuid';
     }
 
+    // Accessor untuk periode aktif (digunakan di penilaian mitra public)
+    public function getPeriodeAktifIdAttribute()
+    {
+        // Cari periode aktif dari database
+        $periodeAktif = \App\Models\Periode::where('status_periode', 'Aktif')
+            ->orderByDesc('created_at')
+            ->first();
+
+        return $periodeAktif ? $periodeAktif->id : null;
+    }
+
     public function periode(): BelongsTo
     {
         return $this->belongsTo(Periode::class);

@@ -27,7 +27,7 @@
                 <div class="col-md-6">
                     <form id="searchForm" class="d-flex">
                         <input type="text" name="search" class="form-control me-2" placeholder="Cari kunjungan..." value="{{ request('search') }}">
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" class="btn">
                             <i class="fas fa-search"></i> Cari
                         </button>
                         @if(request('search'))
@@ -36,12 +36,6 @@
                             </a>
                         @endif
                     </form>
-                </div>
-                <div class="col-md-6 text-end">
-                    <small class="text-muted">
-                        <i class="fas fa-building mr-1"></i>
-                        Total kunjungan dari semua kelompok
-                    </small>
                 </div>
             </div>
 

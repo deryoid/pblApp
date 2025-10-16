@@ -524,7 +524,7 @@
                                   <div class="text-right">
                                     @if($rowNilaiM !== null)
                                       <div class="font-weight-bold">{{ $rowNilaiM }}</div>
-                                      <span class="badge badge-{{ $gradeClassM }}"></span>
+                                      <span class="badge badge-{{ $gradeClassM }}">{{ $rowGradeM }}</span>
                                     @else
                                       <span class="text-muted small">Belum dinilai</span>
                                     @endif
@@ -550,7 +550,7 @@
                           {{-- Drive --}}
                           @php $drive = $card->link_drive_proyek ?? $card->drive_link ?? null; @endphp
                           @if(!empty($drive))
-                            <a href="{{ $drive }}" class="btn btn-dark" target="_blank" rel="noopener" title="Drive">
+                            <a href="{{ $drive }}" class="btn btn-circle btn-dark" target="_blank" rel="noopener" title="Drive">
                               <i class="fab fa-google-drive" aria-hidden="true"></i>
                             </a>
                           @endif
@@ -570,13 +570,13 @@
                             <i class="fas fa-chalkboard-teacher" aria-hidden="true"></i>
                           </button>
 
-                          {{-- Nilai Mitra --}}
-                          {{-- <button type="button"
-                                  class="btn btn-circle btn-secondary"
-                                  title="Nilai Mitra"
-                                  onclick="gradeMitra('{{ $card->uuid }}','{{ addslashes($card->title) }}')">
-                            <i class="fas fa-handshake" aria-hidden="true"></i>
-                          </button> --}}
+                          {{-- Share Link Penilaian Mitra --}}
+                          <button type="button"
+                                  class="btn btn-circle btn-info"
+                                  title="Share Link Penilaian Mitra"
+                                  onclick="sharePenilaianMitra('{{ $card->uuid }}','{{ addslashes($card->title) }}')">
+                            <i class="fas fa-share-alt" aria-hidden="true"></i>
+                          </button>
 
                           {{-- Edit --}}
                           <button type="button"
@@ -2895,7 +2895,6 @@
     });
   }
 
-  
   // Validasi struktur di DOM
   document.addEventListener('DOMContentLoaded', function() {
     const columns = document.querySelectorAll('.board-column');
@@ -2912,5 +2911,95 @@
     });
   });
 })();
+
+  // Global functions for share penilaian mitra
+  window.sharePenilaianMitra = function(cardUuid, cardTitle) {
+  const shareLink = `${window.location.origin}/penilaian-mitra/${cardUuid}`;
+
+  Swal.fire({
+    title: 'Share Link Penilaian Mitra',
+    html: `
+      <div class="text-left">
+        <p class="mb-3">Bagikan link ini ke mitra industri untuk melakukan penilaian:</p>
+        <div class="input-group mb-3">
+          <input type="text" id="shareLinkInput" class="form-control" value="${shareLink}" readonly>
+          <div class="input-group-append">
+            <button class="btn btn-primary" type="button" onclick="copyShareLink()">
+              <i class="fas fa-copy"></i> Copy
+            </button>
+          </div>
+        </div>
+        <div class="alert alert-info small">
+          <i class="fas fa-info-circle mr-2"></i>
+          <strong>Informasi:</strong>
+          <ul class="mb-0 mt-2">
+            <li>Link ini dapat diakses tanpa login</li>
+            <li>Mitra dapat langsung memberikan penilaian</li>
+            <li>Penilaian akan tersimpan otomatis</li>
+            <li>Link dapat dibagikan ke multiple evaluators</li>
+          </ul>
+        </div>
+      </div>
+    `,
+    icon: 'info',
+    showConfirmButton: true,
+    confirmButtonText: 'Tutup',
+    confirmButtonColor: '#4e73df',
+    showCloseButton: true,
+    width: '600px',
+    didOpen: () => {
+      // Auto-select the link when modal opens
+      const input = document.getElementById('shareLinkInput');
+      if (input) {
+        input.select();
+        input.setSelectionRange(0, 99999);
+      }
+    }
+  });
+}
+
+// Copy share link function
+function copyShareLink() {
+  const input = document.getElementById('shareLinkInput');
+  if (!input) return;
+
+  try {
+    input.select();
+    input.setSelectionRange(0, 99999);
+    document.execCommand('copy');
+
+    // Show success feedback
+    const button = event.target.closest('button');
+    const originalHTML = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-check"></i> Copied!';
+    button.classList.remove('btn-primary');
+    button.classList.add('btn-success');
+
+    setTimeout(() => {
+      button.innerHTML = originalHTML;
+      button.classList.remove('btn-success');
+      button.classList.add('btn-primary');
+    }, 2000);
+
+  } catch (err) {
+    console.error('Failed to copy:', err);
+    // Fallback using modern clipboard API
+    navigator.clipboard.writeText(input.value).then(() => {
+      const button = event.target.closest('button');
+      const originalHTML = button.innerHTML;
+      button.innerHTML = '<i class="fas fa-check"></i> Copied!';
+      button.classList.remove('btn-primary');
+      button.classList.add('btn-success');
+
+      setTimeout(() => {
+        button.innerHTML = originalHTML;
+        button.classList.remove('btn-success');
+        button.classList.add('btn-primary');
+      }, 2000);
+    }).catch(() => {
+      console.error('Clipboard API failed');
+    });
+  }
+}
 </script>
 @endpush

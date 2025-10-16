@@ -23,6 +23,12 @@ Route::get('/kunjungan-mitra', [\App\Http\Controllers\Public\KunjunganMitraContr
 Route::get('/kunjungan-mitra/data', [\App\Http\Controllers\Public\KunjunganMitraController::class, 'getData'])->name('public.kunjungan.data');
 Route::get('/kunjungan-mitra/{id}/bukti', [\App\Http\Controllers\Public\KunjunganMitraController::class, 'getBukti'])->name('public.kunjungan.bukti');
 
+// Public route untuk penilaian mitra
+Route::get('/penilaian-mitra', [\App\Http\Controllers\Public\PenilaianMitraController::class, 'all'])->name('public.penilaian-mitra.all');
+Route::get('/penilaian-mitra/{card:uuid}', [\App\Http\Controllers\Public\PenilaianMitraController::class, 'index'])->name('public.penilaian-mitra.index');
+Route::post('/penilaian-mitra/{card:uuid}/submit', [\App\Http\Controllers\Public\PenilaianMitraController::class, 'submit'])->name('public.penilaian-mitra.submit');
+Route::get('/penilaian-mitra/{card:uuid}/data', [\App\Http\Controllers\Public\PenilaianMitraController::class, 'getData'])->name('public.penilaian-mitra.data');
+
 // Debug route for testing validation
 Route::get('/debug-validation', function () {
     $evaluasiMaster = \App\Models\EvaluasiMaster::first();
