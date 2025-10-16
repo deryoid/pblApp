@@ -65,11 +65,11 @@
                     <h6 class="m-0 font-weight-bold text-primary">
                         <i class="fas fa-graduation-cap mr-2"></i>Arahan Penilaian Project Based Learning
                     </h6>
-                    <button class="btn btn-sm btn-outline-primary ml-auto" type="button" data-toggle="collapse" data-target="#guidelinesCollapse">
-                        <i class="fas fa-chevron-down"></i>
+                    <button class="btn btn-sm btn-outline-primary ml-auto" type="button" data-toggle="collapse" data-target="#guidelinesCollapse" aria-expanded="false">
+                        <i class="fas fa-chevron-down" id="guidelinesIcon"></i>
                     </button>
                 </div>
-                <div class="collapse show" id="guidelinesCollapse">
+                <div class="collapse" id="guidelinesCollapse">
                     <div class="card-body">
                         <div class="row">
                             <div class="col-12">
@@ -475,7 +475,7 @@
                                                         <small class="text-muted">Rata-rata per List Proyek:</small>
                                                         @foreach($data['list_averages'] as $listAvg)
                                                             <div class="small mb-1 p-2 bg-light rounded">
-                                                                <strong>{{ $listAvg['list']->nama_list ?? $listAvg['list']->deskripsi ?? ($listAvg['list'] ? 'Project List #' . $listAvg['list']->id : 'Project List') }}</strong>
+                                                                <strong>{{ $listAvg['list']->name ?? ($listAvg['list'] ? 'Project List #' . $listAvg['list']->id : 'Project List') }}</strong>
                                                                 <div class="text-muted">
                                                                     Dosen: {{ number_format($listAvg['avg_dosen'], 1) }},
                                                                     Mitra: {{ number_format($listAvg['avg_mitra'], 1) }},
@@ -592,6 +592,15 @@ function toggleDetailProject(mahasiswaId) {
         textElement.textContent = 'Lihat Detail';
     }
 }
+
+// Toggle icon for guidelines collapse
+$('#guidelinesCollapse').on('show.bs.collapse', function () {
+    $('#guidelinesIcon').removeClass('fa-chevron-down').addClass('fa-chevron-up');
+});
+
+$('#guidelinesCollapse').on('hide.bs.collapse', function () {
+    $('#guidelinesIcon').removeClass('fa-chevron-up').addClass('fa-chevron-down');
+});
 
 // Auto-refresh setiap 30 detik jika ada perubahan data
 setInterval(function() {

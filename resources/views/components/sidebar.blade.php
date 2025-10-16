@@ -81,6 +81,14 @@
             </a>
         </li>
 
+        {{-- Nilai --}}
+        <li class="nav-item {{ request()->routeIs('admin.nilai.*') ? 'active' : '' }}">
+            <a class="nav-link" href="{{ route('admin.nilai.index') }}">
+                <i class="fas fa-fw fa-chart-bar"></i>
+                <span>Nilai</span>
+            </a>
+        </li>
+
 
         <!-- Divider -->
         <hr class="sidebar-divider d-none d-md-block">
@@ -111,6 +119,14 @@
             <a class="nav-link" href="{{ route('evaluator.evaluasi.index') }}">
                 <i class="fas fa-fw fa-project-diagram"></i>
                 <span>Evaluasi</span>
+            </a>
+        </li>
+
+        {{-- Nilai --}}
+        <li class="nav-item {{ request()->routeIs('evaluator.nilai.*') ? 'active' : '' }}">
+            <a class="nav-link" href="{{ route('evaluator.nilai.index') }}">
+                <i class="fas fa-fw fa-chart-bar"></i>
+                <span>Nilai</span>
             </a>
         </li>
 
@@ -212,6 +228,14 @@
             <a class="nav-link" href="{{ route('aktivitas.index') }}">
                 <i class="fas fa-fw fa-calendar"></i>
                 <span>Aktivitas</span>
+            </a>
+        </li>
+
+        {{-- Nilai --}}
+        <li class="nav-item {{ request()->routeIs('mahasiswa.nilai.*') ? 'active' : '' }}">
+            <a class="nav-link" href="{{ route('mahasiswa.nilai.index') }}">
+                <i class="fas fa-fw fa-chart-bar"></i>
+                <span>Nilai</span>
             </a>
         </li>
     @endif

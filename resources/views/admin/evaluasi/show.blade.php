@@ -318,7 +318,7 @@
               {{-- Head kolom --}}
               <div class="board-col-head d-flex align-items-center justify-content-between">
                 <div class="d-flex align-items-center">
-                  <h6 class="mb-0 text-uppercase font-weight-bold truncate">{{ $list->nama_list ?? $list->deskripsi ?? ($list ? 'Project List #' . $list->id : 'Project List') }}</h6>
+                  <h6 class="mb-0 text-uppercase font-weight-bold truncate">{{ $list->name ?? 'Project List #' . $list->id }}</h6>
                   <span class="badge badge-soft ml-2">{{ count($list->cards) }}</span>
                 </div>
                 <div class="text-right small">
@@ -502,12 +502,12 @@
                               <span>Nilai Mitra per Mahasiswa</span>
                               <div class="d-flex align-items-center gap-2">
                                 <span class="badge badge-light border">{{ $mitraSummary['count'] }}</span>
-                                <button type="button" class="btn btn-circle btn-secondary btn-sm toggle-detail" data-toggle="collapse" data-target="#mitraPerMhsCollapse" aria-expanded="false" aria-controls="mitraPerMhsCollapse" title="Detail Nilai">
+                                <button type="button" class="btn btn-circle btn-secondary btn-sm toggle-detail" data-toggle="collapse" data-target="#mitraPerMhsCollapse-{{ $card->id }}" aria-expanded="false" aria-controls="mitraPerMhsCollapse-{{ $card->id }}" title="Detail Nilai">
                                   <i class="fas fa-list"></i>
                                 </button>
                               </div>
                             </div>
-                            <div id="mitraPerMhsCollapse" class="collapse mt-2 rounded bg-white" style="border:1px solid var(--border);">
+                            <div id="mitraPerMhsCollapse-{{ $card->id }}" class="collapse mt-2 rounded bg-white" style="border:1px solid var(--border);">
                               @foreach($evalMitraDetails as $index => $detail)
                                 @php
                                   $rowNameM = optional($detail->mahasiswa)->nama ?? optional($detail->mahasiswa)->nama_mahasiswa ?? 'Mahasiswa';
@@ -555,13 +555,7 @@
                             </a>
                           @endif
 
-                          {{-- Detail Lengkap --}}
-                          {{-- <button type="button"
-                                  class="btn btn-circle btn-info"
-                                  title="Detail Lengkap"
-                                  onclick="showProjectCardDetail('{{ $card->uuid }}','{{ addslashes($card->title) }}', {{ $card->list_id }})">
-                            <i class="fas fa-info-circle" aria-hidden="true"></i>
-                          </button> --}}
+                         
                           {{-- Nilai Dosen --}}
                           <button type="button"
                                   class="btn btn-circle btn-primary"
@@ -1135,6 +1129,33 @@
 
   
   window.cardGrades = window.cardGrades || @json($cardGrades ?? []);
+
+  // Initialize existing card grades on page load
+  Object.keys(window.cardGrades).forEach(cardId => {
+    const cardData = window.cardGrades[cardId];
+    const cardEl = document.querySelector(`.board-card[data-card-id="${cardId}"]`);
+
+    if (cardEl && cardData) {
+      // Update mitra score display
+      const mitraSummary = cardData.evaluasi_mitra_summary || {};
+      const mitraScoreEl = cardEl.querySelector('.score-mitra-val');
+      if (mitraScoreEl) {
+        mitraScoreEl.textContent = mitraSummary.avg !== null ? mitraSummary.avg : '—';
+      }
+
+      // Update dosen score display
+      const dosenSummary = cardData.evaluasi_dosen_summary || {};
+      const dosenScoreEl = cardEl.querySelector('.score-dosen-val');
+      if (dosenScoreEl) {
+        dosenScoreEl.textContent = dosenSummary.avg !== null ? dosenSummary.avg : '—';
+      }
+
+      // Add border-success if there are evaluations
+      if (mitraSummary.count > 0 || dosenSummary.count > 0) {
+        cardEl.classList.add('border-success');
+      }
+    }
+  });
 
   // Submit EDIT
   $('#formEditProyek').on('submit', function(ev){

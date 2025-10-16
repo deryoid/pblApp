@@ -134,12 +134,19 @@ class PenilaianMitraController extends Controller
             $mahasiswas = $card->list->kelompok->mahasiswas->map(function ($mahasiswa) use ($card) {
                 $existingEval = $card->evaluasiMitra->firstWhere('mahasiswa_id', $mahasiswa->id);
 
+                // Prepare profile photo data
+                $profilePhoto = null;
+                if ($mahasiswa->user && $mahasiswa->user->profile_photo) {
+                    $profilePhoto = 'data:'.$mahasiswa->user->profile_photo_mime.';base64,'.base64_encode($mahasiswa->user->profile_photo);
+                }
+
                 return [
                     'id' => $mahasiswa->id,
                     'uuid' => $mahasiswa->uuid,
                     'nim' => $mahasiswa->nim,
                     'nama' => $mahasiswa->nama_mahasiswa,
                     'nama_mahasiswa' => $mahasiswa->nama_mahasiswa,
+                    'profile_photo' => $profilePhoto,
                     'existing_evaluation' => $existingEval ? [
                         'id' => $existingEval->id,
                         'komunikasi_sikap' => $existingEval->m_kehadiran, // m_kehadiran -> komunikasi_sikap

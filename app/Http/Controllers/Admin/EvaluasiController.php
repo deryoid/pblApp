@@ -600,7 +600,14 @@ class EvaluasiController extends Controller
         if (Schema::hasTable((new EvaluasiMitra)->getTable())) {
             $evaluasiMitraCollections = EvaluasiMitra::with(['mahasiswa:id,nim,nama_mahasiswa'])
                 ->whereIn('project_card_id', $allCardIds)
-                ->where('evaluasi_master_id', $sesi->id)
+                ->where(function($query) use ($sesi, $kelompok, $activePeriode) {
+                    $query->where('evaluasi_master_id', $sesi->id)
+                          ->orWhere(function($subQuery) use ($kelompok, $activePeriode) {
+                              $subQuery->where('kelompok_id', $kelompok->id)
+                                       ->where('periode_id', $activePeriode->id)
+                                       ->whereNull('evaluasi_master_id');
+                          });
+                })
                 ->get()
                 ->groupBy('project_card_id');
         }

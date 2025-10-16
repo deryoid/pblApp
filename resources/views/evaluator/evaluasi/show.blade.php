@@ -318,7 +318,13 @@
               {{-- Head kolom --}}
               <div class="board-col-head d-flex align-items-center justify-content-between">
                 <div class="d-flex align-items-center">
-                  <h6 class="mb-0 text-uppercase font-weight-bold truncate">{{ $list->nama_list ?? $list->deskripsi ?? ($list ? 'Project List #' . $list->id : 'Project List') }}</h6>
+                  <h6 class="mb-0 text-uppercase font-weight-bold truncate">
+                    @if($list->cards->count() > 0)
+                      {{ $list->cards->pluck('title')->implode(', ') }}
+                    @else
+                      {{ $list->name ?? 'Project List #' . $list->id }}
+                    @endif
+                  </h6>
                   <span class="badge badge-soft ml-2">{{ count($list->cards) }}</span>
                 </div>
                 <div class="text-right small">

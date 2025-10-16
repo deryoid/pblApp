@@ -523,7 +523,8 @@ function renderStudents() {
 
 // Create student card HTML
 function createStudentCard(student, index) {
-    const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(student.nama)}&background=4e73df&color=ffffff&size=64&rounded=true&bold=true`;
+    // Use profile photo from database if available, otherwise use UI Avatars API
+    const avatar = student.profile_photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(student.nama)}&background=4e73df&color=ffffff&size=64&rounded=true&bold=true`;
     const existingEval = student.existing_evaluation;
 
     return `

@@ -59,7 +59,7 @@
 
     <div class="row">
         <!-- Card Arahan Penilaian -->
-        <div class="col-12">
+        {{-- <div class="col-12">
             <div class="card shadow mb-4">
                 <div class="card-header py-3 d-flex align-items-center">
                     <h6 class="m-0 font-weight-bold text-primary">
@@ -368,7 +368,7 @@
                     </div>
                 </div>
             </div>
-        </div>
+        </div> --}}
 
         <div class="col-12">
             <div class="card shadow mb-4">
@@ -475,7 +475,7 @@
                                                         <small class="text-muted">Rata-rata per List Proyek:</small>
                                                         @foreach($data['list_averages'] as $listAvg)
                                                             <div class="small mb-1 p-2 bg-light rounded">
-                                                                <strong>{{ $listAvg['list']->nama_list ?? $listAvg['list']->deskripsi ?? ($listAvg['list'] ? 'Project List #' . $listAvg['list']->id : 'Project List') }}</strong>
+                                                                <strong>{{ $listAvg['list']->name ?? ($listAvg['list'] ? 'Project List #' . $listAvg['list']->id : 'Project List') }}</strong>
                                                                 <div class="text-muted">
                                                                     Dosen: {{ number_format($listAvg['avg_dosen'], 1) }},
                                                                     Mitra: {{ number_format($listAvg['avg_mitra'], 1) }},

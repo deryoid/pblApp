@@ -178,6 +178,11 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
 
     });
 
+    // Nilai
+    Route::prefix('nilai')->name('admin.nilai.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\NilaiController::class, 'index'])->name('index');
+    });
+
 });
 
 // Evaluator
@@ -233,6 +238,11 @@ Route::prefix('evaluator')->middleware(['auth', 'evaluator'])->group(function ()
         // Aktivitas
         Route::post('aktivitas/{list}/status', [App\Http\Controllers\Evaluator\EvaluasiController::class, 'updateAktivitasStatus'])->name('aktivitas.updateStatus');
     });
+
+    // Nilai
+    Route::prefix('nilai')->name('evaluator.nilai.')->group(function () {
+        Route::get('/', [App\Http\Controllers\Evaluator\NilaiController::class, 'index'])->name('index');
+    });
 });
 
 // Mahasiswa
@@ -279,6 +289,11 @@ Route::prefix('mahasiswa')->middleware(['auth', 'mahasiswa'])->group(function ()
     Route::post('aktivitas/cards', [\App\Http\Controllers\Mahasiswa\AktivitasCardController::class, 'store'])->name('aktivitas.cards.store');
     Route::put('aktivitas/cards/{card:uuid}', [\App\Http\Controllers\Mahasiswa\AktivitasCardController::class, 'update'])->name('aktivitas.cards.update');
     Route::delete('aktivitas/cards/{card:uuid}', [\App\Http\Controllers\Mahasiswa\AktivitasCardController::class, 'destroy'])->name('aktivitas.cards.destroy');
+
+    // Nilai
+    Route::prefix('nilai')->name('mahasiswa.nilai.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Mahasiswa\NilaiController::class, 'index'])->name('index');
+    });
 });
 
 // Profile (semua role)
