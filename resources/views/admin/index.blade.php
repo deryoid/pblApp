@@ -205,23 +205,10 @@
                                     </h6>
                                 </div>
                                 <div class="card-body">
-                                    @if($statusKunjungan)
-                                        <div class="row">
-                                            @foreach($statusKunjungan as $status => $count)
-                                                <div class="col-md-3 mb-2">
-                                                    <div class="text-center">
-                                                        <div class="h4 font-weight-bold {{ $count }}</div>
-                                                        <div class="small text-muted">{{ $status }}</div>
-                                                    </div>
-                                                </div>
-                                            @endforeach
-                                        </div>
-                                    @else
-                                        <div class="text-center text-muted py-4">
-                                            <i class="fas fa-building fa-2x mb-2"></i>
-                                            <p>Belum ada data kunjungan mitra</p>
-                                        </div>
-                                    @endif
+                                     <a href="/kunjungan-mitra" target="_blank" class="btn btn-sm btn-info">
+                                                    <i class="fas fa-external-link-alt mr-1"></i>
+                                                    Lihat Data Kunjungan Mitra
+                                                </a>
                                 </div>
                             </div>
                         </div>
