@@ -169,6 +169,13 @@
                               title="Ubah" data-toggle="modal" data-target="#modalEditCard" aria-label="Ubah proyek">
                         <i class="fas fa-edit"></i>
                       </button>
+                      {{-- Share Link Penilaian Mitra --}}
+                      <button type="button"
+                              class="btn btn-info btn-icon-only btn-sm btn-circle mr-1"
+                              title="Share Link Penilaian Mitra"
+                              onclick="sharePenilaianMitra('{{ $card['id'] }}','{{ addslashes($card['title']) }}')">
+                        <i class="fas fa-share-alt" aria-hidden="true"></i>
+                      </button>
                       <form method="POST"
                             action="{{ route('proyek.cards.destroy', ['card' => $card['id']]) }}"
                             class="m-0 d-inline">
@@ -551,6 +558,7 @@
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 (function(){
   const reorderUrl = "{{ route('proyek.reorder') }}";
@@ -655,6 +663,89 @@
     $('#editListName').val($(this).data('list-name')||'');
     $('#editListForm').attr('action', "{{ url('mahasiswa/proyek/lists') }}/"+id);
   });
+
+  // Share Link Penilaian Mitra
+  window.sharePenilaianMitra = function(cardId, cardTitle) {
+    const baseUrl = window.location.origin;
+    const shareUrl = `${baseUrl}/penilaian-mitra/${cardId}`;
+
+    Swal.fire({
+      title: 'Share Link Penilaian Mitra',
+      html: `
+        <div class="text-left">
+          <p class="mb-3">Bagikan link ini kepada mitra untuk menilai proyek:</p>
+          <div class="form-group mb-3">
+            <label class="small text-muted">Proyek:</label>
+            <div class="font-weight-bold">${cardTitle}</div>
+          </div>
+          <div class="form-group mb-3">
+            <label class="small text-muted">Link Penilaian:</label>
+            <div class="input-group">
+              <input type="text" id="shareLinkInput" class="form-control" value="${shareUrl}" readonly>
+              <div class="input-group-append">
+                <button type="button" class="btn btn-primary" onclick="copyShareLink()">
+                  <i class="fas fa-copy"></i> Salin
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="alert alert-info small">
+            <i class="fas fa-info-circle mr-2"></i>
+            Mitra dapat mengakses link ini tanpa perlu login untuk memberikan penilaian.
+          </div>
+        </div>
+      `,
+      showCancelButton: true,
+      showConfirmButton: false,
+      cancelButtonText: 'Tutup',
+      width: '600px'
+    });
+  };
+
+  // Copy link to clipboard
+  window.copyShareLink = function() {
+    const input = document.getElementById('shareLinkInput');
+    input.select();
+    input.setSelectionRange(0, 99999);
+
+    try {
+      document.execCommand('copy');
+
+      // Show success message
+      const originalValue = input.value;
+      input.value = 'Tersalin!';
+      input.classList.add('bg-success', 'text-white');
+
+      setTimeout(() => {
+        input.value = originalValue;
+        input.classList.remove('bg-success', 'text-white');
+      }, 2000);
+
+      // Show toast notification
+      if (typeof Swal !== 'undefined') {
+        Swal.fire({
+          icon: 'success',
+          title: 'Berhasil!',
+          text: 'Link penilaian berhasil disalin.',
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 3000,
+          timerProgressBar: true
+        });
+      }
+    } catch (err) {
+      console.error('Failed to copy link:', err);
+
+      if (typeof Swal !== 'undefined') {
+        Swal.fire({
+          icon: 'error',
+          title: 'Gagal!',
+          text: 'Gagal menyalin link. Silakan salin manual.',
+        });
+      }
+    }
+  };
 })();
 </script>
 @endpush
