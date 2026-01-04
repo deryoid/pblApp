@@ -13,7 +13,7 @@ use App\Models\EvaluasiNilaiAP;
 use App\Models\EvaluasiNilaiDetail;
 use App\Models\EvaluasiProyekNilai;
 use App\Models\EvaluasiSesiIndikator;
-use App\Models\EvaluasiSetting;
+use App\Models\EvaluationSetting;
 use App\Models\Kelompok;
 use App\Models\KunjunganMitra;
 use App\Models\Periode;
@@ -33,8 +33,8 @@ class EvaluasiController extends Controller
     protected function setting(string $key, $default = null)
     {
         try {
-            if (Schema::hasTable((new EvaluasiSetting)->getTable())) {
-                $val = EvaluasiSetting::get($key);
+            if (Schema::hasTable((new EvaluationSetting)->getTable())) {
+                $val = EvaluationSetting::get($key);
                 if ($val !== null) {
                     return $val;
                 }
@@ -116,6 +116,7 @@ class EvaluasiController extends Controller
             // Extract numeric part from nama_kelompok for proper sorting
             preg_match('/\d+/', $kelompok->nama_kelompok, $matches);
             $number = isset($matches[0]) ? (int) $matches[0] : 0;
+
             return $number;
         })->values();
 
@@ -536,8 +537,8 @@ class EvaluasiController extends Controller
             'w_kelompok' => 70,
             'w_ap' => 30,
         ];
-        if (Schema::hasTable((new EvaluasiSetting)->getTable())) {
-            $settings = EvaluasiSetting::getMany(
+        if (Schema::hasTable((new EvaluationSetting)->getTable())) {
+            $settings = EvaluationSetting::getMany(
                 ['w_ap_kehadiran', 'w_ap_presentasi', 'w_dosen', 'w_mitra', 'w_kelompok', 'w_ap'],
                 $settingsDefaults
             );
@@ -600,13 +601,13 @@ class EvaluasiController extends Controller
         if (Schema::hasTable((new EvaluasiMitra)->getTable())) {
             $evaluasiMitraCollections = EvaluasiMitra::with(['mahasiswa:id,nim,nama_mahasiswa'])
                 ->whereIn('project_card_id', $allCardIds)
-                ->where(function($query) use ($sesi, $kelompok, $activePeriode) {
+                ->where(function ($query) use ($sesi, $kelompok, $activePeriode) {
                     $query->where('evaluasi_master_id', $sesi->id)
-                          ->orWhere(function($subQuery) use ($kelompok, $activePeriode) {
-                              $subQuery->where('kelompok_id', $kelompok->id)
-                                       ->where('periode_id', $activePeriode->id)
-                                       ->whereNull('evaluasi_master_id');
-                          });
+                        ->orWhere(function ($subQuery) use ($kelompok, $activePeriode) {
+                            $subQuery->where('kelompok_id', $kelompok->id)
+                                ->where('periode_id', $activePeriode->id)
+                                ->whereNull('evaluasi_master_id');
+                        });
                 })
                 ->get()
                 ->groupBy('project_card_id');
@@ -738,8 +739,8 @@ class EvaluasiController extends Controller
             'w_kelompok' => 70, 'w_ap' => 30,
             'w_ap_kehadiran' => 50, 'w_ap_presentasi' => 50,
         ];
-        if (Schema::hasTable((new EvaluasiSetting)->getTable())) {
-            $settings = EvaluasiSetting::getMany($keys, $defaults);
+        if (Schema::hasTable((new EvaluationSetting)->getTable())) {
+            $settings = EvaluationSetting::getMany($keys, $defaults);
         } else {
             $settings = $defaults;
         }
@@ -783,7 +784,7 @@ class EvaluasiController extends Controller
             $data['w_ap_presentasi'] = max(0, 100 - $data['w_ap_kehadiran']);
         }
 
-        EvaluasiSetting::putMany($data);
+        EvaluationSetting::putMany($data);
         Alert::success('Tersimpan', 'Pengaturan evaluasi berhasil disimpan.');
 
         return back();

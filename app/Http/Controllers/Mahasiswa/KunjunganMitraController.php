@@ -41,9 +41,11 @@ class KunjunganMitraController extends Controller
             ->push($user->id) // Include current user as fallback
             ->unique();
 
+        // Add pagination - 10 items per page for better performance
         $items = KunjunganMitra::with(['periode', 'kelompok', 'user'])
             ->whereIn('user_id', $userIds)
-            ->latest()->get();
+            ->latest()
+            ->paginate(10);
 
         return view('mahasiswa.kunjungan_mitra.index', compact('items'));
     }
@@ -92,11 +94,12 @@ class KunjunganMitraController extends Controller
             $imageInfo = getimagesize($file->getRealPath());
 
             if ($imageInfo) {
-                list($width, $height) = $imageInfo;
+                [$width, $height] = $imageInfo;
                 $maxPixels = 50 * 1000000; // 50 megapixels
 
                 if ($width * $height > $maxPixels) {
                     Alert::toast('Gambar terlalu besar. Maksimal 50 megapixels.', 'error');
+
                     return back()->withErrors(['bukti' => 'Gambar terlalu besar. Maksimal 50 megapixels.'])->withInput();
                 }
             }
@@ -184,11 +187,12 @@ class KunjunganMitraController extends Controller
             $imageInfo = getimagesize($file->getRealPath());
 
             if ($imageInfo) {
-                list($width, $height) = $imageInfo;
+                [$width, $height] = $imageInfo;
                 $maxPixels = 50 * 1000000; // 50 megapixels
 
                 if ($width * $height > $maxPixels) {
                     Alert::toast('Gambar terlalu besar. Maksimal 50 megapixels.', 'error');
+
                     return back()->withErrors(['bukti' => 'Gambar terlalu besar. Maksimal 50 megapixels.'])->withInput();
                 }
             }
@@ -327,7 +331,8 @@ class KunjunganMitraController extends Controller
     public function getBukti($id)
     {
         try {
-            $kunjungan = KunjunganMitra::findOrFail($id);
+            // Cari berdasarkan UUID, bukan ID
+            $kunjungan = KunjunganMitra::where('uuid', $id)->firstOrFail();
 
             // Allow access to all kunjungan for dashboard view
             // No authorization check needed for read-only access
@@ -339,11 +344,21 @@ class KunjunganMitraController extends Controller
                 ]);
             }
 
+            // Format tanggal dengan aman - handle string atau Carbon object
+            $tanggal = $kunjungan->tanggal_kunjungan;
+            if (is_string($tanggal)) {
+                $tanggal = date('d M Y', strtotime($tanggal));
+            } elseif (method_exists($tanggal, 'format')) {
+                $tanggal = $tanggal->format('d M Y');
+            } else {
+                $tanggal = '-';
+            }
+
             return response()->json([
                 'success' => true,
-                'bukti_data_url' => $kunjungan->bukti_data_url,
-                'mime_type' => $kunjungan->bukti_kunjungan_mime,
+                'url' => $kunjungan->bukti_data_url,
                 'perusahaan' => $kunjungan->perusahaan,
+                'tanggal' => $tanggal,
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -387,16 +402,16 @@ class KunjunganMitraController extends Controller
         try {
             // Get image dimensions without loading full image
             $imageInfo = getimagesize($filePath);
-            if (!$imageInfo) {
+            if (! $imageInfo) {
                 throw new \Exception('Unable to read image dimensions');
             }
 
-            list($width, $height) = $imageInfo;
+            [$width, $height] = $imageInfo;
 
             // If image is already small enough, just load with GD
             if ($width <= $maxDimension && $height <= $maxDimension) {
                 $image = $this->createImageResource($filePath, $mimeType);
-                if (!$image) {
+                if (! $image) {
                     throw new \Exception('Unable to create image resource');
                 }
             } else {
@@ -407,7 +422,7 @@ class KunjunganMitraController extends Controller
 
                 // Create resized image directly
                 $image = $this->createResizedImage($filePath, $mimeType, $newWidth, $newHeight);
-                if (!$image) {
+                if (! $image) {
                     throw new \Exception('Unable to resize image');
                 }
             }
@@ -421,7 +436,7 @@ class KunjunganMitraController extends Controller
             }
 
             // If compression failed or resulted in larger file, return original
-            if (!$compressedData || strlen($compressedData) > $fileSize) {
+            if (! $compressedData || strlen($compressedData) > $fileSize) {
                 return [
                     'data' => file_get_contents($filePath),
                     'mime' => $mimeType,
@@ -472,7 +487,7 @@ class KunjunganMitraController extends Controller
     private function createResizedImage($filePath, $mimeType, $newWidth, $newHeight)
     {
         $sourceImage = $this->createImageResource($filePath, $mimeType);
-        if (!$sourceImage) {
+        if (! $sourceImage) {
             return null;
         }
 

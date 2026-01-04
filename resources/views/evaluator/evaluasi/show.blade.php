@@ -892,10 +892,20 @@
     if (nid && uuid) window.__cardIdToUuid[nid] = uuid;
   });
 
-  // Drag cards within/between lists (Projects)
+  // Drag cards within/between lists (Projects) dengan konfigurasi yang lebih smooth
   document.querySelectorAll('#board .board-list').forEach(function(listEl){
     new Sortable(listEl, {
-      group:'board', animation:150, ghostClass:'sortable-ghost', chosenClass:'sortable-chosen',
+      group:'board',
+      animation: 250,
+      easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+      ghostClass:'sortable-ghost',
+      chosenClass:'sortable-chosen',
+      dragClass:'sortable-drag',
+      fallbackTolerance: 5,
+      bubbleScroll: true,
+      scrollThreshold: 50,
+      scrollSpeed: 12,
+      forceFallback: false,
       onEnd:function(evt){
         const cardId  = evt.item.getAttribute('data-card-id');
         const toList  = evt.to.getAttribute('data-list-id');
@@ -906,12 +916,21 @@
     });
   });
 
-  // Drag project columns
+  // Drag project columns dengan konfigurasi yang lebih smooth
   (function(){
     const boardEl = document.getElementById('board');
     if (!boardEl) return;
     new Sortable(boardEl, {
-      animation:150, handle:'.board-col-head',
+      animation: 250,
+      easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+      handle:'.board-col-head',
+      ghostClass:'sortable-ghost',
+      chosenClass:'sortable-chosen',
+      dragClass:'sortable-drag',
+      bubbleScroll: true,
+      scrollThreshold: 50,
+      scrollSpeed: 12,
+      forceFallback: false,
       onEnd:function(){
         const ids = Array.from(boardEl.querySelectorAll('.board-column')).map(col=>col.getAttribute('data-col-id'));
         $.post(reorderListsUrl, {list_ids:ids, _token:'{{ csrf_token() }}'})

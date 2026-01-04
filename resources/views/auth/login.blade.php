@@ -75,7 +75,7 @@
                         <!-- Nested Row within Card Body -->
                         <div class="row">
                             <div class="col-lg-6 d-none d-lg-block bg-login-image position-relative">
-                                <img src="{{ asset('sbadmin2/img/logo-pbl.png') }}" alt="logo">
+                                <img src="{{ asset('sbadmin2/img/logo-campus.png') }}" width="200" alt="logo">
                             </div>
                             <div class="col-lg-6">
                                 <div class="p-5">

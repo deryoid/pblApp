@@ -13,7 +13,7 @@ use App\Models\EvaluasiNilaiAP;
 use App\Models\EvaluasiNilaiDetail;
 use App\Models\EvaluasiProyekNilai;
 use App\Models\EvaluasiSesiIndikator;
-use App\Models\EvaluasiSetting;
+use App\Models\EvaluationSetting;
 use App\Models\Kelompok;
 use App\Models\KunjunganMitra;
 use App\Models\Periode;
@@ -33,8 +33,8 @@ class EvaluasiController extends Controller
     protected function setting(string $key, $default = null)
     {
         try {
-            if (Schema::hasTable((new EvaluasiSetting)->getTable())) {
-                $val = EvaluasiSetting::get($key);
+            if (Schema::hasTable((new EvaluationSetting)->getTable())) {
+                $val = EvaluationSetting::get($key);
                 if ($val !== null) {
                     return $val;
                 }
@@ -538,8 +538,8 @@ class EvaluasiController extends Controller
             'w_kelompok' => 70,
             'w_ap' => 30,
         ];
-        if (Schema::hasTable((new EvaluasiSetting)->getTable())) {
-            $settings = EvaluasiSetting::getMany(
+        if (Schema::hasTable((new EvaluationSetting)->getTable())) {
+            $settings = EvaluationSetting::getMany(
                 ['w_ap_kehadiran', 'w_ap_presentasi', 'w_dosen', 'w_mitra', 'w_kelompok', 'w_ap'],
                 $settingsDefaults
             );
@@ -731,8 +731,8 @@ class EvaluasiController extends Controller
             'w_kelompok' => 70, 'w_ap' => 30,
             'w_ap_kehadiran' => 50, 'w_ap_presentasi' => 50,
         ];
-        if (Schema::hasTable((new EvaluasiSetting)->getTable())) {
-            $settings = EvaluasiSetting::getMany($keys, $defaults);
+        if (Schema::hasTable((new EvaluationSetting)->getTable())) {
+            $settings = EvaluationSetting::getMany($keys, $defaults);
         } else {
             $settings = $defaults;
         }
@@ -776,7 +776,7 @@ class EvaluasiController extends Controller
             $data['w_ap_presentasi'] = max(0, 100 - $data['w_ap_kehadiran']);
         }
 
-        EvaluasiSetting::putMany($data);
+        EvaluationSetting::putMany($data);
         Alert::success('Tersimpan', 'Pengaturan evaluasi berhasil disimpan.');
 
         return back();

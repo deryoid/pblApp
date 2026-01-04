@@ -463,9 +463,34 @@
     position:sticky;top:0;z-index:2;background:#fff;border:1px solid #eef1f5;border-radius:.75rem;
     padding:.6rem .7rem;box-shadow:0 2px 6px rgba(0,0,0,.03);margin-bottom:.5rem
   }
-  .board-card{border-left:3px solid #4e73df;cursor:grab;border-radius:.75rem;overflow:hidden}
-  .board-card.sortable-chosen{opacity:.8}
-  .board-card.sortable-ghost{border:1px dashed #4e73df;background:#f8f9fc}
+  .board-card{border-left:3px solid #4e73df;cursor:grab;border-radius:.75rem;overflow:hidden;transition:transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease}
+  .board-card:hover{cursor:grab}
+  .board-card:active{cursor:grabbing}
+
+  /* Saat card dipilih untuk didrag */
+  .board-card.sortable-chosen{
+    opacity: 0.9;
+    transform: scale(1.02);
+    box-shadow: 0 8px 24px rgba(78, 115, 223, 0.25);
+    z-index: 1000;
+  }
+
+  /* Bayangan card yang ditinggalkan */
+  .board-card.sortable-ghost{
+    opacity: 0.3;
+    background: #eef2ff;
+    border: 2px dashed #4e73df;
+    box-shadow: none;
+    transform: scale(0.98);
+  }
+
+  /* Card yang sedang didrag */
+  .board-card.sortable-drag{
+    opacity: 1;
+    transform: rotate(2deg) scale(1.05);
+    box-shadow: 0 12px 32px rgba(78, 115, 223, 0.35);
+    cursor: grabbing;
+  }
   .progress.progress-sm{height:6px}
   .badge-soft{background:#eef2ff;color:#4e73df}
   .truncate{max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -575,12 +600,24 @@
     e.preventDefault(); showModal('modalAddList');
   });
 
-  // Drag antar kartu
+  // Drag antar kartu dengan konfigurasi yang lebih smooth
   document.querySelectorAll('.board-list').forEach(function(listEl){
     new Sortable(listEl, {
-      group:'board',animation:150,ghostClass:'sortable-ghost',chosenClass:'sortable-chosen',dragClass:'sortable-drag',
+      group:'board',
+      animation: 250,
+      easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+      ghostClass: 'sortable-ghost',
+      chosenClass: 'sortable-chosen',
+      dragClass: 'sortable-drag',
+      fallbackTolerance: 5,
+      bubbleScroll: true,
+      scrollThreshold: 50,
+      scrollSpeed: 12,
+      forceFallback: false,
       filter: '.card-completed',
       preventOnFilter: false,
+      delay: 0,
+      delayOnTouchOnly: false,
       onEnd:function(evt){
         const cardId = evt.item.getAttribute('data-card-id');
         const toList = evt.to.getAttribute('data-list-id');
@@ -591,11 +628,21 @@
     });
   });
 
-  // Drag urutkan kolom (handle: head)
+  // Drag urutkan kolom (handle: head) dengan konfigurasi yang lebih smooth
   const boardEl = document.getElementById('board');
   if (boardEl){
     new Sortable(boardEl, {
-      group:'board-columns',animation:150,handle:'.board-col-head',
+      group:'board-columns',
+      animation: 250,
+      easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+      handle:'.board-col-head',
+      ghostClass: 'sortable-ghost',
+      chosenClass: 'sortable-chosen',
+      dragClass: 'sortable-drag',
+      bubbleScroll: true,
+      scrollThreshold: 50,
+      scrollSpeed: 12,
+      forceFallback: false,
       onEnd:function(){
         const ids = Array.from(boardEl.querySelectorAll('.board-column')).map(col=>col.getAttribute('data-col-id'));
         $.post(reorderListsUrl, {list_ids:ids,_token:'{{ csrf_token() }}'})
