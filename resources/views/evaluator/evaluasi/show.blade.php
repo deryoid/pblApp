@@ -1820,7 +1820,22 @@
             syncCardEvaluations(payload.evaluations);
           }
         })
-        .catch(error => console.warn('Gagal memuat ulang evaluasi mitra', error));
+        .catch(error => {
+          console.warn('Gagal memuat ulang evaluasi mitra', error);
+          setTimeout(() => {
+            Swal.fire({
+              icon: 'info',
+              title: 'Data Tersimpan',
+              text: 'Nilai berhasil disimpan. Silakan refresh halaman untuk melihat perubahan.',
+              confirmButtonColor: '#3085d6',
+              confirmButtonText: 'Refresh Sekarang'
+            }).then((result) => {
+              if (result.isConfirmed) {
+                window.location.reload();
+              }
+            });
+          }, 1500);
+        });
     });
   };
 
@@ -2677,7 +2692,22 @@
             syncCardEvaluations(payload.evaluations);
           }
         })
-        .catch(error => console.warn('Gagal memuat ulang evaluasi dosen', error));
+        .catch(error => {
+          console.warn('Gagal memuat ulang evaluasi dosen', error);
+          setTimeout(() => {
+            Swal.fire({
+              icon: 'info',
+              title: 'Data Tersimpan',
+              text: 'Nilai berhasil disimpan. Silakan refresh halaman untuk melihat perubahan.',
+              confirmButtonColor: '#3085d6',
+              confirmButtonText: 'Refresh Sekarang'
+            }).then((result) => {
+              if (result.isConfirmed) {
+                window.location.reload();
+              }
+            });
+          }, 1500);
+        });
     });
 
     // Add custom styles
