@@ -5,9 +5,11 @@
     <h1 class="h4 text-gray-800 mb-3">Edit Kunjungan Mitra</h1>
     <div class="card shadow">
         <div class="card-body">
-            <form action="{{ route('mahasiswa.kunjungan.update', $kunjungan) }}" method="POST" enctype="multipart/form-data">
+            <form action="{{ route('mahasiswa.kunjungan.update', $kunjungan) }}" method="POST" enctype="multipart/form-data" id="editForm">
                 @csrf
                 @method('PUT')
+                {{-- Hidden field untuk optimistic locking --}}
+                <input type="hidden" name="updated_at" value="{{ $kunjungan->updated_at?->toIso8601String() ?? $kunjungan->updated_at }}">
 
                 <div class="form-row">
                     <div class="form-group col-md-6">

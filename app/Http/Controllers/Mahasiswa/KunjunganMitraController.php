@@ -170,6 +170,21 @@ class KunjunganMitraController extends Controller
         $user = $request->user();
         $mhs = Mahasiswa::where('user_id', $user->id)->first();
 
+        // Optimistic locking - cek apakah data diubah oleh user lain
+        $submittedUpdatedAt = $request->input('updated_at');
+        $currentUpdatedAt = $kunjungan->updated_at?->toIso8601String() ?? $kunjungan->updated_at;
+
+        if ($submittedUpdatedAt && $submittedUpdatedAt !== $currentUpdatedAt) {
+            Alert::toast(
+                'Data ini telah diubah oleh user lain. Silakan refresh halaman dan coba lagi.',
+                'warning'
+            );
+
+            return back()
+                ->withInput()
+                ->withErrors(['conflict' => 'Data telah diubah oleh user lain. Mohon refresh halaman.']);
+        }
+
         $validated = $request->validate([
             'periode_id' => ['required', Rule::exists('periode', 'id')->where('status_periode', 'Aktif')],
             'kelompok_id' => ['required', 'exists:kelompok,id'],
@@ -211,30 +226,57 @@ class KunjunganMitraController extends Controller
             }
         }
 
-        $kunjungan->fill([
-            'periode_id' => $validated['periode_id'],
-            'kelompok_id' => $validated['kelompok_id'],
-            'perusahaan' => $validated['perusahaan'],
-            'alamat' => $validated['alamat'],
-            'tanggal_kunjungan' => $validated['tanggal_kunjungan'],
-            'status_kunjungan' => $validated['status_kunjungan'],
-        ]);
+        // Use database transaction untuk atomic update dengan conflict check
+        DB::beginTransaction();
+        try {
+            // Refresh model untuk dapat latest data
+            $kunjungan->refresh();
 
-        if ($request->boolean('remove_bukti')) {
-            $kunjungan->bukti_kunjungan = null;
-            $kunjungan->bukti_kunjungan_mime = null;
+            // Double-check conflict lagi setelah refresh
+            $currentUpdatedAtAfterRefresh = $kunjungan->updated_at?->toIso8601String() ?? $kunjungan->updated_at;
+            if ($submittedUpdatedAt && $submittedUpdatedAt !== $currentUpdatedAtAfterRefresh) {
+                DB::rollBack();
+                Alert::toast(
+                    'Data ini telah diubah oleh user lain. Silakan refresh halaman dan coba lagi.',
+                    'warning'
+                );
+
+                return back()
+                    ->withInput()
+                    ->withErrors(['conflict' => 'Data telah diubah oleh user lain. Mohon refresh halaman.']);
+            }
+
+            $kunjungan->fill([
+                'periode_id' => $validated['periode_id'],
+                'kelompok_id' => $validated['kelompok_id'],
+                'perusahaan' => $validated['perusahaan'],
+                'alamat' => $validated['alamat'],
+                'tanggal_kunjungan' => $validated['tanggal_kunjungan'],
+                'status_kunjungan' => $validated['status_kunjungan'],
+            ]);
+
+            if ($request->boolean('remove_bukti')) {
+                $kunjungan->bukti_kunjungan = null;
+                $kunjungan->bukti_kunjungan_mime = null;
+            }
+            if ($request->hasFile('bukti')) {
+                $file = $request->file('bukti');
+                $compressedImage = $this->compressImage($file);
+                $kunjungan->bukti_kunjungan = $compressedImage['data'];
+                $kunjungan->bukti_kunjungan_mime = $compressedImage['mime'];
+            }
+
+            $kunjungan->save();
+            DB::commit();
+            Alert::toast('Data kunjungan berhasil diperbarui.', 'success');
+
+            return redirect()->route('mahasiswa.kunjungan.index');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Alert::toast('Terjadi kesalahan saat menyimpan data.', 'error');
+
+            return back()->withInput()->withErrors(['error' => 'Gagal menyimpan data. Silakan coba lagi.']);
         }
-        if ($request->hasFile('bukti')) {
-            $file = $request->file('bukti');
-            $compressedImage = $this->compressImage($file);
-            $kunjungan->bukti_kunjungan = $compressedImage['data'];
-            $kunjungan->bukti_kunjungan_mime = $compressedImage['mime'];
-        }
-
-        $kunjungan->save();
-        Alert::toast('Data kunjungan berhasil diperbarui.', 'success');
-
-        return redirect()->route('mahasiswa.kunjungan.index');
     }
 
     public function destroy(KunjunganMitra $kunjungan)
