@@ -1,30 +1,37 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Exports;
 
-use App\Exports\NilaiExport;
-use App\Http\Controllers\Controller;
 use App\Models\EvaluasiDosen;
 use App\Models\EvaluasiMitra;
 use App\Models\EvaluasiNilaiAP;
-use App\Models\Kelompok;
 use App\Models\Mahasiswa;
-use App\Models\Periode;
-use Illuminate\Http\Request;
-use Maatwebsite\Excel\Facades\Excel;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\ShouldAutoSize;
+use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Concerns\WithStyles;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class NilaiController extends Controller
+class NilaiExport implements FromCollection, ShouldAutoSize, WithHeadings, WithStyles
 {
-    public function index(Request $request)
+    protected $periodeId;
+
+    protected $kelasId;
+
+    protected $search;
+
+    public function __construct($periodeId = null, $kelasId = null, $search = null)
     {
-        $periodeId = $request->get('periode_id');
-        $kelasId = $request->get('kelas_id');
-        $search = $request->get('search');
+        $this->periodeId = $periodeId;
+        $this->kelasId = $kelasId;
+        $this->search = $search;
+    }
 
-        $periodes = Periode::orderByDesc('id')->get(['id', 'periode']);
-        $kelases = \App\Models\Kelas::orderBy('kelas')->get(['id', 'kelas']);
-
+    /**
+     * @return \Illuminate\Support\Collection
+     */
+    public function collection()
+    {
         // Get evaluations dengan relasi yang lengkap
         $evaluationsDosen = EvaluasiDosen::with([
             'mahasiswa:id,nama_mahasiswa,nim',
@@ -33,7 +40,7 @@ class NilaiController extends Controller
             'projectCard:id,title,list_id',
             'evaluator:id,nama_user',
         ])
-            ->when($periodeId, fn ($q) => $q->where('periode_id', $periodeId))
+            ->when($this->periodeId, fn ($q) => $q->where('periode_id', $this->periodeId))
             ->get();
 
         $evaluationsMitra = EvaluasiMitra::with([
@@ -43,7 +50,7 @@ class NilaiController extends Controller
             'projectCard:id,title,list_id',
             'evaluator:id,nama_user',
         ])
-            ->when($periodeId, fn ($q) => $q->where('periode_id', $periodeId))
+            ->when($this->periodeId, fn ($q) => $q->where('periode_id', $this->periodeId))
             ->get();
 
         // Get data absensi dan presensi (AP)
@@ -53,7 +60,7 @@ class NilaiController extends Controller
             'kelompok:id,nama_kelompok',
             'aktivitasList:id,name',
         ])
-            ->when($periodeId, fn ($q) => $q->where('periode_id', $periodeId))
+            ->when($this->periodeId, fn ($q) => $q->where('periode_id', $this->periodeId))
             ->get();
 
         // Get unique mahasiswa from evaluations
@@ -64,11 +71,11 @@ class NilaiController extends Controller
             ->values();
 
         // Filter mahasiswa by kelas if kelas_id is selected
-        if ($kelasId) {
+        if ($this->kelasId) {
             // Get mahasiswa IDs from kelompok_mahasiswa with selected kelas_id
             $mahasiswaIdsWithKelas = \DB::table('kelompok_mahasiswa')
-                ->where('kelas_id', $kelasId)
-                ->when($periodeId, fn ($q) => $q->where('periode_id', $periodeId))
+                ->where('kelas_id', $this->kelasId)
+                ->when($this->periodeId, fn ($q) => $q->where('periode_id', $this->periodeId))
                 ->pluck('mahasiswa_id')
                 ->unique();
 
@@ -76,15 +83,15 @@ class NilaiController extends Controller
         }
 
         $mahasiswas = Mahasiswa::whereIn('id', $mahasiswaIds)
-            ->with(['kelompoks' => function ($q) use ($periodeId) {
-                if ($periodeId) {
-                    $q->wherePivot('periode_id', $periodeId);
+            ->with(['kelompoks' => function ($q) {
+                if ($this->periodeId) {
+                    $q->wherePivot('periode_id', $this->periodeId);
                 }
             }])
-            ->when($search, function ($query) use ($search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('nim', 'like', "%{$search}%")
-                        ->orWhere('nama_mahasiswa', 'like', "%{$search}%");
+            ->when($this->search, function ($query) {
+                $query->where(function ($q) {
+                    $q->where('nim', 'like', "%{$this->search}%")
+                        ->orWhere('nama_mahasiswa', 'like', "%{$this->search}%");
                 });
             })
             ->orderBy('nama_mahasiswa')
@@ -142,8 +149,8 @@ class NilaiController extends Controller
             $grade = $this->calculateGrade($nilaiAkhir);
 
             // Get kelompok info
-            if ($periodeId) {
-                $kelompok = $mahasiswa->kelompoks->firstWhere('pivot.periode_id', $periodeId);
+            if ($this->periodeId) {
+                $kelompok = $mahasiswa->kelompoks->firstWhere('pivot.periode_id', $this->periodeId);
             } else {
                 // If no periode filter, get the first kelompok
                 $kelompok = $mahasiswa->kelompoks->first();
@@ -154,51 +161,50 @@ class NilaiController extends Controller
             $kelas = $kelasId ? \App\Models\Kelas::find($kelasId) : null;
 
             $mahasiswaNilai->push([
-                'mahasiswa' => $mahasiswa,
-                'kelompok' => $kelompok,
-                'kelas' => $kelas,
-                'nilai_aktifitas' => round($avgAP, 2),
-                'nilai_proyek' => round($nilaiProject, 2),
-                'nilai_akhir' => round($nilaiAkhir, 2),
-                'grade' => $grade,
-                'total_evaluasi' => $evalDosenMahasiswa->count() + $evalMitraMahasiswa->count(),
-                'total_ap' => $countAP,
+                'No' => $mahasiswaNilai->count() + 1,
+                'NIM' => $mahasiswa->nim ?? '-',
+                'Nama Mahasiswa' => $mahasiswa->nama_mahasiswa ?? '-',
+                'Kelas' => $kelas?->kelas ?? '-',
+                'Kelompok' => $kelompok?->nama_kelompok ?? '-',
+                'Nilai Aktivitas (30%)' => round($avgAP, 2),
+                'Nilai Proyek (70%)' => round($nilaiProject, 2),
+                'Nilai Akhir' => round($nilaiAkhir, 2),
             ]);
         }
 
-        return view('admin.nilai.index', compact(
-            'mahasiswaNilai',
-            'periodes',
-            'kelases',
-            'periodeId',
-            'kelasId',
-            'search'
-        ));
+        return $mahasiswaNilai;
     }
 
-    /**
-     * Export nilai to Excel dengan filter
-     */
-    public function export(Request $request): BinaryFileResponse
+    public function headings(): array
     {
-        $periodeId = $request->get('periode_id');
-        $kelasId = $request->get('kelas_id');
-        $search = $request->get('search');
-
-        $fileName = 'nilai-mahasiswa-';
-        $fileName .= $periodeId ? Periode::find($periodeId)?->periode.'-' : 'semua-';
-        $fileName .= $kelasId ? \App\Models\Kelas::find($kelasId)?->kelas.'-' : 'semua-';
-        $fileName .= date('YmdHis').'.xlsx';
-
-        return Excel::download(
-            new NilaiExport($periodeId, $kelasId, $search),
-            $fileName
-        );
+        return [
+            'No',
+            'NIM',
+            'Nama Mahasiswa',
+            'Kelas',
+            'Kelompok',
+            'Nilai Aktivitas (30%)',
+            'Nilai Proyek (70%)',
+            'Nilai Akhir',
+        ];
     }
 
-    /**
-     * Helper function to calculate grade based on score
-     */
+    public function styles(Worksheet $sheet)
+    {
+        return [
+            // Style the first row as bold text
+            1 => ['font' => ['bold' => true, 'size' => 12]],
+            // Styling header
+            'A1:I1' => [
+                'fill' => [
+                    'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                    'startColor' => ['rgb' => '4F81BD'],
+                ],
+                'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            ],
+        ];
+    }
+
     private function calculateGrade($score)
     {
         if ($score === null) {

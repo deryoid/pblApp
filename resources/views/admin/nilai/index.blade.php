@@ -19,12 +19,19 @@
     <div class="row">
         <div class="col-12">
             <div class="card shadow mb-4">
-                <div class="card-header py-3">
+                <div class="card-header py-3 d-flex justify-content-between align-items-center">
                     <h6 class="m-0 font-weight-bold text-primary">Daftar Nilai Mahasiswa</h6>
+                    <a href="{{ route('admin.nilai.export', [
+                        'periode_id' => $periodeId,
+                        'kelas_id' => $kelasId,
+                        'search' => $search
+                    ]) }}" class="btn btn-success btn-sm" id="exportBtn">
+                        <i class="fas fa-file-excel"></i> Export Excel
+                    </a>
                 </div>
                 <div class="card-body">
                     <!-- Filter Form -->
-                    <form method="GET" class="mb-4">
+                    <form method="GET" class="mb-4" id="filterForm">
                         <div class="row">
                             <div class="col-md-3">
                                 <label for="periode_id" class="form-label">Periode</label>
@@ -67,7 +74,7 @@
                         </div>
                     </form>
 
-  
+
                     <!-- Tabel Nilai -->
                     @if($mahasiswaNilai->count() > 0)
                         <div class="table-responsive">
@@ -134,5 +141,30 @@ document.getElementById('search').addEventListener('keypress', function(e) {
         this.form.submit();
     }
 });
+
+// Update export button URL when filters change
+function updateExportButton() {
+    const periodeId = document.getElementById('periode_id').value;
+    const kelasId = document.getElementById('kelas_id').value;
+    const search = document.getElementById('search').value;
+
+    let exportUrl = '{{ route('admin.nilai.export') }}';
+    const params = new URLSearchParams();
+
+    if (periodeId) params.append('periode_id', periodeId);
+    if (kelasId) params.append('kelas_id', kelasId);
+    if (search) params.append('search', search);
+
+    if (params.toString()) {
+        exportUrl += '?' + params.toString();
+    }
+
+    document.getElementById('exportBtn').href = exportUrl;
+}
+
+// Listen for filter changes
+document.getElementById('periode_id').addEventListener('change', updateExportButton);
+document.getElementById('kelas_id').addEventListener('change', updateExportButton);
+document.getElementById('search').addEventListener('input', updateExportButton);
 </script>
 @endpush

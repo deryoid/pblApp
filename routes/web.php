@@ -181,6 +181,7 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     // Nilai
     Route::prefix('nilai')->name('admin.nilai.')->group(function () {
         Route::get('/', [\App\Http\Controllers\Admin\NilaiController::class, 'index'])->name('index');
+        Route::get('/export', [\App\Http\Controllers\Admin\NilaiController::class, 'export'])->name('export');
     });
 
 });
