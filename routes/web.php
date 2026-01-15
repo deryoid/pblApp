@@ -51,6 +51,7 @@ Route::get('/debug-validation', function () {
 Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     Route::get('/', [App\Http\Controllers\Admin\DashboardController::class, 'index']);
     Route::get('/mitra-selesai', [App\Http\Controllers\Admin\DashboardController::class, 'mitraSelesai'])->name('admin.mitra-selesai');
+    Route::get('/mitra-selesai/export', [App\Http\Controllers\Admin\DashboardController::class, 'mitraSelesaiExport'])->name('admin.mitra-selesai.export');
 
     // User (UUID-based binding)
     Route::get('user', [UserController::class, 'index'])->name('user.index');

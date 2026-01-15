@@ -6,10 +6,13 @@
         <h1 class="h3 mb-0 text-gray-800">Mitra Proyek Selesai</h1>
         <div class="d-flex gap-2">
             <a href="{{ route('admin.mitra-selesai') }}" class="btn btn-sm btn-secondary mr-2">
-                <i class="fas fa-sync-alt mr-1"></i> Reset Filter
+                <i class="fas fa-times mr-1"></i> Reset Filter
             </a>
-            <a href="{{ route('admin.mitra-selesai', request()->query()) }}" class="btn btn-sm btn-primary">
+            <a href="{{ route('admin.mitra-selesai', request()->query()) }}" class="btn btn-sm btn-primary mr-2">
                 <i class="fas fa-sync-alt mr-1"></i> Refresh
+            </a>
+            <a href="{{ route('admin.mitra-selesai.export', request()->query()) }}" class="btn btn-sm btn-success">
+                <i class="fas fa-file-excel mr-1"></i> Export Excel
             </a>
         </div>
     </div>

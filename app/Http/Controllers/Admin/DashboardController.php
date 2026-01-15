@@ -216,4 +216,33 @@ class DashboardController extends Controller
             'activePeriode'
         ));
     }
+
+    public function mitraSelesaiExport(\Illuminate\Http\Request $request)
+    {
+        $kelompokId = $request->query('kelompok_id');
+        $periodeId = $request->query('periode_id');
+
+        $fileName = 'mitra-proyek-selesai';
+
+        if ($periodeId) {
+            $periode = \App\Models\Periode::find($periodeId);
+            if ($periode) {
+                $fileName .= '-'.str_replace(' ', '-', strtolower($periode->periode));
+            }
+        }
+
+        if ($kelompokId) {
+            $kelompok = \App\Models\Kelompok::find($kelompokId);
+            if ($kelompok) {
+                $fileName .= '-'.str_replace(' ', '-', strtolower($kelompok->nama_kelompok));
+            }
+        }
+
+        $fileName .= '-'.date('Y-m-d').'.xlsx';
+
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\MitraSelesaiExport($kelompokId, $periodeId),
+            $fileName
+        );
+    }
 }
