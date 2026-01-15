@@ -205,10 +205,16 @@
                                     </h6>
                                 </div>
                                 <div class="card-body">
-                                     <a href="/kunjungan-mitra" target="_blank" class="btn btn-sm btn-info">
-                                                    <i class="fas fa-external-link-alt mr-1"></i>
-                                                    Lihat Data Kunjungan Mitra
-                                                </a>
+                                    <div class="d-flex gap-2">
+                                        <a href="/kunjungan-mitra" target="_blank" class="btn btn-sm btn-info mr-2">
+                                            <i class="fas fa-external-link-alt mr-1"></i>
+                                            Lihat Data Kunjungan Mitra
+                                        </a>
+                                        <a href="{{ route('admin.mitra-selesai') }}" class="btn btn-sm btn-success">
+                                            <i class="fas fa-building mr-1"></i>
+                                            Lihat Mitra Proyek Selesai
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -273,7 +279,6 @@
                                                 <thead>
                                                     <tr>
                                                         <th>Kelompok</th>
-                                                        <th>Progress</th>
                                                         <th>Selesai</th>
                                                     </tr>
                                                 </thead>
@@ -281,16 +286,7 @@
                                                     @foreach($evaluasiProgress as $progress)
                                                         <tr>
                                                             <td>{{ $progress['nama_kelompok'] }}</td>
-                                                            <td>
-                                                                <div class="progress">
-                                                                    <div class="progress-bar bg-success" role="progressbar"
-                                                                         style="width: {{ $progress['progress'] }}%"
-                                                                         aria-valuenow="{{ $progress['progress'] }}"
-                                                                         aria-valuemin="0" aria-valuemax="100">
-                                                                        {{ $progress['progress'] }}%
-                                                                    </div>
-                                                                </div>
-                                                            </td>
+                                                          
                                                             <td>{{ $progress['selesai_sesi'] }} / {{ $progress['total_sesi'] }} Sesi</td>
                                                         </tr>
                                                     @endforeach
@@ -318,7 +314,6 @@
                                                     <tr>
                                                         <th>Kelompok</th>
                                                         <th>Mahasiswa</th>
-                                                        <th>Status</th>
                                                         <th>Tanggal</th>
                                                     </tr>
                                                 </thead>
@@ -327,19 +322,6 @@
                                                         <tr>
                                                             <td>{{ $kunjungan->kelompok->nama_kelompok ?? '-' }}</td>
                                                             <td>{{ $kunjungan->user->name }}</td>
-                                                            <td>
-                                                                @php
-                                                                    $statusClass = match($kunjungan->status_kunjungan) {
-                                                                        'Sudah' => 'success',
-                                                                        'Belum' => 'warning',
-                                                                        'Tidak Ada Tanggapan' => 'danger',
-                                                                        default => 'secondary'
-                                                                    };
-                                                                @endphp
-                                                                <span class="badge bg-{{ $statusClass }}">
-                                                                    {{ $kunjungan->status_kunjungan }}
-                                                                </span>
-                                                            </td>
                                                             <td>{{ \Carbon\Carbon::parse($kunjungan->created_at)->format('d/m/Y') }}</td>
                                                         </tr>
                                                     @endforeach

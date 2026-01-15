@@ -104,4 +104,116 @@ class DashboardController extends Controller
             'recentKunjungan', 'evaluasiProgress'
         ));
     }
+
+    public function mitraSelesai(\Illuminate\Http\Request $request): \Illuminate\View\View
+    {
+        // Get active periode
+        $activePeriode = \App\Models\Periode::where('status_periode', 'Aktif')->first();
+
+        // Get filter parameters
+        $kelompokId = $request->query('kelompok_id');
+        $periodeId = $request->query('periode_id', $activePeriode?->id);
+
+        // Build query
+        $query = \App\Models\ProjectCard::with(['kelompok', 'periode'])
+            ->where('status_proyek', 'Selesai')
+            ->whereNotNull('nama_mitra');
+
+        // Apply filters
+        if ($kelompokId) {
+            $query->where('kelompok_id', $kelompokId);
+        }
+        if ($periodeId) {
+            $query->where('periode_id', $periodeId);
+        }
+
+        $mitraSelesai = $query->orderBy('updated_at', 'desc')
+            ->get()
+            ->map(function ($card) {
+                return [
+                    'id' => $card->id,
+                    'uuid' => $card->uuid,
+                    'nama_mitra' => $card->nama_mitra,
+                    'kontak_mitra' => $card->kontak_mitra,
+                    'title' => $card->title,
+                    'kelompok' => $card->kelompok?->nama_kelompok ?? '-',
+                    'kelompok_id' => $card->kelompok?->id,
+                    'periode' => $card->periode?->periode ?? '-',
+                    'periode_id' => $card->periode?->id,
+                    'skema_pbl' => $card->skema_pbl ?? '-',
+                    'progress' => $card->progress ?? 0,
+                    'updated_at' => $card->updated_at,
+                ];
+            });
+
+        // Group by partner name
+        $mitraGrouped = $mitraSelesai->groupBy('nama_mitra')->map(function ($items, $namaMitra) {
+            return [
+                'nama_mitra' => $namaMitra,
+                'kontak_mitra' => $items->first()['kontak_mitra'],
+                'jumlah_proyek' => $items->count(),
+                'proyek' => $items->toArray(),
+            ];
+        })->sortByDesc('jumlah_proyek');
+
+        // Group by kelompok for summary
+        $rekapPerKelompok = \App\Models\ProjectCard::with(['kelompok', 'periode'])
+            ->where('status_proyek', 'Selesai')
+            ->whereNotNull('nama_mitra')
+            ->when($periodeId, function ($query) use ($periodeId) {
+                return $query->where('periode_id', $periodeId);
+            })
+            ->get()
+            ->groupBy('kelompok.nama_kelompok')
+            ->map(function ($items, $namaKelompok) {
+                $mitraUnik = $items->pluck('nama_mitra')->unique();
+
+                return [
+                    'nama_kelompok' => $namaKelompok ?: 'Tanpa Kelompok',
+                    'kelompok_id' => $items->first()?->kelompok?->id,
+                    'jumlah_proyek' => $items->count(),
+                    'jumlah_mitra' => $mitraUnik->count(),
+                    'mitra' => $mitraUnik->toArray(),
+                ];
+            })->sortBy('nama_kelompok');
+
+        // Rekap keseluruhan by periode
+        $rekapKeseluruhan = \App\Models\ProjectCard::with(['periode'])
+            ->where('status_proyek', 'Selesai')
+            ->whereNotNull('nama_mitra')
+            ->get()
+            ->groupBy('periode.periode')
+            ->map(function ($items, $namaPeriode) {
+                $mitraUnik = $items->pluck('nama_mitra')->unique();
+
+                return [
+                    'nama_periode' => $namaPeriode ?: 'Tanpa Periode',
+                    'jumlah_proyek' => $items->count(),
+                    'jumlah_mitra' => $mitraUnik->count(),
+                ];
+            })->sortByDesc('nama_periode');
+
+        // Get all kelompok for filter dropdown (only for active/selected periode)
+        $allKelompok = \App\Models\Kelompok::when(
+            $periodeId,
+            function ($query) use ($periodeId) {
+                return $query->where('periode_id', $periodeId);
+            }
+        )->orderBy('nama_kelompok')->get();
+
+        // Get all periode for filter dropdown
+        $allPeriode = \App\Models\Periode::orderBy('periode', 'desc')->get();
+
+        return view('admin.mitra-selesai', compact(
+            'mitraGrouped',
+            'mitraSelesai',
+            'rekapPerKelompok',
+            'rekapKeseluruhan',
+            'kelompokId',
+            'periodeId',
+            'allKelompok',
+            'allPeriode',
+            'activePeriode'
+        ));
+    }
 }
