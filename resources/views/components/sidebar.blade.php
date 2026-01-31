@@ -232,12 +232,12 @@
         </li>
 
         {{-- Nilai --}}
-        {{-- <li class="nav-item {{ request()->routeIs('mahasiswa.nilai.*') ? 'active' : '' }}">
+        <li class="nav-item {{ request()->routeIs('mahasiswa.nilai.*') ? 'active' : '' }}">
             <a class="nav-link" href="{{ route('mahasiswa.nilai.index') }}">
                 <i class="fas fa-fw fa-chart-bar"></i>
                 <span>Nilai</span>
             </a>
-        </li> --}}
+        </li>
     @endif
 
 </ul>
