@@ -39,7 +39,7 @@
                                                 <h4 class="text-primary font-weight-bold">{{ $data['nilai_aktifitas'] }}</h4>
                                                 <small class="text-muted">Nilai Aktifitas</small>
                                                 <br>
-                                                <span class="badge badge-info">{{ $data['total_ap'] }} AP</span>
+                                                <span class="badge badge-success">{{ $data['total_ap'] }} EVALUASI !!!</span>
                                             </div>
                                         </div>
                                         <div class="col-6">
