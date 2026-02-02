@@ -6,8 +6,6 @@
                         <h1 class="h3 mb-0 text-gray-800">
                             <i class="fas fa-bolt text-warning mr-2" aria-hidden="true"></i>
                             Selamat Datang Ranger Junior <b>{{ Auth::user()->nama_user }}</b>
-                            NILAI PBL 2 SEMESTER SEBELUMNYA PENILAIAN DI UP 120% SEHARUSNYA 100% !<br>
-                            BEBERAPA PENILAIAN DI SEMESTER INI MENCOBA MEMAKAI APP PBL SEMOGA DAPAT DIKEMBANGKAN LEBIH BAIK LAGI !
                         </h1>
                         {{-- <a href="#" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm"><i
                                 class="fas fa-download fa-sm text-white-50"></i> Generate Report</a> --}}
