@@ -47,7 +47,7 @@
                                                 <h4 class="text-success font-weight-bold">{{ $data['nilai_proyek'] }}</h4>
                                                 <small class="text-muted">Nilai Proyek</small>
                                                 <br>
-                                                <span class="badge badge-primary">{{ $data['total_evaluasi'] }} eval</span>
+                                                
                                             </div>
                                         </div>
                                     </div>
