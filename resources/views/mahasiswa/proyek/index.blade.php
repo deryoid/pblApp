@@ -316,7 +316,7 @@
           <input type="hidden" name="list" id="addCardListId" value="">
           <div class="form-group"><label>Judul</label><input name="title" type="text" class="form-control" required></div>
           <div class="form-group"><label>Deskripsi</label><textarea name="description" class="form-control" rows="3"></textarea></div>
-          <div class="form-group"><label>Label (pisahkan koma)</label><input name="labels" type="text" class="form-control" placeholder="AI, IoT"></div>
+          <div class="form-group"><label>Label (pisahkan koma)</label><input name="labels" type="text" class="form-control" placeholder="Pengabdian, Penelitian, Riset, Lomba"></div>
           <div class="form-group"><label>Kontak Mitra</label><input name="kontak_mitra" type="text" class="form-control"></div>
           <div class="form-row">
             <div class="form-group col-md-6"><label>Tanggal Mulai</label><input name="tanggal_mulai" type="date" class="form-control"></div>
@@ -326,7 +326,7 @@
             <div class="form-group col-md-6">
               <label>Skema PBL</label>
               <select name="skema_pbl" class="form-control">
-                <option value="">- Pilih -</option><option>Penelitian</option><option>Pengabdian</option><option>Lomba</option><option>PBL x TeFa</option>
+                <option value="">- Pilih -</option><option>Penelitian</option><option>Pengabdian</option><option>Lomba</option><option>Proyek</option>
               </select>
             </div>
             <div class="form-group col-md-6">
