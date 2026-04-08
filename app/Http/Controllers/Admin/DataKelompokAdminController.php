@@ -24,6 +24,12 @@ class DataKelompokAdminController extends Controller
         $qPeriode = $request->get('periode_id') ?: ($activePeriode?->id);
 
         $query = Kelompok::with('periode')
+            ->with(['mahasiswas' => function ($q) use ($qPeriode) {
+                if ($qPeriode) {
+                    $q->where('kelompok_mahasiswa.periode_id', $qPeriode);
+                }
+                $q->with('kelas');
+            }])
             ->withCount(['mahasiswas' => function ($q) use ($qPeriode) {
                 if ($qPeriode) {
                     $q->where('kelompok_mahasiswa.periode_id', $qPeriode);
@@ -74,10 +80,11 @@ class DataKelompokAdminController extends Controller
             ->where('periode_id', $selectedPeriodeId)
             ->pluck('mahasiswa_id');
 
-        // Tampilkan hanya mahasiswa yang BELUM tergabung di periode tsb
-        $mahasiswas = Mahasiswa::whereNotIn('id', $takenMahasiswaIds)
+        // Tampilkan hanya mahasiswa yang BELUM tergabung di periode tsb, dengan eager load kelas
+        $mahasiswas = Mahasiswa::with('kelas')
+            ->whereNotIn('id', $takenMahasiswaIds)
             ->orderBy('nama_mahasiswa')
-            ->get(['id', 'nim', 'nama_mahasiswa']);
+            ->get(['id', 'nim', 'nama_mahasiswa', 'kelas_id']);
 
         return view('admin.kelompok.create', compact('periodes', 'kelasList', 'mahasiswas', 'selectedPeriodeId'));
     }
@@ -97,7 +104,6 @@ class DataKelompokAdminController extends Controller
 
             'entries' => ['required', 'array', 'min:1'],
             'entries.*.nim' => ['required', 'string', 'max:50', 'distinct'],
-            'entries.*.kelas_id' => ['required', 'integer', 'exists:kelas,id'],
         ], [
             'entries.required' => 'Minimal satu anggota diperlukan.',
             'entries.*.nim.distinct' => 'Ada NIM yang dobel pada daftar anggota.',
@@ -114,8 +120,8 @@ class DataKelompokAdminController extends Controller
         $periodeId = (int) $validated['periode_id'];
 
         $rows = collect($validated['entries'])
-            ->map(fn ($e) => ['nim' => trim((string) ($e['nim'] ?? '')), 'kelas_id' => (int) ($e['kelas_id'] ?? 0)])
-            ->filter(fn ($r) => $r['nim'] && $r['kelas_id'])
+            ->map(fn ($e) => ['nim' => trim((string) ($e['nim'] ?? ''))])
+            ->filter(fn ($r) => $r['nim'])
             ->values();
 
         if ($rows->isEmpty()) {
@@ -161,7 +167,6 @@ class DataKelompokAdminController extends Controller
             $mid = $nimToId[$r['nim']];
             $attach[$mid] = [
                 'periode_id' => $periodeId,
-                'kelas_id' => $r['kelas_id'],
                 'role' => ($ketuaNim && $r['nim'] === $ketuaNim) ? 'Ketua' : 'Anggota',
             ];
         }
@@ -237,12 +242,10 @@ class DataKelompokAdminController extends Controller
     public function show(string $uuid)
     {
         $kelompok = Kelompok::where('uuid', $uuid)
-            ->with(['periode', 'mahasiswas'])
+            ->with(['periode', 'mahasiswas.kelas'])
             ->firstOrFail();
 
-        $kelasMap = Kelas::pluck('kelas', 'id');
-
-        return view('admin.kelompok.show', compact('kelompok', 'kelasMap'));
+        return view('admin.kelompok.show', compact('kelompok'));
     }
 
     public function edit(Request $request, string $uuid)
@@ -263,10 +266,11 @@ class DataKelompokAdminController extends Controller
             ->where('kelompok_id', '<>', $kelompok->id)
             ->pluck('mahasiswa_id');
 
-        // Tampilkan semua yang belum terpakai + anggota kelompok ini sendiri
-        $mahasiswas = Mahasiswa::whereNotIn('id', $takenExceptThis)
+        // Tampilkan semua yang belum terpakai + anggota kelompok ini sendiri, eager load kelas
+        $mahasiswas = Mahasiswa::with('kelas')
+            ->whereNotIn('id', $takenExceptThis)
             ->orderBy('nama_mahasiswa')
-            ->get(['id', 'nim', 'nama_mahasiswa']);
+            ->get(['id', 'nim', 'nama_mahasiswa', 'kelas_id']);
 
         return view('admin.kelompok.edit', compact('kelompok', 'periodes', 'kelasList', 'mahasiswas', 'selectedPeriodeId'));
     }
@@ -287,7 +291,6 @@ class DataKelompokAdminController extends Controller
             'ketua_nim' => ['nullable', 'string', 'max:50'],
             'entries' => ['required', 'array', 'min:1'],
             'entries.*.nim' => ['required', 'string', 'max:50', 'distinct'],
-            'entries.*.kelas_id' => ['required', 'integer', 'exists:kelas,id'],
         ], [
             'entries.required' => 'Minimal satu anggota diperlukan.',
             'entries.*.nim.distinct' => 'Ada NIM yang dobel pada daftar anggota.',
@@ -304,8 +307,8 @@ class DataKelompokAdminController extends Controller
         $periodeId = (int) $validated['periode_id'];
 
         $rows = collect($validated['entries'])
-            ->map(fn ($e) => ['nim' => trim((string) ($e['nim'] ?? '')), 'kelas_id' => (int) ($e['kelas_id'] ?? 0)])
-            ->filter(fn ($r) => $r['nim'] && $r['kelas_id'])
+            ->map(fn ($e) => ['nim' => trim((string) ($e['nim'] ?? ''))])
+            ->filter(fn ($r) => $r['nim'])
             ->values();
 
         if ($rows->isEmpty()) {
@@ -362,7 +365,6 @@ class DataKelompokAdminController extends Controller
                 $mid = $nimToId[$r['nim']];
                 $attach[$mid] = [
                     'periode_id' => $periodeId,
-                    'kelas_id' => $r['kelas_id'],
                     'role' => ($ketuaNim && $r['nim'] === $ketuaNim) ? 'Ketua' : 'Anggota',
                 ];
             }

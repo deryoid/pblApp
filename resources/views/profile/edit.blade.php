@@ -42,6 +42,30 @@
                     </div>
                 </div>
 
+                @if($user->role === 'mahasiswa')
+                <div class="form-group">
+                    <label for="kelas_id">Kelas</label>
+                    <select name="kelas_id" id="kelas_id"
+                        class="form-control @error('kelas_id') is-invalid @enderror">
+                        <option value="">-- Pilih Kelas --</option>
+                        @foreach($kelasList as $k)
+                            <option value="{{ $k->id }}"
+                                {{ old('kelas_id', $mahasiswa?->kelas_id) == $k->id ? 'selected' : '' }}>
+                                {{ $k->kelas }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('kelas_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                    <small class="text-muted">
+                        @if($mahasiswa?->kelas)
+                            Kelas saat ini: <strong>{{ $mahasiswa->kelas->kelas }}</strong>
+                        @else
+                            Kelas Anda belum dipilih.
+                        @endif
+                    </small>
+                </div>
+                @endif
+
                 <div class="form-row">
                     <div class="form-group col-md-6">
                         <label for="photo">Foto Profil (opsional)</label>
@@ -68,4 +92,3 @@
     </div>
 </div>
 @endsection
-

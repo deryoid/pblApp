@@ -59,32 +59,22 @@
           @php
             $old = old('entries');
             $rows = $old ?: $kelompok->mahasiswas
-                      ->map(fn($m)=>['nim'=>$m->nim,'kelas_id'=>$m->pivot->kelas_id])
+                      ->map(fn($m)=>['nim'=>$m->nim])
                       ->values()->all();
           @endphp
           @foreach($rows as $i => $row)
             <div class="form-row align-items-end entry-row mb-2">
-              <div class="col-md-5">
-                <label>Mahasiswa (NIM — Nama)</label>
+              <div class="col-md-10">
+                <label>Mahasiswa (NIM — Nama — Kelas)</label>
                 <select name="entries[{{ $i }}][nim]" class="form-control select-nim @error('entries.'.$i.'.nim') is-invalid @enderror" required>
                   <option value="">-- Pilih --</option>
                   @foreach($mahasiswas as $m)
                     <option value="{{ $m->nim }}" {{ ($row['nim']??'')==$m->nim?'selected':'' }}>
-                      {{ $m->nim }} — {{ $m->nama_mahasiswa }}
+                      {{ $m->nim }} — {{ $m->nama_mahasiswa }}{{ $m->kelas ? ' ('.$m->kelas->kelas.')' : '' }}
                     </option>
                   @endforeach
                 </select>
                 @error('entries.'.$i.'.nim') <div class="invalid-feedback">{{ $message }}</div> @enderror
-              </div>
-              <div class="col-md-5">
-                <label>Kelas</label>
-                <select name="entries[{{ $i }}][kelas_id]" class="form-control select-kelas @error('entries.'.$i.'.kelas_id') is-invalid @enderror" required>
-                  <option value="">-- Pilih Kelas --</option>
-                  @foreach($kelasList as $k)
-                    <option value="{{ $k->id }}" {{ ($row['kelas_id']??'')==$k->id?'selected':'' }}>{{ $k->kelas }}</option>
-                  @endforeach
-                </select>
-                @error('entries.'.$i.'.kelas_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
               </div>
               <div class="col-md-2">
                 <button type="button" class="btn btn-danger btn-sm remove-row" title="Hapus"><i class="fas fa-trash"></i></button>
@@ -132,11 +122,6 @@ document.addEventListener('DOMContentLoaded', function(){
       if ($el.data('select2')) $el.select2('destroy');
       $el.select2({ width:'100%', placeholder:'-- Pilih --', matcher: select2Matcher });
     });
-    $(scope).find('.select-kelas').each(function(){
-      const $el = $(this);
-      if ($el.data('select2')) $el.select2('destroy');
-      $el.select2({ width:'100%', placeholder:'-- Pilih Kelas --' });
-    });
   }
 
   initSelect2(document);
@@ -144,9 +129,8 @@ document.addEventListener('DOMContentLoaded', function(){
   // ===== Util =====
   function reindex(){
     entries.querySelectorAll('.entry-row').forEach((row, idx) => {
-      const selects = row.querySelectorAll('select');
-      if (selects[0]) selects[0].name = `entries[${idx}][nim]`;
-      if (selects[1]) selects[1].name = `entries[${idx}][kelas_id]`;
+      const sel = row.querySelector('select.select-nim');
+      if (sel) sel.name = `entries[${idx}][nim]`;
     });
   }
 
@@ -194,21 +178,12 @@ document.addEventListener('DOMContentLoaded', function(){
     const row = document.createElement('div');
     row.className = 'form-row align-items-end entry-row mb-2';
     row.innerHTML = `
-      <div class="col-md-5">
-        <label>Mahasiswa (NIM — Nama)</label>
+      <div class="col-md-10">
+        <label>Mahasiswa (NIM — Nama — Kelas)</label>
         <select class="form-control select-nim" required>
           <option value="">-- Pilih --</option>
           @foreach($mahasiswas as $m)
-            <option value="{{ $m->nim }}">{{ $m->nim }} — {{ $m->nama_mahasiswa }}</option>
-          @endforeach
-        </select>
-      </div>
-      <div class="col-md-5">
-        <label>Kelas</label>
-        <select class="form-control select-kelas" required>
-          <option value="">-- Pilih Kelas --</option>
-          @foreach($kelasList as $k)
-            <option value="{{ $k->id }}">{{ $k->kelas }}</option>
+            <option value="{{ $m->nim }}">{{ $m->nim }} — {{ $m->nama_mahasiswa }}{{ $m->kelas ? ' ('.$m->kelas->kelas.')' : '' }}</option>
           @endforeach
         </select>
       </div>

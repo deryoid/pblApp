@@ -1,4 +1,9 @@
 @extends('layout.app')
+
+@php
+    $kelasList = $kelasList ?? \App\Models\Kelas::orderBy('kelas')->get(['id', 'kelas']);
+@endphp
+
 @section('content')
 <div class="container-fluid">
 
@@ -41,6 +46,23 @@
                         required
                     >
                     @error('nama_mahasiswa')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <div class="form-group">
+                    <label for="kelas_id">Kelas</label>
+                    <select name="kelas_id" id="kelas_id"
+                        class="form-control @error('kelas_id') is-invalid @enderror">
+                        <option value="">-- Pilih Kelas --</option>
+                        @foreach($kelasList as $k)
+                            <option value="{{ $k->id }}"
+                                {{ old('kelas_id', $mahasiswa->kelas_id) == $k->id ? 'selected' : '' }}>
+                                {{ $k->kelas }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('kelas_id')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>

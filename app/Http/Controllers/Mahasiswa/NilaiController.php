@@ -9,11 +9,16 @@ use App\Models\EvaluasiNilaiAP;
 use App\Models\Kelompok;
 use App\Models\Mahasiswa;
 use App\Models\Periode;
+use App\Services\GradingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class NilaiController extends Controller
 {
+    public function __construct(
+        private GradingService $gradingService
+    ) {}
+
     public function index(Request $request)
     {
         $periodeId = $request->get('periode_id');
@@ -29,7 +34,7 @@ class NilaiController extends Controller
                 'periodes' => collect(),
                 'kelompoks' => collect(),
                 'periodeId' => $periodeId,
-                'kelompokId' => $kelompokId,
+                'kelompokId' => null,
                 'search' => $search,
             ]);
         }
@@ -39,12 +44,9 @@ class NilaiController extends Controller
         // Only show kelas that current mahasiswa belongs to
         $kelasOptions = collect();
         if ($mhs) {
-            $kelasIds = $mhs->kelompoks()
-                ->when($periodeId, fn ($q) => $q->wherePivot('periode_id', $periodeId))
-                ->pluck('kelas_id')
-                ->unique();
-
-            $kelasOptions = \App\Models\Kelas::whereIn('id', $kelasIds)->orderBy('kelas')->get(['id', 'kelas']);
+            $kelasOptions = \App\Models\Kelas::when($mhs->kelas_id, fn ($q) => $q->where('id', $mhs->kelas_id))
+                ->orderBy('kelas')
+                ->get(['id', 'kelas']);
         }
 
         // Get evaluations dengan relasi yang lengkap
@@ -88,12 +90,9 @@ class NilaiController extends Controller
 
         // Filter mahasiswa by kelas if kelas_id is selected
         if ($kelasId) {
-            // Get mahasiswa IDs from kelompok_mahasiswa with selected kelas_id
-            $mahasiswaIdsWithKelas = \DB::table('kelompok_mahasiswa')
-                ->where('kelas_id', $kelasId)
-                ->where('mahasiswa_id', $mhs->id)
-                ->when($periodeId, fn ($q) => $q->where('periode_id', $periodeId))
-                ->pluck('mahasiswa_id')
+            $mahasiswaIdsWithKelas = Mahasiswa::where('kelas_id', $kelasId)
+                ->where('id', $mhs->id)
+                ->pluck('id')
                 ->unique();
 
             $mahasiswaIds = $mahasiswaIds->intersect($mahasiswaIdsWithKelas);
@@ -104,7 +103,7 @@ class NilaiController extends Controller
                 if ($periodeId) {
                     $q->wherePivot('periode_id', $periodeId);
                 }
-            }])
+            }, 'kelas'])
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('nim', 'like', "%{$search}%")
@@ -112,7 +111,7 @@ class NilaiController extends Controller
                 });
             })
             ->orderBy('nama_mahasiswa')
-            ->get(['id', 'nim', 'nama_mahasiswa', 'user_id']);
+            ->get(['id', 'nim', 'nama_mahasiswa', 'user_id', 'kelas_id']);
 
         // Group by mahasiswa dan hitung nilai final
         $mahasiswaNilai = collect();
@@ -137,33 +136,24 @@ class NilaiController extends Controller
                 $totalAP = 0;
                 foreach ($nilaiAPMahasiswa as $nilaiAPRecord) {
                     // Konversi kehadiran ke nilai numerik
-                    $kehadiranValue = match ($nilaiAPRecord->w_ap_kehadiran) {
-                        'Hadir' => 100,
-                        'Izin' => 70,
-                        'Sakit' => 60,
-                        'Terlambat' => 50,
-                        'Tanpa Keterangan' => 0,
-                        default => 0,
-                    };
-
-                    // Nilai presentasi sudah dalam bentuk numerik
+                    $kehadiranValue = $this->gradingService->convertAttendanceToValue($nilaiAPRecord->w_ap_kehadiran);
                     $presentasiValue = $nilaiAPRecord->w_ap_presentasi ?? 0;
 
                     // Hitung nilai AP per aktivitas: 50% kehadiran + 50% presentasi
-                    $nilaiAPItem = ($kehadiranValue * 0.5) + ($presentasiValue * 0.5);
+                    $nilaiAPItem = $this->gradingService->calculateActivityScore($kehadiranValue, $presentasiValue);
                     $totalAP += $nilaiAPItem;
                 }
                 $avgAP = $totalAP / $countAP;
             }
 
             // Hitung nilai proyek (80% dosen + 20% mitra)
-            $nilaiProject = ($avgDosen * 0.8) + ($avgMitra * 0.2);
+            $nilaiProject = $this->gradingService->calculateProjectScore($avgDosen, $avgMitra);
 
             // Hitung nilai akhir (70% proyek + 30% AP)
-            $nilaiAkhir = ($nilaiProject * 0.7) + ($avgAP * 0.3);
+            $nilaiAkhir = $this->gradingService->calculateFinalScore($nilaiProject, $avgAP);
 
             // Tentukan grade
-            $grade = $this->calculateGrade($nilaiAkhir);
+            $grade = $this->gradingService->calculateGrade($nilaiAkhir);
 
             // Get kelompok info
             if ($periodeId) {
@@ -173,17 +163,17 @@ class NilaiController extends Controller
                 $kelompok = $mahasiswa->kelompoks->first();
             }
 
-            // Get kelas info from pivot
-            $kelasId = $kelompok ? $kelompok->pivot->kelas_id : null;
-            $kelas = $kelasId ? \App\Models\Kelas::find($kelasId) : null;
+            // Get kelas info directly from mahasiswa model
+            $kelasId = $mahasiswa->kelas_id;
+            $kelas = $mahasiswa->kelas;
 
             $mahasiswaNilai->push([
                 'mahasiswa' => $mahasiswa,
                 'kelompok' => $kelompok,
                 'kelas' => $kelas,
-                'nilai_aktifitas' => round($avgAP, 2),
-                'nilai_proyek' => round($nilaiProject, 2),
-                'nilai_akhir' => round($nilaiAkhir, 2),
+                'nilai_aktifitas' => $this->gradingService->formatScore($avgAP),
+                'nilai_proyek' => $this->gradingService->formatScore($nilaiProject),
+                'nilai_akhir' => $this->gradingService->formatScore($nilaiAkhir),
                 'grade' => $grade,
                 'total_evaluasi' => $evalDosenMahasiswa->count() + $evalMitraMahasiswa->count(),
                 'total_ap' => $countAP,
@@ -198,30 +188,5 @@ class NilaiController extends Controller
             'kelasId',
             'search'
         ));
-    }
-
-    /**
-     * Helper function to calculate grade based on score
-     */
-    private function calculateGrade($score)
-    {
-        if ($score === null) {
-            return null;
-        }
-
-        if ($score >= 85) {
-            return 'A';
-        }
-        if ($score >= 75) {
-            return 'B';
-        }
-        if ($score >= 65) {
-            return 'C';
-        }
-        if ($score >= 55) {
-            return 'D';
-        }
-
-        return 'E';
     }
 }

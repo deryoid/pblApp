@@ -6,12 +6,17 @@ use App\Http\Controllers\Controller;
 use App\Models\EvaluasiMitra;
 use App\Models\Mahasiswa;
 use App\Models\ProjectCard;
+use App\Services\GradingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class PenilaianMitraController extends Controller
 {
+    public function __construct(
+        private GradingService $gradingService
+    ) {}
+
     /**
      * Display all penilaian mitra
      * Menampilkan semua penilaian mitra yang ada
@@ -238,7 +243,6 @@ class PenilaianMitraController extends Controller
 
             // Process each evaluation
             $savedEvaluations = [];
-            $evaluationSettings = $this->getEvaluationSettings();
 
             foreach ($request->evaluations as $evalData) {
                 $mahasiswaId = $evalData['mahasiswa_id'];
@@ -249,7 +253,7 @@ class PenilaianMitraController extends Controller
                 $nilaiAkhir = ($komunikasiSikap * 0.5) + ($hasilPekerjaan * 0.5);
 
                 // Determine grade
-                $grade = $this->calculateGrade($nilaiAkhir);
+                $grade = $this->gradingService->calculateGrade($nilaiAkhir);
 
                 // Check if evaluation already exists
                 $existingEval = EvaluasiMitra::where('project_card_id', $card->id)
@@ -267,6 +271,12 @@ class PenilaianMitraController extends Controller
 
                     $savedEvaluations[] = $existingEval;
                 } else {
+                    // Get periode_id from kelompok's relation or active periode
+                    $periodeId = $card->list?->kelompok?->periode_id
+                        ?? \App\Models\Periode::where('status_periode', 'Aktif')
+                            ->orderByDesc('created_at')
+                            ->value('id');
+
                     // Create new evaluation
                     $newEval = EvaluasiMitra::create([
                         'project_card_id' => $card->id,
@@ -276,8 +286,8 @@ class PenilaianMitraController extends Controller
                         'catatan' => $evalData['catatan'] ?? null,
                         'status' => 'submitted', // Mark as submitted
                         'uuid' => \Str::uuid(),
-                        'periode_id' => 1, // Default periode ID
-                        'kelompok_id' => $card->list->kelompok->id ?? 1, // Get from project
+                        'periode_id' => $periodeId, // Get from kelompok or active periode
+                        'kelompok_id' => $card->list->kelompok->id, // Get from project
                         'evaluasi_master_id' => null, // Not required for public evaluation
                     ]);
 
@@ -321,38 +331,5 @@ class PenilaianMitraController extends Controller
                 'message' => 'Terjadi kesalahan saat menyimpan penilaian. Silakan coba lagi.',
             ], 500);
         }
-    }
-
-    /**
-     * Get evaluation settings
-     */
-    private function getEvaluationSettings()
-    {
-        // Default settings - bisa diambil dari database jika perlu
-        return [
-            'komunikasi_sikap_weight' => 0.5, // 50%
-            'hasil_pekerjaan_weight' => 0.5, // 50%
-        ];
-    }
-
-    /**
-     * Calculate grade based on score
-     */
-    private function calculateGrade($score)
-    {
-        if ($score >= 85) {
-            return 'A';
-        }
-        if ($score >= 75) {
-            return 'B';
-        }
-        if ($score >= 65) {
-            return 'C';
-        }
-        if ($score >= 55) {
-            return 'D';
-        }
-
-        return 'E';
     }
 }

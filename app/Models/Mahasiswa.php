@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
@@ -15,7 +16,17 @@ class Mahasiswa extends Model
 
     protected $table = 'mahasiswa';
 
-    protected $guarded = ['id', 'uuid'];   // semua kolom boleh diisi mass assignment
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'nim',
+        'nama_mahasiswa',
+        'user_id',
+        'kelas_id',
+    ];
 
     protected static function booted()
     {
@@ -27,13 +38,13 @@ class Mahasiswa extends Model
 
         static::updated(function ($m) {
             if ($m->user_id) {
-                Cache::forget('mahasiswa_dashboard_' . $m->user_id);
+                Cache::forget('mahasiswa_dashboard_'.$m->user_id);
             }
         });
 
         static::deleted(function ($m) {
             if ($m->user_id) {
-                Cache::forget('mahasiswa_dashboard_' . $m->user_id);
+                Cache::forget('mahasiswa_dashboard_'.$m->user_id);
             }
         });
     }
@@ -43,7 +54,7 @@ class Mahasiswa extends Model
         return 'uuid';
     }
 
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
@@ -53,20 +64,14 @@ class Mahasiswa extends Model
         return $this->belongsTo(Kelas::class);
     }
 
-    public function kelasFromKelompok()
-    {
-        return $this->kelompoks->first()->pivot->kelas_id ?
-            Kelas::find($this->kelompoks->first()->pivot->kelas_id) : null;
-    }
-
     public function kelompoks(): BelongsToMany
     {
         return $this->belongsToMany(Kelompok::class, 'kelompok_mahasiswa')
-            ->withPivot(['periode_id', 'kelas_id', 'role'])
+            ->withPivot(['periode_id', 'role'])
             ->withTimestamps();
     }
 
-    public function nilaiAP()
+    public function nilaiAP(): HasMany
     {
         return $this->hasMany(EvaluasiNilaiAP::class, 'mahasiswa_id');
     }

@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 class Kelas extends Model
@@ -11,10 +11,19 @@ class Kelas extends Model
     use HasFactory;
 
     protected $table = 'kelas';
-    protected $guarded = ['id','uuid'];   // semua kolom boleh diisi mass assignment
 
-    public function getRouteKeyName(): string 
-    { 
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'nama_kelas',
+        'periode_id',
+    ];
+
+    public function getRouteKeyName(): string
+    {
         return 'uuid'; // biar route model binding pakai uuid
     }
 

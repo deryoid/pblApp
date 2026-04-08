@@ -72,11 +72,8 @@ class NilaiExport implements FromCollection, ShouldAutoSize, WithHeadings, WithS
 
         // Filter mahasiswa by kelas if kelas_id is selected
         if ($this->kelasId) {
-            // Get mahasiswa IDs from kelompok_mahasiswa with selected kelas_id
-            $mahasiswaIdsWithKelas = \DB::table('kelompok_mahasiswa')
-                ->where('kelas_id', $this->kelasId)
-                ->when($this->periodeId, fn ($q) => $q->where('periode_id', $this->periodeId))
-                ->pluck('mahasiswa_id')
+            $mahasiswaIdsWithKelas = Mahasiswa::where('kelas_id', $this->kelasId)
+                ->pluck('id')
                 ->unique();
 
             $mahasiswaIds = $mahasiswaIds->intersect($mahasiswaIdsWithKelas);
@@ -87,7 +84,7 @@ class NilaiExport implements FromCollection, ShouldAutoSize, WithHeadings, WithS
                 if ($this->periodeId) {
                     $q->wherePivot('periode_id', $this->periodeId);
                 }
-            }])
+            }, 'kelas'])
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
                     $q->where('nim', 'like', "%{$this->search}%")
@@ -95,7 +92,7 @@ class NilaiExport implements FromCollection, ShouldAutoSize, WithHeadings, WithS
                 });
             })
             ->orderBy('nama_mahasiswa')
-            ->get(['id', 'nim', 'nama_mahasiswa', 'user_id']);
+            ->get(['id', 'nim', 'nama_mahasiswa', 'user_id', 'kelas_id']);
 
         // Group by mahasiswa dan hitung nilai final
         $mahasiswaNilai = collect();
@@ -156,9 +153,8 @@ class NilaiExport implements FromCollection, ShouldAutoSize, WithHeadings, WithS
                 $kelompok = $mahasiswa->kelompoks->first();
             }
 
-            // Get kelas info from pivot
-            $kelasId = $kelompok ? $kelompok->pivot->kelas_id : null;
-            $kelas = $kelasId ? \App\Models\Kelas::find($kelasId) : null;
+            // Get kelas info directly from mahasiswa model
+            $kelas = $mahasiswa->kelas;
 
             $mahasiswaNilai->push([
                 'No' => $mahasiswaNilai->count() + 1,

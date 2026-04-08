@@ -101,15 +101,11 @@
                                                 <span class="badge badge-info">
                                                     {{ $data['nilai_aktifitas'] }}
                                                 </span>
-                                                <br>
-                                                <small class="text-muted">({{ $data['total_ap'] }} AP)</small>
                                             </td>
                                             <td>
                                                 <span class="badge badge-primary">
                                                     {{ $data['nilai_proyek'] }}
                                                 </span>
-                                                <br>
-                                                <small class="text-muted">({{ $data['total_evaluasi'] }} eval)</small>
                                             </td>
                                           </tr>
                                     @endforeach

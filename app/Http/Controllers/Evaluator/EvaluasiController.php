@@ -19,6 +19,7 @@ use App\Models\KunjunganMitra;
 use App\Models\Periode;
 use App\Models\ProjectCard;
 use App\Models\ProjectList;
+use App\Services\GradingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -30,21 +31,13 @@ use RealRashid\SweetAlert\Facades\Alert;
 
 class EvaluasiController extends Controller
 {
+    public function __construct(
+        private GradingService $gradingService
+    ) {}
+
     protected function setting(string $key, $default = null)
     {
-        try {
-            if (Schema::hasTable((new EvaluationSetting)->getTable())) {
-                $val = EvaluationSetting::get($key);
-                if ($val !== null) {
-                    return $val;
-                }
-            }
-        } catch (\Throwable $e) {
-            // ignore and fallback
-        }
-        $cfg = config('evaluasi.defaults.'.$key);
-
-        return $cfg !== null ? $cfg : $default;
+        return $this->gradingService->getEvaluationSetting($key, $default);
     }
 
     /** ===== LIST KELOMPOK ===== */

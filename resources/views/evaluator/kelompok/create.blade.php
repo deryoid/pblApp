@@ -79,31 +79,21 @@
 
                 <h6 class="font-weight-bold">Daftar Anggota</h6>
                 <div id="entries">
-                    @php $old = old('entries', [['nim'=>'','kelas_id'=>'']]); @endphp
+                    @php $old = old('entries', [['nim'=>'']]); @endphp
                     @foreach($old as $i => $row)
                         <div class="form-row align-items-end entry-row mb-2">
-                            <div class="col-md-5">
-                                <label>Mahasiswa (NIM — Nama)</label>
+                            <div class="col-md-10">
+                                <label>Mahasiswa (NIM — Nama — Kelas)</label>
                                 <select name="entries[{{ $i }}][nim]" class="form-control select-nim @error('entries.'.$i.'.nim') is-invalid @enderror" required>
                                     <option value="">-- Pilih --</option>
                                     @forelse($mahasiswas as $m)
                                         <option value="{{ $m->nim }}" {{ ($row['nim']??'')==$m->nim?'selected':'' }}>
-                                            {{ $m->nim }} — {{ $m->nama_mahasiswa }}
+                                            {{ $m->nim }} — {{ $m->nama_mahasiswa }}{{ $m->kelas ? ' ('.$m->kelas->kelas.')' : '' }}
                                         </option>
                                     @empty
                                     @endforelse
                                 </select>
                                 @error('entries.'.$i.'.nim') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                            </div>
-                            <div class="col-md-5">
-                                <label>Kelas</label>
-                                <select name="entries[{{ $i }}][kelas_id]" class="form-control select-kelas @error('entries.'.$i.'.kelas_id') is-invalid @enderror" required>
-                                    <option value="">-- Pilih Kelas --</option>
-                                    @foreach($kelasList as $k)
-                                        <option value="{{ $k->id }}" {{ ($row['kelas_id']??'')==$k->id?'selected':'' }}>{{ $k->kelas }}</option>
-                                    @endforeach
-                                </select>
-                                @error('entries.'.$i.'.kelas_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
                             </div>
                             <div class="col-md-2">
                                 <button type="button" class="btn btn-danger btn-sm remove-row" title="Hapus">
@@ -142,17 +132,12 @@ document.addEventListener('DOMContentLoaded', function(){
   const form        = document.getElementById('kelompokForm');
   const periodeSel  = document.getElementById('periode_id');
 
-  // ==== Select2 (opsional) ====
-  // Matcher yang menyembunyikan NIM yang sudah dipilih di baris lain.
   window.__chosenNims = new Set();
   function select2Matcher(params, data) {
-    if (!data.id) return null;                          // skip group
+    if (!data.id) return null;
     const val = (data.element && data.element.value) ? data.element.value : data.id;
-    // Sembunyikan jika sudah dipilih di baris lain (kecuali opsi yang sedang terpilih di select ini)
     const isSelectedHere = data.element && data.element.selected;
     if (window.__chosenNims.has(val) && !isSelectedHere) return null;
-
-    // Pencarian bawaan
     if (!params.term) return data;
     const term = params.term.toLowerCase();
     const text = (data.text || '').toLowerCase();
@@ -166,17 +151,10 @@ document.addEventListener('DOMContentLoaded', function(){
       if ($el.data('select2')) $el.select2('destroy');
       $el.select2({ width: '100%', placeholder: '-- Pilih --', matcher: select2Matcher });
     });
-    $(scope).find('.select-kelas').each(function(){
-      const $el = $(this);
-      if ($el.data('select2')) $el.select2('destroy');
-      $el.select2({ width: '100%', placeholder: '-- Pilih Kelas --' });
-    });
   }
 
-  // Inisialisasi Select2 pertama kali (jika ada lib-nya)
   initSelect2(document);
 
-  // Reload halaman saat periode diganti (filter server-side)
   if (periodeSel && periodeSel.dataset.createUrl) {
     periodeSel.addEventListener('change', function(){
       const base = this.dataset.createUrl;
@@ -187,25 +165,22 @@ document.addEventListener('DOMContentLoaded', function(){
 
   function reindex(){
     entries.querySelectorAll('.entry-row').forEach((row, idx) => {
-      const selects = row.querySelectorAll('select');
-      if (selects[0]) selects[0].name = `entries[${idx}][nim]`;
-      if (selects[1]) selects[1].name = `entries[${idx}][kelas_id]`;
+      const sel = row.querySelector('select.select-nim');
+      if (sel) sel.name = `entries[${idx}][nim]`;
     });
   }
 
-  // Kumpulkan NIM yang sudah dipilih & update tampilan semua select
   function collectChosen(){
     const selects = Array.from(document.querySelectorAll('select.select-nim'));
     window.__chosenNims = new Set(selects.map(s => s.value).filter(Boolean));
   }
 
-  // Fallback native (tanpa Select2): sembunyikan & disable option yang sudah dipilih di baris lain
   function refreshNativeOptions(){
     const selects = Array.from(document.querySelectorAll('select.select-nim'));
     selects.forEach(sel => {
       const myVal = sel.value;
       sel.querySelectorAll('option').forEach(opt => {
-        if (!opt.value) return; // placeholder
+        if (!opt.value) return;
         const shouldHide = window.__chosenNims.has(opt.value) && opt.value !== myVal;
         opt.disabled = shouldHide;
         opt.hidden   = shouldHide;
@@ -213,7 +188,6 @@ document.addEventListener('DOMContentLoaded', function(){
     });
   }
 
-  // Sinkronkan ke Select2 (matcher pakai window.__chosenNims, cukup trigger change)
   function refreshAllSelects(){
     collectChosen();
     refreshNativeOptions();
@@ -240,21 +214,12 @@ document.addEventListener('DOMContentLoaded', function(){
     const row = document.createElement('div');
     row.className = 'form-row align-items-end entry-row mb-2';
     row.innerHTML = `
-      <div class="col-md-5">
-        <label>Mahasiswa (NIM — Nama)</label>
+      <div class="col-md-10">
+        <label>Mahasiswa (NIM — Nama — Kelas)</label>
         <select class="form-control select-nim" required>
           <option value="">-- Pilih --</option>
           @foreach($mahasiswas as $m)
-            <option value="{{ $m->nim }}">{{ $m->nim }} — {{ $m->nama_mahasiswa }}</option>
-          @endforeach
-        </select>
-      </div>
-      <div class="col-md-5">
-        <label>Kelas</label>
-        <select class="form-control select-kelas" required>
-          <option value="">-- Pilih Kelas --</option>
-          @foreach($kelasList as $k)
-            <option value="{{ $k->id }}">{{ $k->kelas }}</option>
+            <option value="{{ $m->nim }}">{{ $m->nim }} — {{ $m->nama_mahasiswa }}{{ $m->kelas ? ' ('.$m->kelas->kelas.')' : '' }}</option>
           @endforeach
         </select>
       </div>
@@ -263,21 +228,15 @@ document.addEventListener('DOMContentLoaded', function(){
       </div>`;
     entries.appendChild(row);
     reindex();
-
-    // Init Select2 di baris baru
     initSelect2(row);
-
     const nimSelect = row.querySelector('.select-nim');
     bindDuplicateGuard(nimSelect);
-
     row.querySelector('.remove-row').addEventListener('click', ()=>{
       row.remove(); reindex(); refreshAllSelects();
     });
-
     refreshAllSelects();
   }
 
-  // validasi ketua (harus salah satu dari daftar anggota)
   if (form && ketuaInput) {
     form.addEventListener('submit', function(e){
       const ketua = ketuaInput.value.trim();
@@ -291,14 +250,11 @@ document.addEventListener('DOMContentLoaded', function(){
     });
   }
 
-  // init awal
   entries.querySelectorAll('.remove-row').forEach(btn => btn.addEventListener('click', e => {
     e.currentTarget.closest('.entry-row').remove(); reindex(); refreshAllSelects();
   }));
   entries.querySelectorAll('select.select-nim').forEach(bindDuplicateGuard);
   addBtn.addEventListener('click', addRow);
-
-  // panggil saat load pertama (agar langsung menyembunyikan opsi dari old input)
   refreshAllSelects();
 });
 </script>

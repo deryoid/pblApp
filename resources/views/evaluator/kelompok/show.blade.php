@@ -45,7 +45,7 @@
               <th>No</th>
               <th>NIM</th>
               <th>Nama Mahasiswa</th>
-              <th>Kelas (Pivot)</th>
+              <th>Kelas</th>
               <th>Role</th>
             </tr>
           </thead>
@@ -55,7 +55,7 @@
               <td>{{ $loop->iteration }}</td>
               <td>{{ $m->nim }}</td>
               <td>{{ $m->nama_mahasiswa }}</td>
-              <td>{{ $kelasMap[$m->pivot->kelas_id] ?? '-' }}</td>
+              <td>{{ $m->kelas->kelas ?? '-' }}</td>
               <td><span class="badge badge-{{ $m->pivot->role=='Ketua'?'primary':'secondary' }}">{{ $m->pivot->role }}</span></td>
             </tr>
             @empty

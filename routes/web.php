@@ -29,25 +29,6 @@ Route::get('/penilaian-mitra/{card:uuid}', [\App\Http\Controllers\Public\Penilai
 Route::post('/penilaian-mitra/{card:uuid}/submit', [\App\Http\Controllers\Public\PenilaianMitraController::class, 'submit'])->name('public.penilaian-mitra.submit');
 Route::get('/penilaian-mitra/{card:uuid}/data', [\App\Http\Controllers\Public\PenilaianMitraController::class, 'getData'])->name('public.penilaian-mitra.data');
 
-// Debug route for testing validation
-Route::get('/debug-validation', function () {
-    $evaluasiMaster = \App\Models\EvaluasiMaster::first();
-    $periode = \App\Models\Periode::first();
-    $kelompok = \App\Models\Kelompok::first();
-    $mahasiswa = \App\Models\Mahasiswa::first();
-    $projectCard = \App\Models\ProjectCard::first();
-    $user = \App\Models\User::first();
-
-    return [
-        'evaluasi_master' => $evaluasiMaster ? ['id' => $evaluasiMaster->id] : 'NOT FOUND',
-        'periode' => $periode ? ['id' => $periode->id, 'nama' => $periode->nama] : 'NOT FOUND',
-        'kelompok' => $kelompok ? ['id' => $kelompok->id, 'nama' => $kelompok->nama] : 'NOT FOUND',
-        'mahasiswa' => $mahasiswa ? ['id' => $mahasiswa->id, 'nama' => $mahasiswa->nama] : 'NOT FOUND',
-        'project_card' => $projectCard ? ['id' => $projectCard->id, 'title' => $projectCard->title] : 'NOT FOUND',
-        'user' => $user ? ['id' => $user->id, 'name' => $user->name] : 'NOT FOUND',
-    ];
-});
-
 Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     Route::get('/', [App\Http\Controllers\Admin\DashboardController::class, 'index']);
     Route::get('/mitra-selesai', [App\Http\Controllers\Admin\DashboardController::class, 'mitraSelesai'])->name('admin.mitra-selesai');

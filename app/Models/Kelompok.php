@@ -5,13 +5,23 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 class Kelompok extends Model
 {
     protected $table = 'kelompok';
 
-    protected $guarded = [];
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'nama_kelompok',
+        'periode_id',
+        'kelas_id',
+    ];
 
     protected static function booted()
     {
@@ -19,13 +29,13 @@ class Kelompok extends Model
     }
 
     // Route model binding pakai UUID
-    public function getRouteKeyName()
+    public function getRouteKeyName(): string
     {
         return 'uuid';
     }
 
     // Accessor untuk periode aktif (digunakan di penilaian mitra public)
-    public function getPeriodeAktifIdAttribute()
+    public function getPeriodeAktifIdAttribute(): ?int
     {
         // Cari periode aktif dari database
         $periodeAktif = \App\Models\Periode::where('status_periode', 'Aktif')
@@ -43,7 +53,7 @@ class Kelompok extends Model
     public function mahasiswas(): BelongsToMany
     {
         return $this->belongsToMany(Mahasiswa::class, 'kelompok_mahasiswa')
-            ->withPivot(['periode_id', 'kelas_id', 'role'])
+            ->withPivot(['periode_id', 'role'])
             ->withTimestamps();
     }
 
@@ -57,7 +67,7 @@ class Kelompok extends Model
     }
 
     // Accessor object ketua (tanpa nambah query kalau sudah eager-loaded)
-    public function getKetuaAttribute()
+    public function getKetuaAttribute(): ?Mahasiswa
     {
         if ($this->relationLoaded('mahasiswas')) {
             return $this->mahasiswas->first(function ($m) {
@@ -78,12 +88,12 @@ class Kelompok extends Model
         return $m->nama ?? $m->nama_mahasiswa ?? null;
     }
 
-    public function aktivitasLists()
+    public function aktivitasLists(): HasMany
     {
         return $this->hasMany(AktivitasList::class);
     }
 
-    public function evaluasiMasters()
+    public function evaluasiMasters(): HasMany
     {
         return $this->hasMany(EvaluasiMaster::class);
     }

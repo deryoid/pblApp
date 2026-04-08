@@ -30,7 +30,7 @@ class KelompokController extends Controller
             $selectedPeriode = $periodeAktif;
         }
 
-        $kelompoks = Kelompok::with(['periode', 'mahasiswas', 'evaluasiMasters' => function ($query) use ($selectedPeriode) {
+        $kelompoks = Kelompok::with(['periode', 'mahasiswas.kelas', 'evaluasiMasters' => function ($query) use ($selectedPeriode) {
             if ($selectedPeriode) {
                 $query->where('periode_id', $selectedPeriode->id);
             }
@@ -53,7 +53,7 @@ class KelompokController extends Controller
 
     public function show(Kelompok $kelompok)
     {
-        $kelompok->load(['periode', 'mahasiswas', 'aktivitasLists']);
+        $kelompok->load(['periode', 'mahasiswas.kelas', 'aktivitasLists']);
 
         return view('evaluator.kelompok.show', compact('kelompok'));
     }

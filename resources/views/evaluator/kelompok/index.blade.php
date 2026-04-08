@@ -45,7 +45,8 @@
                             <th>Periode</th>
                             <th>Nama Kelompok</th>
                             <th class="text-center">Drive</th>
-                            <th>Jumlah Anggota</th>
+                            <th>Daftar Anggota</th>
+                            <th>Jumlah</th>
                             <th class="text-center align-middle"><i class="fas fa-cogs fa-sm"></i></th>
                         </tr>
                     </thead>
@@ -69,6 +70,26 @@
                                   <span class="text-muted">-</span>
                                 @endif
                             </td>
+                            <td>
+                                @if($k->mahasiswas && $k->mahasiswas->count() > 0)
+                                    <ul class="list-unstyled mb-0 small">
+                                        @foreach($k->mahasiswas as $mhs)
+                                            <li>
+                                                <span class="badge badge-light">{{ $mhs->nim }}</span>
+                                                {{ $mhs->nama_mahasiswa }}
+                                                @if($mhs->pivot->role === 'Ketua')
+                                                    <span class="badge badge-warning ml-1">Ketua</span>
+                                                @endif
+                                                @if($mhs->kelas)
+                                                    <small class="text-muted">({{ $mhs->kelas->kelas }})</small>
+                                                @endif
+                                            </li>
+                                        @endforeach
+                                    </ul>
+                                @else
+                                    <span class="text-muted">-</span>
+                                @endif
+                            </td>
                             <td>{{ $k->mahasiswas_count ?? $k->mahasiswas->count() }}</td>
                             <td class="text-center align-middle">
                                 <a href="{{ route('evaluator.kelompok.show', $k->uuid) }}" class="btn btn-info btn-circle btn-sm" title="Detail">
@@ -77,7 +98,7 @@
                             </td>
                         </tr>
                         @empty
-                        <tr><td colspan="5" class="text-center text-muted">Belum ada data.</td></tr>
+                        <tr><td colspan="7" class="text-center text-muted">Belum ada data.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
