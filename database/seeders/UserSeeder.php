@@ -21,7 +21,7 @@ class UserSeeder extends Seeder
                 'email' => 'deryyuswantojaya@politala.ac.id',
                 'email_verified_at' => now(),
                 'no_hp' => '081234567890',
-                'username' => 'admin',
+                'username' => 'dery',
                 'password' => Hash::make('@12345'), // password default
                 'role' => 'admin',
                 'remember_token' => Str::random(10),
@@ -48,6 +48,30 @@ class UserSeeder extends Seeder
                 'email_verified_at' => now(),
                 'no_hp' => '08123123123',
                 'username' => 'dewi',
+                'password' => Hash::make('@12345'), // password default
+                'role' => 'admin', // bisa diganti 'mahasiswa' kalau perlu
+                'remember_token' => Str::random(10),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],[
+                'uuid' => (string) Str::uuid(),
+                'nama_user' => 'Arwin Wahyu Saputra',
+                'email' => 'arwinwahyu@politala.ac.id',
+                'email_verified_at' => now(),
+                'no_hp' => '08123123123',
+                'username' => 'arwin',
+                'password' => Hash::make('@12345'), // password default
+                'role' => 'admin', // bisa diganti 'mahasiswa' kalau perlu
+                'remember_token' => Str::random(10),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],[
+                'uuid' => (string) Str::uuid(),
+                'nama_user' => 'Liny M',
+                'email' => 'liny@politala.ac.id',
+                'email_verified_at' => now(),
+                'no_hp' => '08123123123',
+                'username' => 'liny',
                 'password' => Hash::make('@12345'), // password default
                 'role' => 'admin', // bisa diganti 'mahasiswa' kalau perlu
                 'remember_token' => Str::random(10),
