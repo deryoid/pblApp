@@ -16,7 +16,6 @@ return new class extends Migration
             $table->foreignId('kelompok_id')->constrained('kelompok')->cascadeOnDelete();
             $table->foreignId('mahasiswa_id')->constrained('mahasiswa')->cascadeOnDelete();
             $table->foreignId('periode_id')->constrained('periode')->cascadeOnDelete();
-            $table->foreignId('kelas_id')->constrained('kelas')->cascadeOnDelete(); // ⬅️ tambahan kelas_id
             $table->enum('role', ['Ketua','Anggota'])->default('Anggota');
             $table->unique(['kelompok_id','mahasiswa_id']);
             $table->unique(['periode_id','mahasiswa_id']); // 1 mhs 1 kelompok / periode

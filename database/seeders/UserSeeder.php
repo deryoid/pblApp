@@ -78,6 +78,19 @@ class UserSeeder extends Seeder
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
+            [
+                'uuid' => (string) Str::uuid(),
+                'nama_user' => 'Administrator',
+                'email' => 'pbl@politala.ac.id',
+                'email_verified_at' => now(),
+                'no_hp' => '08123123123',
+                'username' => 'admin',
+                'password' => Hash::make('@12345'), // password default
+                'role' => 'admin', // bisa diganti 'mahasiswa' kalau perlu
+                'remember_token' => Str::random(10),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]
         ]);
     }
 }

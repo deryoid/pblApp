@@ -4,23 +4,26 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateEvaluationSettingsTable extends Migration
+return new class extends Migration
 {
-    public function up()
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
     {
-        if (Schema::hasTable('evaluation_settings')) {
-            return;
-        }
         Schema::create('evaluation_settings', function (Blueprint $table) {
             $table->id();
             $table->string('key')->unique();
-            $table->string('value'); // simpan string, angka, json (bebas)
+            $table->string('value');
             $table->timestamps();
         });
     }
 
-    public function down()
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
     {
         Schema::dropIfExists('evaluation_settings');
     }
-}
+};

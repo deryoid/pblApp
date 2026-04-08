@@ -67,7 +67,7 @@ class Mahasiswa extends Model
     public function kelompoks(): BelongsToMany
     {
         return $this->belongsToMany(Kelompok::class, 'kelompok_mahasiswa')
-            ->withPivot(['periode_id', 'role'])
+            ->withPivot('role')
             ->withTimestamps();
     }
 

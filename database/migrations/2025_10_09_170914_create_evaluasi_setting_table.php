@@ -8,21 +8,14 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
+     *
+     * NOTE: This migration is now a no-op because the application uses
+     * 'evaluation_settings' table instead (created by 2025_09_26_225327).
+     * This migration is kept for backward compatibility only.
      */
     public function up(): void
     {
-        if (Schema::hasTable('evaluasi_setting')) {
-            return;
-        }
-
-        Schema::create('evaluasi_setting', function (Blueprint $table) {
-            $table->id();
-            $table->string('key')->unique(); // e.g., 'w_dosen', 'd_hasil', etc.
-            $table->text('value')->nullable(); // Store setting value
-            $table->string('tipe')->default('string'); // 'string', 'integer', 'boolean'
-            $table->text('deskripsi')->nullable();
-            $table->timestamps();
-        });
+        // No-op - evaluation_settings table is used instead
     }
 
     /**
@@ -30,6 +23,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('evaluasi_setting');
+        // No-op
     }
 };

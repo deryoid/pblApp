@@ -20,7 +20,7 @@ class Kelompok extends Model
     protected $fillable = [
         'nama_kelompok',
         'periode_id',
-        'kelas_id',
+        'link_drive',
     ];
 
     protected static function booted()
@@ -53,7 +53,7 @@ class Kelompok extends Model
     public function mahasiswas(): BelongsToMany
     {
         return $this->belongsToMany(Mahasiswa::class, 'kelompok_mahasiswa')
-            ->withPivot(['periode_id', 'role'])
+            ->withPivot('role')
             ->withTimestamps();
     }
 

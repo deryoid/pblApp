@@ -18,6 +18,8 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
             $table->unique('user_id');                 // 1 user : 1 mahasiswa
 
+            $table->foreignId('kelas_id')->nullable()->constrained('kelas')->nullOnDelete();
+
             $table->string('nim')->unique();
             $table->string('nama_mahasiswa');
 

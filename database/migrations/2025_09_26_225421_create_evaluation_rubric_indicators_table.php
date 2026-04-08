@@ -4,27 +4,30 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateEvaluationRubricIndicatorsTable extends Migration
+return new class extends Migration
 {
-    public function up()
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
     {
-        if (Schema::hasTable('evaluation_rubric_indicators')) {
-            return; // tabel sudah ada
-        }
         Schema::create('evaluation_rubric_indicators', function (Blueprint $table) {
             $table->id();
-            $table->string('group_code'); // FK -> groups.code
-            $table->string('code')->unique(); // d_hasil, d_teknis, m_komunikasi, ap_kehadiran, ...
+            $table->string('group_code');
+            $table->string('code')->unique();
             $table->string('name');
-            $table->unsignedTinyInteger('weight')->default(0); // persentase di dalam group
+            $table->unsignedTinyInteger('weight')->default(0);
             $table->timestamps();
 
             $table->foreign('group_code')->references('code')->on('evaluation_rubric_groups')->cascadeOnDelete();
         });
     }
 
-    public function down()
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
     {
         Schema::dropIfExists('evaluation_rubric_indicators');
     }
-}
+};

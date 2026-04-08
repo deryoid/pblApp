@@ -6,12 +6,11 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
-        if (Schema::hasTable('evaluasi_master')) {
-            return;
-        }
-
         Schema::create('evaluasi_master', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
@@ -24,9 +23,11 @@ return new class extends Migration
 
             $table->unique(['periode_id', 'kelompok_id']);
         });
-
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
         Schema::dropIfExists('evaluasi_master');
