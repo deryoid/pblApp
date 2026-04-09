@@ -612,14 +612,14 @@
                 @empty
                   <div class="card card-empty shadow-0">
                     <div class="card-body p-3 text-center text-muted small">
-                      <i class="far fa-clipboard mr-1" aria-hidden="true"></i> Belum ada proyek
+                      <i class="far fa-clipboard mr-1" aria-hidden="true"></i> Belum ada proyek/kegiatan
                     </div>
                   </div>
                 @endforelse
               </div>
             </div>
           @empty
-            <div class="w-100 text-center text-muted py-4">Belum ada daftar proyek</div>
+            <div class="w-100 text-center text-muted py-4">Belum ada daftar proyek/kegiatan</div>
           @endforelse
           </div>
         </div>
@@ -813,7 +813,7 @@
   <div class="modal-dialog modal-lg" role="document">
     <form id="formEditProyek" class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="modalEditProyekLabel">Edit Proyek</h5>
+        <h5 class="modal-title" id="modalEditProyekLabel">Edit Proyek/Kegiatan</h5>
         <button type="button" class="close" data-dismiss="modal" aria-label="Tutup"><span aria-hidden="true">&times;</span></button>
       </div>
       <div class="modal-body">
@@ -885,7 +885,7 @@
           </div>
         </div>
         <div class="form-group">
-          <label for="ep_drivelink">Link Drive Proyek</label>
+          <label for="ep_drivelink">Link Drive</label>
           <input type="url" class="form-control" name="link_drive_proyek" id="ep_drivelink" placeholder="https://...">
         </div>
         <div class="form-group">
