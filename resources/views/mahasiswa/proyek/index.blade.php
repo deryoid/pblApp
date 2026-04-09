@@ -61,7 +61,7 @@
 
   <div class="d-flex align-items-center mb-3 flex-wrap">
     <div class="d-flex align-items-baseline mr-3 mb-2 mb-md-0">
-      <h1 class="h3 text-gray-800 mb-0">Proyek</h1>
+      <h1 class="h3 text-gray-800 mb-0">Proyek/Kegiatan</h1>
       @if(isset($kelompok) && $kelompok)
         <span class="ml-3 small text-muted">
           <strong>{{ $kelompok->nama_kelompok }}</strong>
@@ -98,7 +98,7 @@
                         data-toggle="modal"
                         data-target="#modalAddCard"
                         title="Tambah Proyek">
-                  <i class="fas fa-plus mr-1"></i> Proyek
+                  <i class="fas fa-plus mr-1"></i> Proyek/Kegiatan
                 </button>
 
                 <button class="btn btn-primary btn-edit-list"
@@ -280,7 +280,7 @@
             @empty
               <div class="card card-empty shadow-0">
                 <div class="card-body p-3 text-center text-muted small">
-                  <i class="far fa-clipboard mr-1"></i> Belum ada proyek
+                  <i class="far fa-clipboard mr-1"></i> Belum ada proyek/kegiatan
                 </div>
               </div>
             @endforelse
@@ -307,7 +307,7 @@
 <div class="modal fade" id="modalAddCard" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog" role="document">
     <div class="modal-content">
-      <div class="modal-header"><h5 class="modal-title">Tambah Proyek</h5>
+      <div class="modal-header"><h5 class="modal-title">Tambah Proyek/Kegiatan</h5>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
       </div>
       <form method="POST" action="{{ route('proyek.cards.store') }}">
@@ -339,7 +339,7 @@
             <div class="form-group col-md-6"><label>Biaya Barang</label><input name="biaya_barang" type="number" step="0.01" min="0" class="form-control" value="0"></div>
             <div class="form-group col-md-6"><label>Biaya Jasa</label><input name="biaya_jasa" type="number" step="0.01" min="0" class="form-control" value="0"></div>
           </div>
-          <div class="form-group"><label>Link Drive Proyek</label><input name="link_drive_proyek" type="url" class="form-control" placeholder="https://..."></div>
+          <div class="form-group"><label>Link Drive</label><input name="link_drive_proyek" type="url" class="form-control" placeholder="https://..."></div>
           <div class="form-group"><label>Kendala</label><textarea name="kendala" class="form-control" rows="2"></textarea></div>
           <div class="form-group mb-0"><label>Catatan</label><textarea name="catatan" class="form-control" rows="2" readonly></textarea></div>
         </div>
@@ -356,7 +356,7 @@
 <div class="modal fade" id="modalEditCard" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog" role="document">
     <div class="modal-content">
-      <div class="modal-header"><h5 class="modal-title">Ubah Proyek</h5>
+      <div class="modal-header"><h5 class="modal-title">Ubah Proyek/Kegiatan</h5>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
       </div>
       <form id="editCardForm" method="POST" action="#">
@@ -390,7 +390,7 @@
             <div class="form-group col-md-6"><label>Biaya Barang</label><input name="biaya_barang" id="editBiayaBarang" type="number" step="0.01" min="0" class="form-control"></div>
             <div class="form-group col-md-6"><label>Biaya Jasa</label><input name="biaya_jasa" id="editBiayaJasa" type="number" step="0.01" min="0" class="form-control"></div>
           </div>
-          <div class="form-group"><label>Link Drive Proyek</label><input name="link_drive_proyek" id="editDrive" type="url" class="form-control" placeholder="https://..."></div>
+          <div class="form-group"><label>Link Drive</label><input name="link_drive_proyek" id="editDrive" type="url" class="form-control" placeholder="https://..."></div>
           <div class="form-group"><label>Progress</label><input name="progress" id="editProgress" type="number" min="0" max="100" class="form-control"></div>
           <div class="form-group">
             <label>Kendala</label>

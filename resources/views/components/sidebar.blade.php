@@ -219,7 +219,7 @@
         <li class="nav-item {{ request()->routeIs('proyek.*') ? 'active' : '' }}">
             <a class="nav-link" href="{{ route('proyek.index') }}">
                 <i class="fas fa-fw fa-project-diagram"></i>
-                <span>Proyek</span>
+                <span>Proyek/Kegiatan</span>
             </a>
         </li>
 
