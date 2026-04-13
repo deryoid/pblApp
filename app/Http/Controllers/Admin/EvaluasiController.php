@@ -259,7 +259,7 @@ class EvaluasiController extends Controller
                         // Hitung nilai final untuk card ini (dosen 80%, mitra 20%)
                         $nilaiDosen = $eval->nilai_akhir ?? 0;
                         $nilaiMitra = $evalMitra->nilai_akhir ?? 0;
-                        $nilaiCard = ($nilaiDosen * 0.8) + ($nilaiMitra * 0.2);
+                        $nilaiCard = $this->gradingService->calculateProjectScore($nilaiDosen, $nilaiMitra);
 
                         return [
                             'project' => $eval->projectCard,
@@ -320,7 +320,7 @@ class EvaluasiController extends Controller
                 $presentasiValue = $nilaiAPRecord->w_ap_presentasi ?? 0;
 
                 // Hitung nilai AP per aktivitas: 50% kehadiran + 50% presentasi
-                $nilaiAPItem = ($kehadiranValue * 0.5) + ($presentasiValue * 0.5);
+                $nilaiAPItem = $this->gradingService->calculateActivityScore($kehadiranValue, $presentasiValue);
                 $totalAP += $nilaiAPItem;
                 $countAP++;
 
@@ -357,10 +357,10 @@ class EvaluasiController extends Controller
             $avgPresentasi = $countAP > 0 ? $totalPresentasi / $countAP : 0;
 
             // Hitung nilai akhir dengan bobot: 30% AP + 70% Project
-            $finalNilaiAkhir = ($averageAP * 0.3) + ($finalNilaiProject * 0.7);
+            $finalNilaiAkhir = $this->gradingService->calculateFinalScore($finalNilaiProject, $averageAP);
 
             // Tentukan grade berdasarkan nilai akhir
-            $finalGrade = $this->calculateGrade($finalNilaiAkhir);
+            $finalGrade = $this->gradingService->calculateGrade($finalNilaiAkhir);
 
             return [
                 'mahasiswa' => $mahasiswa,
@@ -391,12 +391,12 @@ class EvaluasiController extends Controller
                     $evalMitra = $evalMitraMahasiswa->firstWhere('project_card_id', $eval->project_card_id);
                     $nilaiDosen = $eval->nilai_akhir ?? 0;
                     $nilaiMitra = $evalMitra->nilai_akhir ?? 0;
-                    $nilaiCard = ($nilaiDosen * 0.8) + ($nilaiMitra * 0.2);
+                    $nilaiCard = $this->gradingService->calculateProjectScore($nilaiDosen, $nilaiMitra);
 
                     return [
                         'project' => $eval->projectCard,
                         'nilai_akhir' => $nilaiCard,
-                        'grade' => $this->calculateGrade($nilaiCard),
+                        'grade' => $this->gradingService->calculateGrade($nilaiCard),
                         'status' => $eval->status,
                         'tanggal_evaluasi' => $eval->tanggal_evaluasi,
                         'evaluator' => $eval->evaluator,
@@ -412,30 +412,6 @@ class EvaluasiController extends Controller
         return view('admin.evaluasi.nilai-final', compact('mahasiswaNilai', 'periodes', 'kelompoks', 'periodeId', 'kelompokId'));
     }
 
-    /**
-     * Helper function to calculate grade based on score
-     */
-    private function calculateGrade($score)
-    {
-        if ($score === null) {
-            return null;
-        }
-
-        if ($score >= 85) {
-            return 'A';
-        }
-        if ($score >= 75) {
-            return 'B';
-        }
-        if ($score >= 65) {
-            return 'C';
-        }
-        if ($score >= 55) {
-            return 'D';
-        }
-
-        return 'E';
-    }
 
     /** ===== DETAIL KELOMPOK ===== */
     public function showKelompok(Kelompok $kelompok)
