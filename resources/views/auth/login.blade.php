@@ -217,7 +217,7 @@
                         </div>
                     </div>
                     <button type="submit" class="btn btn-primary btn-user btn-block mt-4">
-                        Masuk 
+                        Masuk
                     </button>
                 </form>
                 
