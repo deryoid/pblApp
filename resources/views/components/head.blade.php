@@ -49,10 +49,10 @@
             background-color: var(--bg-light);
         }
 
-        /* ----- Sidebar Enhancements (Bright Visible Blue) ----- */
+        /* ----- Sidebar Enhancements ----- */
         .sidebar {
-            background: #0ea5e9 !important; /* Sky Blue */
-            background-image: linear-gradient(180deg, #0ea5e9 0%, #2563eb 100%) !important; /* Sky to Royal Blue */
+            background: var(--primary-color) !important;
+            background-image: linear-gradient(180deg, var(--primary-color) 10%, var(--primary-hover) 100%) !important;
             box-shadow: 4px 0 15px rgba(0,0,0,0.1);
             border: none !important;
         }
