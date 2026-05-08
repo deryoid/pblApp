@@ -51,9 +51,17 @@
 
         /* ----- Sidebar Enhancements (Vibrant Blue Premium) ----- */
         .sidebar {
-            background: #2563eb !important;
-            background-image: linear-gradient(180deg, #2563eb 10%, #1e40af 100%) !important;
-            box-shadow: 4px 0 10px rgba(0,0,0,0.05);
+            background: linear-gradient(135deg, #3b82f6, #2563eb, #1d4ed8, #4f46e5) !important;
+            background-size: 300% 300% !important;
+            animation: gradientSmooth 12s ease infinite;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.08);
+            border: none !important;
+        }
+
+        @keyframes gradientSmooth {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
         .sidebar .nav-item .nav-link {
             color: rgba(255,255,255,0.75);
