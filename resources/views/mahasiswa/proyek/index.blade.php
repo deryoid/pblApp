@@ -2,31 +2,195 @@
 @section('content')
 @push('style')
     <style>
-      .card-title-full{
-        font-size:.95rem;
-        line-height:1.3;
-        /* full width + wrap rapi */
-        white-space:normal;
-        word-break:break-word;
-      }
-      .date-chip{
-        display:inline-flex;
-        align-items:center;
-        font-size:.75rem;
-        line-height:1;
-        padding:.28rem .5rem;
-        border-radius:999px;
-        background:#f1f5ff;
-        color:#2743d3;
-        border:1px solid #e5e9ff;
-        white-space:nowrap;
-      }
-      .date-chip-danger{
-        background:#fff2f2;
-        color:#b42318;
-        border-color:#ffd9d7;
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+      /* Typography & Global adjustments */
+      .container-fluid, .board-wrapper {
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
       }
 
+      /* Kanban Board Container */
+      .board-wrapper {
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding-bottom: 20px;
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+      .board-wrapper::-webkit-scrollbar {
+        display: none;
+      }
+      .board {
+        display: inline-flex;
+        align-items: flex-start;
+        gap: 1.5rem;
+        padding: 0.5rem 0.2rem;
+      }
+
+      /* Board Columns (Lists) */
+      .board-column {
+        background: #f4f5f7;
+        border-radius: 12px;
+        width: 320px;
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        max-height: calc(100vh - 160px);
+        border: 1px solid #ebecf0;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+      }
+
+      /* Column Header */
+      .board-col-head {
+        padding: 1rem 1.2rem;
+        background: #f4f5f7;
+        border-bottom: 1px solid rgba(9, 30, 66, 0.08);
+        border-top-left-radius: 12px;
+        border-top-right-radius: 12px;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+      .board-col-head h6 {
+        font-weight: 600;
+        color: #172b4d;
+        font-size: 0.95rem;
+      }
+
+      /* The scrollable list area */
+      .board-list {
+        padding: 0.8rem;
+        overflow-y: auto;
+        overflow-x: hidden;
+        flex: 1;
+        min-height: 100px;
+      }
+      .board-list::-webkit-scrollbar {
+        width: 6px;
+      }
+      .board-list::-webkit-scrollbar-thumb {
+        background: #c1c7d0;
+        border-radius: 10px;
+      }
+
+      /* Board Cards */
+      .board-card {
+        background: #ffffff;
+        border-radius: 8px;
+        border: 1px solid rgba(9, 30, 66, 0.04);
+        box-shadow: 0 1px 2px rgba(9, 30, 66, 0.15);
+        cursor: grab;
+        transition: all 0.2s ease-in-out;
+        position: relative;
+        overflow: hidden;
+      }
+      .board-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(9, 30, 66, 0.15);
+        border-color: #dfe1e6;
+      }
+      .board-card:active {
+        cursor: grabbing;
+      }
+      .board-card.sortable-ghost {
+        opacity: 0.4;
+        background: #ebecf0;
+      }
+      .card-completed {
+        background: #fafbfc;
+        border: 1px dashed #c1c7d0;
+      }
+
+      /* Card Content Elements */
+      .card-title-full {
+        font-size: 0.9rem;
+        font-weight: 500;
+        line-height: 1.4;
+        color: #172b4d;
+        white-space: normal;
+        word-break: break-word;
+        margin-bottom: 0.5rem;
+      }
+
+      /* Date Chips */
+      .date-chip {
+        display: inline-flex;
+        align-items: center;
+        font-size: 0.72rem;
+        font-weight: 600;
+        line-height: 1;
+        padding: 0.35rem 0.6rem;
+        border-radius: 6px;
+        background: #e9f2ff;
+        color: #0c66e4;
+        border: 1px solid transparent;
+        white-space: nowrap;
+      }
+      .date-chip-danger {
+        background: #ffebe6;
+        color: #c9372c;
+      }
+
+      /* Enhancing Badges & Buttons */
+      .badge-soft {
+        background-color: #ebecf0;
+        color: #42526e;
+        font-weight: 600;
+      }
+      .badge-success { background-color: #22a06b; color: white; border: none; }
+      .badge-info { background-color: #0c66e4; color: white; border: none; }
+      .badge-primary { background-color: #6554c0; color: white; border: none; }
+      .badge-warning { background-color: #f5cd47; color: #172b4d; border: none; }
+      
+      .badge-pill {
+        padding: 0.3em 0.7em;
+        font-weight: 500;
+        border-radius: 4px; /* More modern than full pill */
+      }
+
+      /* Action Buttons inside Card Header */
+      .btn-icon-only {
+        width: 26px;
+        height: 26px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        background: transparent;
+        color: #6b778c;
+        border: none;
+        box-shadow: none;
+      }
+      .btn-icon-only:hover {
+        background: #ebecf0;
+        color: #172b4d;
+      }
+      .btn-icon-only.btn-danger:hover { background: #ffebe6; color: #c9372c; }
+      .btn-icon-only.btn-info:hover { background: #e9f2ff; color: #0c66e4; }
+      .btn-icon-only.btn-primary:hover { background: #e9f2ff; color: #0c66e4; }
+
+      /* Progress Bar */
+      .progress {
+        height: 8px;
+        border-radius: 10px;
+        background-color: #ebecf0;
+        margin-top: 12px;
+        box-shadow: none;
+      }
+      .progress-bar {
+        border-radius: 10px;
+        background: #0c66e4;
+      }
+      
+      /* Global Additions */
+      .btn-add-card, .btn-edit-list {
+        font-size: 0.75rem;
+        font-weight: 500;
+        padding: 0.3rem 0.6rem;
+        border-radius: 4px;
+        box-shadow: none;
+      }
     </style>
 @endpush
 <div class="container-fluid">

@@ -7,7 +7,7 @@
         <div class="sidebar-brand-icon">
             <img src="{{ asset('sbadmin2/img/logo-campus.png') }}" alt="Logo" style="width:40px;height:auto;">
         </div>
-        <div class="sidebar-brand-text mx-3">PBL<sup>TRKJ</sup></div>
+        <div class="sidebar-brand-text mx-3">SIMEP</div>
     </a>
 
     <!-- Divider -->

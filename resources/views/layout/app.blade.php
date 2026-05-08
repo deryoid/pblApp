@@ -70,6 +70,46 @@
     <x-scripts/>
     @stack('scripts')
     @include('sweetalert::alert')
+
+    <!-- Auto Logout Script (1 Jam / 60 Menit) -->
+    <script>
+        (function() {
+            let inactivityTime = function() {
+                let time;
+                // 60 menit = 3600000 ms
+                const maxInactivity = 3600000; 
+
+                // Reset timer setiap ada aktivitas
+                window.onload = resetTimer;
+                document.onmousemove = resetTimer;
+                document.onkeydown = resetTimer;
+                document.onclick = resetTimer;
+                document.onscroll = resetTimer;
+
+                function logout() {
+                    // Tampilkan pesan atau langsung submit form logout
+                    let form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = '{{ route("logout") }}';
+                    
+                    let csrf = document.createElement('input');
+                    csrf.type = 'hidden';
+                    csrf.name = '_token';
+                    csrf.value = '{{ csrf_token() }}';
+                    
+                    form.appendChild(csrf);
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+
+                function resetTimer() {
+                    clearTimeout(time);
+                    time = setTimeout(logout, maxInactivity);
+                }
+            };
+            inactivityTime();
+        })();
+    </script>
 </body>
 
 </html>
