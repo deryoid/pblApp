@@ -49,19 +49,12 @@
             background-color: var(--bg-light);
         }
 
-        /* ----- Sidebar Enhancements (Vibrant Blue Premium) ----- */
+        /* ----- Sidebar Enhancements (Bright Visible Blue) ----- */
         .sidebar {
-            background: linear-gradient(135deg, #3b82f6, #2563eb, #1d4ed8, #4f46e5) !important;
-            background-size: 300% 300% !important;
-            animation: gradientSmooth 12s ease infinite;
-            box-shadow: 4px 0 15px rgba(0,0,0,0.08);
+            background: #0ea5e9 !important; /* Sky Blue */
+            background-image: linear-gradient(180deg, #0ea5e9 0%, #2563eb 100%) !important; /* Sky to Royal Blue */
+            box-shadow: 4px 0 15px rgba(0,0,0,0.1);
             border: none !important;
-        }
-
-        @keyframes gradientSmooth {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
         }
         .sidebar .nav-item .nav-link {
             color: rgba(255,255,255,0.75);

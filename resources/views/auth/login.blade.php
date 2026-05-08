@@ -195,24 +195,25 @@
         <div class="card">
             <div class="card-body">
                 <div class="brand-logo">
-                    <img src="{{ asset('sbadmin2/img/logo-campus.png') }}" alt="Logo SIMEP">
                     <h1>SIMEP</h1>
+                    <p>SISTEM INFORMASI MONITORING DAN EVALUASI </p>
+                    <img src="{{ asset('sbadmin2/img/logo-campus.png') }}" alt="Logo SIMEP">
                     <p>Politeknik Negeri Tanah Laut</p>
                 </div>
 
                 <form class="user" method="POST" action="{{ route('login.attempt') }}">
                     @csrf
-                    <div class="form-group mb-4">
+                    <div class="form-group mb-1">
                         <label class="small font-weight-bold text-gray-700 mb-1" style="color: #475569"></label>
                         <input type="text" class="form-control form-control-user" name="username" placeholder="Masukkan nama pengguna" required autofocus>
                     </div>
-                    <div class="form-group mb-4">
+                    <div class="form-group mb-1">
                         <label class="small font-weight-bold text-gray-700 mb-1" style="color: #475569"></label>
                         <input type="password" class="form-control form-control-user" name="password" placeholder="Masukkan kata sandi" required>
                     </div>
                     <div class="form-group mb-4">
                         <div class="custom-control custom-checkbox small">
-                            <input type="checkbox" class="custom-control-input" id="customCheck" name="remember">
+                            <input type="checkbox" class="custom-control-input" id="customCheck" name="remember" value="1">
                             <label class="custom-control-label pt-1" for="customCheck" style="color: #64748b">Ingat sesi saya</label>
                         </div>
                     </div>
@@ -224,8 +225,8 @@
                 <hr>
                 
                 <div class="text-center">
-                    <a href="/kunjungan-mitra" class="btn btn-dark btn-user btn-block">
-                        <i class="fas fa-building mr-2"></i> Akses Publik Mitra
+                    <a href="/kunjungan-mitra" class="btn btn-info btn-user btn-block">
+                        Akses Publik Mitra
                     </a>
                 </div>
             </div>
