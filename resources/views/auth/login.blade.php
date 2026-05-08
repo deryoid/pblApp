@@ -203,11 +203,11 @@
                 <form class="user" method="POST" action="{{ route('login.attempt') }}">
                     @csrf
                     <div class="form-group mb-4">
-                        <label class="small font-weight-bold text-gray-700 mb-1" style="color: #475569">Nama Pengguna</label>
+                        <label class="small font-weight-bold text-gray-700 mb-1" style="color: #475569"></label>
                         <input type="text" class="form-control form-control-user" name="username" placeholder="Masukkan nama pengguna" required autofocus>
                     </div>
                     <div class="form-group mb-4">
-                        <label class="small font-weight-bold text-gray-700 mb-1" style="color: #475569">Kata Sandi</label>
+                        <label class="small font-weight-bold text-gray-700 mb-1" style="color: #475569"></label>
                         <input type="password" class="form-control form-control-user" name="password" placeholder="Masukkan kata sandi" required>
                     </div>
                     <div class="form-group mb-4">
