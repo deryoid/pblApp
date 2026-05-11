@@ -229,6 +229,12 @@
                         Akses Publik Mitra
                     </a>
                 </div>
+                <br>
+                <div class="text-center">
+                    <a href="https://drive.google.com/drive/folders/13FHP9XRBxzpABqo634BnXEqicdQzGdXF?usp=sharing" target="blank" class="btn btn-dark btn-block">
+                        <i class="fa fa-book"></i> Pedoman PBL
+                    </a>
+                </div>
             </div>
         </div>
     </div>
