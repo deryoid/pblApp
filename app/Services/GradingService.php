@@ -37,7 +37,7 @@ class GradingService
     /**
      * Convert attendance status to numeric value.
      */
-    public function convertAttendanceToValue(string $status): int
+    public function convertAttendanceToValue(?string $status): int
     {
         return match ($status) {
             'Hadir' => 100,
