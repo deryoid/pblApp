@@ -24,6 +24,13 @@ class NilaiController extends Controller
     public function index(Request $request)
     {
         $periodeId = $request->get('periode_id');
+        if (! $request->has('periode_id')) {
+            $activePeriode = Periode::where('status_periode', 'Aktif')->first();
+            if ($activePeriode) {
+                $periodeId = $activePeriode->id;
+            }
+        }
+
         $kelasId = $request->get('kelas_id');
         $search = $request->get('search');
 
@@ -61,29 +68,23 @@ class NilaiController extends Controller
             ->when($periodeId, fn ($q) => $q->where('periode_id', $periodeId))
             ->get();
 
-        // Get unique mahasiswa from evaluations
-        $mahasiswaIds = $evaluationsDosen->pluck('mahasiswa_id')
-            ->merge($evaluationsMitra->pluck('mahasiswa_id'))
-            ->merge($nilaiAP->pluck('mahasiswa_id'))
-            ->unique()
-            ->values();
+        $mahasiswasQuery = Mahasiswa::query();
 
-        // Filter mahasiswa by kelas if kelas_id is selected
-        if ($kelasId) {
-            // Get mahasiswa IDs with selected kelas_id directly from mahasiswa table
-            $mahasiswaIdsWithKelas = Mahasiswa::where('kelas_id', $kelasId)
-                ->pluck('id')
-                ->unique();
-
-            $mahasiswaIds = $mahasiswaIds->intersect($mahasiswaIdsWithKelas);
+        if ($periodeId) {
+            $mahasiswasQuery->whereHas('kelompoks', function ($q) use ($periodeId) {
+                $q->where('kelompok_mahasiswa.periode_id', $periodeId);
+            });
         }
 
-        $mahasiswas = Mahasiswa::whereIn('id', $mahasiswaIds)
-            ->with(['kelompoks' => function ($q) use ($periodeId) {
-                if ($periodeId) {
-                    $q->wherePivot('periode_id', $periodeId);
-                }
-            }, 'kelas'])
+        if ($kelasId) {
+            $mahasiswasQuery->where('kelas_id', $kelasId);
+        }
+
+        $mahasiswas = $mahasiswasQuery->with(['kelompoks' => function ($q) use ($periodeId) {
+            if ($periodeId) {
+                $q->wherePivot('periode_id', $periodeId);
+            }
+        }, 'kelas'])
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('nim', 'like', "%{$search}%")
@@ -176,6 +177,13 @@ class NilaiController extends Controller
     public function export(Request $request): BinaryFileResponse
     {
         $periodeId = $request->get('periode_id');
+        if (! $request->has('periode_id')) {
+            $activePeriode = \App\Models\Periode::where('status_periode', 'Aktif')->first();
+            if ($activePeriode) {
+                $periodeId = $activePeriode->id;
+            }
+        }
+
         $kelasId = $request->get('kelas_id');
         $search = $request->get('search');
 

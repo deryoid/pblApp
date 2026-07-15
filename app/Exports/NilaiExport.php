@@ -63,28 +63,23 @@ class NilaiExport implements FromCollection, ShouldAutoSize, WithHeadings, WithS
             ->when($this->periodeId, fn ($q) => $q->where('periode_id', $this->periodeId))
             ->get();
 
-        // Get unique mahasiswa from evaluations
-        $mahasiswaIds = $evaluationsDosen->pluck('mahasiswa_id')
-            ->merge($evaluationsMitra->pluck('mahasiswa_id'))
-            ->merge($nilaiAP->pluck('mahasiswa_id'))
-            ->unique()
-            ->values();
+        $mahasiswasQuery = Mahasiswa::query();
 
-        // Filter mahasiswa by kelas if kelas_id is selected
-        if ($this->kelasId) {
-            $mahasiswaIdsWithKelas = Mahasiswa::where('kelas_id', $this->kelasId)
-                ->pluck('id')
-                ->unique();
-
-            $mahasiswaIds = $mahasiswaIds->intersect($mahasiswaIdsWithKelas);
+        if ($this->periodeId) {
+            $mahasiswasQuery->whereHas('kelompoks', function ($q) {
+                $q->where('kelompok_mahasiswa.periode_id', $this->periodeId);
+            });
         }
 
-        $mahasiswas = Mahasiswa::whereIn('id', $mahasiswaIds)
-            ->with(['kelompoks' => function ($q) {
-                if ($this->periodeId) {
-                    $q->wherePivot('periode_id', $this->periodeId);
-                }
-            }, 'kelas'])
+        if ($this->kelasId) {
+            $mahasiswasQuery->where('kelas_id', $this->kelasId);
+        }
+
+        $mahasiswas = $mahasiswasQuery->with(['kelompoks' => function ($q) {
+            if ($this->periodeId) {
+                $q->wherePivot('periode_id', $this->periodeId);
+            }
+        }, 'kelas'])
             ->when($this->search, function ($query) {
                 $query->where(function ($q) {
                     $q->where('nim', 'like', "%{$this->search}%")
