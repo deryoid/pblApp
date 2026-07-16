@@ -192,6 +192,9 @@ class NilaiController extends Controller
         $fileName .= $kelasId ? \App\Models\Kelas::find($kelasId)?->kelas.'-' : 'semua-';
         $fileName .= date('YmdHis').'.xlsx';
 
+        // Sanitize filename to prevent InvalidArgumentException
+        $fileName = str_replace(['/', '\\'], '-', $fileName);
+
         return Excel::download(
             new NilaiExport($periodeId, $kelasId, $search),
             $fileName
