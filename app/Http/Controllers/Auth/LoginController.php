@@ -53,7 +53,7 @@ class LoginController extends Controller
                 $request->session()->invalidate();
                 $request->session()->regenerateToken();
 
-                Alert::error('Anda tidak bisa login, Periode Penilaian Sudah Selesai', '"Dan janganlah kamu iri hati terhadap apa yang dikaruniakan Allah kepada sebagian kamu lebih banyak dari sebagian yang lain.  : An-Nisa ayat 32"');
+                Alert::error('Anda tidak bisa login, Periode Penilaian Sudah Selesai', '"Dan janganlah kamu iri hati terhadap apa yang dikaruniakan Allah kepada sebagian kamu lebih banyak dari sebagian yang lain.  : An-Nisa ayat 32"')->autoClose(5000);
                 
                 return back()->withInput();
             }
