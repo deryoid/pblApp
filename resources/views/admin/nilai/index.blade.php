@@ -32,10 +32,10 @@
                 <div class="card-body">
                     <!-- Filter Form -->
                     <form method="GET" class="mb-4" id="filterForm">
-                        <div class="row">
-                            <div class="col-md-3">
-                                <label for="periode_id" class="form-label">Periode</label>
-                                <select name="periode_id" id="periode_id" class="form-select" onchange="this.form.submit()">
+                        <div class="row align-items-end">
+                            <div class="col-md-3 mb-3 mb-md-0">
+                                <label for="periode_id" class="form-label font-weight-bold">Periode</label>
+                                <select name="periode_id" id="periode_id" class="form-control" onchange="this.form.submit()">
                                     <option value="">-- Semua Periode --</option>
                                     @foreach($periodes as $periode)
                                         <option value="{{ $periode->id }}" {{ $periodeId == $periode->id ? 'selected' : '' }}>
@@ -44,10 +44,10 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-3">
-                                <label for="kelas_id" class="form-label">Kelas</label>
-                                <select name="kelas_id" id="kelas_id" class="form-select" onchange="this.form.submit()">
-                                    <option value="">-- Semua Kelas --</option>
+                            <div class="col-md-3 mb-3 mb-md-0">
+                                <label for="kelas_id" class="form-label font-weight-bold">Kelas</label>
+                                <select name="kelas_id" id="kelas_id" class="form-control" onchange="this.form.submit()">
+                                    <option value="">-- Seluruh Mahasiswa --</option>
                                     @foreach($kelases as $kelas)
                                         <option value="{{ $kelas->id }}" {{ $kelasId == $kelas->id ? 'selected' : '' }}>
                                             {{ $kelas->kelas }}
@@ -55,21 +55,20 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-4">
-                                <label for="search" class="form-label">Cari Mahasiswa</label>
-                                <input type="text" name="search" id="search" class="form-control"
-                                       value="{{ $search ?? '' }}" placeholder="NIM atau Nama Mahasiswa">
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label">&nbsp;</label>
-                                <div>
-                                    <button type="submit" class="btn btn-primary">
-                                        <i class="fas fa-search"></i> Cari
-                                    </button>
-                                    <button type="button" class="btn btn-secondary" onclick="resetFilters()">
-                                        <i class="fas fa-redo"></i>
-                                    </button>
+                            <div class="col-md-4 mb-3 mb-md-0">
+                                <label for="search" class="form-label font-weight-bold">Cari Mahasiswa</label>
+                                <div class="input-group">
+                                    <input type="text" name="search" id="search" class="form-control"
+                                           value="{{ $search ?? '' }}" placeholder="NIM atau Nama Mahasiswa">
                                 </div>
+                            </div>
+                            <div class="col-md-2 mb-3 mb-md-0">
+                                <button type="submit" class="btn btn-primary" title="Cari">
+                                    <i class="fas fa-search"></i> Cari
+                                </button>
+                                <button type="button" class="btn btn-secondary" onclick="resetFilters()" title="Reset Filter">
+                                    <i class="fas fa-redo"></i>
+                                </button>
                             </div>
                         </div>
                     </form>
