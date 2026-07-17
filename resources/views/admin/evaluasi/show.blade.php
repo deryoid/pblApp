@@ -1829,6 +1829,7 @@
           row.querySelectorAll('.grade-input-mitra').forEach(input => {
             const raw = input.value.trim();
             if (raw === '') {
+              rowData[input.getAttribute('data-item')] = null;
               return;
             }
             const numeric = Math.max(0, Math.min(100, parseInt(raw, 10) || 0));
@@ -2671,6 +2672,7 @@
           inputs.forEach(input => {
             const raw = input.value.trim();
             if (raw === '') {
+              rowData[input.getAttribute('data-item')] = null;
               return;
             }
             const numeric = Math.max(0, Math.min(100, parseInt(raw, 10) || 0));

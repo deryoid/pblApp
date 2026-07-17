@@ -145,7 +145,6 @@ class NilaiController extends Controller
             }
 
             // Get kelas info directly from mahasiswa model
-            $kelasId = $mahasiswa->kelas_id;
             $kelas = $mahasiswa->kelas;
 
             $mahasiswaNilai->push([

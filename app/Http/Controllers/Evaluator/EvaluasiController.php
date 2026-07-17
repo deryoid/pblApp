@@ -1053,7 +1053,6 @@ class EvaluasiController extends Controller
                 // Check if mahasiswa belongs to kelompok using model relationship
                 $isInKelompok = $mahasiswa->kelompoks()
                     ->where('kelompok.id', $kelompokId)
-                    ->where('kelompok_mahasiswa.periode_id', $periodeId)
                     ->exists();
 
                 if (! $isInKelompok) {
@@ -1061,7 +1060,6 @@ class EvaluasiController extends Controller
                         'mahasiswa_id' => $mahasiswaId,
                         'mahasiswa_name' => $mahasiswa->nama_mahasiswa,
                         'expected_kelompok' => $kelompokId,
-                        'expected_periode' => $periodeId,
                     ]);
                     $skippedCount++;
 
@@ -1072,7 +1070,7 @@ class EvaluasiController extends Controller
                 $cleanScores = [];
                 foreach ($nilai as $kriteria => $value) {
                     if (in_array($kriteria, ['d_hasil', 'd_teknis', 'd_user', 'd_efisiensi', 'd_dokpro', 'd_inisiatif'], true)) {
-                        $cleanScores[$kriteria] = max(0, min(100, (int) $value));
+                        $cleanScores[$kriteria] = $value === null ? null : max(0, min(100, (int) $value));
                     }
                 }
 
@@ -1198,14 +1196,12 @@ class EvaluasiController extends Controller
 
             $isInKelompok = $mahasiswa->kelompoks()
                 ->where('kelompok.id', $kelompokId)
-                ->where('kelompok_mahasiswa.periode_id', $periodeId)
                 ->exists();
 
             if (! $isInKelompok) {
                 Log::warning('Mahasiswa not in kelompok for mitra evaluation', [
                     'mahasiswa_id' => $mahasiswaId,
                     'expected_kelompok' => $kelompokId,
-                    'expected_periode' => $periodeId,
                 ]);
                 $skippedCount++;
 
@@ -1213,8 +1209,8 @@ class EvaluasiController extends Controller
             }
 
             $scores = [
-                'm_kehadiran' => array_key_exists('m_kehadiran', (array) $nilai) ? max(0, min(100, (int) $nilai['m_kehadiran'])) : null,
-                'm_presentasi' => array_key_exists('m_presentasi', (array) $nilai) ? max(0, min(100, (int) $nilai['m_presentasi'])) : null,
+                'm_kehadiran' => array_key_exists('m_kehadiran', (array) $nilai) ? ($nilai['m_kehadiran'] === null ? null : max(0, min(100, (int) $nilai['m_kehadiran']))) : null,
+                'm_presentasi' => array_key_exists('m_presentasi', (array) $nilai) ? ($nilai['m_presentasi'] === null ? null : max(0, min(100, (int) $nilai['m_presentasi']))) : null,
             ];
 
             if ($scores['m_kehadiran'] === null && $scores['m_presentasi'] === null && ! $evaluationUuid) {
