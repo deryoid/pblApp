@@ -46,6 +46,18 @@ class LoginController extends Controller
 
         // Coba login
         if (Auth::attempt($credentials, $remember)) {
+            $user = Auth::user();
+
+            if ($user->role === 'mahasiswa') {
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                Alert::error('Anda tidak bisa login, Periode Penilaian Sudah Selesai', '"Dan janganlah kamu iri hati terhadap apa yang dikaruniakan Allah kepada sebagian kamu lebih banyak dari sebagian yang lain.  : An-Nisa ayat 32"');
+                
+                return back()->withInput();
+            }
+
             $request->session()->regenerate();
 
             // Toast sukses
