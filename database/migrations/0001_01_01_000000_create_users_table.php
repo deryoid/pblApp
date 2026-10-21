@@ -2,8 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -21,14 +21,20 @@ return new class extends Migration
             $table->string('no_hp');
             $table->string('username')->unique();
             $table->string('password');
-            $table->enum('role', ['admin', 'evaluator', 'mahasiswa']);
+            $table->enum('role', ['admin', 'dosen', 'evaluator', 'mahasiswa']);
             $table->rememberToken();
             $table->string('profile_photo_mime', 100)->nullable();
             $table->timestamps();
         });
 
         // Tambahkan kolom LONGBLOB untuk foto profil (kompatibel berbagai versi MySQL)
-        DB::statement("ALTER TABLE `users` ADD `profile_photo` LONGBLOB NULL AFTER `profile_photo_mime`");
+        if (DB::getDriverName() === 'mysql') {
+            DB::statement('ALTER TABLE `users` ADD `profile_photo` LONGBLOB NULL AFTER `profile_photo_mime`');
+        } else {
+            Schema::table('users', function (Blueprint $table) {
+                $table->binary('profile_photo')->nullable();
+            });
+        }
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {
             $table->string('email')->primary();

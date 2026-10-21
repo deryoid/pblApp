@@ -73,6 +73,27 @@ class ProjectCard extends Model
         return $this->hasMany(\App\Models\EvaluasiMitra::class, 'project_card_id');
     }
 
+    public function dosenPenentu(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(\App\Models\User::class, 'dosen_penentu_id');
+    }
+
+    public function mataKuliahs(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(\App\Models\MataKuliah::class, 'project_mata_kuliah')
+            ->withTimestamps();
+    }
+
+    public function dosenPenilai(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\ProjectDosenPenilai::class, 'project_card_id');
+    }
+
+    public function penilaianDosen(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\PenilaianProyekDosen::class, 'project_card_id');
+    }
+
     public function getRouteKeyName(): string
     {
         return 'uuid';

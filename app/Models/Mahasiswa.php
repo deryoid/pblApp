@@ -26,7 +26,17 @@ class Mahasiswa extends Model
         'nama_mahasiswa',
         'user_id',
         'kelas_id',
+        'semester',
+        'is_profile_complete',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'semester' => 'integer',
+            'is_profile_complete' => 'boolean',
+        ];
+    }
 
     protected static function booted()
     {
@@ -74,5 +84,10 @@ class Mahasiswa extends Model
     public function nilaiAP(): HasMany
     {
         return $this->hasMany(EvaluasiNilaiAP::class, 'mahasiswa_id');
+    }
+
+    public function joinRequests(): HasMany
+    {
+        return $this->hasMany(KelompokJoinRequest::class, 'mahasiswa_id');
     }
 }

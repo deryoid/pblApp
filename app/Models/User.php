@@ -26,6 +26,8 @@ class User extends Authenticatable
         'nama_user',
         'username',
         'email',
+        'google_id',
+        'avatar',
         'password',
         'role',
         'no_hp',
@@ -149,5 +151,25 @@ class User extends Authenticatable
     public function mahasiswa(): HasOne
     {
         return $this->hasOne(\App\Models\Mahasiswa::class);
+    }
+
+    public function penugasanPenilai(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\ProjectDosenPenilai::class, 'dosen_id');
+    }
+
+    public function penilaianProyek(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\PenilaianProyekDosen::class, 'dosen_id');
+    }
+
+    public function proyekDitentukan(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\ProjectCard::class, 'dosen_penentu_id');
+    }
+
+    public function scopeDosen($query): void
+    {
+        $query->where('role', 'dosen');
     }
 }

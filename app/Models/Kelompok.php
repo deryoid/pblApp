@@ -21,7 +21,18 @@ class Kelompok extends Model
         'nama_kelompok',
         'periode_id',
         'link_drive',
+        'semester',
+        'max_members',
+        'status_bergabung',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'semester' => 'integer',
+            'max_members' => 'integer',
+        ];
+    }
 
     protected static function booted()
     {
@@ -96,6 +107,11 @@ class Kelompok extends Model
     public function evaluasiMasters(): HasMany
     {
         return $this->hasMany(EvaluasiMaster::class);
+    }
+
+    public function joinRequests(): HasMany
+    {
+        return $this->hasMany(KelompokJoinRequest::class);
     }
 
     // Check evaluation status for the group based on aktivitas_list

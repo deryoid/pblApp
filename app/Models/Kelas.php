@@ -19,7 +19,15 @@ class Kelas extends Model
      */
     protected $fillable = [
         'kelas',
+        'semester',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'semester' => 'integer',
+        ];
+    }
 
     public function getRouteKeyName(): string
     {
