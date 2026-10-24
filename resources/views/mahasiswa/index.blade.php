@@ -5,10 +5,37 @@
                     <div class="d-sm-flex align-items-center justify-content-between mb-4">
                         <h1 class="h3 mb-0 text-gray-800">
                             <i class="fas fa-bolt text-warning mr-2" aria-hidden="true"></i>
-                            Selamat Datang Ranger Junior <b>{{ Auth::user()->nama_user }}</b>
+                            Selamat Datang <b>{{ Auth::user()->nama_user }}</b>
                         </h1>
-                        {{-- <a href="#" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm"><i
-                                class="fas fa-download fa-sm text-white-50"></i> Generate Report</a> --}}
+                        <div class="mt-3 mt-sm-0">
+                            <a href="{{ route('home') }}" target="_blank" class="btn btn-sm btn-outline-primary shadow-sm">
+                                <i class="fas fa-external-link-alt mr-1"></i> Showcase Proyek SPA
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Showcase Banner -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card border-0 shadow-sm rounded-xl overflow-hidden" style="background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%); color: #ffffff;">
+                                <div class="card-body p-4 d-flex flex-column flex-md-row align-items-center justify-content-between">
+                                    <div class="mb-3 mb-md-0 d-flex align-items-center">
+                                        <div class="mr-3 p-3 rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                            <i class="fas fa-trophy fa-lg"></i>
+                                        </div>
+                                        <div>
+                                            <h5 class="font-weight-bold text-white mb-1">Showcase Karya Inovasi PBL</h5>
+                                            <p class="text-white-50 small mb-0">Seluruh proyek selesai mahasiswa kini dipamerkan secara interaktif pada portal publik SIMEP.</p>
+                                        </div>
+                                    </div>
+                                    <div class="w-100 w-md-auto text-center text-md-right mt-3 mt-md-0">
+                                        <a href="{{ route('home') }}" target="_blank" class="btn btn-primary btn-sm px-3 shadow-sm w-100 w-md-auto">
+                                            <i class="fas fa-globe mr-1"></i> Buka Galeri SPA
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     {{-- Info Periode Aktif & Kelompok Saya --}}

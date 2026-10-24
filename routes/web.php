@@ -12,9 +12,11 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
-// Login routes
-Route::get('/', [LoginController::class, 'showLoginForm'])->name('login');
-Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login.form');
+// Homepage SPA Showcase & Auth Routes
+Route::get('/', [\App\Http\Controllers\ShowcaseController::class, 'index'])->name('home');
+Route::get('/showcase/data', [\App\Http\Controllers\ShowcaseController::class, 'getData'])->name('showcase.data');
+Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
+Route::get('/login-form', [LoginController::class, 'showLoginForm'])->name('login.form');
 Route::post('/login', [LoginController::class, 'login'])->name('login.attempt');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 

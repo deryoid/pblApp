@@ -1,7 +1,7 @@
-            <footer class="sticky-footer bg-white">
-                <div class="container my-auto">
-                    <div class="copyright text-center my-auto">
-                        <span>Copyright &copy; Tim SIMEP Politeknik Negeri Tanah Laut 2025</span>
-                    </div>
-                </div>
-            </footer>
+<footer class="sticky-footer bg-white border-top py-3">
+    <div class="container my-auto">
+        <div class="copyright text-center my-auto font-weight-500 text-muted small">
+            <span>&copy; {{ date('Y') }} SIMEP &bull; Politeknik Negeri Tanah Laut. Seluruh Hak Cipta Dilindungi.</span>
+        </div>
+    </div>
+</footer>

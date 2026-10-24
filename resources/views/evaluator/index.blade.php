@@ -59,9 +59,14 @@
                     <!-- Page Heading -->
                     <div class="d-sm-flex align-items-center justify-content-between mb-4">
                         <h1 class="h3 mb-0 text-gray-800">Dashboard Evaluator</h1>
-                        <a href="{{ route('evaluator.evaluasi.index') }}" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
-                            <i class="fas fa-clipboard-check fa-sm text-white-50"></i> Kelola Evaluasi
-                        </a>
+                        <div class="mt-3 mt-sm-0 d-flex align-items-center flex-wrap gap-2">
+                            <a href="{{ route('home') }}" target="_blank" class="btn btn-sm btn-outline-primary shadow-sm">
+                                <i class="fas fa-external-link-alt mr-1"></i> Showcase Proyek SPA
+                            </a>
+                            <a href="{{ route('evaluator.evaluasi.index') }}" class="btn btn-sm btn-primary shadow-sm">
+                                <i class="fas fa-clipboard-check mr-1"></i> Kelola Evaluasi
+                            </a>
+                        </div>
                     </div>
 
                     @if($activePeriode)

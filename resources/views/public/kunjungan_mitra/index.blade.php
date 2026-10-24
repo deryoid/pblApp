@@ -1,38 +1,52 @@
 @extends('layout.public')
 
+@section('title', 'Data Kunjungan Mitra - SIMEP Politala')
+
 @section('content')
-<div class="container-fluid">
+<div class="container-fluid px-0">
     <!-- Page Heading -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">
-            <i class="fas fa-building text-primary mr-2" aria-hidden="true"></i>
-            Data Kunjungan Mitra Semua Kelompok
-        </h1>
-        <small class="text-muted">
-            <i class="fas fa-info-circle mr-1"></i>
-            Menampilkan semua data kunjungan mitra dari semua kelompok
-        </small>
+        <div>
+            <h1 class="h3 mb-1 text-gray-900 font-weight-bold">
+                <i class="fas fa-building text-primary mr-2" aria-hidden="true"></i>
+                Data Kunjungan Mitra Semua Kelompok
+            </h1>
+            <p class="text-muted small mb-0">
+                <i class="fas fa-info-circle mr-1"></i>
+                Menampilkan log aktivitas dan dokumentasi verifikasi kunjungan lapangan mahasiswa ke mitra industri
+            </p>
+        </div>
+        <div class="mt-3 mt-sm-0">
+            <a href="{{ route('home') }}" class="btn btn-outline-primary btn-sm">
+                <i class="fas fa-th-large mr-1"></i> Showcase Proyek SPA
+            </a>
+        </div>
     </div>
 
     <!-- Kunjungan Mitra Card -->
-    <div class="card shadow">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">
-                <i class="fas fa-list mr-2"></i>Daftar Kunjungan Mitra
+    <div class="card shadow-sm border-0 rounded-xl overflow-hidden">
+        <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between">
+            <h6 class="m-0 font-weight-bold text-dark">
+                <i class="fas fa-list text-primary mr-2"></i>Daftar Riwayat Kunjungan Industri
             </h6>
         </div>
-        <div class="card-body">
+        <div class="card-body p-4">
             <!-- Search Form -->
-            <div class="row mb-3">
-                <div class="col-md-6">
-                    <form id="searchForm" class="d-flex">
-                        <input type="text" name="search" class="form-control me-2" placeholder="Cari kunjungan..." value="{{ request('search') }}">
-                        <button type="submit" class="btn">
-                            <i class="fas fa-search"></i> Cari
+            <div class="row mb-4">
+                <div class="col-lg-6 col-md-8">
+                    <form id="searchForm" class="d-flex align-items-stretch gap-2">
+                        <div class="input-group flex-grow-1">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text bg-white border-right-0"><i class="fas fa-search text-muted"></i></span>
+                            </div>
+                            <input type="text" name="search" class="form-control border-left-0" placeholder="Cari perusahaan, kelompok, atau topik..." value="{{ request('search') }}">
+                        </div>
+                        <button type="submit" class="btn btn-primary ml-2 px-3 flex-shrink-0">
+                            <i class="fas fa-search mr-1 d-none d-sm-inline"></i>Cari
                         </button>
                         @if(request('search'))
-                            <a href="{{ request()->url() }}" class="btn btn-secondary ms-2">
-                                <i class="fas fa-times"></i> Reset
+                            <a href="{{ request()->url() }}" class="btn btn-outline-secondary ml-1 flex-shrink-0" title="Reset Pencarian">
+                                <i class="fas fa-times"></i>
                             </a>
                         @endif
                     </form>
@@ -40,9 +54,9 @@
             </div>
 
             <!-- Loading indicator -->
-            <div id="loadingIndicator" class="text-center py-4" style="display: none;">
-                <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
-                <p class="mt-2">Memuat data...</p>
+            <div id="loadingIndicator" class="text-center py-5" style="display: none;">
+                <i class="fas fa-spinner fa-spin fa-2x text-primary mb-2"></i>
+                <p class="text-muted small mb-0">Memuat data kunjungan mitra...</p>
             </div>
 
             <!-- Table Container -->
@@ -54,22 +68,26 @@
 </div>
 
 <!-- Modal Bukti Kunjungan -->
-<div class="modal fade" id="buktiKunjunganModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Bukti Kunjungan</h5>
-                <button type="button" class="close" data-dismiss="modal">&times;</button>
+<div class="modal fade" id="buktiKunjunganModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content border-0 shadow-lg rounded-xl overflow-hidden">
+            <div class="modal-header bg-slate text-white py-3 px-4" style="background:#0f172a; color:#ffffff;">
+                <h5 class="modal-title font-weight-bold" style="font-size: 1.1rem;">
+                    <i class="fas fa-camera mr-2 text-primary"></i>Bukti Dokumentasi Kunjungan
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 0.8;">
+                    <span aria-hidden="true">&times;</span>
+                </button>
             </div>
-            <div class="modal-body text-center">
+            <div class="modal-body text-center p-4">
                 <div id="buktiContent">
                     <!-- Content akan dimuat melalui AJAX -->
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
-                <a id="downloadBukti" href="#" download class="btn btn-primary" style="display:none;">
-                    <i class="fas fa-download mr-1"></i>Download Bukti
+            <div class="modal-footer bg-light px-4 py-3">
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-dismiss="modal">Tutup</button>
+                <a id="downloadBukti" href="#" download class="btn btn-primary btn-sm" style="display:none;">
+                    <i class="fas fa-download mr-1"></i>Unduh Bukti
                 </a>
             </div>
         </div>
@@ -99,20 +117,15 @@ $(document).ready(function() {
 function loadKunjunganData(url) {
     url = url || '{{ route("public.kunjungan.data") }}';
 
-    // Get search value
     var searchValue = $('input[name="search"]').val();
-
-    // Add search parameter to URL
     if (searchValue) {
         var separator = url.includes('?') ? '&' : '?';
         url += separator + 'search=' + encodeURIComponent(searchValue);
     }
 
-    // Show loading
     $('#loadingIndicator').show();
     $('#kunjunganTableContainer').hide();
 
-    // Load data via AJAX
     $.get(url, function(response) {
         if (response.error) {
             $('#kunjunganTableContainer').html(
@@ -122,11 +135,11 @@ function loadKunjunganData(url) {
             $('#kunjunganTableContainer').html(response);
         }
     })
-    .fail(function(xhr) {
+    .fail(function() {
         $('#kunjunganTableContainer').html(
             '<div class="alert alert-danger">' +
-            '<i class="fas fa-exclamation-triangle"></i> ' +
-            'Gagal memuat data. Silakan refresh halaman.' +
+            '<i class="fas fa-exclamation-triangle mr-2"></i>' +
+            'Gagal memuat data kunjungan. Silakan refresh halaman.' +
             '</div>'
         );
     })
@@ -137,37 +150,36 @@ function loadKunjunganData(url) {
 }
 
 function showBukti(kunjunganId) {
-    // Loading state
-    $('#buktiContent').html('<div class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Memuat bukti...</div>');
+    $('#buktiContent').html('<div class="text-center py-4"><i class="fas fa-spinner fa-spin fa-2x text-primary mb-2"></i><p class="text-muted small">Memuat dokumen...</p></div>');
     $('#downloadBukti').hide();
     $('#buktiKunjunganModal').modal('show');
 
-    // Fetch bukti via AJAX
     $.get(`/kunjungan-mitra/${kunjunganId}/bukti`, function(response) {
         if(response.success && response.bukti_data_url) {
             let html = `
-                <div class="mb-3">
-                    <h6 class="text-primary">Bukti Kunjungan</h6>
-                    <p class="text-muted">Perusahaan: ${response.perusahaan || '-'}</p>
+                <div class="mb-3 text-left">
+                    <h6 class="font-weight-bold text-dark mb-1">Perusahaan / Instansi:</h6>
+                    <p class="text-primary font-weight-600 mb-0">${response.perusahaan || '-'}</p>
                 </div>
-                <img src="${response.bukti_data_url}" alt="Bukti Kunjungan" class="img-fluid" style="max-height: 500px;">
+                <div class="p-2 border rounded-lg bg-light d-inline-block">
+                    <img src="${response.bukti_data_url}" alt="Bukti Kunjungan" class="img-fluid rounded" style="max-height: 480px;">
+                </div>
                 <div class="mt-3">
-                    <small class="text-muted">Format: ${response.mime_type || '-'}</small>
+                    <span class="badge badge-info">${response.mime_type || 'image/jpeg'}</span>
                 </div>
             `;
             $('#buktiContent').html(html);
 
-            // Setup download link
             if(response.bukti_data_url) {
                 $('#downloadBukti').attr('href', response.bukti_data_url);
                 $('#downloadBukti').attr('download', `bukti_kunjungan_${kunjunganId}.jpg`);
                 $('#downloadBukti').show();
             }
         } else {
-            $('#buktiContent').html('<div class="alert alert-warning">Bukti kunjungan tidak tersedia</div>');
+            $('#buktiContent').html('<div class="alert alert-warning mb-0"><i class="fas fa-exclamation-circle mr-2"></i>Bukti dokumentasi kunjungan tidak tersedia untuk log ini.</div>');
         }
     }).fail(function() {
-        $('#buktiContent').html('<div class="alert alert-danger">Terjadi kesalahan saat memuat bukti</div>');
+        $('#buktiContent').html('<div class="alert alert-danger mb-0"><i class="fas fa-times-circle mr-2"></i>Terjadi kesalahan saat memuat berkas bukti.</div>');
     });
 }
 </script>

@@ -5,35 +5,35 @@
 @section('content')
 <style>
     :root {
-        --primary-color: #4e73df;
-        --secondary-color: #858796;
-        --success-color: #1cc88a;
-        --info-color: #36b9cc;
-        --warning-color: #f6c23e;
-        --danger-color: #e74a3b;
-        --light-color: #f8f9fc;
-        --dark-color: #2e3744;
+        --primary-color: #2563eb;
+        --secondary-color: #64748b;
+        --success-color: #10b981;
+        --info-color: #0ea5e9;
+        --warning-color: #f59e0b;
+        --danger-color: #ef4444;
+        --light-color: #f8fafc;
+        --dark-color: #0f172a;
     }
 
     body {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
         min-height: 100vh;
-        font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
 
     .evaluation-container {
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px);
-        border-radius: 20px;
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.2);
+        background: #ffffff;
+        border-radius: 24px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        border: 1px solid rgba(226, 232, 240, 0.8);
+        overflow: hidden;
     }
 
     .project-header {
-        background: linear-gradient(135deg, var(--primary-color) 0%, #6f8ce9 100%);
+        background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%);
         color: white;
-        border-radius: 20px 20px 0 0;
-        padding: 2rem;
+        border-radius: 24px 24px 0 0;
+        padding: 2.5rem 2rem;
     }
 
     .mahasiswa-card {

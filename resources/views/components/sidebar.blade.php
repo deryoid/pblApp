@@ -1,23 +1,32 @@
-<ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
+<ul class="navbar-nav sidebar sidebar-dark accordion" id="accordionSidebar">
 
     {{-- Sidebar - Brand --}}
     @php $role = Auth::user()->role ?? 'mahasiswa'; @endphp
     <a class="sidebar-brand d-flex align-items-center justify-content-center"
        href="{{ $role==='admin' ? url('admin/') : ($role==='evaluator' ? url('evaluator/') : url('mahasiswa/')) }}">
         <div class="sidebar-brand-icon">
-            <img src="{{ asset('sbadmin2/img/logo-campus.png') }}" alt="Logo" style="width:40px;height:auto;">
+            <img src="{{ asset('sbadmin2/img/logo-campus.png') }}" alt="Logo" style="width:38px;height:auto;">
         </div>
-        <div class="sidebar-brand-text mx-3">SIMEP</div>
+        <div class="sidebar-brand-text mx-2">SIMEP <span>PBL</span></div>
     </a>
 
     <!-- Divider -->
     <hr class="sidebar-divider my-0">
 
-    {{-- Beranda --}}
+    {{-- Beranda Dashboard --}}
     <li class="nav-item {{ request()->is($role) || request()->is($role.'/*') && request()->routeIs($role.'.dashboard') ? 'active' : '' }}">
         <a class="nav-link" href="{{ $role==='admin' ? url('admin/') : ($role==='evaluator' ? url('evaluator/') : url('mahasiswa/')) }}">
             <i class="fas fa-fw fa-tachometer-alt"></i>
             <span>Beranda</span>
+        </a>
+    </li>
+
+    {{-- Showcase Publik Proyek --}}
+    <li class="nav-item">
+        <a class="nav-link" href="{{ route('home') }}" target="_blank">
+            <i class="fas fa-fw fa-globe text-info"></i>
+            <span>Showcase Publik</span>
+            <span class="badge badge-info ml-auto">SPA</span>
         </a>
     </li>
 
@@ -26,7 +35,7 @@
 
     {{-- ======================= ADMIN ======================= --}}
     @if ($role === 'admin')
-        <div class="sidebar-heading">Pusat Data</div>
+        <div class="sidebar-heading">Pusat Data Master</div>
 
         {{-- Data Master --}}
         @php $isMaster = request()->routeIs('periode.*','kelas.*','user.*'); @endphp
@@ -37,7 +46,7 @@
                 <span>Data Master</span>
             </a>
             <div id="collapseMasterAdmin" class="collapse {{ $isMaster ? 'show' : '' }}" data-parent="#accordionSidebar">
-                <div class="bg-white py-2 collapse-inner rounded">
+                <div class="collapse-inner">
                     <a class="collapse-item {{ request()->routeIs('periode.*') ? 'active' : '' }}" href="{{ route('periode.index') }}">Periode</a>
                     <a class="collapse-item {{ request()->routeIs('kelas.*') ? 'active' : '' }}" href="{{ route('kelas.index') }}">Kelas</a>
                     <a class="collapse-item {{ request()->routeIs('user.*') ? 'active' : '' }}" href="{{ route('user.index') }}">Pengguna</a>
@@ -55,7 +64,7 @@
 
         <!-- Divider -->
         <hr class="sidebar-divider">
-        <div class="sidebar-heading">PBL</div>
+        <div class="sidebar-heading">Kegiatan PBL</div>
 
         {{-- Pengaturan Evaluasi --}}
         <li class="nav-item {{ request()->routeIs('admin.evaluasi.settings','admin.evaluasi.settings.*') ? 'active' : '' }}">
@@ -77,7 +86,7 @@
         <li class="nav-item {{ request()->routeIs('admin.evaluasi.index','admin.evaluasi.kelompok.show') ? 'active' : '' }}">
             <a class="nav-link" href="{{ route('admin.evaluasi.index') }}">
                 <i class="fas fa-fw fa-project-diagram"></i>
-                <span>Evaluasi</span>
+                <span>Evaluasi Proyek</span>
             </a>
         </li>
 
@@ -85,10 +94,9 @@
         <li class="nav-item {{ request()->routeIs('admin.nilai.*') ? 'active' : '' }}">
             <a class="nav-link" href="{{ route('admin.nilai.index') }}">
                 <i class="fas fa-fw fa-chart-bar"></i>
-                <span>Nilai</span>
+                <span>Rekap Nilai</span>
             </a>
         </li>
-
 
         <!-- Divider -->
         <hr class="sidebar-divider d-none d-md-block">
@@ -112,13 +120,13 @@
 
         <!-- Divider -->
         <hr class="sidebar-divider">
-        <div class="sidebar-heading">PBL</div>
+        <div class="sidebar-heading">PBL & Penilaian</div>
 
         {{-- Evaluasi --}}
         <li class="nav-item {{ request()->routeIs('evaluator.evaluasi.index','evaluator.evaluasi.kelompok.show','evaluator.evaluasi.nilai-final') ? 'active' : '' }}">
             <a class="nav-link" href="{{ route('evaluator.evaluasi.index') }}">
                 <i class="fas fa-fw fa-project-diagram"></i>
-                <span>Evaluasi</span>
+                <span>Evaluasi Proyek</span>
             </a>
         </li>
 
@@ -126,7 +134,7 @@
         <li class="nav-item {{ request()->routeIs('evaluator.nilai.*') ? 'active' : '' }}">
             <a class="nav-link" href="{{ route('evaluator.nilai.index') }}">
                 <i class="fas fa-fw fa-chart-bar"></i>
-                <span>Nilai</span>
+                <span>Nilai Akhir</span>
             </a>
         </li>
 
@@ -139,7 +147,7 @@
 
     {{-- =================== MAHASISWA =================== --}}
     @else
-        <div class="sidebar-heading">Mahasiswa</div>
+        <div class="sidebar-heading">Kelompok Mahasiswa</div>
 
         {{-- Kelompok Saya (Periode Aktif) --}}
         @php
@@ -174,23 +182,23 @@
                 <span>Kelompok Saya</span>
             </a>
             <div id="collapseKelompokSaya" class="collapse {{ $isKelompokSaya ? 'show' : '' }}" data-parent="#accordionSidebar">
-                <div class="bg-white py-2 collapse-inner rounded" style="max-width:100%; overflow:hidden;">
+                <div class="collapse-inner" style="max-width:100%; overflow:hidden;">
                     @if($kelompokSaya)
-                        <h6 class="collapse-header text-truncate">
+                        <h6 class="text-white small font-weight-bold px-2 py-1 mb-1 text-truncate">
                             {{ $kelompokSaya->nama_kelompok }}
                             @if($periodeAktif)
-                                <small class="text-muted"> ({{ $periodeAktif->periode }})</small>
+                                <span class="text-muted small"> ({{ $periodeAktif->periode }})</span>
                             @endif
                         </h6>
                         @forelse($anggotaKelompok as $am)
                             <span class="collapse-item d-flex align-items-center text-truncate" title="{{ $am->nama_mahasiswa ?? $am->nama }}">
                                 <img src="{{ ($am->user && $am->user->profile_photo_data_url) ? $am->user->profile_photo_data_url : asset('sbadmin2/img/undraw_profile.svg') }}"
                                      alt="Foto {{ $am->nama_mahasiswa ?? $am->nama }}" class="rounded-circle mr-2 flex-shrink-0"
-                                     style="width:24px;height:24px;object-fit:cover;">
-                                <span class="text-truncate">{{ $am->nama_mahasiswa ?? $am->nama }}</span>
+                                     style="width:22px;height:22px;object-fit:cover;">
+                                <span class="text-truncate" style="font-size:0.8rem;">{{ $am->nama_mahasiswa ?? $am->nama }}</span>
                                 @php $r = strtolower($am->pivot->role ?? ''); @endphp
                                 @if($r === 'ketua')
-                                    <span class="badge badge-primary ml-auto flex-shrink-0">Ketua</span>
+                                    <span class="badge badge-primary ml-auto flex-shrink-0" style="font-size: 0.65rem;">Ketua</span>
                                 @endif
                             </span>
                         @empty
@@ -213,21 +221,21 @@
 
         <!-- Divider -->
         <hr class="sidebar-divider">
-        <div class="sidebar-heading">PBL</div>
+        <div class="sidebar-heading">Proyek & Kegiatan</div>
 
         {{-- Proyek --}}
         <li class="nav-item {{ request()->routeIs('proyek.*') ? 'active' : '' }}">
             <a class="nav-link" href="{{ route('proyek.index') }}">
                 <i class="fas fa-fw fa-project-diagram"></i>
-                <span>Proyek/Kegiatan</span>
+                <span>Papan Proyek PBL</span>
             </a>
         </li>
 
         {{-- Aktivitas --}}
         <li class="nav-item {{ request()->routeIs('aktivitas.*') ? 'active' : '' }}">
             <a class="nav-link" href="{{ route('aktivitas.index') }}">
-                <i class="fas fa-fw fa-calendar"></i>
-                <span>Aktivitas</span>
+                <i class="fas fa-fw fa-calendar-check"></i>
+                <span>Aktivitas & Logbook</span>
             </a>
         </li>
 
@@ -235,9 +243,17 @@
         <li class="nav-item {{ request()->routeIs('mahasiswa.nilai.*') ? 'active' : '' }}">
             <a class="nav-link" href="{{ route('mahasiswa.nilai.index') }}">
                 <i class="fas fa-fw fa-chart-bar"></i>
-                <span>Nilai</span>
+                <span>Transkrip Nilai</span>
             </a>
         </li>
     @endif
+
+    <!-- Divider -->
+    <hr class="sidebar-divider d-none d-md-block">
+
+    {{-- Sidebar Toggler (Sidebar) --}}
+    <div class="text-center d-none d-md-inline mb-4">
+        <button class="rounded-circle border-0" id="sidebarToggle"></button>
+    </div>
 
 </ul>

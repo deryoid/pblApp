@@ -47,6 +47,30 @@
                     </div>
                     @endif
 
+                    <!-- Showcase Banner -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card border-0 shadow-sm rounded-xl overflow-hidden" style="background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%); color: #ffffff;">
+                                <div class="card-body p-4 d-flex flex-column flex-md-row align-items-center justify-content-between">
+                                    <div class="mb-3 mb-md-0 d-flex align-items-center">
+                                        <div class="mr-3 p-3 rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width: 52px; height: 52px;">
+                                            <i class="fas fa-rocket fa-lg"></i>
+                                        </div>
+                                        <div>
+                                            <h5 class="font-weight-bold text-white mb-1">PBL Innovation Showcase SPA</h5>
+                                            <p class="text-white-50 small mb-0">Halaman beranda publik kini menampilkan galeri interaktif proyek selesai mahasiswa dengan live search & modal detail.</p>
+                                        </div>
+                                    </div>
+                                    <div class="w-100 w-md-auto text-center text-md-right mt-3 mt-md-0">
+                                        <a href="{{ route('home') }}" target="_blank" class="btn btn-primary px-3 shadow-sm w-100 w-md-auto">
+                                            <i class="fas fa-external-link-alt mr-1"></i> Buka Showcase SPA
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Data Akademik & Pengguna -->
                     <div class="row">
                         <!-- Total Periode -->
