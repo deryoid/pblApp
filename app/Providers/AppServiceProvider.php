@@ -2,17 +2,18 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Facades\Gate;
-use App\Models\ProjectCard;
-use App\Policies\ProjectCardPolicy;
-use App\Models\ProjectList;
-use App\Policies\ProjectListPolicy;
 use App\Models\AktivitasCard;
-use App\Policies\AktivitasCardPolicy;
 use App\Models\AktivitasList;
+use App\Models\ProjectCard;
+use App\Models\ProjectList;
+use App\Policies\AktivitasCardPolicy;
 use App\Policies\AktivitasListPolicy;
+use App\Policies\ProjectCardPolicy;
+use App\Policies\ProjectListPolicy;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\URL;
+use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -37,6 +38,11 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(ProjectList::class, ProjectListPolicy::class);
         Gate::policy(AktivitasCard::class, AktivitasCardPolicy::class);
         Gate::policy(AktivitasList::class, AktivitasListPolicy::class);
+
+        // Force HTTPS in production or when APP_URL is HTTPS
+        if (config('app.env') === 'production' || str_starts_with((string) config('app.url'), 'https://')) {
+            URL::forceScheme('https');
+        }
 
         // Set locale waktu ke Indonesia untuk Carbon
         try {

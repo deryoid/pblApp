@@ -17,6 +17,8 @@ return Application::configure(basePath: dirname(__DIR__))
         AutoTandaiTidakAdaTanggapan::class,
     ])
     ->withMiddleware(function ($middleware) {
+        $middleware->trustProxies(at: '*');
+
         // daftar global kalau perlu
         // $middleware->append(SomeGlobalMiddleware::class);
 
