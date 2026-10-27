@@ -28,6 +28,20 @@
         </div>
     @endif
 
+    @if(session('warning') || ! $user->isProfileComplete())
+        <div class="alert alert-warning border-0 shadow-sm rounded-lg mb-4" role="alert">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-exclamation-triangle fa-2x mr-3 text-warning"></i>
+                <div>
+                    <h6 class="font-weight-bold mb-1">Syarat Akses Menu: Wajib Memperbarui Profil</h6>
+                    <p class="mb-0 small text-dark">
+                        {{ session('warning') ?? 'Untuk membuka akses seluruh menu dan fitur PBL (Kelompok, Proyek, Aktivitas, Nilai), Anda wajib melengkapi nomor WhatsApp/HP aktif, data kelas, dan biodata Anda di bawah ini.' }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <div class="row">
         <!-- Left: Profile Summary Card -->
         <div class="col-lg-4 mb-4">
@@ -147,26 +161,34 @@
                         </div>
 
                         @if($user->role === 'mahasiswa')
-                        <div class="form-group mb-3">
-                            <label for="kelas_id" class="font-weight-bold small text-dark">
-                                Kelas Akademik
-                            </label>
-                            <select name="kelas_id" id="kelas_id" class="form-control @error('kelas_id') is-invalid @enderror">
-                                <option value="">-- Pilih Kelas --</option>
-                                @foreach($kelasList as $k)
-                                    <option value="{{ $k->id }}" {{ old('kelas_id', $mahasiswa?->kelas_id) == $k->id ? 'selected' : '' }}>
-                                        {{ $k->kelas }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('kelas_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                            <small class="text-muted d-block mt-1">
-                                @if($mahasiswa?->kelas)
-                                    Kelas aktif Anda saat ini: <strong class="text-primary">{{ $mahasiswa->kelas->kelas }}</strong>
-                                @else
-                                    Silakan tentukan kelas Anda sesuai semester yang sedang berjalan.
-                                @endif
-                            </small>
+                        <div class="form-row">
+                            <div class="form-group col-md-6 mb-3">
+                                <label for="nim" class="font-weight-bold small text-dark">
+                                    Nomor Induk Mahasiswa (NIM) <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text bg-light border-right-0"><i class="fas fa-id-card text-muted"></i></span>
+                                    </div>
+                                    <input type="text" name="nim" id="nim" class="form-control border-left-0 @error('nim') is-invalid @enderror" value="{{ old('nim', $mahasiswa?->nim) }}" placeholder="Contoh: 230411100001" required>
+                                </div>
+                                @error('nim') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                            </div>
+
+                            <div class="form-group col-md-6 mb-3">
+                                <label for="kelas_id" class="font-weight-bold small text-dark">
+                                    Kelas Akademik <span class="text-danger">*</span>
+                                </label>
+                                <select name="kelas_id" id="kelas_id" class="form-control @error('kelas_id') is-invalid @enderror" required>
+                                    <option value="">-- Pilih Kelas --</option>
+                                    @foreach($kelasList as $k)
+                                        <option value="{{ $k->id }}" {{ old('kelas_id', $mahasiswa?->kelas_id) == $k->id ? 'selected' : '' }}>
+                                            {{ $k->kelas }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('kelas_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
                         </div>
                         @endif
 

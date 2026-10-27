@@ -100,6 +100,7 @@ class DataKelompokAdminController extends Controller
                     ->where(fn ($q) => $q->where('periode_id', $request->periode_id)),
             ],
             'link_drive' => ['nullable', 'url', 'max:255'],
+            'skema_kategori' => ['nullable', 'string', 'in:Internal,External,Hibah/Penelitian,Lomba'],
             'ketua_nim' => ['nullable', 'string', 'max:50'],
 
             'entries' => ['required', 'array', 'min:1'],
@@ -191,6 +192,7 @@ class DataKelompokAdminController extends Controller
                         'uuid' => (string) Str::uuid(),
                         'periode_id' => $periodeId,
                         'nama_kelompok' => $nama,
+                        'skema_kategori' => $validated['skema_kategori'] ?? 'Internal',
                         'link_drive' => $validated['link_drive'] ?? null,
                     ]);
                     $kelompok->mahasiswas()->attach($attach);
@@ -212,6 +214,7 @@ class DataKelompokAdminController extends Controller
                             'uuid' => (string) Str::uuid(),
                             'periode_id' => $periodeId,
                             'nama_kelompok' => $candidate,
+                            'skema_kategori' => $validated['skema_kategori'] ?? 'Internal',
                             'link_drive' => $validated['link_drive'] ?? null,
                         ]);
                         $kelompok->mahasiswas()->attach($attach);
@@ -288,6 +291,7 @@ class DataKelompokAdminController extends Controller
                     ->ignore($kelompok->id),
             ],
             'link_drive' => ['nullable', 'url', 'max:255'],
+            'skema_kategori' => ['nullable', 'string', 'in:Internal,External,Hibah/Penelitian,Lomba'],
             'ketua_nim' => ['nullable', 'string', 'max:50'],
             'entries' => ['required', 'array', 'min:1'],
             'entries.*.nim' => ['required', 'string', 'max:50', 'distinct'],
@@ -354,6 +358,7 @@ class DataKelompokAdminController extends Controller
             $kelompok->update([
                 'periode_id' => $periodeId,
                 'nama_kelompok' => $validated['nama_kelompok'],
+                'skema_kategori' => $validated['skema_kategori'] ?? $kelompok->skema_kategori ?? 'Internal',
                 'link_drive' => $validated['link_drive'] ?? null,
             ]);
 

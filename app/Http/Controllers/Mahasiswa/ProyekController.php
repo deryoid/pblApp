@@ -6,9 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Mahasiswa;
 use App\Models\Periode;
 use App\Models\ProjectCard;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Http\Request;
 
 class ProyekController extends Controller
 {
@@ -16,8 +16,9 @@ class ProyekController extends Controller
     {
         [$kelompok, $periodeAktif] = $this->resolveKelompokSaya();
 
-        if (!$kelompok) {
+        if (! $kelompok) {
             $board = null;
+
             return view('mahasiswa.proyek.index', compact('kelompok', 'periodeAktif', 'board'));
         }
 
@@ -28,7 +29,7 @@ class ProyekController extends Controller
             ->orderBy('position')
             ->get()
             ->map(function ($list) use ($kelompok, $pid) {
-                $cards = ProjectCard::with(['createdBy','updatedBy'])
+                $cards = ProjectCard::with(['createdBy', 'updatedBy'])
                     ->where('list_id', $list->id)
                     ->where('kelompok_id', $kelompok->id)
                     ->where('periode_id', $pid)
@@ -36,7 +37,7 @@ class ProyekController extends Controller
                     ->orderBy('id')
                     ->get()
                     ->map(function (ProjectCard $c) {
-                        $hasUpdate = $c->updated_at && $c->created_at && !$c->updated_at->equalTo($c->created_at);
+                        $hasUpdate = $c->updated_at && $c->created_at && ! $c->updated_at->equalTo($c->created_at);
                         $createdByName = optional($c->createdBy)->nama_user;
                         $updatedByName = optional($c->updatedBy)->nama_user;
                         // Gunakan foto profil data URL jika tersedia (sesuai topbar), fallback ke profile_photo_url
@@ -44,6 +45,7 @@ class ProyekController extends Controller
                             ?: optional($c->createdBy)->profile_photo_url;
                         $updatedByAvatar = optional($c->updatedBy)->profile_photo_data_url
                             ?: optional($c->updatedBy)->profile_photo_url;
+
                         return [
                             'id' => $c->uuid,
                             'title' => $c->title,
@@ -59,6 +61,9 @@ class ProyekController extends Controller
                             'biaya_jasa' => $c->biaya_jasa ?? 0,
                             'status_proyek' => $c->status_proyek,
                             'link_drive_proyek' => $c->link_drive_proyek,
+                            'proposal_file_path' => $c->proposal_file_path,
+                            'proposal_url' => $c->proposal_url,
+                            'status_proposal' => $c->status_proposal,
                             'created_by_name' => $createdByName,
                             'updated_by_name' => $updatedByName,
                             'created_at_human' => ($c->created_at ? $c->created_at->locale('id')->diffForHumans() : null),
@@ -97,27 +102,35 @@ class ProyekController extends Controller
         $request->validate([
             'card_id' => 'required|string',
             'to_list' => 'required|string',
-            'position'=> 'required|integer|min:0',
+            'position' => 'required|integer|min:0',
         ]);
 
         [$kelompok] = $this->resolveKelompokSaya();
-        if (!$kelompok) return response()->json(['status' => 'no_group'], 403);
+        if (! $kelompok) {
+            return response()->json(['status' => 'no_group'], 403);
+        }
 
         $card = ProjectCard::where('uuid', $request->card_id)
             ->where('kelompok_id', $kelompok->id)
             ->first();
-        if (!$card) return response()->json(['status' => 'not_found'], 404);
+        if (! $card) {
+            return response()->json(['status' => 'not_found'], 404);
+        }
         $this->authorize('update', $card);
 
         $fromListId = $card->list_id;
         $toList = \App\Models\ProjectList::where('uuid', $request->to_list)->first();
-        if (!$toList) return response()->json(['status' => 'invalid_list'], 422);
+        if (! $toList) {
+            return response()->json(['status' => 'invalid_list'], 422);
+        }
         $newPos = (int) $request->position;
 
         DB::transaction(function () use ($card, $fromListId, $toList, $newPos) {
             $oldPos = $card->position;
             if ($fromListId === $toList->id) {
-                if ($newPos === $oldPos) return;
+                if ($newPos === $oldPos) {
+                    return;
+                }
                 if ($newPos > $oldPos) {
                     ProjectCard::where('list_id', $fromListId)
                         ->whereBetween('position', [$oldPos + 1, $newPos])
@@ -148,16 +161,17 @@ class ProyekController extends Controller
     private function resolveKelompokSaya(): array
     {
         $mhs = Mahasiswa::where('user_id', Auth::id())->first();
-        $periodeAktif = Periode::where('status_periode','Aktif')->orderByDesc('created_at')->first();
+        $periodeAktif = Periode::where('status_periode', 'Aktif')->orderByDesc('created_at')->first();
         $kelompokSaya = null;
         if ($mhs) {
             if ($periodeAktif) {
                 $kelompokSaya = $mhs->kelompoks()->wherePivot('periode_id', $periodeAktif->id)->first();
             }
-            if (!$kelompokSaya) {
+            if (! $kelompokSaya) {
                 $kelompokSaya = $mhs->kelompoks()->latest('kelompok_mahasiswa.created_at')->first();
             }
         }
+
         return [$kelompokSaya, $periodeAktif];
     }
 }

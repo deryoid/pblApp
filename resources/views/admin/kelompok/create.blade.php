@@ -49,6 +49,19 @@
                     @error('nama_kelompok') <div class="invalid-feedback">{{ $message }}</div> @enderror
                 </div>
 
+                {{-- Skema Kategori --}}
+                <div class="form-group">
+                    <label for="skema_kategori">Skema Kategori Proyek <span class="text-danger">*</span></label>
+                    <select name="skema_kategori" id="skema_kategori" class="form-control @error('skema_kategori') is-invalid @enderror" required>
+                        <option value="Internal" {{ old('skema_kategori') === 'Internal' ? 'selected' : '' }}>Internal (Wajib Proposal)</option>
+                        <option value="External" {{ old('skema_kategori') === 'External' ? 'selected' : '' }}>External (Mitra Industri)</option>
+                        <option value="Hibah/Penelitian" {{ old('skema_kategori') === 'Hibah/Penelitian' ? 'selected' : '' }}>Hibah / Penelitian</option>
+                        <option value="Lomba" {{ old('skema_kategori') === 'Lomba' ? 'selected' : '' }}>Lomba</option>
+                    </select>
+                    @error('skema_kategori') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                    <small class="form-text text-muted">Setiap kelompok wajib memiliki 1 skema kategori proyek.</small>
+                </div>
+
                 {{-- Link Drive (opsional) --}}
                 <div class="form-group">
                     <label for="link_drive">Link Drive</label>

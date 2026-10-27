@@ -168,6 +168,22 @@ class User extends Authenticatable
         return $this->hasMany(\App\Models\ProjectCard::class, 'dosen_penentu_id');
     }
 
+    public function isProfileComplete(): bool
+    {
+        // Untuk mahasiswa, wajib memiliki no_hp dan data akademik (NIM, kelas_id, dan is_profile_complete)
+        if ($this->role === 'mahasiswa') {
+            $mhs = $this->mahasiswa;
+            if (! $mhs) {
+                return false;
+            }
+
+            return ! empty($this->no_hp) && ! empty($mhs->nim) && ! empty($mhs->kelas_id) && (bool) $mhs->is_profile_complete;
+        }
+
+        // Untuk role lain (admin, evaluator, dosen), wajib melengkapi no_hp
+        return ! empty($this->no_hp);
+    }
+
     public function scopeDosen($query): void
     {
         $query->where('role', 'dosen');

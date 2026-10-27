@@ -90,4 +90,20 @@ class Mahasiswa extends Model
     {
         return $this->hasMany(KelompokJoinRequest::class, 'mahasiswa_id');
     }
+
+    public function checkAndUpdateProfileCompletion(): bool
+    {
+        $hasPhone = ! empty($this->user?->no_hp);
+        $hasNim = ! empty($this->nim);
+        $hasClass = ! empty($this->kelas_id);
+
+        $complete = $hasPhone && $hasNim && $hasClass;
+
+        if ($this->is_profile_complete !== $complete) {
+            $this->is_profile_complete = $complete;
+            $this->save();
+        }
+
+        return $complete;
+    }
 }

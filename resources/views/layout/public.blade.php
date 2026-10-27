@@ -217,9 +217,6 @@
                 <a href="{{ route('public.kunjungan.index') }}" class="nav-link-custom d-none d-md-inline-flex {{ request()->routeIs('public.kunjungan*') ? 'active' : '' }}">
                     <i class="fas fa-building text-info"></i> Kunjungan Mitra
                 </a>
-                <a href="{{ route('public.penilaian-mitra.all') }}" class="nav-link-custom d-none d-md-inline-flex {{ request()->routeIs('public.penilaian-mitra*') ? 'active' : '' }}">
-                    <i class="fas fa-star text-warning"></i> Penilaian Mitra
-                </a>
 
                 @php
                     $dashboardUrl = null;
@@ -259,9 +256,6 @@
                 </a>
                 <a href="{{ route('public.kunjungan.index') }}" class="nav-link-custom {{ request()->routeIs('public.kunjungan*') ? 'active' : '' }}">
                     <i class="fas fa-building text-info"></i> Kunjungan Mitra
-                </a>
-                <a href="{{ route('public.penilaian-mitra.all') }}" class="nav-link-custom {{ request()->routeIs('public.penilaian-mitra*') ? 'active' : '' }}">
-                    <i class="fas fa-star text-warning"></i> Penilaian Mitra
                 </a>
                 <div class="pt-2 border-top mt-1">
                     @auth

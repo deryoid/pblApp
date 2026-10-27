@@ -315,6 +315,7 @@
                 data-bbar="{{ $card['biaya_barang'] ?? '' }}"
                 data-bjas="{{ $card['biaya_jasa'] ?? '' }}"
                 data-drive="{{ $card['link_drive_proyek'] ?? '' }}"
+                data-proposal="{{ $card['proposal_url'] ?? '' }}"
                 data-kendala="{{ e($card['kendala'] ?? '') }}"
                 data-catatan="{{ e($card['catatan'] ?? '') }}"
                               >
@@ -474,42 +475,58 @@
       <div class="modal-header"><h5 class="modal-title">Tambah Proyek/Kegiatan</h5>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
       </div>
-      <form method="POST" action="{{ route('proyek.cards.store') }}">
+      <form method="POST" action="{{ route('proyek.cards.store') }}" enctype="multipart/form-data">
         @csrf
         <div class="modal-body">
           <input type="hidden" name="list" id="addCardListId" value="">
-          <div class="form-group"><label>Judul</label><input name="title" type="text" class="form-control" required></div>
-          <div class="form-group"><label>Deskripsi</label><textarea name="description" class="form-control" rows="3"></textarea></div>
-          <div class="form-group"><label>Label (pisahkan koma)</label><input name="labels" type="text" class="form-control" placeholder="Pengabdian, Penelitian, Riset, Lomba"></div>
-          <div class="form-group"><label>Kontak Mitra</label><input name="kontak_mitra" type="text" class="form-control"></div>
+          <div class="form-group"><label>Judul Proyek <span class="text-danger">*</span></label><input name="title" type="text" class="form-control" placeholder="Contoh: Implementasi Sistem Monitoring IOT" required></div>
+          <div class="form-group"><label>Deskripsi Proyek</label><textarea name="description" class="form-control" rows="3" placeholder="Jelaskan ruang lingkup luaran proyek..."></textarea></div>
+          <div class="form-group"><label>Label (pisahkan koma)</label><input name="labels" type="text" class="form-control" placeholder="Internal, Riset, IoT"></div>
+          <div class="form-group"><label>Kontak Mitra (jika External)</label><input name="kontak_mitra" type="text" class="form-control" placeholder="08xxxxxxxx"></div>
           <div class="form-row">
             <div class="form-group col-md-6"><label>Tanggal Mulai</label><input name="tanggal_mulai" type="date" class="form-control"></div>
             <div class="form-group col-md-6"><label>Tanggal Selesai</label><input name="tanggal_selesai" type="date" class="form-control"></div>
           </div>
           <div class="form-row">
             <div class="form-group col-md-6">
-              <label>Skema PBL</label>
-              <select name="skema_pbl" class="form-control">
-                <option value="">- Pilih -</option><option>Penelitian</option><option>Pengabdian</option><option>Lomba</option><option>Proyek</option>
+              <label>Skema Kategori Proyek <span class="text-danger">*</span></label>
+              <select name="skema_pbl" class="form-control" required>
+                <option value="Internal" {{ ($kelompok->skema_kategori ?? '') === 'Internal' ? 'selected' : '' }}>Internal (Wajib Proposal)</option>
+                <option value="External" {{ ($kelompok->skema_kategori ?? '') === 'External' ? 'selected' : '' }}>External (Mitra Industri)</option>
+                <option value="Hibah/Penelitian" {{ ($kelompok->skema_kategori ?? '') === 'Hibah/Penelitian' ? 'selected' : '' }}>Hibah/Penelitian</option>
+                <option value="Lomba" {{ ($kelompok->skema_kategori ?? '') === 'Lomba' ? 'selected' : '' }}>Lomba</option>
               </select>
             </div>
             <div class="form-group col-md-6">
               <label>Status</label>
-              <select name="status_proyek" class="form-control"><option>Proses</option><option>Dibatalkan</option></select>
+              <select name="status_proyek" class="form-control"><option value="Proses">Proses</option><option value="Dibatalkan">Dibatalkan</option></select>
             </div>
           </div>
-          <div class="form-group"><label>Nama Mitra</label><input name="nama_mitra" type="text" class="form-control"></div>
+
+          {{-- Unggah Berkas Proposal --}}
+          <div class="form-group p-3 border rounded bg-light">
+            <label class="font-weight-bold mb-1 text-dark">
+              <i class="fas fa-file-upload mr-1 text-primary"></i> Berkas Proposal Proyek
+              <span class="badge badge-warning ml-1">Wajib jika Proyek Internal</span>
+            </label>
+            <input type="file" name="proposal_file" class="form-control-file" accept=".pdf,.doc,.docx">
+            <small class="form-text text-muted">
+              Sebelum memulai proyek internal, kelompok wajib mengunggah proposal (format PDF/DOC/DOCX, maks. 10MB).
+            </small>
+          </div>
+
+          <div class="form-group"><label>Nama Mitra (Opsional untuk Internal)</label><input name="nama_mitra" type="text" class="form-control" placeholder="Nama instansi/mitra..."></div>
           <div class="form-row">
             <div class="form-group col-md-6"><label>Biaya Barang</label><input name="biaya_barang" type="number" step="0.01" min="0" class="form-control" value="0"></div>
             <div class="form-group col-md-6"><label>Biaya Jasa</label><input name="biaya_jasa" type="number" step="0.01" min="0" class="form-control" value="0"></div>
           </div>
-          <div class="form-group"><label>Link Drive</label><input name="link_drive_proyek" type="url" class="form-control" placeholder="https://..."></div>
-          <div class="form-group"><label>Kendala</label><textarea name="kendala" class="form-control" rows="2"></textarea></div>
-          <div class="form-group mb-0"><label>Catatan</label><textarea name="catatan" class="form-control" rows="2" readonly></textarea></div>
+          <div class="form-group"><label>Link Folder Google Drive</label><input name="link_drive_proyek" type="url" class="form-control" placeholder="https://drive.google.com/..."></div>
+          <div class="form-group"><label>Kendala</label><textarea name="kendala" class="form-control" rows="2" placeholder="Kendala pengerjaan..."></textarea></div>
+          <div class="form-group mb-0"><label>Catatan Dosen</label><textarea name="catatan" class="form-control" rows="2" readonly></textarea></div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
-          <button type="submit" class="btn btn-primary">Simpan</button>
+          <button type="submit" class="btn btn-primary font-weight-bold">Simpan Proyek</button>
         </div>
       </form>
     </div>
@@ -523,11 +540,11 @@
       <div class="modal-header"><h5 class="modal-title">Ubah Proyek/Kegiatan</h5>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
       </div>
-      <form id="editCardForm" method="POST" action="#">
+      <form id="editCardForm" method="POST" action="#" enctype="multipart/form-data">
         @csrf @method('PUT')
         <div class="modal-body">
-          <div class="form-group"><label>Judul</label><input name="title" id="editTitle" type="text" class="form-control" required></div>
-          <div class="form-group"><label>Deskripsi</label><textarea name="description" id="editDescription" class="form-control" rows="3"></textarea></div>
+          <div class="form-group"><label>Judul Proyek <span class="text-danger">*</span></label><input name="title" id="editTitle" type="text" class="form-control" required></div>
+          <div class="form-group"><label>Deskripsi Proyek</label><textarea name="description" id="editDescription" class="form-control" rows="3"></textarea></div>
           <div class="form-group"><label>Label</label><input name="labels" id="editLabels" type="text" class="form-control"></div>
           <div class="form-group"><label>Kontak Mitra</label><input name="kontak_mitra" id="editKontak" type="text" class="form-control"></div>
           <div class="form-row">
@@ -536,9 +553,12 @@
           </div>
           <div class="form-row">
             <div class="form-group col-md-6">
-              <label>Skema PBL</label>
-              <select name="skema_pbl" id="editSkema" class="form-control">
-                <option value="">- Pilih -</option><option>Penelitian</option><option>Pengabdian</option><option>Lomba</option><option>PBL x TeFa</option>
+              <label>Skema Kategori Proyek <span class="text-danger">*</span></label>
+              <select name="skema_pbl" id="editSkema" class="form-control" required>
+                <option value="Internal">Internal (Wajib Proposal)</option>
+                <option value="External">External (Mitra Industri)</option>
+                <option value="Hibah/Penelitian">Hibah/Penelitian</option>
+                <option value="Lomba">Lomba</option>
               </select>
             </div>
             <div class="form-group col-md-6">
@@ -546,7 +566,24 @@
               <select name="status_proyek" id="editStatus" class="form-control">
                 <option value="Proses">Proses</option>
                 <option value="Dibatalkan">Dibatalkan</option>
+                <option value="Selesai">Selesai</option>
               </select>
+            </div>
+          </div>
+
+          {{-- Unggah Berkas Proposal --}}
+          <div class="form-group p-3 border rounded bg-light">
+            <label class="font-weight-bold mb-1 text-dark">
+              <i class="fas fa-file-upload mr-1 text-primary"></i> Berkas Proposal Proyek
+              <span class="badge badge-warning ml-1">Wajib jika Proyek Internal</span>
+            </label>
+            <input type="file" name="proposal_file" class="form-control-file" accept=".pdf,.doc,.docx">
+            <small class="form-text text-muted">Unggah berkas baru untuk mengganti proposal sebelumnya (PDF/DOC/DOCX - Maks. 10MB).</small>
+            <div id="editProposalWrapper" class="mt-2" style="display:none;">
+              <span class="badge badge-success px-2 py-1"><i class="fas fa-file-pdf mr-1"></i> Proposal Terunggah</span>
+              <a id="editProposalLink" href="#" target="_blank" class="btn btn-xs btn-outline-primary ml-2 py-1 px-2 rounded-pill font-weight-bold">
+                <i class="fas fa-download mr-1"></i> Unduh / Buka Proposal
+              </a>
             </div>
           </div>
           <div class="form-group"><label>Nama Mitra</label><input name="nama_mitra" id="editMitra" type="text" class="form-control"></div>
@@ -865,6 +902,16 @@
     $('#editDrive').val(card.data('drive')||'');
     $('#editKendala').val(card.data('kendala')||'');
     $('#editCatatan').val(card.data('catatan')||'');
+
+    const proposalUrl = card.data('proposal');
+    if (proposalUrl) {
+      $('#editProposalWrapper').show();
+      $('#editProposalLink').attr('href', proposalUrl);
+    } else {
+      $('#editProposalWrapper').hide();
+      $('#editProposalLink').attr('href', '#');
+    }
+
     $('#editCardForm').attr('action', "{{ url('mahasiswa/proyek/cards') }}/"+id);
   });
 

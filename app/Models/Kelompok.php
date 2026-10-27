@@ -12,6 +12,13 @@ class Kelompok extends Model
 {
     protected $table = 'kelompok';
 
+    public const SKEMA_CATEGORIES = [
+        'Internal',
+        'External',
+        'Hibah/Penelitian',
+        'Lomba',
+    ];
+
     /**
      * The attributes that are mass assignable.
      *
@@ -19,6 +26,7 @@ class Kelompok extends Model
      */
     protected $fillable = [
         'nama_kelompok',
+        'skema_kategori',
         'periode_id',
         'link_drive',
         'semester',
@@ -112,6 +120,26 @@ class Kelompok extends Model
     public function joinRequests(): HasMany
     {
         return $this->hasMany(KelompokJoinRequest::class);
+    }
+
+    public function invitations(): HasMany
+    {
+        return $this->hasMany(KelompokJoinRequest::class)->where('type', 'invite');
+    }
+
+    public function projectCards(): HasMany
+    {
+        return $this->hasMany(ProjectCard::class);
+    }
+
+    public function isFull(): bool
+    {
+        return $this->mahasiswas()->count() >= $this->max_members;
+    }
+
+    public function isMember(int|string $mahasiswaId): bool
+    {
+        return $this->mahasiswas()->where('mahasiswa.id', $mahasiswaId)->exists();
     }
 
     // Check evaluation status for the group based on aktivitas_list

@@ -6,9 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Mahasiswa;
 use App\Models\Periode;
 use App\Models\ProjectCard;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Http\Request;
 use RealRashid\SweetAlert\Facades\Alert;
 
 class ProyekCardController extends Controller
@@ -16,7 +16,9 @@ class ProyekCardController extends Controller
     public function store(Request $request)
     {
         [$kelompok] = $this->resolveKelompokSaya();
-        if (!$kelompok) return back()->withErrors('Anda belum tergabung dalam kelompok.');
+        if (! $kelompok) {
+            return back()->withErrors('Anda belum tergabung dalam kelompok.');
+        }
         $this->authorize('create', \App\Models\ProjectCard::class);
 
         $data = $request->validate([
@@ -37,13 +39,29 @@ class ProyekCardController extends Controller
             'link_drive_proyek' => 'nullable|url',
             'kendala' => 'nullable|string',
             'catatan' => 'nullable|string',
+            'proposal_file' => 'nullable|file|mimes:pdf,doc,docx|max:10240',
         ]);
+
+        $skema = $data['skema_pbl'] ?: ($kelompok->skema_kategori ?: 'Internal');
+        $proposalPath = null;
+        if ($request->hasFile('proposal_file')) {
+            $proposalPath = $request->file('proposal_file')->store('proposals', 'public');
+        }
+
+        // Syarat wajib proposal jika skema Internal
+        if (strtolower($skema) === 'internal' && empty($proposalPath)) {
+            return back()->withErrors([
+                'proposal_file' => 'Sebelum memulai proyek internal, kelompok wajib mengunggah berkas proposal proyek (PDF/DOC/DOCX).',
+            ])->withInput();
+        }
 
         $labels = $this->parseLabels($data['labels'] ?? null);
 
         // Tentukan list tujuan
         $list = \App\Models\ProjectList::where('uuid', $data['list'])->first();
-        if (!$list) return back()->withErrors('List/kolom tidak ditemukan.');
+        if (! $list) {
+            return back()->withErrors('List/kolom tidak ditemukan.');
+        }
 
         // Tentukan position di kolom tujuan (append di akhir)
         $maxPos = ProjectCard::where('list_id', $list->id)->max('position');
@@ -64,7 +82,10 @@ class ProyekCardController extends Controller
             // atribut tambahan skema revisi (Opsi A)
             'nama_mitra' => $data['nama_mitra'] ?? null,
             'kontak_mitra' => $data['kontak_mitra'] ?? null,
-            'skema_pbl' => $data['skema_pbl'] ?? null,
+            'skema_pbl' => $skema,
+            'jenis_proyek' => strtolower($skema) === 'external' ? 'external' : 'internal',
+            'proposal_file_path' => $proposalPath,
+            'status_proposal' => $proposalPath ? 'disetujui' : 'pending',
             'biaya_barang' => $data['biaya_barang'] ?? 0,
             'biaya_jasa' => $data['biaya_jasa'] ?? 0,
             'status_proyek' => $data['status_proyek'] ?? 'Proses',
@@ -76,6 +97,7 @@ class ProyekCardController extends Controller
             'updated_by' => Auth::id(),
         ]);
         Alert::toast('Kartu ditambahkan.', 'success');
+
         return back();
     }
 
@@ -101,7 +123,25 @@ class ProyekCardController extends Controller
             'link_drive_proyek' => 'nullable|url',
             'kendala' => 'nullable|string',
             'catatan' => 'nullable|string',
+            'proposal_file' => 'nullable|file|mimes:pdf,doc,docx|max:10240',
         ]);
+
+        $skema = $data['skema_pbl'] ?: ($card->skema_pbl ?: ($kelompok?->skema_kategori ?: 'Internal'));
+        $proposalPath = $card->proposal_file_path;
+
+        if ($request->hasFile('proposal_file')) {
+            if ($card->proposal_file_path) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($card->proposal_file_path);
+            }
+            $proposalPath = $request->file('proposal_file')->store('proposals', 'public');
+        }
+
+        // Syarat wajib proposal jika proyek Internal
+        if (strtolower($skema) === 'internal' && empty($proposalPath)) {
+            return back()->withErrors([
+                'proposal_file' => 'Sebelum memulai proyek internal, kelompok wajib mengunggah berkas proposal proyek (PDF/DOC/DOCX).',
+            ])->withInput();
+        }
 
         // Update kolom utama
         $card->update([
@@ -116,7 +156,10 @@ class ProyekCardController extends Controller
             'progress' => $data['progress'] ?? $card->progress,
             'nama_mitra' => $data['nama_mitra'] ?? $card->nama_mitra,
             'kontak_mitra' => $data['kontak_mitra'] ?? $card->kontak_mitra,
-            'skema_pbl' => $data['skema_pbl'] ?? $card->skema_pbl,
+            'skema_pbl' => $skema,
+            'jenis_proyek' => strtolower($skema) === 'external' ? 'external' : 'internal',
+            'proposal_file_path' => $proposalPath,
+            'status_proposal' => $proposalPath ? 'disetujui' : ($card->status_proposal ?? 'pending'),
             'biaya_barang' => $data['biaya_barang'] ?? $card->biaya_barang,
             'biaya_jasa' => $data['biaya_jasa'] ?? $card->biaya_jasa,
             'status_proyek' => $data['status_proyek'] ?? $card->status_proyek,
@@ -128,6 +171,7 @@ class ProyekCardController extends Controller
 
         // members dihapus: tidak perlu append apa pun
         Alert::toast('Kartu diperbarui.', 'success');
+
         return back();
     }
 
@@ -150,29 +194,34 @@ class ProyekCardController extends Controller
         });
 
         Alert::toast('Kartu dihapus.', 'success');
+
         return back();
     }
 
     private function resolveKelompokSaya(): array
     {
         $mhs = Mahasiswa::where('user_id', Auth::id())->first();
-        $periodeAktif = Periode::where('status_periode','Aktif')->orderByDesc('created_at')->first();
+        $periodeAktif = Periode::where('status_periode', 'Aktif')->orderByDesc('created_at')->first();
         $kelompokSaya = null;
         if ($mhs) {
             if ($periodeAktif) {
                 $kelompokSaya = $mhs->kelompoks()->wherePivot('periode_id', $periodeAktif->id)->first();
             }
-            if (!$kelompokSaya) {
+            if (! $kelompokSaya) {
                 $kelompokSaya = $mhs->kelompoks()->latest('kelompok_mahasiswa.created_at')->first();
             }
         }
+
         return [$kelompokSaya, $periodeAktif];
     }
 
     private function parseLabels(?string $csv): ?array
     {
-        if (!$csv) return null;
-        $arr = array_filter(array_map(fn($s) => trim($s), explode(',', $csv)));
+        if (! $csv) {
+            return null;
+        }
+        $arr = array_filter(array_map(fn ($s) => trim($s), explode(',', $csv)));
+
         return array_values($arr);
     }
 }

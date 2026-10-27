@@ -1,12 +1,11 @@
-﻿<?php
+<?php
 
-use Illuminate\Foundation\Application;
-use Illuminate\Foundation\Configuration\Exceptions;
-use Illuminate\Foundation\Configuration\Middleware;
+use App\Console\Commands\AutoTandaiTidakAdaTanggapan;
 use App\Http\Middleware\Admin;
 use App\Http\Middleware\Evaluator;
-use App\Http\Middleware\Mahasiswa;  
-use App\Console\Commands\AutoTandaiTidakAdaTanggapan;
+use App\Http\Middleware\Mahasiswa;
+use Illuminate\Foundation\Application;
+use Illuminate\Foundation\Configuration\Middleware;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -31,10 +30,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => Admin::class,
             'evaluator' => Evaluator::class,
             'mahasiswa' => Mahasiswa::class,
+            'profile.complete' => \App\Http\Middleware\EnsureProfileIsCompleted::class,
         ]);
     })
     ->withExceptions(function ($exceptions) {
         //
     })
     ->create();
-

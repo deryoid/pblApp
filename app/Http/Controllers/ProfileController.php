@@ -43,6 +43,7 @@ class ProfileController extends Controller
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             'no_hp' => 'required|string|max:30',
             'username' => ['required', 'string', 'max:50', 'alpha_dash', Rule::unique('users', 'username')->ignore($user->id)],
+            'nim' => ['nullable', 'string', 'max:50'],
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048', // Max 2MB
             'remove_photo' => 'sometimes|boolean',
             'kelas_id' => ['nullable', 'integer', 'exists:kelas,id'],
@@ -77,12 +78,22 @@ class ProfileController extends Controller
 
         $user->save();
 
-        // Update kelas untuk mahasiswa
-        if ($user->role === 'mahasiswa' && array_key_exists('kelas_id', $validated)) {
-            $user->mahasiswa()->update(['kelas_id' => $validated['kelas_id']]);
+        // Update data mahasiswa & status kelengkapan profil
+        if ($user->role === 'mahasiswa') {
+            $mhs = $user->mahasiswa;
+            if ($mhs) {
+                if (! empty($validated['kelas_id'])) {
+                    $mhs->kelas_id = $validated['kelas_id'];
+                }
+                if (! empty($validated['nim'])) {
+                    $mhs->nim = $validated['nim'];
+                }
+                $mhs->nama_mahasiswa = $user->nama_user;
+                $mhs->checkAndUpdateProfileCompletion();
+            }
         }
 
-        return back()->with('status', 'Profil berhasil diperbarui.');
+        return redirect()->route('profile.edit')->with('status', 'Profil berhasil diperbarui. Seluruh menu kini dapat diakses.');
     }
 
     /**

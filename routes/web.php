@@ -35,7 +35,7 @@ Route::get('/penilaian-mitra/{card:uuid}', [\App\Http\Controllers\Public\Penilai
 Route::post('/penilaian-mitra/{card:uuid}/submit', [\App\Http\Controllers\Public\PenilaianMitraController::class, 'submit'])->name('public.penilaian-mitra.submit');
 Route::get('/penilaian-mitra/{card:uuid}/data', [\App\Http\Controllers\Public\PenilaianMitraController::class, 'getData'])->name('public.penilaian-mitra.data');
 
-Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
+Route::prefix('admin')->middleware(['auth', 'admin', 'profile.complete'])->group(function () {
     Route::get('/', [App\Http\Controllers\Admin\DashboardController::class, 'index']);
     Route::get('/mitra-selesai', [App\Http\Controllers\Admin\DashboardController::class, 'mitraSelesai'])->name('admin.mitra-selesai');
     Route::get('/mitra-selesai/export', [App\Http\Controllers\Admin\DashboardController::class, 'mitraSelesaiExport'])->name('admin.mitra-selesai.export');
@@ -176,7 +176,7 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
 });
 
 // Evaluator
-Route::prefix('evaluator')->middleware(['auth', 'evaluator'])->group(function () {
+Route::prefix('evaluator')->middleware(['auth', 'evaluator', 'profile.complete'])->group(function () {
     Route::get('/', [App\Http\Controllers\Evaluator\DashboardController::class, 'index']);
 
     // Kelompok
@@ -236,8 +236,18 @@ Route::prefix('evaluator')->middleware(['auth', 'evaluator'])->group(function ()
 });
 
 // Mahasiswa
-Route::prefix('mahasiswa')->middleware(['auth', 'mahasiswa'])->group(function () {
+Route::prefix('mahasiswa')->middleware(['auth', 'mahasiswa', 'profile.complete'])->group(function () {
     Route::get('/', fn () => view('mahasiswa.index'));
+
+    // Kelompok Mahasiswa & Invitasi
+    Route::prefix('kelompok')->name('mahasiswa.kelompok.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Mahasiswa\KelompokController::class, 'index'])->name('index');
+        Route::post('/', [\App\Http\Controllers\Mahasiswa\KelompokController::class, 'store'])->name('store');
+        Route::post('invite', [\App\Http\Controllers\Mahasiswa\KelompokController::class, 'invite'])->name('invite');
+        Route::post('invite/{request:uuid}/accept', [\App\Http\Controllers\Mahasiswa\KelompokController::class, 'acceptInvite'])->name('invite.accept');
+        Route::post('invite/{request:uuid}/reject', [\App\Http\Controllers\Mahasiswa\KelompokController::class, 'rejectInvite'])->name('invite.reject');
+        Route::delete('invite/{request:uuid}', [\App\Http\Controllers\Mahasiswa\KelompokController::class, 'cancelInvite'])->name('invite.cancel');
+    });
 
     // Kunjungan Mitra
     Route::resource('kunjungan', \App\Http\Controllers\Mahasiswa\KunjunganMitraController::class)

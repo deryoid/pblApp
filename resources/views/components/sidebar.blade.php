@@ -204,8 +204,18 @@
                         @empty
                             <span class="collapse-item text-muted">Belum ada anggota.</span>
                         @endforelse
+                        <div class="px-2 pt-2 border-top mt-2">
+                            <a class="btn btn-xs btn-primary btn-block py-1 text-white font-weight-bold" href="{{ route('mahasiswa.kelompok.index') }}" style="font-size:0.75rem;">
+                                <i class="fas fa-users-cog mr-1"></i> Kelola & Undang Anggota
+                            </a>
+                        </div>
                     @else
                         <span class="collapse-item text-muted">Belum tergabung dalam kelompok.</span>
+                        <div class="px-2 pt-2 border-top mt-2">
+                            <a class="btn btn-xs btn-primary btn-block py-1 text-white font-weight-bold" href="{{ route('mahasiswa.kelompok.index') }}" style="font-size:0.75rem;">
+                                <i class="fas fa-plus-circle mr-1"></i> Bentuk Kelompok
+                            </a>
+                        </div>
                     @endif
                 </div>
             </div>

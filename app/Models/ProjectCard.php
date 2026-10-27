@@ -12,7 +12,24 @@ class ProjectCard extends Model
 
     protected $table = 'project_cards';
 
+    public const SKEMA_CATEGORIES = [
+        'Internal',
+        'External',
+        'Hibah/Penelitian',
+        'Lomba',
+    ];
+
     protected $guarded = ['id'];
+
+    public function getProposalUrlAttribute(): ?string
+    {
+        return $this->proposal_file_path ? asset('storage/'.$this->proposal_file_path) : null;
+    }
+
+    public function hasProposal(): bool
+    {
+        return ! empty($this->proposal_file_path);
+    }
 
     protected $casts = [
         'labels' => 'array',

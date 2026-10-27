@@ -18,6 +18,8 @@ class KelompokJoinRequest extends Model
         'kelompok_id',
         'mahasiswa_id',
         'status',
+        'type',
+        'invited_by',
         'pesan',
         'responded_by',
         'responded_at',
@@ -59,6 +61,11 @@ class KelompokJoinRequest extends Model
         return $this->belongsTo(User::class, 'responded_by');
     }
 
+    public function invitedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'invited_by');
+    }
+
     public function scopePending($query)
     {
         return $query->where('status', 'pending');
@@ -67,5 +74,15 @@ class KelompokJoinRequest extends Model
     public function scopeApproved($query)
     {
         return $query->where('status', 'approved');
+    }
+
+    public function scopeInvites($query)
+    {
+        return $query->where('type', 'invite');
+    }
+
+    public function scopeRequests($query)
+    {
+        return $query->where('type', 'request');
     }
 }

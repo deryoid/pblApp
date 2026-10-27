@@ -51,7 +51,7 @@ class ShowcaseController extends Controller
                     'total_matkul' => 0,
                 ],
                 'periodes' => collect(),
-                'skemas' => ['Industri', 'Pengabdian', 'Mandiri', 'Lomba'],
+                'skemas' => ['Internal', 'External', 'Hibah/Penelitian', 'Lomba'],
                 'semesters' => range(1, 8),
             ];
         }
@@ -168,7 +168,7 @@ class ShowcaseController extends Controller
                 'description' => $card->description ?: 'Proyek inovasi berbasis pemecahan masalah nyata yang diselesaikan secara komprehensif oleh tim mahasiswa.',
                 'topik' => $card->topik_proyek ?: 'Inovasi Rekayasa & Teknologi Informasi',
                 'jenis_proyek' => $card->jenis_proyek ?: 'internal',
-                'skema_pbl' => $card->skema_pbl ?: 'Mandiri',
+                'skema_pbl' => $card->skema_pbl ?: 'Internal',
                 'status_proyek' => $card->status_proyek ?: 'Selesai',
                 'progress' => $card->progress > 0 ? $card->progress : 100,
                 'nama_mitra' => $card->nama_mitra,
@@ -204,7 +204,7 @@ class ShowcaseController extends Controller
         $totalMatkul = MataKuliah::count();
 
         $periodes = Periode::orderByDesc('id')->get(['id', 'periode', 'status_periode']);
-        $skemas = ['Industri', 'Pengabdian', 'Mandiri', 'Lomba'];
+        $skemas = ['Internal', 'External', 'Hibah/Penelitian', 'Lomba'];
         $semesters = range(1, 8);
 
         return [

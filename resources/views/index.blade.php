@@ -1529,7 +1529,6 @@
                     <li><a href="#dampak"><i class="fas fa-chart-line mr-1"></i> Dampak & Metrik</a></li>
                     <li><a href="#mitra"><i class="fas fa-handshake mr-1"></i> Mitra Industri</a></li>
                     <li><a href="{{ route('public.kunjungan.index') }}" target="_blank"><i class="fas fa-clipboard-check mr-1"></i> Kunjungan</a></li>
-                    <li><a href="{{ route('public.penilaian-mitra.all') }}" target="_blank"><i class="fas fa-star mr-1"></i> Penilaian Mitra</a></li>
                 </ul>
             </nav>
 
@@ -1574,9 +1573,6 @@
                 </a>
                 <a href="{{ route('public.kunjungan.index') }}" target="_blank" class="mobile-nav-link">
                     <i class="fas fa-clipboard-check text-warning"></i> Data Kunjungan Mitra
-                </a>
-                <a href="{{ route('public.penilaian-mitra.all') }}" target="_blank" class="mobile-nav-link">
-                    <i class="fas fa-star text-danger"></i> Rekap Penilaian Mitra
                 </a>
             </div>
         </div>
@@ -1658,17 +1654,17 @@
                     <button class="pill-btn active" data-skema="all" onclick="window.setFilter('skema', 'all', this)">
                         <i class="fas fa-layer-group"></i> Semua Proyek
                     </button>
-                    <button class="pill-btn" data-skema="Industri" onclick="window.setFilter('skema', 'Industri', this)">
-                        <i class="fas fa-industry"></i> Mitra Industri
+                    <button class="pill-btn" data-skema="Internal" onclick="window.setFilter('skema', 'Internal', this)">
+                        <i class="fas fa-university"></i> Internal
                     </button>
-                    <button class="pill-btn" data-skema="Pengabdian" onclick="window.setFilter('skema', 'Pengabdian', this)">
-                        <i class="fas fa-hands-helping"></i> Pengabdian
+                    <button class="pill-btn" data-skema="External" onclick="window.setFilter('skema', 'External', this)">
+                        <i class="fas fa-building"></i> External
+                    </button>
+                    <button class="pill-btn" data-skema="Hibah/Penelitian" onclick="window.setFilter('skema', 'Hibah/Penelitian', this)">
+                        <i class="fas fa-flask"></i> Hibah/Penelitian
                     </button>
                     <button class="pill-btn" data-skema="Lomba" onclick="window.setFilter('skema', 'Lomba', this)">
-                        <i class="fas fa-trophy"></i> Lomba & Prestasi
-                    </button>
-                    <button class="pill-btn" data-skema="Mandiri" onclick="window.setFilter('skema', 'Mandiri', this)">
-                        <i class="fas fa-lightbulb"></i> Mandiri
+                        <i class="fas fa-trophy"></i> Lomba
                     </button>
                 </div>
 
@@ -1967,7 +1963,6 @@
                         <li><a href="#proyek">Galeri Proyek Selesai</a></li>
                         <li><a href="#dampak">Dampak & Capaian</a></li>
                         <li><a href="{{ route('public.kunjungan.index') }}">Data Kunjungan Mitra</a></li>
-                        <li><a href="{{ route('public.penilaian-mitra.all') }}">Rekap Penilaian Mitra</a></li>
                     </ul>
                 </div>
 
