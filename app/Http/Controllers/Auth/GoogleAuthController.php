@@ -19,7 +19,25 @@ class GoogleAuthController extends Controller
      */
     public function redirect(): RedirectResponse
     {
-        return Socialite::driver('google')->redirect();
+        if (! class_exists(Socialite::class)) {
+            Alert::toast('Paket Socialite belum terpasang di server. Jalankan "composer install" di server.', 'error');
+
+            return redirect()->route('login');
+        }
+
+        if (empty(config('services.google.client_id')) || empty(config('services.google.client_secret'))) {
+            Alert::toast('Kredensial Google OAuth (Client ID / Secret) belum dikonfigurasi di server (.env).', 'warning');
+
+            return redirect()->route('login');
+        }
+
+        try {
+            return Socialite::driver('google')->redirect();
+        } catch (Throwable $e) {
+            Alert::toast('Gagal melakukan redirect ke Google: '.$e->getMessage(), 'error');
+
+            return redirect()->route('login');
+        }
     }
 
     /**
@@ -27,10 +45,16 @@ class GoogleAuthController extends Controller
      */
     public function callback(): RedirectResponse
     {
+        if (! class_exists(Socialite::class)) {
+            Alert::toast('Paket Socialite belum terpasang di server. Jalankan "composer install" di server.', 'error');
+
+            return redirect()->route('login');
+        }
+
         try {
             $googleUser = Socialite::driver('google')->user();
         } catch (Throwable $e) {
-            Alert::toast('Gagal melakukan autentikasi dengan Google. Silakan coba lagi.', 'error');
+            Alert::toast('Gagal melakukan autentikasi dengan Google: '.$e->getMessage(), 'error');
 
             return redirect()->route('login');
         }
