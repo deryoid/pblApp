@@ -70,32 +70,32 @@
                     <!-- Tabel Nilai -->
                     @if($mahasiswaNilai->count() > 0)
                         <div class="table-responsive">
-                            <table class="table table-bordered table-striped">
-                                <thead class="thead-dark">
+                            <table class="table table-bordered table-hover small">
+                                <thead>
                                     <tr>
-                                        <th width="5%">No</th>
-                                        <th width="10%">NIM</th>
+                                        <th class="text-center" width="5%">No</th>
+                                        <th width="12%">NIM</th>
                                         <th width="30%">Nama Mahasiswa</th>
                                         <th width="15%">Kelas</th>
-                                        <th width="12%">Nilai Aktifitas</th>
-                                        <th width="12%">Nilai Proyek</th>
+                                        <th class="text-center" width="15%">Nilai Aktifitas</th>
+                                        <th class="text-center" width="15%">Nilai Proyek</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <?php $no = 1; ?>
                                     @foreach($mahasiswaNilai as $data)
                                         <tr>
-                                            <td>{{ $no++ }}</td>
-                                            <td>{{ $data['mahasiswa']->nim }}</td>
-                                            <td>{{ $data['mahasiswa']->nama_mahasiswa }}</td>
-                                            <td>{{ $data['kelas']->kelas ?? '-' }}</td>
-                                            <td>
-                                                <span class="badge badge-info">
+                                            <td class="text-center align-middle">{{ $no++ }}</td>
+                                            <td class="align-middle font-weight-bold text-nowrap">{{ $data['mahasiswa']->nim }}</td>
+                                            <td class="align-middle">{{ $data['mahasiswa']->nama_mahasiswa }}</td>
+                                            <td class="align-middle">{{ $data['kelas']->kelas ?? '-' }}</td>
+                                            <td class="text-center align-middle">
+                                                <span class="badge badge-info badge-pill">
                                                     {{ $data['nilai_aktifitas'] }}
                                                 </span>
                                             </td>
-                                            <td>
-                                                <span class="badge badge-primary">
+                                            <td class="text-center align-middle">
+                                                <span class="badge badge-primary badge-pill">
                                                     {{ $data['nilai_proyek'] }}
                                                 </span>
                                             </td>

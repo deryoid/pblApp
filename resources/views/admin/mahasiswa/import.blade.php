@@ -27,12 +27,16 @@
                     @enderror
                 </div>
 
-                <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-primary btn-sm mr-2">Import</button>
-                    <a href="{{ route('mahasiswa.template.csv') }}" class="btn btn-secondary btn-sm mr-2">
-                        Download Template CSV
+                <div class="d-flex align-items-center flex-wrap" style="gap: 0.5rem;">
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="fas fa-file-import mr-1"></i> Mulai Import
+                    </button>
+                    <a href="{{ route('mahasiswa.template.csv') }}" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-download mr-1"></i> Download Template CSV
                     </a>
-                    <button type="button" id="copyExample" style="background-color: orange; color: black;" class="btn btn-sm">Copy </button>
+                    <button type="button" id="copyExample" class="btn btn-warning btn-sm">
+                        <i class="fas fa-copy mr-1"></i> Salin Contoh Format
+                    </button>
                 </div>
             </form>
         </div>

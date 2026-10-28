@@ -16,29 +16,29 @@
     <div class="card shadow">
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-bordered small" id="dataTable" width="100%" cellspacing="0">
+                <table class="table table-bordered table-hover small" width="100%" cellspacing="0">
                     <thead>
                         <tr>
-                            <th>No</th>
+                            <th class="text-center" style="width: 45px;">No</th>
                             <th>Periode</th>
                             <th>Kelompok</th>
                             <th>Perusahaan</th>
                             <th>Tanggal Kunjungan</th>
-                            <th>Status</th>
-                            <th>Bukti</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-center">Bukti</th>
                             <th>Diinput Oleh</th>
-                            <th class="text-center"><i class="fas fa-cogs"></i></th>
+                            <th class="text-center align-middle" style="width: 90px;"><i class="fas fa-cogs fa-sm"></i></th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($items as $it)
                         <tr>
-                            <td>{{ $items->firstItem() + $loop->index }}</td>
-                            <td>{{ $it->periode->periode ?? '-' }}</td>
-                            <td>{{ $it->kelompok->nama_kelompok ?? '-' }}</td>
-                            <td>{{ $it->perusahaan }}</td>
-                            <td>{{ \Illuminate\Support\Carbon::parse($it->tanggal_kunjungan)->format('d/m/Y') }}</td>
-                            <td>
+                            <td class="text-center align-middle">{{ $items->firstItem() + $loop->index }}</td>
+                            <td class="align-middle text-nowrap">{{ $it->periode->periode ?? '-' }}</td>
+                            <td class="align-middle font-weight-bold">{{ $it->kelompok->nama_kelompok ?? '-' }}</td>
+                            <td class="align-middle">{{ $it->perusahaan }}</td>
+                            <td class="align-middle text-nowrap">{{ \Illuminate\Support\Carbon::parse($it->tanggal_kunjungan)->format('d/m/Y') }}</td>
+                            <td class="text-center align-middle">
                                 @php
                                     $status = $it->status_kunjungan;
                                     $colors = [
@@ -51,32 +51,44 @@
                                 @endphp
                                 <span class="badge badge-{{ $badge }}">{{ $status }}</span>
                             </td>
-                            <td>
+                            <td class="text-center align-middle">
                                 @if($it->bukti_data_url)
-                                    <button type="button" class="btn btn-sm btn-info" onclick="viewBukti('{{ $it->uuid }}')" title="Lihat Bukti">
-                                        <i class="fas fa-image"></i> Lihat
+                                    <button type="button" class="btn btn-xs btn-outline-info" onclick="viewBukti('{{ $it->uuid }}')" title="Lihat Bukti">
+                                        <i class="fas fa-image mr-1"></i> Lihat
                                     </button>
                                 @else
                                     <span class="text-muted">-</span>
                                 @endif
                             </td>
-                            <td>{{ $it->user->nama_user ?? '-' }}</td>
-                            <td class="text-center">
-                                <a class="btn btn-circle btn-success btn-sm" href="{{ route('mahasiswa.kunjungan.edit', $it) }}">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <form action="{{ route('mahasiswa.kunjungan.destroy', $it) }}" method="POST" style="display:inline;">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-circle btn-danger btn-sm" onclick="return confirm('Hapus data ini?')">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </form>
+                            <td class="align-middle">{{ $it->user->nama_user ?? '-' }}</td>
+                            <td class="text-center align-middle text-nowrap">
+                                <div class="table-action-group">
+                                    <a class="btn btn-sm btn-outline-success btn-action-icon" href="{{ route('mahasiswa.kunjungan.edit', $it) }}" title="Ubah Data">
+                                        <i class="fas fa-edit fa-sm"></i>
+                                    </a>
+                                    <form action="{{ route('mahasiswa.kunjungan.destroy', $it) }}" method="POST" class="m-0 p-0 d-inline">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="button" class="btn btn-sm btn-outline-danger btn-action-icon"
+                                            onclick="var form = this.closest('form');
+                                            Swal.fire({
+                                                title: 'Hapus?',
+                                                text: 'Apakah Anda yakin ingin menghapus data ini?',
+                                                icon: 'warning',
+                                                showCancelButton: true,
+                                                confirmButtonText: 'Ya, hapus!',
+                                                cancelButtonText: 'Batal'
+                                            }).then((result) => { if (result.isConfirmed) form.submit(); });"
+                                            title="Hapus Data">
+                                            <i class="fas fa-trash fa-sm"></i>
+                                        </button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="9" class="text-center text-muted">Belum ada data.</td>
+                            <td colspan="9" class="text-center text-muted py-4">Belum ada data kunjungan.</td>
                         </tr>
                         @endforelse
                     </tbody>

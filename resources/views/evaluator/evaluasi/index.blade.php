@@ -112,16 +112,17 @@
                     </span>
                   </div>
                 </td>
-                <td align="center">
-                  {{-- Detail --}}
-                  <a href="{{ route('evaluator.evaluasi.showKelompok', $k->uuid) }}"
-                     class="btn  btn-circle btn-primary btn-sm" title="Detail"><i class="fas fa-user-check"></i>
-                  </a>
+                <td class="text-center align-middle text-nowrap">
+                  <div class="table-action-group">
+                    <a href="{{ route('evaluator.evaluasi.showKelompok', $k->uuid) }}"
+                       class="btn btn-sm btn-outline-primary btn-action-icon" title="Detail Evaluasi"><i class="fas fa-user-check fa-sm"></i>
+                    </a>
+                  </div>
                 </td>
               </tr>
             @empty
               <tr>
-                <td colspan="3" class="text-center text-muted">Belum ada data.</td>
+                <td colspan="4" class="text-center text-muted py-4">Belum ada data evaluasi.</td>
               </tr>
             @endforelse
           </tbody>
