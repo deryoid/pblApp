@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Mahasiswa;
 
 use App\Http\Controllers\Controller;
 use App\Models\Mahasiswa;
+use App\Models\MataKuliah;
 use App\Models\Periode;
 use App\Models\ProjectCard;
+use App\Models\ProjectList;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -22,14 +24,23 @@ class ProyekController extends Controller
             return view('mahasiswa.proyek.index', compact('kelompok', 'periodeAktif', 'board'));
         }
 
+        $mhs = Mahasiswa::where('user_id', Auth::id())->first();
+        $kelompokSemester = (int) ($kelompok->semester ?? ($mhs->semester ?? 1));
+
+        $mataKuliahList = MataKuliah::with('dosenPengampu')
+            ->where('is_active', true)
+            ->orderBy('semester')
+            ->orderBy('nama_matkul')
+            ->get();
+
         // Muat list (kolom) dinamis dan kartu per list berdasarkan kelompok+periode
         $pid = $kelompok->periode_id ?? optional($periodeAktif)->id;
-        $lists = \App\Models\ProjectList::where('kelompok_id', $kelompok->id)
+        $lists = ProjectList::where('kelompok_id', $kelompok->id)
             ->where('periode_id', $pid)
             ->orderBy('position')
             ->get()
             ->map(function ($list) use ($kelompok, $pid) {
-                $cards = ProjectCard::with(['createdBy', 'updatedBy'])
+                $cards = ProjectCard::with(['createdBy', 'updatedBy', 'mataKuliahs.dosenPengampu'])
                     ->where('list_id', $list->id)
                     ->where('kelompok_id', $kelompok->id)
                     ->where('periode_id', $pid)
@@ -80,6 +91,15 @@ class ProyekController extends Controller
                             'mahasiswa_nama' => $createdByName,
                             'kendala' => $c->kendala,
                             'catatan' => $c->catatan,
+                            'mata_kuliah_ids' => $c->mataKuliahs->pluck('id')->values()->toArray(),
+                            'mata_kuliahs' => $c->mataKuliahs->map(fn ($mk) => [
+                                'id' => $mk->id,
+                                'kode_matkul' => $mk->kode_matkul,
+                                'nama_matkul' => $mk->nama_matkul,
+                                'semester' => $mk->semester,
+                                'sks' => $mk->sks,
+                                'dosen_pengampu' => optional($mk->dosenPengampu)->nama_user,
+                            ])->values()->toArray(),
                         ];
                     })->toArray();
 
@@ -94,6 +114,8 @@ class ProyekController extends Controller
             'lists' => $lists,
             'kelompok' => $kelompok,
             'periodeAktif' => $periodeAktif,
+            'mataKuliahList' => $mataKuliahList,
+            'kelompokSemester' => $kelompokSemester,
         ]);
     }
 

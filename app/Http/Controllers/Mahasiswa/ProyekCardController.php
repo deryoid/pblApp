@@ -40,6 +40,8 @@ class ProyekCardController extends Controller
             'kendala' => 'nullable|string',
             'catatan' => 'nullable|string',
             'proposal_file' => 'nullable|file|mimes:pdf,doc,docx|max:10240',
+            'mata_kuliah_ids' => 'nullable|array',
+            'mata_kuliah_ids.*' => 'exists:mata_kuliah,id',
         ]);
 
         $skema = $data['skema_pbl'] ?: ($kelompok->skema_kategori ?: 'Internal');
@@ -67,7 +69,7 @@ class ProyekCardController extends Controller
         $maxPos = ProjectCard::where('list_id', $list->id)->max('position');
         $pos = is_null($maxPos) ? 0 : ($maxPos + 1);
 
-        ProjectCard::create([
+        $createdCard = ProjectCard::create([
             'kelompok_id' => $kelompok->id,
             'periode_id' => $kelompok->periode_id ?? null,
             'list_id' => $list->id,
@@ -96,6 +98,11 @@ class ProyekCardController extends Controller
             'created_by' => Auth::id(),
             'updated_by' => Auth::id(),
         ]);
+
+        if (! empty($data['mata_kuliah_ids'])) {
+            $createdCard->mataKuliahs()->sync($data['mata_kuliah_ids']);
+        }
+
         Alert::toast('Kartu ditambahkan.', 'success');
 
         return back();
@@ -124,6 +131,8 @@ class ProyekCardController extends Controller
             'kendala' => 'nullable|string',
             'catatan' => 'nullable|string',
             'proposal_file' => 'nullable|file|mimes:pdf,doc,docx|max:10240',
+            'mata_kuliah_ids' => 'nullable|array',
+            'mata_kuliah_ids.*' => 'exists:mata_kuliah,id',
         ]);
 
         $skema = $data['skema_pbl'] ?: ($card->skema_pbl ?: ($kelompok?->skema_kategori ?: 'Internal'));
@@ -169,7 +178,10 @@ class ProyekCardController extends Controller
             'updated_by' => Auth::id(),
         ]);
 
-        // members dihapus: tidak perlu append apa pun
+        if ($request->has('mata_kuliah_ids')) {
+            $card->mataKuliahs()->sync($request->input('mata_kuliah_ids', []));
+        }
+
         Alert::toast('Kartu diperbarui.', 'success');
 
         return back();

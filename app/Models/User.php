@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -148,6 +149,12 @@ class User extends Authenticatable
         return $this->attributes['nama_user'] ?? $this->attributes['username'] ?? '';
     }
 
+    public function mataKuliahsPengampu(): BelongsToMany
+    {
+        return $this->belongsToMany(MataKuliah::class, 'dosen_mata_kuliah', 'dosen_id', 'mata_kuliah_id')
+            ->withTimestamps();
+    }
+
     public function mahasiswa(): HasOne
     {
         return $this->hasOne(\App\Models\Mahasiswa::class);
@@ -182,6 +189,12 @@ class User extends Authenticatable
 
         // Untuk role lain (admin, evaluator, dosen), wajib melengkapi no_hp
         return ! empty($this->no_hp);
+    }
+
+    public function mataKuliahsPengampu(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(MataKuliah::class, 'dosen_mata_kuliah', 'dosen_id', 'mata_kuliah_id')
+            ->withTimestamps();
     }
 
     public function scopeDosen($query): void

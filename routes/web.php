@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\DataKelompokAdminController;
 use App\Http\Controllers\Admin\DataMahasiswaAdminController;
 use App\Http\Controllers\Admin\EvaluasiController as AdminEval;
 use App\Http\Controllers\Admin\KelasController;
+use App\Http\Controllers\Admin\MataKuliahAdminController;
 use App\Http\Controllers\Admin\PenilaianEvaluasiController;
 use App\Http\Controllers\Admin\PeriodeController;
 use App\Http\Controllers\Admin\UserController;
@@ -64,6 +65,9 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'profile.complete'])->group
     Route::get('kelas/{uuid}/edit', [KelasController::class, 'edit'])->name('kelas.edit');
     Route::put('kelas/{uuid}', [KelasController::class, 'update'])->name('kelas.update');
     Route::delete('kelas/{uuid}', [KelasController::class, 'destroy'])->name('kelas.destroy');
+
+    // Mata Kuliah
+    Route::resource('matakuliah', MataKuliahAdminController::class);
 
     // Mahasiswa
     Route::get('mahasiswa/import', [DataMahasiswaAdminController::class, 'importForm'])->name('mahasiswa.import.form');

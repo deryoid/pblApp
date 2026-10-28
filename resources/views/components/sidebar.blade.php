@@ -38,7 +38,7 @@
         <div class="sidebar-heading">Pusat Data Master</div>
 
         {{-- Data Master --}}
-        @php $isMaster = request()->routeIs('periode.*','kelas.*','user.*'); @endphp
+        @php $isMaster = request()->routeIs('periode.*','kelas.*','user.*','matakuliah.*'); @endphp
         <li class="nav-item {{ $isMaster ? 'active' : '' }}">
             <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseMasterAdmin"
                aria-expanded="{{ $isMaster ? 'true' : 'false' }}" aria-controls="collapseMasterAdmin">
@@ -49,6 +49,7 @@
                 <div class="collapse-inner">
                     <a class="collapse-item {{ request()->routeIs('periode.*') ? 'active' : '' }}" href="{{ route('periode.index') }}">Periode</a>
                     <a class="collapse-item {{ request()->routeIs('kelas.*') ? 'active' : '' }}" href="{{ route('kelas.index') }}">Kelas</a>
+                    <a class="collapse-item {{ request()->routeIs('matakuliah.*') ? 'active' : '' }}" href="{{ route('matakuliah.index') }}">Mata Kuliah</a>
                     <a class="collapse-item {{ request()->routeIs('user.*') ? 'active' : '' }}" href="{{ route('user.index') }}">Pengguna</a>
                 </div>
             </div>

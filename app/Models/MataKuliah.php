@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
@@ -19,6 +20,7 @@ class MataKuliah extends Model
         'kode_matkul',
         'nama_matkul',
         'semester',
+        'dosen_id',
         'sks',
         'deskripsi',
         'is_active',
@@ -28,6 +30,7 @@ class MataKuliah extends Model
     {
         return [
             'semester' => 'integer',
+            'dosen_id' => 'integer',
             'sks' => 'integer',
             'is_active' => 'boolean',
         ];
@@ -45,6 +48,17 @@ class MataKuliah extends Model
                 $model->uuid = (string) Str::uuid();
             }
         });
+    }
+
+    public function dosenPengampu(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'dosen_mata_kuliah', 'mata_kuliah_id', 'dosen_id')
+            ->withTimestamps();
+    }
+
+    public function getDosenPengampuNamesAttribute(): string
+    {
+        return $this->dosenPengampu->pluck('nama_user')->join(', ');
     }
 
     public function projectCards(): BelongsToMany

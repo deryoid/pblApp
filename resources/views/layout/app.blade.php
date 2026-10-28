@@ -71,6 +71,20 @@
     @stack('scripts')
     @include('sweetalert::alert')
 
+    <!-- Mobile Sidebar Backdrop Auto-Close -->
+    <script>
+        document.addEventListener('click', function(e) {
+            if (window.innerWidth < 768 && document.body.classList.contains('sidebar-toggled')) {
+                const sidebar = document.getElementById('accordionSidebar');
+                const toggleBtn = document.getElementById('sidebarToggleTop');
+                if (sidebar && !sidebar.contains(e.target) && toggleBtn && !toggleBtn.contains(e.target)) {
+                    document.body.classList.remove('sidebar-toggled');
+                    sidebar.classList.remove('toggled');
+                }
+            }
+        });
+    </script>
+
     <!-- Auto Logout Script (1 Jam / 60 Menit) -->
     <script>
         (function() {

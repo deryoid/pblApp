@@ -31,19 +31,19 @@
 
         <!-- Nav Item - User Information -->
         <li class="nav-item dropdown no-arrow">
-            <a class="nav-link dropdown-toggle d-flex align-items-center p-2 rounded" href="#" id="userDropdown" role="button"
-                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="border: 1px solid transparent;">
+            <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button"
+                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                 @auth
                     <img class="img-profile rounded-circle mr-2" alt="Avatar"
                          src="{{ Auth::user()->profile_photo_data_url ?? asset('sbadmin2/img/undraw_profile.svg') }}"
-                         style="width:36px;height:36px;object-fit:cover;border:2px solid #2563eb;">
-                    <div class="d-none d-lg-block text-left mr-2">
-                        <div class="font-weight-bold text-dark" style="font-size: 0.875rem; line-height: 1.2;">
+                         style="width:38px;height:38px;object-fit:cover;border:2px solid #2563eb;box-shadow: 0 2px 6px rgba(37,99,235,0.25);">
+                    <div class="d-none d-sm-block text-left mr-2">
+                        <div class="font-weight-bold text-dark text-truncate" style="font-size: 0.85rem; line-height: 1.2; max-width: 140px;">
                             {{ Auth::user()->nama_user }}
                         </div>
-                        <div class="text-muted small" style="font-size: 0.75rem; text-transform: uppercase;">
+                        <span class="badge badge-primary px-2 py-0.5 mt-0.5" style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.04em;">
                             {{ Auth::user()->role }}
-                        </div>
+                        </span>
                     </div>
                     <i class="fas fa-chevron-down text-muted small ml-1"></i>
                 @endauth 
@@ -51,21 +51,25 @@
 
             <!-- Dropdown - User Information -->
             <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in border-0 rounded-lg p-2"
-                aria-labelledby="userDropdown" style="min-width: 220px; box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;">
-                <div class="px-3 py-2 border-bottom mb-2">
-                    <p class="font-weight-bold text-dark mb-0 small">{{ Auth::user()->nama_user }}</p>
-                    <p class="text-muted small mb-0">{{ Auth::user()->email ?? Auth::user()->username }}</p>
+                aria-labelledby="userDropdown">
+                <div class="px-3 py-2.5 border-bottom mb-2 bg-light" style="border-radius: 8px;">
+                    <div class="font-weight-bold text-dark mb-0 text-truncate" style="font-size: 0.875rem;">
+                        {{ Auth::user()->nama_user }}
+                    </div>
+                    <div class="text-muted small text-truncate" style="font-size: 0.775rem;">
+                        <i class="fas fa-envelope fa-xs mr-1 text-muted"></i>{{ Auth::user()->email ?? Auth::user()->username }}
+                    </div>
                 </div>
-                <a class="dropdown-item rounded py-2 d-flex align-items-center" href="{{ route('profile.edit') }}">
+                <a class="dropdown-item py-2" href="{{ route('profile.edit') }}">
                     <i class="fas fa-user-circle fa-sm fa-fw mr-2 text-primary"></i>
                     <span>Pengaturan Profil</span>
                 </a>
-                <a class="dropdown-item rounded py-2 d-flex align-items-center" href="{{ route('home') }}" target="_blank">
-                    <i class="fas fa-star fa-sm fa-fw mr-2 text-warning"></i>
+                <a class="dropdown-item py-2" href="{{ route('home') }}" target="_blank">
+                    <i class="fas fa-globe fa-sm fa-fw mr-2 text-info"></i>
                     <span>Showcase Proyek SPA</span>
                 </a>
-                <div class="dropdown-divider"></div>
-                <a class="dropdown-item rounded py-2 d-flex align-items-center text-danger" href="#" data-toggle="modal" data-target="#logoutModal">
+                <div class="dropdown-divider my-1"></div>
+                <a class="dropdown-item py-2 text-danger" href="#" data-toggle="modal" data-target="#logoutModal">
                     <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-danger"></i>
                     <span>Keluar Sistem</span>
                 </a>

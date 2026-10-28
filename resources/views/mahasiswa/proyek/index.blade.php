@@ -318,6 +318,7 @@
                 data-proposal="{{ $card['proposal_url'] ?? '' }}"
                 data-kendala="{{ e($card['kendala'] ?? '') }}"
                 data-catatan="{{ e($card['catatan'] ?? '') }}"
+                data-matkul-ids='@json($card['mata_kuliah_ids'] ?? [])'
                               >
                 <div class="card-body p-2 d-flex flex-column">
 
@@ -364,6 +365,23 @@
                       <span class="badge ml-auto {{ schemeBadgeClass($card['skema_pbl'] ?? '') }}">
                         {{ $card['skema_pbl'] ?? '-' }}
                       </span>
+                    </div>
+                  @endif
+
+                  {{-- KETERKAITAN MATA KULIAH & DOSEN PENGAMPU --}}
+                  @if (!empty($card['mata_kuliahs']))
+                    <div class="mb-2">
+                      @foreach ($card['mata_kuliahs'] as $mk)
+                        <div class="badge badge-light border text-primary text-truncate d-block text-left mb-1 py-1 px-2" style="font-size: 0.73rem; white-space: normal;" title="{{ $mk['nama_matkul'] }} (Semester {{ $mk['semester'] }}) - Pengampu: {{ $mk['dosen_pengampu'] ?? 'Dosen Belum Ditentukan' }}">
+                          <i class="fas fa-book text-primary mr-1"></i>
+                          <strong>{{ $mk['nama_matkul'] }}</strong>
+                          @if(!empty($mk['dosen_pengampu']))
+                            <div class="text-muted mt-0 small" style="font-size: 0.68rem;">
+                              <i class="fas fa-chalkboard-teacher mr-1 text-secondary"></i>{{ $mk['dosen_pengampu'] }} (Sem {{ $mk['semester'] }})
+                            </div>
+                          @endif
+                        </div>
+                      @endforeach
                     </div>
                   @endif
                   {{-- Judul penuh (wrap) --}}
@@ -490,7 +508,7 @@
           <div class="form-row">
             <div class="form-group col-md-6">
               <label>Skema Kategori Proyek <span class="text-danger">*</span></label>
-              <select name="skema_pbl" class="form-control" required>
+              <select name="skema_pbl" id="addSkema" class="form-control" required>
                 <option value="Internal" {{ ($kelompok->skema_kategori ?? '') === 'Internal' ? 'selected' : '' }}>Internal (Wajib Proposal)</option>
                 <option value="External" {{ ($kelompok->skema_kategori ?? '') === 'External' ? 'selected' : '' }}>External (Mitra Industri)</option>
                 <option value="Hibah/Penelitian" {{ ($kelompok->skema_kategori ?? '') === 'Hibah/Penelitian' ? 'selected' : '' }}>Hibah/Penelitian</option>
@@ -501,6 +519,24 @@
               <label>Status</label>
               <select name="status_proyek" class="form-control"><option value="Proses">Proses</option><option value="Dibatalkan">Dibatalkan</option></select>
             </div>
+          </div>
+
+          {{-- Keterkaitan Mata Kuliah --}}
+          <div class="form-group">
+            <label class="d-flex align-items-center justify-content-between mb-1">
+              <span><i class="fas fa-book-reader text-primary mr-1"></i> Keterkaitan Mata Kuliah & Dosen Pengampu</span>
+              <span id="addMatkulBadgeNote" class="badge badge-primary">Semester {{ $kelompokSemester ?? 1 }}</span>
+            </label>
+            <select name="mata_kuliah_ids[]" id="addMataKuliah" class="form-control select2-matkul" multiple="multiple" style="width: 100%;">
+              @foreach(($mataKuliahList ?? []) as $mk)
+                <option value="{{ $mk->id }}" data-semester="{{ $mk->semester }}">
+                  [Sem {{ $mk->semester }}] {{ $mk->kode_matkul }} - {{ $mk->nama_matkul }} ({{ $mk->dosenPengampu->nama_user ?? 'Dosen Belum Ditentukan' }})
+                </option>
+              @endforeach
+            </select>
+            <small id="addMatkulHelp" class="form-text text-muted">
+              <i class="fas fa-info-circle mr-1 text-primary"></i> <span>Proyek Internal dikaitkan dengan mata kuliah <strong>Semester {{ $kelompokSemester ?? 1 }}</strong>.</span>
+            </small>
           </div>
 
           {{-- Unggah Berkas Proposal --}}
@@ -569,6 +605,24 @@
                 <option value="Selesai">Selesai</option>
               </select>
             </div>
+          </div>
+
+          {{-- Keterkaitan Mata Kuliah --}}
+          <div class="form-group">
+            <label class="d-flex align-items-center justify-content-between mb-1">
+              <span><i class="fas fa-book-reader text-primary mr-1"></i> Keterkaitan Mata Kuliah & Dosen Pengampu</span>
+              <span id="editMatkulBadgeNote" class="badge badge-primary">Semester {{ $kelompokSemester ?? 1 }}</span>
+            </label>
+            <select name="mata_kuliah_ids[]" id="editMataKuliah" class="form-control select2-matkul" multiple="multiple" style="width: 100%;">
+              @foreach(($mataKuliahList ?? []) as $mk)
+                <option value="{{ $mk->id }}" data-semester="{{ $mk->semester }}">
+                  [Sem {{ $mk->semester }}] {{ $mk->kode_matkul }} - {{ $mk->nama_matkul }} ({{ $mk->dosenPengampu->nama_user ?? 'Dosen Belum Ditentukan' }})
+                </option>
+              @endforeach
+            </select>
+            <small id="editMatkulHelp" class="form-text text-muted">
+              <i class="fas fa-info-circle mr-1 text-primary"></i> <span>Proyek Internal dikaitkan dengan mata kuliah <strong>Semester {{ $kelompokSemester ?? 1 }}</strong>.</span>
+            </small>
           </div>
 
           {{-- Unggah Berkas Proposal --}}
@@ -864,9 +918,62 @@
     });
   }
 
+  const kelompokSemester = {{ (int) ($kelompokSemester ?? 1) }};
+
+  function updateMatkulFilter(selectSkemaEl, selectMatkulEl, helpEl, badgeEl) {
+    const skema = $(selectSkemaEl).val() || 'Internal';
+    const isInternal = (skema.toLowerCase() === 'internal');
+
+    if (isInternal) {
+      $(badgeEl).removeClass('badge-success badge-info').addClass('badge-primary').text('Semester ' + kelompokSemester);
+      $(helpEl).html('<i class="fas fa-info-circle mr-1 text-primary"></i> Proyek Internal dikaitkan dengan mata kuliah <strong>Semester ' + kelompokSemester + '</strong>.');
+
+      // Di Proyek Internal, filter hanya mata kuliah semester kelompok
+      $(selectMatkulEl).find('option').each(function() {
+        const sem = parseInt($(this).data('semester'), 10);
+        if (sem === kelompokSemester) {
+          $(this).prop('disabled', false).show();
+        } else {
+          $(this).prop('disabled', true).prop('selected', false).hide();
+        }
+      });
+    } else {
+      $(badgeEl).removeClass('badge-primary badge-info').addClass('badge-success').text('Bebas (Semua Semester)');
+      $(helpEl).html('<i class="fas fa-check-circle mr-1 text-success"></i> Proyek <strong>' + skema + '</strong> bebas memilih mata kuliah dari semua semester.');
+
+      // Di Proyek External/Hibah/Lomba, tampilkan semua mata kuliah
+      $(selectMatkulEl).find('option').prop('disabled', false).show();
+    }
+
+    if ($(selectMatkulEl).hasClass('select2-hidden-accessible')) {
+      $(selectMatkulEl).select2('destroy');
+    }
+    $(selectMatkulEl).select2({
+      dropdownParent: $(selectMatkulEl).closest('.modal'),
+      placeholder: '-- Pilih Mata Kuliah Terkait --',
+      allowClear: true,
+      width: '100%'
+    });
+  }
+
+  // Event listener skema change di Modal Add & Edit
+  $(document).on('change', '#addSkema', function() {
+    updateMatkulFilter(this, '#addMataKuliah', '#addMatkulHelp', '#addMatkulBadgeNote');
+  });
+
+  $(document).on('change', '#editSkema', function() {
+    updateMatkulFilter(this, '#editMataKuliah', '#editMatkulHelp', '#editMatkulBadgeNote');
+  });
+
   // Tambah kartu: isi list id
   $(document).on('click','.btn-add-card',function(){
     $('#addCardListId').val($(this).data('list-id'));
+    $('#addMataKuliah').val(null);
+    updateMatkulFilter('#addSkema', '#addMataKuliah', '#addMatkulHelp', '#addMatkulBadgeNote');
+  });
+
+  $('#modalAddCard').on('shown.bs.modal', function () {
+    updateMatkulFilter('#addSkema', '#addMataKuliah', '#addMatkulHelp', '#addMatkulBadgeNote');
   });
 
   // Hapus kartu
@@ -893,7 +1000,8 @@
     $('#editStart').val(card.data('tmulai')||'');
     $('#editEnd').val(card.data('tselesai')||'');
     $('#editProgress').val(card.data('progress')||0);
-    $('#editSkema').val(card.data('skema')||'');
+    const skemaVal = card.data('skema')||'Internal';
+    $('#editSkema').val(skemaVal);
     $('#editStatus').val(card.data('status')||'Proses');
     $('#editMitra').val(card.data('mitra')||'');
     $('#editKontak').val(card.data('kontak')||'');
@@ -902,6 +1010,13 @@
     $('#editDrive').val(card.data('drive')||'');
     $('#editKendala').val(card.data('kendala')||'');
     $('#editCatatan').val(card.data('catatan')||'');
+
+    // Update filter skema terlebih dahulu
+    updateMatkulFilter('#editSkema', '#editMataKuliah', '#editMatkulHelp', '#editMatkulBadgeNote');
+
+    // Set nilai mata kuliah yang sudah dipilih
+    const matkulIds = card.data('matkul-ids') || [];
+    $('#editMataKuliah').val(matkulIds).trigger('change');
 
     const proposalUrl = card.data('proposal');
     if (proposalUrl) {
