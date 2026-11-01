@@ -8,7 +8,7 @@
     <!-- Left breadcrumb / Quick Brand -->
     <div class="d-none d-sm-flex align-items-center">
         <span class="badge badge-primary mr-2">
-            <i class="fas fa-layer-group mr-1"></i> SIMEP PBL
+            <i class="fas fa-layer-group mr-1"></i> PBL TRKJ Politala
         </span>
         <span class="text-muted small font-weight-bold">
             Politeknik Negeri Tanah Laut

@@ -1,6 +1,6 @@
 @extends('layout.app')
 
-@section('title', 'Kelompok PBL Saya - SIMEP Politala')
+@section('title', 'Kelompok PBL Saya - PBL TRKJ Politala')
 
 @section('content')
 <div class="container-fluid px-3 px-md-4">

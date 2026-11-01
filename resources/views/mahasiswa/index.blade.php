@@ -25,7 +25,7 @@
                                         </div>
                                         <div>
                                             <h5 class="font-weight-bold text-white mb-1">Showcase Karya Inovasi PBL</h5>
-                                            <p class="text-white-50 small mb-0">Seluruh proyek selesai mahasiswa kini dipamerkan secara interaktif pada portal publik SIMEP.</p>
+                                            <p class="text-white-50 small mb-0">Seluruh proyek selesai mahasiswa kini dipamerkan secara interaktif pada portal publik PBL TRKJ Politala.</p>
                                         </div>
                                     </div>
                                     <div class="w-100 w-md-auto text-center text-md-right mt-3 mt-md-0">

@@ -1,6 +1,6 @@
 @extends('layout.app')
 
-@section('title', 'Rubrik Penilaian Dinamis - SIMEP Politala')
+@section('title', 'Rubrik Penilaian Dinamis - PBL TRKJ Politala')
 
 @section('content')
 <div class="container-fluid px-3 px-md-4">
@@ -140,7 +140,7 @@
                 </div>
                 <div class="card-body">
                     <p class="text-muted small mb-3">
-                        Sistem penilaian rubrik proyek SIMEP Politala menerapkan pembagian rentang berbasis mutu capaian luaran kerja tim mahasiswa:
+                        Sistem penilaian rubrik proyek PBL TRKJ Politala menerapkan pembagian rentang berbasis mutu capaian luaran kerja tim mahasiswa:
                     </p>
                     <div class="row g-2">
                         @foreach($tiers as $tier)

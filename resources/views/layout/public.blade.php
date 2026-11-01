@@ -4,11 +4,11 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <meta name="description" content="Portal Publik SIMEP PBL Politeknik Negeri Tanah Laut">
-    <meta name="author" content="Politeknik Negeri Tanah Laut">
+    <meta name="description" content="Portal Publik PBL TRKJ Politala - Politeknik Negeri Tanah Laut">
+    <meta name="author" content="Dery Yuswanto Jaya, M.Kom - TRKJ Politala">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>@yield('title', 'PBL App - Politeknik Negeri Tanah Laut')</title>
+    <title>@yield('title', 'PBL TRKJ Politala')</title>
     <link rel="icon" href="{{ asset('sbadmin2/img/logo-campus.png') }}" type="image/png">
 
     <!-- Fonts -->
@@ -206,7 +206,7 @@
         <div class="container d-flex align-items-center justify-content-between">
             <a href="{{ route('home') }}" class="brand-logo">
                 <img src="{{ asset('sbadmin2/img/logo-campus.png') }}" alt="Logo" style="width:34px;height:auto;">
-                <span>SIMEP <span class="brand-badge">PBL</span></span>
+                <span>PBL TRKJ <span class="brand-badge">Politala</span></span>
             </a>
 
             <!-- Desktop Links -->
@@ -282,8 +282,8 @@
     <!-- Footer -->
     <footer class="public-footer">
         <div class="container text-center">
-            <p class="mb-1 text-white font-weight-bold">SIMEP &bull; Politeknik Negeri Tanah Laut</p>
-            <p class="mb-0 text-muted small">&copy; {{ date('Y') }} Sistem Informasi Manajemen Evaluasi & Proyek PBL. All rights reserved.</p>
+            <p class="mb-1 text-white font-weight-bold">PBL TRKJ Politala</p>
+            <p class="mb-0 text-muted small">&copy; {{ date('Y') }} TRKJ Politala. All rights reserved. | Develop by Dery Yuswanto Jaya, M.Kom</p>
         </div>
     </footer>
 

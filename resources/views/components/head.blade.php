@@ -2,11 +2,11 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <meta name="description" content="SIMEP Politala - Sistem Informasi Manajemen Evaluasi & Proyek">
-    <meta name="author" content="Politeknik Negeri Tanah Laut">
+    <meta name="description" content="PBL TRKJ Politala - Sistem Informasi Manajemen Evaluasi & Proyek">
+    <meta name="author" content="Dery Yuswanto Jaya, M.Kom - TRKJ Politala">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>SIMEP Politala</title>
+    <title>@yield('title', 'PBL TRKJ Politala')</title>
     <link rel="icon" href="{{ asset('sbadmin2/img/logo-campus.png') }}" type="image/png">
     
     <!-- Preconnect to Google Fonts -->
@@ -97,6 +97,11 @@
         .sidebar hr.sidebar-divider {
             border-top: 1px solid rgba(255, 255, 255, 0.08);
             margin: 0.5rem 1rem;
+        }
+
+        .sidebar hr.sidebar-divider:last-of-type,
+        .sidebar hr.sidebar-divider.d-none.d-md-block {
+            display: none !important;
         }
 
         .sidebar .nav-item {

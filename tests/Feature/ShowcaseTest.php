@@ -58,7 +58,7 @@ class ShowcaseTest extends TestCase
         $response = $this->get(route('login'));
 
         $response->assertStatus(200);
-        $response->assertSee('SIMEP POLITALA');
+        $response->assertSee('PBL TRKJ POLITALA');
         $response->assertSee('Showcase Proyek Mahasiswa');
     }
 }

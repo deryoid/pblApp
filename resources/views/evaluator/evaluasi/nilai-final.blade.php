@@ -1,6 +1,6 @@
 @extends('layout.app')
 
-@section('title', 'Nilai Final Mahasiswa')
+@section('title', 'Nilai Final Mahasiswa - PBL TRKJ Politala')
 
 @section('content')
 <div class="container-fluid">

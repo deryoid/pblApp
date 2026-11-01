@@ -7,7 +7,7 @@
         <div class="sidebar-brand-icon">
             <img src="{{ asset('sbadmin2/img/logo-campus.png') }}" alt="Logo" style="width:38px;height:auto;">
         </div>
-        <div class="sidebar-brand-text mx-2">SIMEP <span>PBL</span></div>
+        <div class="sidebar-brand-text mx-2">PBL TRKJ <span>Politala</span></div>
     </a>
 
     <!-- Divider -->
@@ -107,9 +107,6 @@
             </a>
         </li>
 
-        <!-- Divider -->
-        <hr class="sidebar-divider">
-
     {{-- =================== EVALUATOR =================== --}}
     @elseif ($role === 'evaluator')
         <div class="sidebar-heading">Pusat Data</div>
@@ -149,9 +146,6 @@
                 <span>Nilai Akhir</span>
             </a>
         </li>
-
-        <!-- Divider -->
-        <hr class="sidebar-divider">
 
     {{-- =================== MAHASISWA =================== --}}
     @else
@@ -266,11 +260,8 @@
         </li>
     @endif
 
-    <!-- Divider -->
-    <hr class="sidebar-divider d-none d-md-block">
-
     {{-- Sidebar Toggler (Sidebar) --}}
-    <div class="text-center d-none d-md-inline mb-4">
+    <div class="text-center d-none d-md-inline mb-4 mt-3">
         <button class="rounded-circle border-0" id="sidebarToggle"></button>
     </div>
 

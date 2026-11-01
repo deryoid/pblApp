@@ -1,6 +1,6 @@
 @extends('layout.public')
 
-@section('title', 'Penilaian Mitra - ' . ($card->title ?? 'Proyek'))
+@section('title', 'Penilaian Mitra - ' . ($card->title ?? 'Proyek') . ' - PBL TRKJ Politala')
 
 @section('content')
 <style>

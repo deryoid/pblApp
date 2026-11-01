@@ -3,11 +3,11 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover">
-    <meta name="description" content="Showcase Proyek Selesai PBL (Project-Based Learning) Politeknik Negeri Tanah Laut - Galeri Inovasi Mahasiswa">
-    <meta name="author" content="Politeknik Negeri Tanah Laut">
+    <meta name="description" content="Showcase Proyek Selesai PBL TRKJ Politala - Galeri Inovasi Mahasiswa">
+    <meta name="author" content="Dery Yuswanto Jaya, M.Kom - TRKJ Politala">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>PBL Showcase | Galeri Inovasi & Proyek Mahasiswa Politeknik Negeri Tanah Laut</title>
+    <title>PBL Showcase | Galeri Inovasi & Proyek Mahasiswa TRKJ Politala</title>
     <link rel="icon" href="{{ asset('sbadmin2/img/logo-campus.png') }}" type="image/png">
 
     <!-- Preconnect Fonts -->
@@ -1518,7 +1518,7 @@
             <a href="{{ route('home') }}" class="brand-link">
                 <img src="{{ asset('sbadmin2/img/logo-campus.png') }}" alt="Politala Logo" class="brand-logo-img">
                 <div class="brand-title">
-                    SIMEP <span class="brand-badge">PBL SHOWCASE</span>
+                    PBL TRKJ POLITALA <span class="brand-badge">PBL SHOWCASE</span>
                 </div>
             </a>
 
@@ -1931,7 +1931,7 @@
             <!-- Modal Footer -->
             <div class="modal-footer">
                 <span class="text-muted" style="font-size: 0.8125rem;">
-                    <i class="fas fa-university mr-1"></i> SIMEP Politeknik Negeri Tanah Laut
+                    <i class="fas fa-university mr-1"></i> PBL TRKJ Politeknik Negeri Tanah Laut
                 </span>
                 <button class="btn-card-detail" style="flex: initial; padding: 0.625rem 1.25rem;" onclick="window.closeProjectModal()">
                     Tutup
@@ -1950,10 +1950,10 @@
                 <div>
                     <div class="footer-brand-title">
                         <img src="{{ asset('sbadmin2/img/logo-campus.png') }}" alt="Logo" style="width:34px;height:auto;">
-                        SIMEP Politala
+                        PBL TRKJ Politala
                     </div>
                     <p class="footer-brand-text">
-                        Sistem Informasi Manajemen Evaluasi & Proyek (SIMEP) Politeknik Negeri Tanah Laut. Platform kolaboratif integrasi kurikulum vokasi berbasis Problem Based Learning dengan standar industri.
+                        Sistem Informasi Manajemen Evaluasi & Proyek PBL TRKJ Politeknik Negeri Tanah Laut. Platform kolaboratif integrasi kurikulum vokasi berbasis Problem Based Learning dengan standar industri.
                     </p>
                 </div>
 
@@ -1979,10 +1979,10 @@
 
             <div class="footer-bottom">
                 <div>
-                    &copy; {{ date('Y') }} Politeknik Negeri Tanah Laut. Hak Cipta Dilindungi Undang-Undang.
+                    &copy; {{ date('Y') }} TRKJ Politala. Hak Cipta Dilindungi Undang-Undang.
                 </div>
                 <div>
-                    Didukung oleh Tim Pengembang SIMEP & SPM Politala
+                    Develop by Dery Yuswanto Jaya, M.Kom
                 </div>
             </div>
         </div>

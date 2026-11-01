@@ -5,10 +5,10 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <meta name="description" content="Masuk ke SIMEP Politeknik Negeri Tanah Laut">
-    <meta name="author" content="Politeknik Negeri Tanah Laut">
+    <meta name="description" content="Masuk ke PBL TRKJ Politala">
+    <meta name="author" content="Dery Yuswanto Jaya, M.Kom - TRKJ Politala">
     
-    <title>Masuk | SIMEP Politala</title>
+    <title>Masuk | PBL TRKJ Politala</title>
     <link rel="icon" href="{{ asset('sbadmin2/img/logo-campus.png') }}" type="image/png">
     
     <!-- Preconnect & Fonts -->
@@ -358,9 +358,9 @@
             <div class="auth-card-body">
                 
                 <div class="brand-header">
-                    <img src="{{ asset('sbadmin2/img/logo-campus.png') }}" alt="Logo SIMEP" class="brand-logo-img">
-                    <h1>SIMEP POLITALA</h1>
-                    <p>Sistem Informasi Manajemen Evaluasi & Proyek PBL</p>
+                    <img src="{{ asset('sbadmin2/img/logo-campus.png') }}" alt="Logo PBL TRKJ Politala" class="brand-logo-img">
+                    <h1>PBL TRKJ POLITALA</h1>
+                    <p>Sistem Informasi Manajemen Evaluasi & Proyek</p>
                 </div>
 
                 <form method="POST" action="{{ route('login.attempt') }}">
@@ -443,7 +443,7 @@
         </div>
 
         <p class="footer-note">
-            &copy; {{ date('Y') }} Politeknik Negeri Tanah Laut. Hak Cipta Dilindungi.
+            &copy; {{ date('Y') }} TRKJ Politala. Hak Cipta Dilindungi. | Develop by Dery Yuswanto Jaya, M.Kom
         </p>
 
     </div>

@@ -1,6 +1,6 @@
 @extends('layout.public')
 
-@section('title', 'Rekap Penilaian Mitra - SIMEP Politala')
+@section('title', 'Rekap Penilaian Mitra - PBL TRKJ Politala')
 
 @section('content')
 <div class="container-fluid px-0">
