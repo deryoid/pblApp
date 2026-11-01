@@ -530,7 +530,7 @@
             <select name="mata_kuliah_ids[]" id="addMataKuliah" class="form-control select2-matkul" multiple="multiple" style="width: 100%;">
               @foreach(($mataKuliahList ?? []) as $mk)
                 <option value="{{ $mk->id }}" data-semester="{{ $mk->semester }}">
-                  [Sem {{ $mk->semester }}] {{ $mk->kode_matkul }} - {{ $mk->nama_matkul }} ({{ $mk->dosenPengampu->nama_user ?? 'Dosen Belum Ditentukan' }})
+                  [Sem {{ $mk->semester }}] {{ $mk->kode_matkul }} - {{ $mk->nama_matkul }} ({{ $mk->dosenPengampu->pluck('nama_user')->join(', ') ?: 'Dosen Belum Ditentukan' }})
                 </option>
               @endforeach
             </select>
@@ -616,7 +616,7 @@
             <select name="mata_kuliah_ids[]" id="editMataKuliah" class="form-control select2-matkul" multiple="multiple" style="width: 100%;">
               @foreach(($mataKuliahList ?? []) as $mk)
                 <option value="{{ $mk->id }}" data-semester="{{ $mk->semester }}">
-                  [Sem {{ $mk->semester }}] {{ $mk->kode_matkul }} - {{ $mk->nama_matkul }} ({{ $mk->dosenPengampu->nama_user ?? 'Dosen Belum Ditentukan' }})
+                  [Sem {{ $mk->semester }}] {{ $mk->kode_matkul }} - {{ $mk->nama_matkul }} ({{ $mk->dosenPengampu->pluck('nama_user')->join(', ') ?: 'Dosen Belum Ditentukan' }})
                 </option>
               @endforeach
             </select>

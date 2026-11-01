@@ -98,7 +98,11 @@ class ProyekController extends Controller
                                 'nama_matkul' => $mk->nama_matkul,
                                 'semester' => $mk->semester,
                                 'sks' => $mk->sks,
-                                'dosen_pengampu' => optional($mk->dosenPengampu)->nama_user,
+                                'dosen_pengampu' => $mk->dosenPengampu->pluck('nama_user')->join(', '),
+                                'dosen_list' => $mk->dosenPengampu->map(fn ($d) => [
+                                    'id' => $d->id,
+                                    'nama_user' => $d->nama_user,
+                                ])->values()->toArray(),
                             ])->values()->toArray(),
                         ];
                     })->toArray();

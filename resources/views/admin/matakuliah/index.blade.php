@@ -87,16 +87,25 @@
                                 {{ $mk->sks }} SKS
                             </td>
                             <td class="align-middle">
-                                @if($mk->dosenPengampu)
-                                    <div class="d-flex align-items-center">
-                                        <div class="mr-2 text-primary">
-                                            <i class="fas fa-chalkboard-teacher fa-lg"></i>
-                                        </div>
-                                        <div>
-                                            <div class="font-weight-bold text-dark">{{ $mk->dosenPengampu->nama_user }}</div>
-                                            <small class="text-muted">{{ $mk->dosenPengampu->email ?? $mk->dosenPengampu->username }}</small>
-                                        </div>
+                                @if($mk->dosenPengampu->isNotEmpty())
+                                    <div class="d-flex flex-column" style="gap: 0.35rem;">
+                                        @foreach($mk->dosenPengampu as $dosen)
+                                            <div class="d-flex align-items-center">
+                                                <div class="mr-2 text-primary" style="font-size: 0.85rem;">
+                                                    <i class="fas fa-chalkboard-teacher"></i>
+                                                </div>
+                                                <div>
+                                                    <span class="font-weight-bold text-dark d-block">{{ $dosen->nama_user }}</span>
+                                                    <small class="text-muted" style="font-size: 0.72rem;">{{ $dosen->email ?? $dosen->username }}</small>
+                                                </div>
+                                            </div>
+                                        @endforeach
                                     </div>
+                                    @if($mk->dosenPengampu->count() > 1)
+                                        <span class="badge badge-light border text-info mt-1" style="font-size: 0.7rem;">
+                                            <i class="fas fa-users fa-xs mr-1"></i> Team Teaching ({{ $mk->dosenPengampu->count() }} Dosen)
+                                        </span>
+                                    @endif
                                 @else
                                     <span class="badge badge-warning">
                                         <i class="fas fa-exclamation-circle mr-1"></i> Belum Ditentukan

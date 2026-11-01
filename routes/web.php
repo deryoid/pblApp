@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\KelasController;
 use App\Http\Controllers\Admin\MataKuliahAdminController;
 use App\Http\Controllers\Admin\PenilaianEvaluasiController;
 use App\Http\Controllers\Admin\PeriodeController;
+use App\Http\Controllers\Admin\RubrikPenilaianController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Auth\LoginController;
@@ -68,6 +69,11 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'profile.complete'])->group
 
     // Mata Kuliah
     Route::resource('matakuliah', MataKuliahAdminController::class);
+
+    // Rubrik Penilaian Dinamis
+    Route::get('rubrik', [RubrikPenilaianController::class, 'index'])->name('rubrik.index');
+    Route::get('rubrik/data', [RubrikPenilaianController::class, 'apiData'])->name('rubrik.data');
+    Route::put('rubrik/skala/{skala}', [RubrikPenilaianController::class, 'update'])->name('rubrik.update');
 
     // Mahasiswa
     Route::get('mahasiswa/import', [DataMahasiswaAdminController::class, 'importForm'])->name('mahasiswa.import.form');
@@ -193,6 +199,8 @@ Route::prefix('evaluator')->middleware(['auth', 'evaluator', 'profile.complete']
     Route::prefix('evaluasi')->name('evaluator.evaluasi.')->group(function () {
         Route::get('/', [App\Http\Controllers\Evaluator\EvaluasiController::class, 'index'])->name('index');
         Route::get('nilai-final', [App\Http\Controllers\Evaluator\EvaluasiController::class, 'nilaiFinal'])->name('nilai-final');
+        Route::get('rubrik', [RubrikPenilaianController::class, 'index'])->name('rubrik.index');
+        Route::get('rubrik/data', [RubrikPenilaianController::class, 'apiData'])->name('rubrik.data');
         Route::get('settings', [App\Http\Controllers\Evaluator\EvaluasiController::class, 'settings'])->name('settings');
         Route::post('settings/save', [App\Http\Controllers\Evaluator\EvaluasiController::class, 'saveSettings'])->name('settings.save');
 

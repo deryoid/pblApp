@@ -35,6 +35,86 @@ class GradingService
     }
 
     /**
+     * Hitung nilai huruf dinamis berdasarkan Rubrik Excel:
+     * A  : 80 – 100
+     * B+ : 75 – 79.99
+     * B  : 70 – 74.99
+     * C+ : 65 – 69.99
+     * C  : 60 – 64.99
+     * D+ : 50 – 59.99
+     * D  : 40 – 49.99
+     * E  : < 40
+     */
+    public function calculateRubricGrade(?float $score): ?string
+    {
+        if ($score === null) {
+            return null;
+        }
+
+        if ($score >= 80) {
+            return 'A';
+        }
+
+        if ($score >= 75) {
+            return 'B+';
+        }
+
+        if ($score >= 70) {
+            return 'B';
+        }
+
+        if ($score >= 65) {
+            return 'C+';
+        }
+
+        if ($score >= 60) {
+            return 'C';
+        }
+
+        if ($score >= 50) {
+            return 'D+';
+        }
+
+        if ($score >= 40) {
+            return 'D';
+        }
+
+        return 'E';
+    }
+
+    /**
+     * Dapatkan daftar skala rubrik lengkap beserta rentang dan warna badge.
+     */
+    public function getRubricGradeScale(): array
+    {
+        return [
+            ['grade' => 'A',  'min' => 80.0, 'max' => 100.0, 'range' => '80 – 100', 'badge' => 'badge-success', 'color' => '#28a745'],
+            ['grade' => 'B+', 'min' => 75.0, 'max' => 79.99, 'range' => '75 – 79',  'badge' => 'badge-primary', 'color' => '#007bff'],
+            ['grade' => 'B',  'min' => 70.0, 'max' => 74.99, 'range' => '70 – 74',  'badge' => 'badge-info',    'color' => '#17a2b8'],
+            ['grade' => 'C+', 'min' => 65.0, 'max' => 69.99, 'range' => '65 – 69',  'badge' => 'badge-warning', 'color' => '#ffc107'],
+            ['grade' => 'C',  'min' => 60.0, 'max' => 64.99, 'range' => '60 – 64',  'badge' => 'badge-warning', 'color' => '#ffc107'],
+            ['grade' => 'D+', 'min' => 50.0, 'max' => 59.99, 'range' => '50 – 59',  'badge' => 'badge-danger',  'color' => '#e65100'],
+            ['grade' => 'D',  'min' => 40.0, 'max' => 49.99, 'range' => '40 – 49',  'badge' => 'badge-danger',  'color' => '#dc3545'],
+            ['grade' => 'E',  'min' => 0.0,  'max' => 39.99, 'range' => '0 – 39',   'badge' => 'badge-secondary', 'color' => '#6c757d'],
+        ];
+    }
+
+    /**
+     * Dapatkan kelas badge bootstrap untuk nilai huruf rubrik.
+     */
+    public function getRubricBadgeClass(?string $grade): string
+    {
+        return match ($grade) {
+            'A' => 'badge-success',
+            'B+' => 'badge-primary',
+            'B' => 'badge-info',
+            'C+', 'C' => 'badge-warning',
+            'D+', 'D' => 'badge-danger',
+            default => 'badge-secondary',
+        };
+    }
+
+    /**
      * Convert attendance status to numeric value.
      */
     public function convertAttendanceToValue(?string $status): int

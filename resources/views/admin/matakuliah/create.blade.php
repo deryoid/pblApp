@@ -74,19 +74,19 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="dosen_id">
+                    <label for="dosen_ids">
                         <i class="fas fa-chalkboard-teacher text-primary mr-1"></i> Dosen Pengampu Kuliah
+                        <span class="badge badge-info ml-1">Bisa Lebih dari 1 Dosen (Team Teaching)</span>
                     </label>
-                    <select name="dosen_id" id="dosen_id" class="form-control @error('dosen_id') is-invalid @enderror">
-                        <option value="">-- Pilih Dosen Pengampu (Opsional) --</option>
+                    <select name="dosen_ids[]" id="dosen_ids" class="form-control select2 @error('dosen_ids') is-invalid @enderror" multiple="multiple" style="width: 100%;">
                         @foreach($dosenList as $dosen)
-                            <option value="{{ $dosen->id }}" {{ old('dosen_id') == $dosen->id ? 'selected' : '' }}>
+                            <option value="{{ $dosen->id }}" {{ in_array($dosen->id, old('dosen_ids', [])) ? 'selected' : '' }}>
                                 {{ $dosen->nama_user }} ({{ ucfirst($dosen->role) }}) - {{ $dosen->email ?? $dosen->username }}
                             </option>
                         @endforeach
                     </select>
-                    <small class="form-text text-muted">Dosen ini akan menjadi pengampu utama dan penilai keterkaitan mata kuliah pada proyek mahasiswa.</small>
-                    @error('dosen_id')
+                    <small class="form-text text-muted">Mata kuliah dapat diampu oleh 2 atau lebih dosen (team teaching). Satu dosen juga dapat mengampu beberapa mata kuliah berbeda.</small>
+                    @error('dosen_ids')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
@@ -123,3 +123,15 @@
 
 </div>
 @endsection
+
+@push('scripts')
+<script>
+    $(document).ready(function() {
+        $('#dosen_ids').select2({
+            placeholder: '-- Pilih Satu atau Beberapa Dosen Pengampu --',
+            allowClear: true,
+            width: '100%'
+        });
+    });
+</script>
+@endpush

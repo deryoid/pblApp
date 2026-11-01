@@ -75,6 +75,14 @@
             </a>
         </li>
 
+        {{-- Rubrik Penilaian Dinamis --}}
+        <li class="nav-item {{ request()->routeIs('rubrik.*') ? 'active' : '' }}">
+            <a class="nav-link" href="{{ route('rubrik.index') }}">
+                <i class="fas fa-fw fa-clipboard-check"></i>
+                <span>Rubrik Penilaian</span>
+            </a>
+        </li>
+
         {{-- Kelompok PBL --}}
         <li class="nav-item {{ request()->routeIs('kelompok.*') ? 'active' : '' }}">
             <a class="nav-link" href="{{ route('kelompok.index') }}">
@@ -123,6 +131,14 @@
             <a class="nav-link" href="{{ route('evaluator.evaluasi.index') }}">
                 <i class="fas fa-fw fa-project-diagram"></i>
                 <span>Evaluasi Proyek</span>
+            </a>
+        </li>
+
+        {{-- Rubrik Penilaian --}}
+        <li class="nav-item {{ request()->routeIs('evaluator.evaluasi.rubrik.*') ? 'active' : '' }}">
+            <a class="nav-link" href="{{ route('evaluator.evaluasi.rubrik.index') }}">
+                <i class="fas fa-fw fa-clipboard-check"></i>
+                <span>Rubrik Penilaian</span>
             </a>
         </li>
 

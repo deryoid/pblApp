@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
         $this->call(PeriodeSeeder::class);
         $this->call(EvaluationRubricSeeder::class);
         $this->call(RubrikKategoriSeeder::class);
+        $this->call(RubrikSkalaSeeder::class);
         $this->call(MataKuliahSeeder::class);
         // Opsional: seed kartu proyek demo
     }

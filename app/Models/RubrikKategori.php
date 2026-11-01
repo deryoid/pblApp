@@ -46,6 +46,11 @@ class RubrikKategori extends Model
         });
     }
 
+    public function skalas(): HasMany
+    {
+        return $this->hasMany(RubrikSkala::class, 'rubrik_kategori_id')->orderBy('urutan');
+    }
+
     public function indikators(): HasMany
     {
         return $this->hasMany(RubrikIndikator::class, 'kategori_id')->orderBy('urutan');

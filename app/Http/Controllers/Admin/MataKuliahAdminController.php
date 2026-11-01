@@ -58,6 +58,8 @@ class MataKuliahAdminController extends Controller
             'nama_matkul' => ['required', 'string', 'max:255'],
             'semester' => ['required', 'integer', 'min:1', 'max:8'],
             'sks' => ['required', 'integer', 'min:1', 'max:8'],
+            'dosen_ids' => ['nullable', 'array'],
+            'dosen_ids.*' => ['exists:users,id'],
             'dosen_id' => ['nullable', 'exists:users,id'],
             'deskripsi' => ['nullable', 'string'],
             'is_active' => ['nullable', 'boolean'],
@@ -67,9 +69,16 @@ class MataKuliahAdminController extends Controller
             'semester.max' => 'Semester maksimal 8.',
         ]);
 
+        $dosenIds = $request->input('dosen_ids', []);
+        if (empty($dosenIds) && $request->filled('dosen_id')) {
+            $dosenIds = [(int) $request->input('dosen_id')];
+        }
+
+        $validated['dosen_id'] = ! empty($dosenIds) ? $dosenIds[0] : null;
         $validated['is_active'] = $request->has('is_active') ? (bool) $request->input('is_active') : true;
 
-        MataKuliah::create($validated);
+        $mataKuliah = MataKuliah::create($validated);
+        $mataKuliah->dosenPengampu()->sync($dosenIds);
 
         Alert::toast('Mata kuliah berhasil ditambahkan.', 'success');
 
@@ -81,6 +90,7 @@ class MataKuliahAdminController extends Controller
      */
     public function edit(MataKuliah $matakuliah): View
     {
+        $matakuliah->load('dosenPengampu');
         $dosenList = User::whereIn('role', ['dosen', 'evaluator', 'admin'])
             ->orderBy('nama_user')
             ->get();
@@ -103,6 +113,8 @@ class MataKuliahAdminController extends Controller
             'nama_matkul' => ['required', 'string', 'max:255'],
             'semester' => ['required', 'integer', 'min:1', 'max:8'],
             'sks' => ['required', 'integer', 'min:1', 'max:8'],
+            'dosen_ids' => ['nullable', 'array'],
+            'dosen_ids.*' => ['exists:users,id'],
             'dosen_id' => ['nullable', 'exists:users,id'],
             'deskripsi' => ['nullable', 'string'],
             'is_active' => ['nullable', 'boolean'],
@@ -112,9 +124,16 @@ class MataKuliahAdminController extends Controller
             'semester.max' => 'Semester maksimal 8.',
         ]);
 
+        $dosenIds = $request->input('dosen_ids', []);
+        if (empty($dosenIds) && $request->filled('dosen_id')) {
+            $dosenIds = [(int) $request->input('dosen_id')];
+        }
+
+        $validated['dosen_id'] = ! empty($dosenIds) ? $dosenIds[0] : null;
         $validated['is_active'] = $request->has('is_active') ? (bool) $request->input('is_active') : true;
 
         $matakuliah->update($validated);
+        $matakuliah->dosenPengampu()->sync($dosenIds);
 
         Alert::toast('Mata kuliah berhasil diperbarui.', 'success');
 

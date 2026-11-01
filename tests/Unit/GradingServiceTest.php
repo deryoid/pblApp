@@ -151,4 +151,43 @@ class GradingServiceTest extends TestCase
         $this->assertSame('D', $this->gradingService->calculateGrade(55.0));
         $this->assertSame('E', $this->gradingService->calculateGrade(54.99));
     }
+
+    public function test_calculate_rubric_grade_matches_excel_specification(): void
+    {
+        // A: 80 - 100
+        $this->assertSame('A', $this->gradingService->calculateRubricGrade(100));
+        $this->assertSame('A', $this->gradingService->calculateRubricGrade(85.5));
+        $this->assertSame('A', $this->gradingService->calculateRubricGrade(80.0));
+
+        // B+: 75 - 79
+        $this->assertSame('B+', $this->gradingService->calculateRubricGrade(79.9));
+        $this->assertSame('B+', $this->gradingService->calculateRubricGrade(75.0));
+
+        // B: 70 - 74
+        $this->assertSame('B', $this->gradingService->calculateRubricGrade(74.5));
+        $this->assertSame('B', $this->gradingService->calculateRubricGrade(70.0));
+
+        // C+: 65 - 69
+        $this->assertSame('C+', $this->gradingService->calculateRubricGrade(69.9));
+        $this->assertSame('C+', $this->gradingService->calculateRubricGrade(65.0));
+
+        // C: 60 - 64
+        $this->assertSame('C', $this->gradingService->calculateRubricGrade(64.0));
+        $this->assertSame('C', $this->gradingService->calculateRubricGrade(60.0));
+
+        // D+: 50 - 59
+        $this->assertSame('D+', $this->gradingService->calculateRubricGrade(59.5));
+        $this->assertSame('D+', $this->gradingService->calculateRubricGrade(50.0));
+
+        // D: 40 - 49
+        $this->assertSame('D', $this->gradingService->calculateRubricGrade(49.0));
+        $this->assertSame('D', $this->gradingService->calculateRubricGrade(40.0));
+
+        // E: < 40
+        $this->assertSame('E', $this->gradingService->calculateRubricGrade(39.9));
+        $this->assertSame('E', $this->gradingService->calculateRubricGrade(0.0));
+
+        // Null
+        $this->assertNull($this->gradingService->calculateRubricGrade(null));
+    }
 }
