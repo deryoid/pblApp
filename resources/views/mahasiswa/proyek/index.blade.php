@@ -718,34 +718,49 @@
     position:sticky;top:0;z-index:2;background:#fff;border:1px solid #eef1f5;border-radius:.75rem;
     padding:.6rem .7rem;box-shadow:0 2px 6px rgba(0,0,0,.03);margin-bottom:.5rem
   }
-  .board-card{border-left:3px solid #4e73df;cursor:grab;border-radius:.75rem;overflow:hidden;transition:transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease}
-  .board-card:hover{cursor:grab}
+  .board-card{border-left:3px solid #4e73df;cursor:grab;border-radius:.75rem;overflow:hidden;user-select:none;-webkit-user-select:none;transition:transform 0.18s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.18s cubic-bezier(0.2, 0, 0, 1), opacity 0.18s ease;will-change:transform,box-shadow}
+  .board-card:hover{cursor:grab;transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,.08)}
   .board-card:active{cursor:grabbing}
 
   /* Saat card dipilih untuk didrag */
   .board-card.sortable-chosen{
-    opacity: 0.9;
+    opacity: 0.95;
+    cursor: grabbing !important;
     transform: scale(1.02);
-    box-shadow: 0 8px 24px rgba(78, 115, 223, 0.25);
+    box-shadow: 0 10px 25px -5px rgba(78, 115, 223, 0.25), 0 8px 10px -6px rgba(78, 115, 223, 0.15);
     z-index: 1000;
   }
 
-  /* Bayangan card yang ditinggalkan */
+  /* Bayangan slot placeholder tempat card mendarat */
   .board-card.sortable-ghost{
-    opacity: 0.3;
-    background: #eef2ff;
-    border: 2px dashed #4e73df;
-    box-shadow: none;
+    opacity: 0.35 !important;
+    background: rgba(78, 115, 223, 0.08) !important;
+    border: 2px dashed #4e73df !important;
+    border-radius: 0.75rem !important;
+    box-shadow: none !important;
     transform: scale(0.98);
   }
 
-  /* Card yang sedang didrag */
-  .board-card.sortable-drag{
-    opacity: 1;
-    transform: rotate(2deg) scale(1.05);
-    box-shadow: 0 12px 32px rgba(78, 115, 223, 0.35);
-    cursor: grabbing;
+  /* Card tiruan yang melayang mengikuti kursor */
+  .board-card.sortable-drag,
+  .sortable-fallback {
+    opacity: 1 !important;
+    cursor: grabbing !important;
+    transform: rotate(2.5deg) scale(1.04) !important;
+    box-shadow: 0 20px 35px -5px rgba(78, 115, 223, 0.35), 0 10px 15px -5px rgba(0, 0, 0, 0.15) !important;
+    border: 1px solid rgba(78, 115, 223, 0.3) !important;
+    border-left: 4px solid #4e73df !important;
+    border-radius: 0.75rem !important;
+    pointer-events: none !important;
+    z-index: 99999 !important;
+    will-change: transform, top, left;
   }
+
+  .board-column{transition:transform 0.2s cubic-bezier(0.2, 0, 0, 1), opacity 0.2s ease}
+  .board-column.sortable-chosen{opacity: 0.95;box-shadow: 0 12px 28px rgba(0, 0, 0, 0.1)}
+  .board-column.sortable-ghost{opacity: 0.35 !important;background: rgba(234, 236, 244, 0.6) !important;border: 2px dashed #b7b9cc !important;border-radius: 0.75rem !important}
+  .board-col-head{cursor: grab}
+  .board-col-head:active{cursor: grabbing}
   .progress.progress-sm{height:6px}
   .badge-soft{background:#eef2ff;color:#4e73df}
   .truncate{max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -855,20 +870,27 @@
     e.preventDefault(); showModal('modalAddList');
   });
 
-  // Drag antar kartu dengan konfigurasi yang lebih smooth
+  // Drag antar kartu dengan konfigurasi ultra-smooth
   document.querySelectorAll('.board-list').forEach(function(listEl){
     new Sortable(listEl, {
       group:'board',
-      animation: 250,
-      easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+      animation: 200,
+      easing: 'cubic-bezier(0.2, 0, 0, 1)',
       ghostClass: 'sortable-ghost',
       chosenClass: 'sortable-chosen',
       dragClass: 'sortable-drag',
-      fallbackTolerance: 5,
+      fallbackClass: 'sortable-fallback',
+      forceFallback: true,
+      fallbackOnBody: true,
+      fallbackTolerance: 4,
+      swapThreshold: 0.65,
+      invertSwap: true,
+      direction: 'vertical',
+      emptyInsertThreshold: 15,
       bubbleScroll: true,
-      scrollThreshold: 50,
-      scrollSpeed: 12,
-      forceFallback: false,
+      scroll: true,
+      scrollSensitivity: 80,
+      scrollSpeed: 15,
       filter: '.card-completed',
       preventOnFilter: false,
       delay: 0,
@@ -883,21 +905,28 @@
     });
   });
 
-  // Drag urutkan kolom (handle: head) dengan konfigurasi yang lebih smooth
+  // Drag urutkan kolom (handle: head) dengan konfigurasi ultra-smooth
   const boardEl = document.getElementById('board');
   if (boardEl){
     new Sortable(boardEl, {
       group:'board-columns',
-      animation: 250,
-      easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+      animation: 220,
+      easing: 'cubic-bezier(0.2, 0, 0, 1)',
       handle:'.board-col-head',
       ghostClass: 'sortable-ghost',
       chosenClass: 'sortable-chosen',
       dragClass: 'sortable-drag',
+      fallbackClass: 'sortable-fallback',
+      forceFallback: true,
+      fallbackOnBody: true,
+      fallbackTolerance: 5,
+      swapThreshold: 0.65,
+      invertSwap: true,
+      direction: 'horizontal',
       bubbleScroll: true,
-      scrollThreshold: 50,
-      scrollSpeed: 12,
-      forceFallback: false,
+      scroll: true,
+      scrollSensitivity: 100,
+      scrollSpeed: 20,
       onEnd:function(){
         const ids = Array.from(boardEl.querySelectorAll('.board-column')).map(col=>col.getAttribute('data-col-id'));
         $.post(reorderListsUrl, {list_ids:ids,_token:'{{ csrf_token() }}'})

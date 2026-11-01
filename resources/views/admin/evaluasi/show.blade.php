@@ -40,13 +40,20 @@
   /* ====== Board (lists) ====== */
   .board-wrapper{overflow-x:auto;overflow-y:hidden}
   .board{min-height:60vh;padding-bottom:.5rem;display:flex}
-  .board-column{width:300px;min-width:300px;margin-right:1rem;display:flex;flex-direction:column}
-  .board-col-head{position:sticky;top:0;z-index:2;background:#fff;border:1px solid var(--border);border-radius:.75rem;padding:.6rem .7rem;box-shadow:0 2px 6px rgba(0,0,0,.03);margin-bottom:.5rem}
+  .board-column{width:300px;min-width:300px;margin-right:1rem;display:flex;flex-direction:column;transition:transform 0.2s cubic-bezier(0.2, 0, 0, 1), opacity 0.2s ease}
+  .board-column.sortable-chosen{opacity:0.95;box-shadow:0 12px 28px rgba(0,0,0,.1)}
+  .board-column.sortable-ghost{opacity:0.35 !important;background:rgba(234, 236, 244, 0.6) !important;border:2px dashed #b7b9cc !important;border-radius:0.75rem !important}
+  .board-col-head{position:sticky;top:0;z-index:2;background:#fff;border:1px solid var(--border);border-radius:.75rem;padding:.6rem .7rem;box-shadow:0 2px 6px rgba(0,0,0,.03);margin-bottom:.5rem;cursor:grab}
+  .board-col-head:active{cursor:grabbing}
   .board-list{min-height:20px}
-  .board-card{border-left:3px solid #4e73df;border-radius:.75rem;overflow:hidden}
+  .board-card{border-left:3px solid #4e73df;border-radius:.75rem;overflow:hidden;cursor:grab;user-select:none;-webkit-user-select:none;transition:transform 0.18s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.18s cubic-bezier(0.2, 0, 0, 1), opacity 0.18s ease;will-change:transform,box-shadow}
+  .board-card:hover{cursor:grab;transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,.08)}
+  .board-card:active{cursor:grabbing}
   .board-card.border-success{border-left-color:#28a745;border:1px solid #28a745}
-  .board-card.sortable-chosen{opacity:.9}
-  .board-card.sortable-ghost{border:1px dashed #4e73df;background:#f8f9fc}
+  .board-card.sortable-chosen{opacity:0.95;cursor:grabbing !important;transform:scale(1.02);box-shadow:0 10px 25px -5px rgba(78,115,223,0.25), 0 8px 10px -6px rgba(78,115,223,0.15);z-index:1000}
+  .board-card.sortable-ghost{opacity:0.35 !important;background:rgba(78,115,223,0.08) !important;border:2px dashed #4e73df !important;border-radius:0.75rem !important;box-shadow:none !important;transform:scale(0.98)}
+  .board-card.sortable-drag,
+  .sortable-fallback{opacity:1 !important;cursor:grabbing !important;transform:rotate(2.5deg) scale(1.04) !important;box-shadow:0 20px 35px -5px rgba(78,115,223,0.35), 0 10px 15px -5px rgba(0,0,0,0.15) !important;border:1px solid rgba(78,115,223,0.3) !important;border-left:4px solid #4e73df !important;border-radius:0.75rem !important;pointer-events:none !important;z-index:99999 !important;will-change:transform,top,left}
 
   .card-title-full{font-size:.95rem;line-height:1.3;white-space:normal;word-break:break-word}
 
@@ -954,20 +961,29 @@
     if (nid && uuid) window.__cardIdToUuid[nid] = uuid;
   });
 
-  // Drag cards within/between lists (Projects) dengan konfigurasi yang lebih smooth
+  // Drag cards within/between lists (Projects) dengan konfigurasi ultra-smooth
   document.querySelectorAll('#board .board-list').forEach(function(listEl){
     new Sortable(listEl, {
       group:'board',
-      animation: 250,
-      easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+      animation: 200,
+      easing: 'cubic-bezier(0.2, 0, 0, 1)',
       ghostClass:'sortable-ghost',
       chosenClass:'sortable-chosen',
       dragClass:'sortable-drag',
-      fallbackTolerance: 5,
+      fallbackClass:'sortable-fallback',
+      forceFallback: true,
+      fallbackOnBody: true,
+      fallbackTolerance: 4,
+      swapThreshold: 0.65,
+      invertSwap: true,
+      direction: 'vertical',
+      emptyInsertThreshold: 15,
       bubbleScroll: true,
-      scrollThreshold: 50,
-      scrollSpeed: 12,
-      forceFallback: false,
+      scroll: true,
+      scrollSensitivity: 80,
+      scrollSpeed: 15,
+      delay: 0,
+      delayOnTouchOnly: false,
       onEnd:function(evt){
         const cardId  = evt.item.getAttribute('data-card-id');
         const toList  = evt.to.getAttribute('data-list-id');
@@ -978,21 +994,29 @@
     });
   });
 
-  // Drag project columns dengan konfigurasi yang lebih smooth
+  // Drag project columns dengan konfigurasi ultra-smooth
   (function(){
     const boardEl = document.getElementById('board');
     if (!boardEl) return;
     new Sortable(boardEl, {
-      animation: 250,
-      easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+      group:'board-columns',
+      animation: 220,
+      easing: 'cubic-bezier(0.2, 0, 0, 1)',
       handle:'.board-col-head',
       ghostClass:'sortable-ghost',
       chosenClass:'sortable-chosen',
       dragClass:'sortable-drag',
+      fallbackClass:'sortable-fallback',
+      forceFallback: true,
+      fallbackOnBody: true,
+      fallbackTolerance: 5,
+      swapThreshold: 0.65,
+      invertSwap: true,
+      direction: 'horizontal',
       bubbleScroll: true,
-      scrollThreshold: 50,
-      scrollSpeed: 12,
-      forceFallback: false,
+      scroll: true,
+      scrollSensitivity: 100,
+      scrollSpeed: 20,
       onEnd:function(){
         const ids = Array.from(boardEl.querySelectorAll('.board-column')).map(col=>col.getAttribute('data-col-id'));
         $.post(reorderListsUrl, {list_ids:ids, _token:'{{ csrf_token() }}'})
@@ -2388,12 +2412,10 @@
     }
 
     const dosenItems = [
-      { kode: 'd_hasil', nama: 'Kualitas Hasil Proyek', bobot: {{ (int)($settings['d_hasil'] ?? 30) }} },
-      { kode: 'd_teknis', nama: 'Tingkat Kompleksitas Teknis', bobot: {{ (int)($settings['d_teknis'] ?? 20) }} },
-      { kode: 'd_user', nama: 'Kesesuaian dengan Kebutuhan Pengguna', bobot: {{ (int)($settings['d_user'] ?? 15) }} },
-      { kode: 'd_efisiensi', nama: 'Efisiensi Waktu dan Biaya', bobot: {{ (int)($settings['d_efisiensi'] ?? 10) }} },
-      { kode: 'd_dokpro', nama: 'Dokumentasi dan Profesionalisme', bobot: {{ (int)($settings['d_dokpro'] ?? 15) }} },
-      { kode: 'd_inisiatif', nama: 'Kemandirian dan Inisiatif', bobot: {{ (int)($settings['d_inisiatif'] ?? 10) }} }
+      { kode: 'd_relevansi', nama: 'Relevansi Konsep', bobot: {{ (int)($settings['d_relevansi'] ?? 25) }} },
+      { kode: 'd_kualitas', nama: 'Kualitas Produk', bobot: {{ (int)($settings['d_kualitas'] ?? 25) }} },
+      { kode: 'd_kreativitas', nama: 'Kreativitas', bobot: {{ (int)($settings['d_kreativitas'] ?? 25) }} },
+      { kode: 'd_estetika', nama: 'Estetika', bobot: {{ (int)($settings['d_estetika'] ?? 25) }} }
     ];
 
     const members = [
@@ -2590,8 +2612,11 @@
         <div class="text-center mb-4">
           <h4 style="margin: 0; font-size: 1.3rem; font-weight: 600; color: #2c3e50; margin-bottom: 8px;">${cardTitle}</h4>
           <div class="mb-3">
-            <span class="badge badge-success">Evaluasi Dosen per Mahasiswa</span>
+            <span class="badge badge-success">Evaluasi 4 Pilar Proyek</span>
             <span class="badge badge-info ml-2">Total Bobot: ${totalBobot}%</span>
+            <a href="{{ route('rubrik.index') }}" target="_blank" class="badge badge-light border ml-2 text-primary" style="text-decoration:none;">
+              <i class="fas fa-external-link-alt mr-1"></i>Rubrik Acuan
+            </a>
           </div>
         </div>
         <div class="table-responsive" style="max-height: 65vh; overflow-y: auto;">
@@ -2879,12 +2904,10 @@
   function calculateRowTotals(row) {
     const inputs = row.querySelectorAll('.grade-input');
     const dosenItems = [
-      { kode: 'd_hasil', bobot: {{ (int)($settings['d_hasil'] ?? 30) }} },
-      { kode: 'd_teknis', bobot: {{ (int)($settings['d_teknis'] ?? 20) }} },
-      { kode: 'd_user', bobot: {{ (int)($settings['d_user'] ?? 15) }} },
-      { kode: 'd_efisiensi', bobot: {{ (int)($settings['d_efisiensi'] ?? 10) }} },
-      { kode: 'd_dokpro', bobot: {{ (int)($settings['d_dokpro'] ?? 15) }} },
-      { kode: 'd_inisiatif', bobot: {{ (int)($settings['d_inisiatif'] ?? 10) }} }
+      { kode: 'd_relevansi', bobot: {{ (int)($settings['d_relevansi'] ?? 25) }} },
+      { kode: 'd_kualitas', bobot: {{ (int)($settings['d_kualitas'] ?? 25) }} },
+      { kode: 'd_kreativitas', bobot: {{ (int)($settings['d_kreativitas'] ?? 25) }} },
+      { kode: 'd_estetika', bobot: {{ (int)($settings['d_estetika'] ?? 25) }} }
     ];
 
     let total = 0;

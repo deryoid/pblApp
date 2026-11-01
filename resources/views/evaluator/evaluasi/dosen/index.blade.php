@@ -234,12 +234,10 @@
                             <thead class="thead-dark">
                                 <tr>
                                     <th width="180">Mahasiswa</th>
-                                    <th width="140">Kualitas Hasil<br><small>Bobot: {{ $settings['d_hasil'] ?? 20 }}%</small></th>
-                                    <th width="140">Kompleksitas Teknis<br><small>Bobot: {{ $settings['d_teknis'] ?? 20 }}%</small></th>
-                                    <th width="140">Kesesuaian Pengguna<br><small>Bobot: {{ $settings['d_user'] ?? 15 }}%</small></th>
-                                    <th width="140">Efisiensi Waktu/Biaya<br><small>Bobot: {{ $settings['d_efisiensi'] ?? 15 }}%</small></th>
-                                    <th width="140">Dokumentasi & Profesionalisme<br><small>Bobot: {{ $settings['d_dokpro'] ?? 15 }}%</small></th>
-                                    <th width="140">Kemandirian & Inisiatif<br><small>Bobot: {{ $settings['d_inisiatif'] ?? 15 }}%</small></th>
+                                    <th width="140">Relevansi Konsep<br><small>Bobot: {{ $settings['d_relevansi'] ?? 25 }}%</small></th>
+                                    <th width="140">Kualitas Produk<br><small>Bobot: {{ $settings['d_kualitas'] ?? 25 }}%</small></th>
+                                    <th width="140">Kreativitas<br><small>Bobot: {{ $settings['d_kreativitas'] ?? 25 }}%</small></th>
+                                    <th width="140">Estetika<br><small>Bobot: {{ $settings['d_estetika'] ?? 25 }}%</small></th>
                                     <th width="100">Rata-rata</th>
                                     <th width="120">Final<br><small>(Weighted)</small></th>
                                 </tr>
@@ -338,12 +336,10 @@ function gradeKelompok(kelompokId, kelompokName) {
                             <div>${mhs.nama}</div>
                             <div style="font-size: 0.85rem; color: #6b7280;">${mhs.nim}</div>
                         </td>
-                        <td><input type="number" min="1" max="100" class="form-control form-control-sm grade-input" data-mahasiswa="${mhs.id}" data-kriteria="d_hasil"></td>
-                        <td><input type="number" min="1" max="100" class="form-control form-control-sm grade-input" data-mahasiswa="${mhs.id}" data-kriteria="d_teknis"></td>
-                        <td><input type="number" min="1" max="100" class="form-control form-control-sm grade-input" data-mahasiswa="${mhs.id}" data-kriteria="d_user"></td>
-                        <td><input type="number" min="1" max="100" class="form-control form-control-sm grade-input" data-mahasiswa="${mhs.id}" data-kriteria="d_efisiensi"></td>
-                        <td><input type="number" min="1" max="100" class="form-control form-control-sm grade-input" data-mahasiswa="${mhs.id}" data-kriteria="d_dokpro"></td>
-                        <td><input type="number" min="1" max="100" class="form-control form-control-sm grade-input" data-mahasiswa="${mhs.id}" data-kriteria="d_inisiatif"></td>
+                        <td><input type="number" min="0" max="100" class="form-control form-control-sm grade-input" data-mahasiswa="${mhs.id}" data-kriteria="d_relevansi" placeholder="0-100"></td>
+                        <td><input type="number" min="0" max="100" class="form-control form-control-sm grade-input" data-mahasiswa="${mhs.id}" data-kriteria="d_kualitas" placeholder="0-100"></td>
+                        <td><input type="number" min="0" max="100" class="form-control form-control-sm grade-input" data-mahasiswa="${mhs.id}" data-kriteria="d_kreativitas" placeholder="0-100"></td>
+                        <td><input type="number" min="0" max="100" class="form-control form-control-sm grade-input" data-mahasiswa="${mhs.id}" data-kriteria="d_estetika" placeholder="0-100"></td>
                         <td class="text-center"><span class="badge badge-primary average-badge">0</span></td>
                         <td class="text-center"><span class="badge badge-success final-badge">0</span></td>
                     </tr>
@@ -368,12 +364,10 @@ function calculateRow(row) {
     let weightedTotal = 0;
 
     const weights = {
-        'd_hasil': {{ $settings['d_hasil'] ?? 20 }},
-        'd_teknis': {{ $settings['d_teknis'] ?? 20 }},
-        'd_user': {{ $settings['d_user'] ?? 15 }},
-        'd_efisiensi': {{ $settings['d_efisiensi'] ?? 15 }},
-        'd_dokpro': {{ $settings['d_dokpro'] ?? 15 }},
-        'd_inisiatif': {{ $settings['d_inisiatif'] ?? 15 }}
+        'd_relevansi': {{ $settings['d_relevansi'] ?? 25 }},
+        'd_kualitas': {{ $settings['d_kualitas'] ?? 25 }},
+        'd_kreativitas': {{ $settings['d_kreativitas'] ?? 25 }},
+        'd_estetika': {{ $settings['d_estetika'] ?? 25 }}
     };
 
     inputs.each(function() {
@@ -406,12 +400,10 @@ function viewDetail(kelompokId) {
                         <thead class="thead-dark">
                             <tr>
                                 <th>Mahasiswa</th>
-                                <th>Kualitas Hasil</th>
-                                <th>Kompleksitas Teknis</th>
-                                <th>Kesesuaian Pengguna</th>
-                                <th>Efisiensi Waktu/Biaya</th>
-                                <th>Dokumentasi & Profesionalisme</th>
-                                <th>Kemandirian & Inisiatif</th>
+                                <th>Relevansi Konsep</th>
+                                <th>Kualitas Produk</th>
+                                <th>Kreativitas</th>
+                                <th>Estetika</th>
                                 <th>Final</th>
                             </tr>
                         </thead>
@@ -422,12 +414,10 @@ function viewDetail(kelompokId) {
                 html += `
                     <tr>
                         <td><strong>${n.nama}</strong><br><small>${n.nim}</small></td>
-                        <td class="text-center">${n.d_hasil || '-'}</td>
-                        <td class="text-center">${n.d_teknis || '-'}</td>
-                        <td class="text-center">${n.d_user || '-'}</td>
-                        <td class="text-center">${n.d_efisiensi || '-'}</td>
-                        <td class="text-center">${n.d_dokpro || '-'}</td>
-                        <td class="text-center">${n.d_inisiatif || '-'}</td>
+                        <td class="text-center">${n.d_relevansi || '-'}</td>
+                        <td class="text-center">${n.d_kualitas || n.d_hasil || '-'}</td>
+                        <td class="text-center">${n.d_kreativitas || '-'}</td>
+                        <td class="text-center">${n.d_estetika || '-'}</td>
                         <td class="text-center"><strong>${n.final}</strong></td>
                     </tr>
                 `;

@@ -530,10 +530,14 @@ class EvaluasiController extends Controller
             'w_mitra' => 20,
             'w_kelompok' => 70,
             'w_ap' => 30,
+            'd_relevansi' => 25,
+            'd_kualitas' => 25,
+            'd_kreativitas' => 25,
+            'd_estetika' => 25,
         ];
         if (Schema::hasTable((new EvaluationSetting)->getTable())) {
             $settings = EvaluationSetting::getMany(
-                ['w_ap_kehadiran', 'w_ap_presentasi', 'w_dosen', 'w_mitra', 'w_kelompok', 'w_ap'],
+                ['w_ap_kehadiran', 'w_ap_presentasi', 'w_dosen', 'w_mitra', 'w_kelompok', 'w_ap', 'd_relevansi', 'd_kualitas', 'd_kreativitas', 'd_estetika'],
                 $settingsDefaults
             );
         } else {
@@ -712,6 +716,7 @@ class EvaluasiController extends Controller
     {
         $keys = [
             'w_dosen', 'w_mitra',
+            'd_relevansi', 'd_kualitas', 'd_kreativitas', 'd_estetika',
             'd_hasil', 'd_teknis', 'd_user', 'd_efisiensi', 'd_dokpro', 'd_inisiatif',
             'm_kehadiran', 'm_presentasi',
             'w_kelompok', 'w_ap',
@@ -719,6 +724,7 @@ class EvaluasiController extends Controller
         ];
         $defaults = [
             'w_dosen' => 80, 'w_mitra' => 20,
+            'd_relevansi' => 25, 'd_kualitas' => 25, 'd_kreativitas' => 25, 'd_estetika' => 25,
             'd_hasil' => 30, 'd_teknis' => 20, 'd_user' => 15, 'd_efisiensi' => 10, 'd_dokpro' => 15, 'd_inisiatif' => 10,
             'm_kehadiran' => 50, 'm_presentasi' => 50,
             'w_kelompok' => 70, 'w_ap' => 30,
@@ -738,12 +744,16 @@ class EvaluasiController extends Controller
         $data = $req->validate([
             'w_dosen' => 'required|integer|min:0|max:100',
             'w_mitra' => 'required|integer|min:0|max:100',
-            'd_hasil' => 'required|integer|min:0|max:100',
-            'd_teknis' => 'required|integer|min:0|max:100',
-            'd_user' => 'required|integer|min:0|max:100',
-            'd_efisiensi' => 'required|integer|min:0|max:100',
-            'd_dokpro' => 'required|integer|min:0|max:100',
-            'd_inisiatif' => 'required|integer|min:0|max:100',
+            'd_relevansi' => 'nullable|integer|min:0|max:100',
+            'd_kualitas' => 'nullable|integer|min:0|max:100',
+            'd_kreativitas' => 'nullable|integer|min:0|max:100',
+            'd_estetika' => 'nullable|integer|min:0|max:100',
+            'd_hasil' => 'nullable|integer|min:0|max:100',
+            'd_teknis' => 'nullable|integer|min:0|max:100',
+            'd_user' => 'nullable|integer|min:0|max:100',
+            'd_efisiensi' => 'nullable|integer|min:0|max:100',
+            'd_dokpro' => 'nullable|integer|min:0|max:100',
+            'd_inisiatif' => 'nullable|integer|min:0|max:100',
             'm_kehadiran' => 'required|integer|min:0|max:100',
             'm_presentasi' => 'required|integer|min:0|max:100',
             'w_kelompok' => 'required|integer|min:0|max:100',
@@ -752,9 +762,16 @@ class EvaluasiController extends Controller
             'w_ap_presentasi' => 'required|integer|min:0|max:100',
         ]);
 
-        $sumDosen = $data['d_hasil'] + $data['d_teknis'] + $data['d_user'] + $data['d_efisiensi'] + $data['d_dokpro'] + $data['d_inisiatif'];
-        if ($sumDosen != 100) {
-            $data['d_inisiatif'] = max(0, 100 - ($sumDosen - $data['d_inisiatif']));
+        if (isset($data['d_relevansi'], $data['d_kualitas'], $data['d_kreativitas'], $data['d_estetika'])) {
+            $sumDosen = $data['d_relevansi'] + $data['d_kualitas'] + $data['d_kreativitas'] + $data['d_estetika'];
+            if ($sumDosen != 100) {
+                $data['d_estetika'] = max(0, 100 - ($sumDosen - $data['d_estetika']));
+            }
+        } elseif (isset($data['d_hasil'])) {
+            $sumDosen = ($data['d_hasil'] ?? 0) + ($data['d_teknis'] ?? 0) + ($data['d_user'] ?? 0) + ($data['d_efisiensi'] ?? 0) + ($data['d_dokpro'] ?? 0) + ($data['d_inisiatif'] ?? 0);
+            if ($sumDosen != 100 && isset($data['d_inisiatif'])) {
+                $data['d_inisiatif'] = max(0, 100 - ($sumDosen - $data['d_inisiatif']));
+            }
         }
 
         $sumMitra = $data['m_kehadiran'] + $data['m_presentasi'];
@@ -1067,9 +1084,13 @@ class EvaluasiController extends Controller
                 }
 
                 // Normalise nilai values
+                $allDosenCriteria = [
+                    'd_relevansi', 'd_kualitas', 'd_kreativitas', 'd_estetika',
+                    'd_hasil', 'd_teknis', 'd_user', 'd_efisiensi', 'd_dokpro', 'd_inisiatif',
+                ];
                 $cleanScores = [];
                 foreach ($nilai as $kriteria => $value) {
-                    if (in_array($kriteria, ['d_hasil', 'd_teknis', 'd_user', 'd_efisiensi', 'd_dokpro', 'd_inisiatif'], true)) {
+                    if (in_array($kriteria, $allDosenCriteria, true)) {
                         $cleanScores[$kriteria] = $value === null ? null : max(0, min(100, (int) $value));
                     }
                 }
@@ -1097,7 +1118,7 @@ class EvaluasiController extends Controller
                     ]);
                 }
 
-                foreach (['d_hasil', 'd_teknis', 'd_user', 'd_efisiensi', 'd_dokpro', 'd_inisiatif'] as $field) {
+                foreach ($allDosenCriteria as $field) {
                     if (array_key_exists($field, $cleanScores)) {
                         $evaluation->{$field} = $cleanScores[$field];
                     }
@@ -1425,7 +1446,11 @@ class EvaluasiController extends Controller
                     'mahasiswa_id' => $evaluation->mahasiswa_id,
                     'mahasiswa_nama' => optional($mahasiswa)->nama ?? optional($mahasiswa)->nama_mahasiswa ?? '',
                     'mahasiswa_nim' => optional($mahasiswa)->nim ?? '',
-                    'd_hasil' => $evaluation->d_hasil,
+                    'd_relevansi' => $evaluation->d_relevansi,
+                    'd_kualitas' => $evaluation->d_kualitas ?? $evaluation->d_hasil,
+                    'd_kreativitas' => $evaluation->d_kreativitas,
+                    'd_estetika' => $evaluation->d_estetika,
+                    'd_hasil' => $evaluation->d_hasil ?? $evaluation->d_kualitas,
                     'd_teknis' => $evaluation->d_teknis,
                     'd_user' => $evaluation->d_user,
                     'd_efisiensi' => $evaluation->d_efisiensi,
@@ -1497,8 +1522,11 @@ class EvaluasiController extends Controller
         ]);
 
         try {
-            // Cek minimal satu kriteria harus diisi
-            $criteria = ['d_hasil', 'd_teknis', 'd_user', 'd_efisiensi', 'd_dokpro', 'd_inisiatif'];
+            // Cek minimal satu kriteria harus diisi (4 pilar atau legacy)
+            $criteria = [
+                'd_relevansi', 'd_kualitas', 'd_kreativitas', 'd_estetika',
+                'd_hasil', 'd_teknis', 'd_user', 'd_efisiensi', 'd_dokpro', 'd_inisiatif',
+            ];
             $hasAnyCriteria = false;
             foreach ($criteria as $criterion) {
                 if ($request->filled($criterion)) {
@@ -1515,6 +1543,10 @@ class EvaluasiController extends Controller
                 'mahasiswa_id' => 'required|exists:mahasiswa,id',
                 'project_card_id' => 'required|exists:project_cards,id',
                 'evaluator_id' => 'nullable|exists:users,id',
+                'd_relevansi' => 'nullable|integer|min:0|max:100',
+                'd_kualitas' => 'nullable|integer|min:0|max:100',
+                'd_kreativitas' => 'nullable|integer|min:0|max:100',
+                'd_estetika' => 'nullable|integer|min:0|max:100',
                 'd_hasil' => 'nullable|integer|min:0|max:100',
                 'd_teknis' => 'nullable|integer|min:0|max:100',
                 'd_user' => 'nullable|integer|min:0|max:100',
@@ -1590,6 +1622,10 @@ class EvaluasiController extends Controller
                 'evaluations.*.mahasiswa_id' => 'required|exists:mahasiswa,id',
                 'evaluations.*.project_card_id' => 'required|exists:project_cards,id',
                 'evaluations.*.evaluator_id' => 'nullable|exists:users,id',
+                'evaluations.*.d_relevansi' => 'nullable|integer|min:0|max:100',
+                'evaluations.*.d_kualitas' => 'nullable|integer|min:0|max:100',
+                'evaluations.*.d_kreativitas' => 'nullable|integer|min:0|max:100',
+                'evaluations.*.d_estetika' => 'nullable|integer|min:0|max:100',
                 'evaluations.*.d_hasil' => 'nullable|integer|min:0|max:100',
                 'evaluations.*.d_teknis' => 'nullable|integer|min:0|max:100',
                 'evaluations.*.d_user' => 'nullable|integer|min:0|max:100',
@@ -1665,6 +1701,10 @@ class EvaluasiController extends Controller
         $evaluation = EvaluasiDosen::where('uuid', $penilaian)->orWhere('id', $penilaian)->firstOrFail();
 
         $validated = $request->validate([
+            'd_relevansi' => 'nullable|integer|min:0|max:100',
+            'd_kualitas' => 'nullable|integer|min:0|max:100',
+            'd_kreativitas' => 'nullable|integer|min:0|max:100',
+            'd_estetika' => 'nullable|integer|min:0|max:100',
             'd_hasil' => 'nullable|integer|min:0|max:100',
             'd_teknis' => 'nullable|integer|min:0|max:100',
             'd_user' => 'nullable|integer|min:0|max:100',

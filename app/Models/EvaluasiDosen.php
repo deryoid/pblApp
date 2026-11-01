@@ -25,6 +25,10 @@ class EvaluasiDosen extends Model
     protected $guarded = [];
 
     protected $casts = [
+        'd_relevansi' => 'integer',
+        'd_kualitas' => 'integer',
+        'd_kreativitas' => 'integer',
+        'd_estetika' => 'integer',
         'd_hasil' => 'integer',
         'd_teknis' => 'integer',
         'd_user' => 'integer',
@@ -59,8 +63,26 @@ class EvaluasiDosen extends Model
         });
 
         static::saving(function ($model) {
-            // Hitung rata-rata
-            $kriteria = ['d_hasil', 'd_teknis', 'd_user', 'd_efisiensi', 'd_dokpro', 'd_inisiatif'];
+            // Cek kriteria 4 pilar terlebih dahulu (Relevansi, Kualitas, Kreativitas, Estetika)
+            $fourPillars = ['d_relevansi', 'd_kualitas', 'd_kreativitas', 'd_estetika'];
+            $legacyKriteria = ['d_hasil', 'd_teknis', 'd_user', 'd_efisiensi', 'd_dokpro', 'd_inisiatif'];
+
+            $hasFourPillars = false;
+            foreach ($fourPillars as $k) {
+                if ($model->$k !== null && $model->$k > 0) {
+                    $hasFourPillars = true;
+                    break;
+                }
+            }
+
+            // Sync d_kualitas ke d_hasil dan sebaliknya jika kosong
+            if ($model->d_kualitas !== null && empty($model->d_hasil)) {
+                $model->d_hasil = $model->d_kualitas;
+            } elseif ($model->d_hasil !== null && empty($model->d_kualitas)) {
+                $model->d_kualitas = $model->d_hasil;
+            }
+
+            $kriteria = $hasFourPillars ? $fourPillars : $legacyKriteria;
             $values = [];
             $count = 0;
 
@@ -75,30 +97,47 @@ class EvaluasiDosen extends Model
 
             // Hitung nilai akhir dengan pembobotan
             if ($count > 0) {
-                // Coba dapatkan bobot dari evaluation_rubric_indicators dulu
-                try {
-                    $indicators = \App\Models\EvaluationRubricIndicator::whereIn('code', [
-                        'd_hasil', 'd_teknis', 'd_user', 'd_efisiensi', 'd_dokpro', 'd_inisiatif',
-                    ])->pluck('weight', 'code')->toArray();
-                } catch (\Exception $e) {
-                    $indicators = [];
-                }
-
-                // Fallback ke evaluation_settings
-                $settings = \App\Models\EvaluationSetting::whereIn('key', [
-                    'd_hasil', 'd_teknis', 'd_user', 'd_efisiensi', 'd_dokpro', 'd_inisiatif',
-                ])->pluck('value', 'key')->toArray();
-
-                $weightedTotal = 0;
-                foreach ($kriteria as $k) {
-                    if ($model->$k !== null && $model->$k > 0) {
-                        // Prioritaskan bobot dari indicators, fallback ke settings, default ke bobot rata-rata
-                        $weight = $indicators[$k] ?? $settings[$k] ?? (100 / count($kriteria));
-                        $weightedTotal += ($model->$k * $weight / 100);
+                if ($hasFourPillars) {
+                    // Coba dapatkan bobot dari indicators atau settings, default 25% per pilar
+                    try {
+                        $indicators = \App\Models\EvaluationRubricIndicator::whereIn('code', $fourPillars)
+                            ->pluck('weight', 'code')->toArray();
+                    } catch (\Exception $e) {
+                        $indicators = [];
                     }
-                }
 
-                $model->nilai_akhir = $weightedTotal;
+                    $settings = \App\Models\EvaluationSetting::whereIn('key', $fourPillars)
+                        ->pluck('value', 'key')->toArray();
+
+                    $weightedTotal = 0;
+                    foreach ($fourPillars as $k) {
+                        if ($model->$k !== null && $model->$k > 0) {
+                            $weight = (float) ($indicators[$k] ?? $settings[$k] ?? 25.0);
+                            $weightedTotal += ($model->$k * $weight / 100);
+                        }
+                    }
+                    $model->nilai_akhir = $weightedTotal;
+                } else {
+                    // Fallback ke legacy indicators & settings
+                    try {
+                        $indicators = \App\Models\EvaluationRubricIndicator::whereIn('code', $legacyKriteria)
+                            ->pluck('weight', 'code')->toArray();
+                    } catch (\Exception $e) {
+                        $indicators = [];
+                    }
+
+                    $settings = \App\Models\EvaluationSetting::whereIn('key', $legacyKriteria)
+                        ->pluck('value', 'key')->toArray();
+
+                    $weightedTotal = 0;
+                    foreach ($legacyKriteria as $k) {
+                        if ($model->$k !== null && $model->$k > 0) {
+                            $weight = $indicators[$k] ?? $settings[$k] ?? (100 / count($legacyKriteria));
+                            $weightedTotal += ($model->$k * $weight / 100);
+                        }
+                    }
+                    $model->nilai_akhir = $weightedTotal;
+                }
             }
 
             // Handle status changes
@@ -321,7 +360,11 @@ class EvaluasiDosen extends Model
     public function getKriteriaAttribute()
     {
         return [
-            'd_hasil' => $this->d_hasil,
+            'd_relevansi' => $this->d_relevansi,
+            'd_kualitas' => $this->d_kualitas ?? $this->d_hasil,
+            'd_kreativitas' => $this->d_kreativitas,
+            'd_estetika' => $this->d_estetika,
+            'd_hasil' => $this->d_hasil ?? $this->d_kualitas,
             'd_teknis' => $this->d_teknis,
             'd_user' => $this->d_user,
             'd_efisiensi' => $this->d_efisiensi,
@@ -333,6 +376,11 @@ class EvaluasiDosen extends Model
     // Check if all kriteria have been filled
     public function getIsCompleteAttribute()
     {
+        // 4 Pilar utama
+        if ($this->d_relevansi !== null || $this->d_kualitas !== null || $this->d_kreativitas !== null || $this->d_estetika !== null) {
+            return $this->d_relevansi !== null && $this->d_kualitas !== null && $this->d_kreativitas !== null && $this->d_estetika !== null;
+        }
+
         $kriteria = ['d_hasil', 'd_teknis', 'd_user', 'd_efisiensi', 'd_dokpro', 'd_inisiatif'];
         foreach ($kriteria as $k) {
             if ($this->$k === null) {
@@ -347,6 +395,10 @@ class EvaluasiDosen extends Model
     public function getKriteriaDescriptionsAttribute()
     {
         return [
+            'd_relevansi' => 'Relevansi Konsep',
+            'd_kualitas' => 'Kualitas Produk',
+            'd_kreativitas' => 'Kreativitas',
+            'd_estetika' => 'Estetika',
             'd_hasil' => 'Kualitas Hasil Proyek',
             'd_teknis' => 'Tingkat Kompleksitas Teknis',
             'd_user' => 'Kesesuaian dengan Kebutuhan Pengguna',
@@ -366,6 +418,10 @@ class EvaluasiDosen extends Model
             'mahasiswa_id' => 'required|exists:mahasiswa,id',
             'project_card_id' => 'required|exists:project_cards,id',
             'evaluator_id' => 'nullable|exists:users,id',
+            'd_relevansi' => 'nullable|integer|min:0|max:100',
+            'd_kualitas' => 'nullable|integer|min:0|max:100',
+            'd_kreativitas' => 'nullable|integer|min:0|max:100',
+            'd_estetika' => 'nullable|integer|min:0|max:100',
             'd_hasil' => 'nullable|integer|min:0|max:100',
             'd_teknis' => 'nullable|integer|min:0|max:100',
             'd_user' => 'nullable|integer|min:0|max:100',

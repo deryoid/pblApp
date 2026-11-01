@@ -34,31 +34,26 @@
           </div>
 
           <hr>
-          <h6 class="text-muted mb-3">Indikator Dosen (jumlah = 100%)</h6>
+          <div class="d-flex align-items-center justify-content-between mb-3">
+            <h6 class="text-muted mb-0">Indikator 4 Pilar Dosen (jumlah = 100%)</h6>
+            <a href="{{ route('rubrik.index') }}" target="_blank" class="small text-primary"><i class="fas fa-clipboard-check mr-1"></i>Lihat Matriks Rubrik</a>
+          </div>
           <div class="form-row">
             <div class="form-group col-sm-6">
-              <label>Kualitas Hasil Proyek</label>
-              <input type="number" class="form-control" name="d_hasil" min="0" max="100" value="{{ $settings['d_hasil'] ?? 30 }}">
+              <label>Relevansi Konsep (%)</label>
+              <input type="number" class="form-control" name="d_relevansi" min="0" max="100" value="{{ $settings['d_relevansi'] ?? 25 }}">
             </div>
             <div class="form-group col-sm-6">
-              <label>Tingkat Kompleksitas Teknis</label>
-              <input type="number" class="form-control" name="d_teknis" min="0" max="100" value="{{ $settings['d_teknis'] ?? 20 }}">
+              <label>Kualitas Produk (%)</label>
+              <input type="number" class="form-control" name="d_kualitas" min="0" max="100" value="{{ $settings['d_kualitas'] ?? 25 }}">
             </div>
             <div class="form-group col-sm-6">
-              <label>Kesesuaian dengan Kebutuhan Pengguna</label>
-              <input type="number" class="form-control" name="d_user" min="0" max="100" value="{{ $settings['d_user'] ?? 15 }}">
+              <label>Kreativitas (%)</label>
+              <input type="number" class="form-control" name="d_kreativitas" min="0" max="100" value="{{ $settings['d_kreativitas'] ?? 25 }}">
             </div>
             <div class="form-group col-sm-6">
-              <label>Efisiensi Waktu dan Biaya</label>
-              <input type="number" class="form-control" name="d_efisiensi" min="0" max="100" value="{{ $settings['d_efisiensi'] ?? 10 }}">
-            </div>
-            <div class="form-group col-sm-6">
-              <label>Dokumentasi dan Profesionalisme</label>
-              <input type="number" class="form-control" name="d_dokpro" min="0" max="100" value="{{ $settings['d_dokpro'] ?? 15 }}">
-            </div>
-            <div class="form-group col-sm-6">
-              <label>Kemandirian dan Inisiatif</label>
-              <input type="number" class="form-control" name="d_inisiatif" min="0" max="100" value="{{ $settings['d_inisiatif'] ?? 10 }}">
+              <label>Estetika (%)</label>
+              <input type="number" class="form-control" name="d_estetika" min="0" max="100" value="{{ $settings['d_estetika'] ?? 25 }}">
             </div>
           </div>
 
@@ -122,7 +117,7 @@
           @php
             $get = fn($k,$def=0)=> (int)($settings[$k] ?? $def);
 
-            $sumDosen = $get('d_hasil') + $get('d_teknis') + $get('d_user') + $get('d_efisiensi') + $get('d_dokpro') + $get('d_inisiatif');
+            $sumDosen = $get('d_relevansi', 25) + $get('d_kualitas', 25) + $get('d_kreativitas', 25) + $get('d_estetika', 25);
             $sumMitra = $get('m_kehadiran') + $get('m_presentasi');
             $sumAP    = $get('w_ap_kehadiran') + $get('w_ap_presentasi');
             $sumDM    = $get('w_dosen') + $get('w_mitra');
@@ -134,16 +129,14 @@
           {{-- Dosen --}}
           <div class="mb-3">
             <div class="d-flex justify-content-between align-items-center">
-              <strong>Indikator Dosen</strong>
+              <strong>4 Pilar Dosen</strong>
               <span class="badge {{ $badge($sumDosen===100) }}">{{ $sumDosen }}%</span>
             </div>
             <ul class="list-unstyled mb-1 mt-2">
-              <li>Kualitas Hasil Proyek <span class="float-right">{{ $get('d_hasil') }}%</span></li>
-              <li>Kompleksitas Teknis <span class="float-right">{{ $get('d_teknis') }}%</span></li>
-              <li>Kesesuaian Pengguna <span class="float-right">{{ $get('d_user') }}%</span></li>
-              <li>Efisiensi Waktu/Biaya <span class="float-right">{{ $get('d_efisiensi') }}%</span></li>
-              <li>Dokumentasi & Profesionalisme <span class="float-right">{{ $get('d_dokpro') }}%</span></li>
-              <li>Kemandirian & Inisiatif <span class="float-right">{{ $get('d_inisiatif') }}%</span></li>
+              <li>Relevansi Konsep <span class="float-right">{{ $get('d_relevansi', 25) }}%</span></li>
+              <li>Kualitas Produk <span class="float-right">{{ $get('d_kualitas', 25) }}%</span></li>
+              <li>Kreativitas <span class="float-right">{{ $get('d_kreativitas', 25) }}%</span></li>
+              <li>Estetika <span class="float-right">{{ $get('d_estetika', 25) }}%</span></li>
             </ul>
           </div>
 
@@ -224,13 +217,13 @@
     const val = (name) => parseInt((document.querySelector(`[name="${name}"]`)?.value || '0'), 10) || 0;
     const hints = $('#js-hints');
     function calc(){
-      const sumD = val('d_hasil')+val('d_teknis')+val('d_user')+val('d_efisiensi')+val('d_dokpro')+val('d_inisiatif');
+      const sumD = val('d_relevansi')+val('d_kualitas')+val('d_kreativitas')+val('d_estetika');
       const sumM = val('m_kehadiran')+val('m_presentasi');
       const sumPA= val('w_ap_kehadiran')+val('w_ap_presentasi');
       const sumPM= val('w_dosen')+val('w_mitra');
       const sumGA= val('w_kelompok')+val('w_ap');
       const notes = [];
-      if (sumD !== 100) notes.push(`Indikator Dosen = ${sumD}%`);
+      if (sumD !== 100) notes.push(`4 Pilar Dosen = ${sumD}%`);
       if (sumM !== 100) notes.push(`Indikator Mitra = ${sumM}%`);
       if (sumPA !== 100) notes.push(`AP (Kehadiran+Presentasi) = ${sumPA}%`);
       if (sumPM !== 100) notes.push(`Bobot Dosen+Mitra = ${sumPM}%`);

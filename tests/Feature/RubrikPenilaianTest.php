@@ -2,9 +2,18 @@
 
 namespace Tests\Feature;
 
+use App\Models\EvaluasiDosen;
+use App\Models\EvaluasiMaster;
+use App\Models\Kelas;
+use App\Models\Kelompok;
+use App\Models\Mahasiswa;
+use App\Models\Periode;
+use App\Models\ProjectCard;
+use App\Models\ProjectList;
 use App\Models\RubrikKategori;
 use App\Models\RubrikSkala;
 use App\Models\User;
+use Database\Seeders\EvaluationRubricSeeder;
 use Database\Seeders\RubrikSkalaSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -174,5 +183,173 @@ class RubrikPenilaianTest extends TestCase
             'deskripsi' => 'Mencoba bypass',
         ]);
         $updateResponse->assertStatus(302);
+    }
+
+    public function test_evaluasi_dosen_auto_calculates_with_four_pillars_each_twenty_five_percent(): void
+    {
+        $this->seed(EvaluationRubricSeeder::class);
+
+        $periode = Periode::create([
+            'periode' => '2026/2027 Ganjil',
+            'status_periode' => 'Aktif',
+        ]);
+
+        $kelas = Kelas::create([
+            'kelas' => 'TRKJ 4A',
+            'semester' => 4,
+        ]);
+
+        $mahasiswa = Mahasiswa::create([
+            'user_id' => $this->student->id,
+            'kelas_id' => $kelas->id,
+            'nim' => '230411100010',
+            'nama_mahasiswa' => 'Mahasiswa Test Rubrik',
+            'semester' => 4,
+        ]);
+
+        $kelompok = Kelompok::create([
+            'nama_kelompok' => 'Kelompok 4 Pilar',
+            'skema_kategori' => 'Internal',
+            'semester' => 4,
+            'status' => 'approved',
+            'periode_id' => $periode->id,
+        ]);
+
+        $kelompok->mahasiswas()->attach($mahasiswa->id, [
+            'periode_id' => $periode->id,
+            'role' => 'Ketua',
+        ]);
+
+        $list = ProjectList::create([
+            'kelompok_id' => $kelompok->id,
+            'periode_id' => $periode->id,
+            'name' => 'Sprint 1',
+            'position' => 1,
+        ]);
+
+        $card = ProjectCard::create([
+            'list_id' => $list->id,
+            'kelompok_id' => $kelompok->id,
+            'periode_id' => $periode->id,
+            'title' => 'Sistem IoT Pertanian',
+            'progress' => 100,
+            'position' => 1,
+        ]);
+
+        $evalMaster = EvaluasiMaster::create([
+            'periode_id' => $periode->id,
+            'kelompok_id' => $kelompok->id,
+        ]);
+
+        // Relevansi=80, Kualitas=90, Kreativitas=70, Estetika=80
+        // Expected weighted total: (80 * 0.25) + (90 * 0.25) + (70 * 0.25) + (80 * 0.25) = 20 + 22.5 + 17.5 + 20 = 80.0
+        $evaluation = EvaluasiDosen::create([
+            'evaluasi_master_id' => $evalMaster->id,
+            'periode_id' => $periode->id,
+            'kelompok_id' => $kelompok->id,
+            'mahasiswa_id' => $mahasiswa->id,
+            'project_card_id' => $card->id,
+            'evaluator_id' => $this->evaluator->id,
+            'd_relevansi' => 80,
+            'd_kualitas' => 90,
+            'd_kreativitas' => 70,
+            'd_estetika' => 80,
+            'status' => 'submitted',
+            'progress_percentage' => 100,
+            'evaluation_type' => 'regular',
+        ]);
+
+        $this->assertEquals(80.0, (float) $evaluation->nilai_akhir);
+        $this->assertEquals(80.0, (float) $evaluation->rata_rata);
+    }
+
+    public function test_admin_can_save_project_grade_with_four_pillars_via_endpoint(): void
+    {
+        $this->seed(EvaluationRubricSeeder::class);
+
+        $periode = Periode::create([
+            'periode' => '2026/2027 Genap',
+            'status_periode' => 'Aktif',
+        ]);
+
+        $kelas = Kelas::create([
+            'kelas' => 'TRKJ 4B',
+            'semester' => 4,
+        ]);
+
+        $mahasiswa = Mahasiswa::create([
+            'user_id' => $this->student->id,
+            'kelas_id' => $kelas->id,
+            'nim' => '230411100011',
+            'nama_mahasiswa' => 'Mahasiswa Test Endpoint',
+            'semester' => 4,
+        ]);
+
+        $kelompok = Kelompok::create([
+            'nama_kelompok' => 'Kelompok Proyek 4 Pilar',
+            'skema_kategori' => 'Internal',
+            'semester' => 4,
+            'status' => 'approved',
+            'periode_id' => $periode->id,
+        ]);
+
+        $kelompok->mahasiswas()->attach($mahasiswa->id, [
+            'periode_id' => $periode->id,
+            'role' => 'Ketua',
+        ]);
+
+        $list = ProjectList::create([
+            'kelompok_id' => $kelompok->id,
+            'periode_id' => $periode->id,
+            'name' => 'Backlog Proyek',
+            'position' => 1,
+        ]);
+
+        $card = ProjectCard::create([
+            'list_id' => $list->id,
+            'kelompok_id' => $kelompok->id,
+            'periode_id' => $periode->id,
+            'title' => 'Aplikasi Monitoring Smart Campus',
+            'progress' => 100,
+            'position' => 1,
+        ]);
+
+        $evalMaster = EvaluasiMaster::create([
+            'periode_id' => $periode->id,
+            'kelompok_id' => $kelompok->id,
+        ]);
+
+        $payload = [
+            'evaluasi_master_id' => $evalMaster->id,
+            'items' => [
+                $mahasiswa->id => [
+                    'nilai' => [
+                        'd_relevansi' => 85,
+                        'd_kualitas' => 85,
+                        'd_kreativitas' => 85,
+                        'd_estetika' => 85,
+                    ],
+                ],
+            ],
+        ];
+
+        $response = $this->actingAs($this->admin)->postJson(
+            route('admin.evaluasi.project.grade.dosen', ['card' => $card]),
+            $payload
+        );
+
+        $response->assertStatus(200);
+        $response->assertJson(['success' => true]);
+
+        $saved = EvaluasiDosen::where('mahasiswa_id', $mahasiswa->id)
+            ->where('project_card_id', $card->id)
+            ->first();
+
+        $this->assertNotNull($saved);
+        $this->assertEquals(85, $saved->d_relevansi);
+        $this->assertEquals(85, $saved->d_kualitas);
+        $this->assertEquals(85, $saved->d_kreativitas);
+        $this->assertEquals(85, $saved->d_estetika);
+        $this->assertEquals(85.0, (float) $saved->nilai_akhir);
     }
 }
