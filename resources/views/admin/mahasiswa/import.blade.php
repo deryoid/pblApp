@@ -3,7 +3,10 @@
 <div class="container-fluid">
 
     <div class="d-sm-flex align-items-center justify-content-between mb-3">
-        <h1 class="h3 text-gray-800">Import Mahasiswa (CSV)</h1>
+        <div>
+            <h1 class="h3 text-gray-800">Import Bank Data Mahasiswa (CSV)</h1>
+            <p class="text-muted small mb-0">Import data NIM dan Nama ke dalam Bank Data Mahasiswa. Akun pengguna akan otomatis disesuaikan jika sudah ada, atau siap diklaim oleh mahasiswa saat mendaftar.</p>
+        </div>
         <a href="{{ route('mahasiswa.index') }}" class="btn btn-secondary btn-sm">Kembali</a>
     </div>
 

@@ -18,6 +18,14 @@
     <!-- Topbar Navbar (Right Items) -->
     <ul class="navbar-nav ml-auto align-items-center">
 
+        <!-- Quick Access to Presentation & Module Deck -->
+        <li class="nav-item mr-2">
+            <a href="{{ url('modul-presentasi.html') }}" class="btn btn-sm btn-outline-info" target="_blank" title="Buka Bahan Presentasi & Modul HTML">
+                <i class="fas fa-file-powerpoint mr-1"></i>
+                <span class="d-none d-lg-inline">Bahan Presentasi</span>
+            </a>
+        </li>
+
         <!-- Quick Access to Public Showcase -->
         <li class="nav-item mr-2 mr-sm-3">
             <a href="{{ route('home') }}" class="btn btn-sm btn-outline-primary" target="_blank" title="Buka Galeri Proyek Selesai di Tab Baru">

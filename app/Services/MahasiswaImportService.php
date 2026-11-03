@@ -5,15 +5,13 @@ namespace App\Services;
 use App\Models\Mahasiswa;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 
 class MahasiswaImportService
 {
     /**
      * Import users and students from CSV file.
      *
-     * @param string $path Path to the CSV file
+     * @param  string  $path  Path to the CSV file
      * @return array [stats, errors]
      */
     public function importFromCsv(string $path): array
@@ -79,6 +77,7 @@ class MahasiswaImportService
                     $s = preg_replace('/[^\x20-\x7E\x0A\x0D\x09]/', '', (string) $s) ?? '';
                 }
             }
+
             return $s;
         };
 
@@ -94,6 +93,7 @@ class MahasiswaImportService
                     $tmp = $s;
                 }
             }
+
             return $tmp;
         };
 
@@ -104,6 +104,7 @@ class MahasiswaImportService
             }
             $t = trim($toUtf8($s));
             $t = trim($t, "\"'");
+
             return $t === '';
         };
 
@@ -148,97 +149,74 @@ class MahasiswaImportService
             ) {
                 $errors[] = "Baris {$rowNum}: NIM/Nama tidak valid (kosong/NULL/hanya kutip/encoding rusak).";
                 $rowNum++;
+
                 continue;
             }
 
             try {
                 DB::transaction(function () use ($nim, $nama, &$createdUsers, &$createdMhs, &$updatedMhs, &$attached, &$skipped, &$conflict) {
-                    // USER
+                    // Cari user yang sudah ada dengan username = NIM
                     $user = User::where('username', $nim)->first();
 
-                    if (! $user) {
-                        $safeNama = (string) $nama;
-                        if (
-                            $safeNama === '' ||
-                            strtoupper(trim($safeNama)) === 'NULL' ||
-                            trim($safeNama, "\"' \t\n\r\0\x0B") === ''
-                        ) {
-                            $safeNama = 'Mahasiswa '.$nim;
-                        }
+                    // Cari record di Bank Data Mahasiswa berdasarkan NIM
+                    $mByNim = Mahasiswa::where('nim', $nim)->first();
 
-                        $email = strtolower($nim.'@politala.ac.id');
-                        if (User::where('email', $email)->exists()) {
-                            $email = strtolower($nim.'+'.Str::random(4).'@politala.ac.id');
-                        }
-
-                        $user = User::create([
-                            'nama_user' => $safeNama,
-                            'email' => $email,
-                            'email_verified_at' => now(),
-                            'no_hp' => '-',
-                            'username' => $nim,
-                            'password' => Hash::make($nim),
-                            'role' => 'mahasiswa',
-                            'remember_token' => Str::random(10),
-                        ]);
-                        $createdUsers++;
-                    } else {
-                        if ($user->nama_user === null || trim($user->nama_user) === '' || strtoupper(trim($user->nama_user)) === 'NULL') {
-                            $user->nama_user = ($nama && strtoupper(trim($nama)) !== 'NULL') ? $nama : ('Mahasiswa '.$nim);
-                            $user->save();
-                        } elseif ($user->nama_user !== $nama && $nama && strtoupper(trim($nama)) !== 'NULL') {
+                    if ($user) {
+                        // Sesuaikan nama user dengan nama dari import jika ada perubahan
+                        if ($user->nama_user !== $nama && $nama && strtoupper(trim($nama)) !== 'NULL') {
                             $user->nama_user = $nama;
                             $user->save();
                         }
-                    }
 
-                    // MAHASISWA
-                    $m = Mahasiswa::where('user_id', $user->id)->first();
-                    if ($m) {
-                        $changed = false;
-                        if ($m->nim !== $nim) {
-                            $dupe = Mahasiswa::where('nim', $nim)->where('id', '!=', $m->id)->exists();
-                            if ($dupe) {
-                                $conflict++;
-                            } else {
-                                $m->nim = $nim;
-                                $changed = true;
-                            }
-                        }
-                        if ($m->nama_mahasiswa !== $nama) {
-                            $m->nama_mahasiswa = $nama;
-                            $changed = true;
-                        }
-                        if ($changed) {
-                            $m->save();
-                            $updatedMhs++;
-                        } else {
-                            $skipped++;
-                        }
-                        return;
-                    }
-
-                    $mByNim = Mahasiswa::where('nim', $nim)->first();
-                    if ($mByNim) {
-                        if ($mByNim->user_id && $mByNim->user_id !== $user->id) {
-                            $conflict++;
-                        } else {
-                            $mByNim->user_id = $user->id;
+                        if ($mByNim) {
+                            $changed = false;
                             if ($mByNim->nama_mahasiswa !== $nama) {
                                 $mByNim->nama_mahasiswa = $nama;
+                                $changed = true;
                             }
-                            $mByNim->save();
+                            if ($mByNim->user_id !== $user->id) {
+                                $mByNim->user_id = $user->id;
+                                $changed = true;
+                                $attached++;
+                            }
+                            if ($changed) {
+                                $mByNim->save();
+                                $updatedMhs++;
+                            } else {
+                                $skipped++;
+                            }
+                        } else {
+                            // Mahasiswa belum ada, tautkan langsung ke user yang ada
+                            Mahasiswa::create([
+                                'user_id' => $user->id,
+                                'nim' => $nim,
+                                'nama_mahasiswa' => $nama,
+                                'semester' => 1,
+                            ]);
+                            $createdMhs++;
                             $attached++;
                         }
-                        return;
+                    } else {
+                        // User belum ada: simpan ke Bank Data Mahasiswa (user_id = null)
+                        // Mahasiswa akan mengklaim/mendaftar mandiri via halaman pendaftaran dengan identifikasi NIM
+                        if ($mByNim) {
+                            if ($mByNim->nama_mahasiswa !== $nama) {
+                                $mByNim->nama_mahasiswa = $nama;
+                                $mByNim->save();
+                                $updatedMhs++;
+                            } else {
+                                $skipped++;
+                            }
+                        } else {
+                            Mahasiswa::create([
+                                'user_id' => null,
+                                'nim' => $nim,
+                                'nama_mahasiswa' => $nama,
+                                'semester' => 1,
+                            ]);
+                            $createdMhs++;
+                        }
                     }
-
-                    Mahasiswa::create([
-                        'user_id' => $user->id,
-                        'nim' => $nim,
-                        'nama_mahasiswa' => $nama,
-                    ]);
-                    $createdMhs++;
                 });
             } catch (\Throwable $e) {
                 $errors[] = "Baris {$rowNum}: ".$e->getMessage();
@@ -257,7 +235,7 @@ class MahasiswaImportService
                 'skipped' => $skipped,
                 'conflict' => $conflict,
             ],
-            'errors' => $errors
+            'errors' => $errors,
         ];
     }
 }

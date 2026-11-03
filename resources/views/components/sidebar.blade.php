@@ -30,6 +30,15 @@
         </a>
     </li>
 
+    {{-- Bahan Presentasi & Modul --}}
+    <li class="nav-item">
+        <a class="nav-link" href="{{ url('modul-presentasi.html') }}" target="_blank">
+            <i class="fas fa-fw fa-file-powerpoint text-warning"></i>
+            <span>Bahan Presentasi</span>
+            <span class="badge badge-warning ml-auto">Deck</span>
+        </a>
+    </li>
+
     <!-- Divider -->
     <hr class="sidebar-divider">
 
@@ -107,6 +116,14 @@
             </a>
         </li>
 
+        {{-- Riwayat PBL Mahasiswa --}}
+        <li class="nav-item {{ request()->routeIs('admin.riwayat.*') ? 'active' : '' }}">
+            <a class="nav-link" href="{{ route('admin.riwayat.index') }}">
+                <i class="fas fa-fw fa-history"></i>
+                <span>Riwayat PBL Mahasiswa</span>
+            </a>
+        </li>
+
     {{-- =================== EVALUATOR =================== --}}
     @elseif ($role === 'evaluator')
         <div class="sidebar-heading">Pusat Data</div>
@@ -144,6 +161,14 @@
             <a class="nav-link" href="{{ route('evaluator.nilai.index') }}">
                 <i class="fas fa-fw fa-chart-bar"></i>
                 <span>Nilai Akhir</span>
+            </a>
+        </li>
+
+        {{-- Riwayat PBL Mahasiswa --}}
+        <li class="nav-item {{ request()->routeIs('evaluator.riwayat.*') ? 'active' : '' }}">
+            <a class="nav-link" href="{{ route('evaluator.riwayat.index') }}">
+                <i class="fas fa-fw fa-history"></i>
+                <span>Riwayat PBL Mahasiswa</span>
             </a>
         </li>
 
@@ -256,6 +281,14 @@
             <a class="nav-link" href="{{ route('mahasiswa.nilai.index') }}">
                 <i class="fas fa-fw fa-chart-bar"></i>
                 <span>Transkrip Nilai</span>
+            </a>
+        </li>
+
+        {{-- Riwayat PBL --}}
+        <li class="nav-item {{ request()->routeIs('mahasiswa.riwayat.*') ? 'active' : '' }}">
+            <a class="nav-link" href="{{ route('mahasiswa.riwayat.index') }}">
+                <i class="fas fa-fw fa-history"></i>
+                <span>Riwayat PBL Saya</span>
             </a>
         </li>
     @endif

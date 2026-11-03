@@ -4,7 +4,14 @@
 
     <!-- Page Heading -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800 font-weight-bold">Mahasiswa</h1>
+        <div>
+            <h1 class="h3 mb-0 text-gray-800 font-weight-bold">Bank Data Mahasiswa</h1>
+            <p class="text-muted small mb-0">Master bank data mahasiswa program studi. Nama dan NIM diimport/diinput di sini dan otomatis disesuaikan saat mahasiswa mendaftar akun.</p>
+        </div>
+        <div class="mt-2 mt-sm-0">
+            <span class="badge badge-primary px-2 py-1">Total Bank Data: {{ $data->count() }}</span>
+            <span class="badge badge-success px-2 py-1 ml-1">Akun Terhubung: {{ $data->whereNotNull('user_id')->count() }}</span>
+        </div>
     </div>
 
     <div class="card shadow mb-4">
@@ -42,11 +49,11 @@
                         <tr>
                             <th class="text-center" style="width: 45px;">No</th>
                             <th>NIM</th>
-                            <th>Nama Mahasiswa</th>
-                            <th>Email</th>
-                            <th>Username</th>
-                            <th class="text-center">Password</th>
-                            <th class="text-center">Role</th>
+                            <th>Nama Mahasiswa (Bank Data)</th>
+                            <th>Kelas</th>
+                            <th>Akun Pengguna</th>
+                            <th class="text-center">Status Akun</th>
+                            <th class="text-center">Atur Sandi</th>
                             <th class="text-center align-middle" style="width: 90px;">
                                 <i class="fas fa-cogs fa-sm" aria-hidden="true"></i>
                             </th>
@@ -57,47 +64,58 @@
                         @php $u = $m->user; @endphp
                         <tr>
                             <td class="text-center align-middle">{{ $loop->iteration }}</td>
-                            <td class="align-middle font-weight-bold text-nowrap">{{ $m->nim }}</td>
-                            <td class="align-middle">{{ $m->nama_mahasiswa }}</td>
-                            <td class="align-middle">{{ $u->email ?? '-' }}</td>
-                            <td class="align-middle text-nowrap">{{ $u->username ?? '-' }}</td>
+                            <td class="align-middle font-weight-bold text-nowrap">{{ $m->nim ?? '-' }}</td>
+                            <td class="align-middle font-weight-500">{{ $m->nama_mahasiswa }}</td>
+                            <td class="align-middle text-nowrap">
+                                @if($m->kelas)
+                                    <span class="badge badge-light border">{{ $m->kelas->kelas }}</span>
+                                @else
+                                    <span class="text-muted">-</span>
+                                @endif
+                            </td>
+                            <td class="align-middle">
+                                @if($u)
+                                    <div class="font-weight-bold text-dark" style="font-size: 0.85rem;">{{ $u->username }}</div>
+                                    <div class="text-muted" style="font-size: 0.75rem;">{{ $u->email }}</div>
+                                @else
+                                    <span class="text-muted small"><em>Belum terdaftar</em></span>
+                                @endif
+                            </td>
+
+                            {{-- STATUS AKUN --}}
+                            <td class="text-center align-middle text-nowrap">
+                                @if($u)
+                                    <span class="badge badge-success badge-pill py-1 px-2">
+                                        <i class="fas fa-check-circle mr-1"></i> Terhubung
+                                    </span>
+                                @else
+                                    <span class="badge badge-warning badge-pill py-1 px-2">
+                                        <i class="fas fa-clock mr-1"></i> Belum Mendaftar
+                                    </span>
+                                @endif
+                            </td>
 
                             {{-- Reset Password --}}
                             <td class="text-center align-middle text-nowrap">
                                 @if($u)
                                 <form action="{{ route('user.reset-password', $u) }}" method="POST" class="m-0 d-inline">
                                     @csrf
-                                    <button type="submit" class="btn btn-xs btn-outline-warning text-nowrap" title="Reset Password">
-                                        <i class="fas fa-key mr-1"></i> Atur Ulang Sandi
+                                    <button type="submit" class="btn btn-xs btn-outline-warning text-nowrap" title="Reset Password Akun">
+                                        <i class="fas fa-key mr-1"></i> Reset
                                     </button>
                                 </form>
                                 @else
-                                <span class="badge badge-warning badge-pill">Belum ada akun</span>
-                                @endif
-                            </td>
-
-                            {{-- ROLE --}}
-                            <td class="text-center align-middle text-nowrap">
-                                @if($u && $u->role === 'mahasiswa')
-                                    <span class="badge badge-secondary badge-pill">
-                                        <i class="fas fa-user-graduate fa-xs mr-1"></i> Mahasiswa
-                                    </span>
-                                @elseif($u && $u->role === 'evaluator')
-                                    <span class="badge badge-info badge-pill">
-                                        <i class="fas fa-clipboard-check fa-xs mr-1"></i> Evaluator
-                                    </span>
-                                @elseif($u && $u->role === 'admin')
-                                    <span class="badge badge-primary badge-pill">
-                                        <i class="fas fa-user-shield fa-xs mr-1"></i> Admin
-                                    </span>
-                                @else
-                                    <span class="badge badge-light badge-pill">-</span>
+                                <span class="text-muted small">-</span>
                                 @endif
                             </td>
 
                             {{-- AKSI --}}
                             <td class="text-center align-middle text-nowrap">
                                 <div class="table-action-group">
+                                    <a href="{{ route('admin.riwayat.show', $m) }}" class="btn btn-sm btn-outline-info btn-action-icon" title="Lihat Riwayat PBL">
+                                        <i class="fas fa-history fa-sm" aria-hidden="true"></i>
+                                    </a>
+
                                     <a href="{{ route('mahasiswa.edit', $m) }}" class="btn btn-sm btn-outline-success btn-action-icon" title="Ubah Data">
                                         <i class="fas fa-edit fa-sm" aria-hidden="true"></i>
                                     </a>

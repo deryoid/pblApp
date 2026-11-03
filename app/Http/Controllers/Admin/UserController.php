@@ -2,14 +2,13 @@
 
 namespace App\Http\Controllers\Admin;
 
-use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
 use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;    
 use Illuminate\Validation\Rule;
 use RealRashid\SweetAlert\Facades\Alert;
-use App\Http\Controllers\Controller;
 
 class UserController extends Controller
 {
@@ -19,6 +18,7 @@ class UserController extends Controller
     public function index()
     {
         $data = User::latest()->get();
+
         return view('admin.user.index', compact('data'));
     }
 
@@ -27,7 +27,7 @@ class UserController extends Controller
      */
     public function create()
     {
-         return view('admin.user.create');
+        return view('admin.user.create');
     }
 
     /**
@@ -35,37 +35,57 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
-     // Normalisasi ringan
-    $request->merge([
-        'nama_user' => preg_replace('/\s+/', ' ', trim($request->nama_user)),
-        'email'     => strtolower(trim($request->email)),
-        'username'  => strtolower(trim($request->username)),
-        'no_hp'     => preg_replace('/\s+/', '', trim($request->no_hp)),
-    ]);
+        // Normalisasi ringan
+        $request->merge([
+            'nama_user' => preg_replace('/\s+/', ' ', trim($request->nama_user)),
+            'email' => strtolower(trim($request->email)),
+            'username' => strtolower(trim($request->username)),
+            'no_hp' => preg_replace('/\s+/', '', trim($request->no_hp)),
+        ]);
 
-    $validated = $request->validate([
-        'nama_user' => 'required|string|max:255',
-        'email'     => 'required|email|max:255|unique:users,email',
-        'no_hp'     => 'required|string|max:30',
-        'username'  => 'required|string|max:50|alpha_dash|unique:users,username', // <- unique
-        'password'  => 'nullable|string|min:5|confirmed', // kosong = pakai default
-        'role'      => 'required|in:admin,evaluator,mahasiswa',
-    ]);
+        $validated = $request->validate([
+            'nama_user' => 'required|string|max:255',
+            'email' => 'required|email|max:255|unique:users,email',
+            'no_hp' => 'required|string|max:30',
+            'username' => 'required|string|max:50|alpha_dash|unique:users,username', // <- unique
+            'password' => 'nullable|string|min:5|confirmed', // kosong = pakai default
+            'role' => 'required|in:admin,dosen,evaluator,mahasiswa',
+        ]);
 
-    $payload = [
-        'nama_user'         => $validated['nama_user'],
-        'email'             => $validated['email'],
-        'email_verified_at' => now(),
-        'no_hp'             => $validated['no_hp'],
-        'username'          => $validated['username'],
-        'password'          => Hash::make($validated['password'] ?? '123456'), // default jika kosong
-        'role'              => $validated['role'],
-        'remember_token'    => Str::random(10),
-    ];
+        $payload = [
+            'nama_user' => $validated['nama_user'],
+            'email' => $validated['email'],
+            'email_verified_at' => now(),
+            'no_hp' => $validated['no_hp'],
+            'username' => $validated['username'],
+            'password' => Hash::make($validated['password'] ?? '123456'), // default jika kosong
+            'role' => $validated['role'],
+            'remember_token' => Str::random(10),
+        ];
 
-    User::create($payload);
-    Alert::toast('Pengguna berhasil ditambahkan.', 'success');
-    return redirect()->route('user.index');
+        $user = User::create($payload);
+
+        // Jika role mahasiswa, sesuaikan dengan Bank Data Mahasiswa
+        if ($validated['role'] === 'mahasiswa') {
+            $nim = strtoupper($validated['username']);
+            $m = \App\Models\Mahasiswa::where('nim', $nim)->first();
+            if ($m) {
+                $m->user_id = $user->id;
+                $m->nama_mahasiswa = $validated['nama_user'];
+                $m->save();
+            } else {
+                \App\Models\Mahasiswa::create([
+                    'user_id' => $user->id,
+                    'nim' => $nim,
+                    'nama_mahasiswa' => $validated['nama_user'],
+                    'semester' => 1,
+                ]);
+            }
+        }
+
+        Alert::toast('Pengguna berhasil ditambahkan.', 'success');
+
+        return redirect()->route('user.index');
     }
 
     /**
@@ -92,35 +112,55 @@ class UserController extends Controller
         // $user resolved by UUID (route model binding)
 
         // Normalisasi hanya jika field dikirim
-        if ($request->has('nama_user')) $request->merge(['nama_user' => preg_replace('/\s+/', ' ', trim($request->nama_user))]);
-        if ($request->has('email'))     $request->merge(['email'     => strtolower(trim($request->email))]);
-        if ($request->has('username'))  $request->merge(['username'  => strtolower(trim($request->username))]);
-        if ($request->has('no_hp'))     $request->merge(['no_hp'     => preg_replace('/\s+/', '', trim($request->no_hp))]);
+        if ($request->has('nama_user')) {
+            $request->merge(['nama_user' => preg_replace('/\s+/', ' ', trim($request->nama_user))]);
+        }
+        if ($request->has('email')) {
+            $request->merge(['email' => strtolower(trim($request->email))]);
+        }
+        if ($request->has('username')) {
+            $request->merge(['username' => strtolower(trim($request->username))]);
+        }
+        if ($request->has('no_hp')) {
+            $request->merge(['no_hp' => preg_replace('/\s+/', '', trim($request->no_hp))]);
+        }
 
         $validated = $request->validate([
             'nama_user' => 'required|string|max:255',
-            'email'     => ['required','email','max:255', Rule::unique('users','email')->ignore($user->id)],
-            'no_hp'     => 'required|string|max:30',
-            'username'  => ['required','string','max:50','alpha_dash', Rule::unique('users','username')->ignore($user->id)], // <- unique
-            'password'  => 'nullable|string|min:5|confirmed',
-            'role'      => 'required|in:admin,evaluator,mahasiswa',
+            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+            'no_hp' => 'required|string|max:30',
+            'username' => ['required', 'string', 'max:50', 'alpha_dash', Rule::unique('users', 'username')->ignore($user->id)], // <- unique
+            'password' => 'nullable|string|min:5|confirmed',
+            'role' => 'required|in:admin,dosen,evaluator,mahasiswa',
         ]);
 
         $updateData = [
             'nama_user' => $validated['nama_user'],
-            'email'     => $validated['email'],
-            'no_hp'     => $validated['no_hp'],
-            'username'  => $validated['username'],
-            'role'      => $validated['role'],
+            'email' => $validated['email'],
+            'no_hp' => $validated['no_hp'],
+            'username' => $validated['username'],
+            'role' => $validated['role'],
         ];
 
-        if (!empty($validated['password'])) {
+        if (! empty($validated['password'])) {
             $updateData['password'] = Hash::make($validated['password']);
         }
 
         $user->update($updateData);
-            Alert::toast('Pengguna berhasil diperbarui.', 'success');
-            return redirect()->route('user.index');
+
+        // Jika user adalah mahasiswa, sesuaikan nama di Bank Data Mahasiswa
+        if ($user->role === 'mahasiswa') {
+            $m = $user->mahasiswa;
+            if ($m) {
+                $m->nama_mahasiswa = $user->nama_user;
+                $m->nim = strtoupper($user->username);
+                $m->save();
+            }
+        }
+
+        Alert::toast('Pengguna berhasil diperbarui.', 'success');
+
+        return redirect()->route('user.index');
     }
 
     /**
@@ -131,6 +171,7 @@ class UserController extends Controller
         $user->delete();
 
         Alert::toast('Pengguna berhasil dihapus.', 'success');
+
         return redirect()->route('user.index');
     }
 
@@ -141,7 +182,7 @@ class UserController extends Controller
         $user->update(['password' => $newPassword]);
 
         Alert::toast("Password {$user->nama_user} berhasil direset menjadi: {$newPassword}", 'success');
+
         return back();
     }
-
 }

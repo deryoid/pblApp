@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use RealRashid\SweetAlert\Facades\Alert;
-use App\Http\Controllers\Controller;
 
 class LoginController extends Controller
 {
@@ -18,10 +18,10 @@ class LoginController extends Controller
             $user = Auth::user();
 
             return match ($user->role) {
-                'admin'     => redirect()->to('/admin'),
-                'evaluator' => redirect()->to('/evaluator'),
+                'admin' => redirect()->to('/admin'),
+                'evaluator', 'dosen' => redirect()->to('/evaluator'),
                 'mahasiswa' => redirect()->to('/mahasiswa'),
-                default     => redirect()->to('/'),
+                default => redirect()->to('/'),
             };
         }
 
@@ -35,8 +35,8 @@ class LoginController extends Controller
     {
         // Validasi input
         $request->validate([
-            'username' => ['required','string'],
-            'password' => ['required','string'],
+            'username' => ['required', 'string'],
+            'password' => ['required', 'string'],
         ]);
 
         $remember = (bool) $request->boolean('remember');
@@ -46,18 +46,6 @@ class LoginController extends Controller
 
         // Coba login
         if (Auth::attempt($credentials, $remember)) {
-            $user = Auth::user();
-
-            if ($user->role === 'mahasiswa') {
-                Auth::logout();
-                $request->session()->invalidate();
-                $request->session()->regenerateToken();
-
-                Alert::error('Anda tidak bisa login, Periode Penilaian Sudah Selesai', '"Dan janganlah kamu iri hati terhadap apa yang dikaruniakan Allah kepada sebagian kamu lebih banyak dari sebagian yang lain.  : An-Nisa ayat 32"')->autoClose(5000);
-                
-                return back()->withInput();
-            }
-
             $request->session()->regenerate();
 
             // Toast sukses
@@ -67,15 +55,16 @@ class LoginController extends Controller
 
             // Redirect berdasarkan role
             return match ($user->role) {
-                'admin'     => redirect()->to('/admin'),
-                'evaluator' => redirect()->to('/evaluator'),
+                'admin' => redirect()->to('/admin'),
+                'evaluator', 'dosen' => redirect()->to('/evaluator'),
                 'mahasiswa' => redirect()->to('/mahasiswa'),
-                default     => redirect()->intended('/'),
+                default => redirect()->intended('/'),
             };
         }
 
         // Gagal login
         Alert::toast('Username atau password salah.', 'error');
+
         return back()->withInput(); // kembalikan input username
     }
 

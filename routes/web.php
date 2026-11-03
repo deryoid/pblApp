@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\RubrikPenilaianController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -21,6 +22,10 @@ Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::get('/login-form', [LoginController::class, 'showLoginForm'])->name('login.form');
 Route::post('/login', [LoginController::class, 'login'])->name('login.attempt');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+
+// Pendaftaran Mahasiswa (Identifikasi NIM Bank Data)
+Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
+Route::post('/register', [RegisterController::class, 'register'])->name('register.attempt');
 
 // Google OAuth routes
 Route::get('/auth/google', [GoogleAuthController::class, 'redirect'])->name('auth.google');
@@ -183,6 +188,13 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'profile.complete'])->group
         Route::get('/export', [\App\Http\Controllers\Admin\NilaiController::class, 'export'])->name('export');
     });
 
+    // Riwayat PBL Mahasiswa
+    Route::prefix('riwayat')->name('admin.riwayat.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\RiwayatPblAdminController::class, 'index'])->name('index');
+        Route::get('/{mahasiswa:uuid}', [\App\Http\Controllers\Admin\RiwayatPblAdminController::class, 'show'])->name('show');
+        Route::get('/{mahasiswa:uuid}/cetak', [\App\Http\Controllers\Admin\RiwayatPblAdminController::class, 'cetak'])->name('cetak');
+    });
+
 });
 
 // Evaluator
@@ -245,6 +257,13 @@ Route::prefix('evaluator')->middleware(['auth', 'evaluator', 'profile.complete']
     Route::prefix('nilai')->name('evaluator.nilai.')->group(function () {
         Route::get('/', [App\Http\Controllers\Evaluator\NilaiController::class, 'index'])->name('index');
     });
+
+    // Riwayat PBL Mahasiswa
+    Route::prefix('riwayat')->name('evaluator.riwayat.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Evaluator\RiwayatPblEvaluatorController::class, 'index'])->name('index');
+        Route::get('/{mahasiswa:uuid}', [\App\Http\Controllers\Evaluator\RiwayatPblEvaluatorController::class, 'show'])->name('show');
+        Route::get('/{mahasiswa:uuid}/cetak', [\App\Http\Controllers\Evaluator\RiwayatPblEvaluatorController::class, 'cetak'])->name('cetak');
+    });
 });
 
 // Mahasiswa
@@ -305,6 +324,12 @@ Route::prefix('mahasiswa')->middleware(['auth', 'mahasiswa', 'profile.complete']
     // Nilai
     Route::prefix('nilai')->name('mahasiswa.nilai.')->group(function () {
         Route::get('/', [\App\Http\Controllers\Mahasiswa\NilaiController::class, 'index'])->name('index');
+    });
+
+    // Riwayat PBL Personal
+    Route::prefix('riwayat')->name('mahasiswa.riwayat.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Mahasiswa\RiwayatPblController::class, 'index'])->name('index');
+        Route::get('/cetak', [\App\Http\Controllers\Mahasiswa\RiwayatPblController::class, 'cetak'])->name('cetak');
     });
 });
 

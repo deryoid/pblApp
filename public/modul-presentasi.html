@@ -1,0 +1,1423 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modul & Bahan Presentasi - PBL TRKJ Politala</title>
+    <link rel="icon" href="sbadmin2/img/logo-campus.png" type="image/png">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        :root {
+            --bg-dark: #090d16;
+            --bg-surface: #0f172a;
+            --bg-card: #1e293b;
+            --bg-card-hover: #27354f;
+            --primary: #2563eb;
+            --primary-light: #3b82f6;
+            --accent: #0ea5e9;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: rgba(255, 255, 255, 0.08);
+            --border-hover: rgba(59, 130, 246, 0.4);
+            --shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* ====== HEADER NAVBAR ====== */
+        .top-navbar {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border);
+            padding: 0.85rem 1.5rem;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand-section {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .brand-logo {
+            width: 38px;
+            height: auto;
+            filter: drop-shadow(0 2px 8px rgba(37, 99, 235, 0.4));
+        }
+
+        .brand-text h1 {
+            font-size: 1.1rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, #ffffff 0%, #93c5fd 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1.2;
+        }
+
+        .brand-text p {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .view-switch {
+            display: flex;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 3px;
+            border-radius: 999px;
+        }
+
+        .view-btn {
+            background: none;
+            border: none;
+            padding: 0.45rem 1rem;
+            border-radius: 999px;
+            color: var(--text-muted);
+            font-size: 0.825rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .view-btn.active {
+            background: var(--primary);
+            color: #ffffff;
+            box-shadow: 0 2px 10px rgba(37, 99, 235, 0.4);
+        }
+
+        .btn-action {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 0.5rem 0.9rem;
+            border-radius: 8px;
+            font-size: 0.825rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            text-decoration: none;
+        }
+
+        .btn-action:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--border-hover);
+            transform: translateY(-1px);
+        }
+
+        .btn-action-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            border: none;
+            color: #ffffff;
+        }
+
+        .btn-action-primary:hover {
+            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
+        }
+
+        /* ====== MAIN CONTAINER ====== */
+        .main-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1.5rem;
+        }
+
+        /* ====== SLIDE DECK VIEW ====== */
+        #slideDeckView {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-height: calc(100vh - 120px);
+        }
+
+        .slide-progress-bar-wrapper {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 2px;
+            margin-bottom: 1rem;
+            overflow: hidden;
+        }
+
+        .slide-progress-bar {
+            height: 100%;
+            width: 12.5%;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            transition: width 0.3s ease;
+        }
+
+        .slide-stage {
+            flex: 1;
+            position: relative;
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 2.5rem;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            overflow: hidden;
+            min-height: 580px;
+        }
+
+        .slide-item {
+            display: none;
+            animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            height: 100%;
+        }
+
+        .slide-item.active {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.985) translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        /* Slide Content Components */
+        .slide-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.3rem 0.8rem;
+            border-radius: 999px;
+            background: rgba(37, 99, 235, 0.15);
+            color: #60a5fa;
+            border: 1px solid rgba(37, 99, 235, 0.3);
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 1rem;
+            width: fit-content;
+        }
+
+        .slide-title {
+            font-size: 2.25rem;
+            font-weight: 800;
+            letter-spacing: -0.025em;
+            line-height: 1.2;
+            margin-bottom: 0.75rem;
+            background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .slide-subtitle {
+            font-size: 1.05rem;
+            color: var(--text-muted);
+            margin-bottom: 1.75rem;
+            max-width: 850px;
+        }
+
+        .slide-grid-2 {
+            display: grid;
+            grid-template-columns: 1.15fr 0.85fr;
+            gap: 2rem;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex: 1;
+        }
+
+        .slide-banner-img {
+            width: 100%;
+            height: auto;
+            max-height: 380px;
+            object-fit: cover;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+            transition: transform 0.3s;
+        }
+
+        .slide-banner-img:hover {
+            transform: scale(1.015);
+        }
+
+        .feature-card-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.9rem;
+        }
+
+        .feature-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem 1.25rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            transition: all 0.2s;
+        }
+
+        .feature-item:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--border-hover);
+            transform: translateX(4px);
+        }
+
+        .feature-icon-box {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            flex-shrink: 0;
+            background: rgba(37, 99, 235, 0.15);
+            color: #60a5fa;
+            border: 1px solid rgba(37, 99, 235, 0.25);
+        }
+
+        .feature-item h4 {
+            font-size: 0.95rem;
+            font-weight: 700;
+            margin-bottom: 0.2rem;
+            color: #ffffff;
+        }
+
+        .feature-item p {
+            font-size: 0.825rem;
+            color: var(--text-muted);
+            line-height: 1.45;
+        }
+
+        /* Pillar 4 Visualizer Grid */
+        .pillar-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .pillar-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1.5rem 1.25rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.25s;
+        }
+
+        .pillar-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--pillar-color, var(--primary));
+        }
+
+        .pillar-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--pillar-color, var(--primary));
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .pillar-percent {
+            font-size: 2.25rem;
+            font-weight: 800;
+            color: var(--pillar-color, var(--primary));
+            margin-bottom: 0.25rem;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .pillar-name {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 0.5rem;
+        }
+
+        .pillar-desc {
+            font-size: 0.785rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        /* Slide Footer & Navigation Controls */
+        .slide-controls-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 1.25rem;
+            padding: 0.5rem 0;
+        }
+
+        .slide-counter {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        .nav-arrows {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-nav-arrow {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 1rem;
+        }
+
+        .btn-nav-arrow:hover:not(:disabled) {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: #ffffff;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4);
+        }
+
+        .btn-nav-arrow:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+
+        /* Slide Thumbnails Selector */
+        .slide-thumbs {
+            display: flex;
+            gap: 0.5rem;
+            overflow-x: auto;
+            padding: 0.75rem 0;
+            scrollbar-width: none;
+        }
+
+        .slide-thumbs::-webkit-scrollbar {
+            display: none;
+        }
+
+        .thumb-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.4rem 0.75rem;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .thumb-btn.active {
+            background: rgba(37, 99, 235, 0.2);
+            border-color: var(--primary);
+            color: #60a5fa;
+        }
+
+        /* ====== FULL MODULE DOCUMENTATION VIEW ====== */
+        #docBookView {
+            display: none;
+            grid-template-columns: 280px 1fr;
+            gap: 2.5rem;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .doc-sidebar {
+            position: sticky;
+            top: 5rem;
+            height: calc(100vh - 7rem);
+            overflow-y: auto;
+            padding-right: 1rem;
+        }
+
+        .doc-sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        .doc-nav-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            padding: 0.6rem 0.9rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .doc-nav-link:hover,
+        .doc-nav-link.active {
+            color: #ffffff;
+            background: var(--bg-card);
+        }
+
+        .doc-nav-link.active {
+            color: #60a5fa;
+            border-left: 3px solid var(--primary);
+            background: rgba(37, 99, 235, 0.1);
+        }
+
+        .doc-content {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 3rem;
+            box-shadow: var(--shadow);
+        }
+
+        .doc-section {
+            margin-bottom: 3.5rem;
+            padding-bottom: 3.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .doc-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .doc-section h2 {
+            font-size: 1.85rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .doc-section h3 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin: 1.75rem 0 0.75rem;
+            color: #e2e8f0;
+        }
+
+        .doc-section p {
+            color: var(--text-muted);
+            margin-bottom: 1.25rem;
+            font-size: 0.95rem;
+        }
+
+        .doc-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            font-size: 0.875rem;
+        }
+
+        .doc-table th,
+        .doc-table td {
+            padding: 0.85rem 1rem;
+            border: 1px solid var(--border);
+            text-align: left;
+        }
+
+        .doc-table th {
+            background: var(--bg-card);
+            color: #ffffff;
+            font-weight: 700;
+        }
+
+        .doc-table td {
+            color: var(--text-muted);
+            background: rgba(15, 23, 42, 0.6);
+        }
+
+        .badge-chip {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background: rgba(37, 99, 235, 0.2);
+            color: #60a5fa;
+            border: 1px solid rgba(37, 99, 235, 0.3);
+        }
+
+        .callout-box {
+            background: rgba(37, 99, 235, 0.08);
+            border-left: 4px solid var(--primary);
+            border-radius: 8px;
+            padding: 1rem 1.25rem;
+            margin: 1.25rem 0;
+            color: #cbd5e1;
+            font-size: 0.9rem;
+        }
+
+        /* ====== FOOTER ====== */
+        .page-footer {
+            background: var(--bg-surface);
+            border-top: 1px solid var(--border);
+            padding: 1.25rem 1.5rem;
+            text-align: center;
+            font-size: 0.8125rem;
+            color: var(--text-muted);
+            margin-top: auto;
+        }
+
+        /* ====== RESPONSIVE & PRINT ====== */
+        @media (max-width: 992px) {
+            .slide-grid-2 {
+                grid-template-columns: 1fr;
+            }
+            .pillar-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            #docBookView {
+                grid-template-columns: 1fr;
+            }
+            .doc-sidebar {
+                display: none;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .slide-stage {
+                padding: 1.5rem;
+            }
+            .slide-title {
+                font-size: 1.6rem;
+            }
+            .pillar-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media print {
+            body {
+                background: #ffffff !important;
+                color: #000000 !important;
+            }
+            .top-navbar, .slide-controls-bar, .slide-thumbs, .slide-progress-bar-wrapper {
+                display: none !important;
+            }
+            .slide-item {
+                display: block !important;
+                page-break-after: always;
+                min-height: 90vh;
+                color: #000000 !important;
+            }
+            .slide-stage, .doc-content {
+                background: none !important;
+                border: none !important;
+                box-shadow: none !important;
+            }
+            .slide-title, .brand-text h1, .doc-section h2, .doc-section h3 {
+                color: #000000 !important;
+                -webkit-text-fill-color: #000000 !important;
+            }
+            .feature-item, .pillar-card {
+                border: 1px solid #ccc !important;
+                background: #fafafa !important;
+                color: #000000 !important;
+            }
+            .feature-item h4, .pillar-name, .pillar-percent {
+                color: #000000 !important;
+            }
+            .feature-item p, .pillar-desc, .slide-subtitle {
+                color: #333333 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- TOP NAVBAR -->
+    <header class="top-navbar">
+        <a href="http://127.0.0.1:8000" class="brand-section" target="_blank" title="Buka Aplikasi PBL TRKJ Politala">
+            <img src="sbadmin2/img/logo-campus.png" alt="Logo Politala" class="brand-logo" onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/e/e0/Logo_Politeknik_Negeri_Tanah_Laut.png'">
+            <div class="brand-text">
+                <h1>PBL TRKJ Politala</h1>
+                <p>Sistem Informasi Manajemen Evaluasi & Proyek</p>
+            </div>
+        </a>
+
+        <!-- View Switcher Tabs -->
+        <div class="view-switch">
+            <button class="view-btn active" id="btnModeSlide" onclick="switchView('slide')">
+                <i class="fas fa-desktop"></i> Mode Presentasi
+            </button>
+            <button class="view-btn" id="btnModeDoc" onclick="switchView('doc')">
+                <i class="fas fa-book-open"></i> Buku Modul
+            </button>
+        </div>
+
+        <!-- Action Links -->
+        <div class="nav-actions">
+            <button class="btn-action" onclick="toggleFullscreen()" title="Layar Penuh (F)">
+                <i class="fas fa-expand"></i>
+            </button>
+            <button class="btn-action" onclick="window.print()" title="Cetak atau Simpan PDF">
+                <i class="fas fa-print"></i> Cetak / PDF
+            </button>
+            <a href="http://127.0.0.1:8000" target="_blank" class="btn-action btn-action-primary">
+                <i class="fas fa-external-link-alt"></i> Buka Aplikasi
+            </a>
+        </div>
+    </header>
+
+    <main class="main-container">
+
+        <!-- ============================================== -->
+        <!-- VIEW 1: INTERACTIVE SLIDE DECK                 -->
+        <!-- ============================================== -->
+        <section id="slideDeckView">
+            
+            <div class="slide-progress-bar-wrapper">
+                <div class="slide-progress-bar" id="progressBar"></div>
+            </div>
+
+            <!-- Slide Canvas Stage -->
+            <div class="slide-stage" id="slideStage">
+
+                <!-- SLIDE 1: COVER -->
+                <div class="slide-item active" data-slide="1">
+                    <div>
+                        <div class="slide-tag"><i class="fas fa-award"></i> Presentasi Sistem & Panduan Modul</div>
+                        <h2 class="slide-title">Sistem Informasi Manajemen Evaluasi & Proyek (PBL)</h2>
+                        <p class="slide-subtitle">
+                            Platform Digital Terintegrasi Berbasis Problem-Based Learning untuk Mengakselerasi Kolaborasi Mahasiswa, Kurikulum Vokasi, dan Penilaian Industri.
+                        </p>
+                    </div>
+
+                    <div class="slide-grid-2">
+                        <div class="feature-card-list">
+                            <div class="feature-item">
+                                <div class="feature-icon-box"><i class="fas fa-university"></i></div>
+                                <div>
+                                    <h4>Program Studi TRKJ</h4>
+                                    <p>Teknologi Rekayasa Komputer Jaringan, Politeknik Negeri Tanah Laut.</p>
+                                </div>
+                            </div>
+                            <div class="feature-item">
+                                <div class="feature-icon-box"><i class="fas fa-code"></i></div>
+                                <div>
+                                    <h4>Developer & Architecture</h4>
+                                    <p>Develop by <strong>Dery Yuswanto Jaya, M.Kom</strong>.</p>
+                                </div>
+                            </div>
+                            <div class="feature-item">
+                                <div class="feature-icon-box"><i class="fas fa-layer-group"></i></div>
+                                <div>
+                                    <h4>Teknologi & Standar Mutu</h4>
+                                    <p>Laravel 12, PHP 8.4, Tailwind CSS v4, Hardware-Accelerated SortableJS, & 4 Pilar Mutu 25%.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <img src="images/presentation/pbl_ecosystem_overview.jpg" alt="Ekosistem PBL TRKJ Politala" class="slide-banner-img" onerror="this.style.display='none'">
+                        </div>
+                    </div>
+
+                    <div class="slide-footer-note text-muted small">
+                        Gunakan tombol panah keyboard (← / → / Spasi) atau tombol navigasi di bawah untuk berganti slide.
+                    </div>
+                </div>
+
+                <!-- SLIDE 2: OVERVIEW & ECOSYSTEM -->
+                <div class="slide-item" data-slide="2">
+                    <div>
+                        <div class="slide-tag"><i class="fas fa-network-wired"></i> Arsitektur Ekosistem</div>
+                        <h2 class="slide-title">4 Pilar Aktor Ekosistem PBL TRKJ Politala</h2>
+                        <p class="slide-subtitle">
+                            Kolaborasi menyeluruh menghubungkan seluruh pemangku kepentingan dalam satu siklus pembelajaran yang terukur dan transparan.
+                        </p>
+                    </div>
+
+                    <div class="slide-grid-2">
+                        <div>
+                            <img src="images/presentation/pbl_ecosystem_overview.jpg" alt="Arsitektur Ekosistem" class="slide-banner-img" onerror="this.style.display='none'">
+                        </div>
+
+                        <div class="feature-card-list">
+                            <div class="feature-item">
+                                <div class="feature-icon-box"><i class="fas fa-user-shield text-primary"></i></div>
+                                <div>
+                                    <h4>1. Administrator Program Studi</h4>
+                                    <p>Mengatur kalender akademik, hierarki kelas, penugasan dosen, dan sinkronisasi kurikulum mata kuliah.</p>
+                                </div>
+                            </div>
+                            <div class="feature-item">
+                                <div class="feature-icon-box"><i class="fas fa-users-cog text-success"></i></div>
+                                <div>
+                                    <h4>2. Tim Mahasiswa</h4>
+                                    <p>Membentuk tim, mengunggah proposal, mengelola kanban board interaktif, dan mengisi logbook aktivitas berkala.</p>
+                                </div>
+                            </div>
+                            <div class="feature-item">
+                                <div class="feature-icon-box"><i class="fas fa-chalkboard-teacher text-warning"></i></div>
+                                <div>
+                                    <h4>3. Dosen Pengampu & Evaluator</h4>
+                                    <p>Memonitor kemajuan proyek, memvalidasi logbook, serta menilai produk berdasarkan 4 pilar mutu (25% per pilar).</p>
+                                </div>
+                            </div>
+                            <div class="feature-item">
+                                <div class="feature-icon-box"><i class="fas fa-building text-info"></i></div>
+                                <div>
+                                    <h4>4. Mitra Industri & Publik</h4>
+                                    <p>Mengevaluasi produk mahasiswa di galeri showcase publik dan mencatat supervisi kunjungan industri.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SLIDE 3: MODUL 1 MASTER DATA -->
+                <div class="slide-item" data-slide="3">
+                    <div>
+                        <div class="slide-tag"><i class="fas fa-database"></i> Modul 1</div>
+                        <h2 class="slide-title">Manajemen Master Data & Kurikulum Terintegrasi</h2>
+                        <p class="slide-subtitle">
+                            Fondasi kurikulum yang menghubungkan silang mata kuliah dengan luaran proyek mahasiswa secara fleksibel.
+                        </p>
+                    </div>
+
+                    <div class="slide-grid-2">
+                        <div class="feature-card-list">
+                            <div class="feature-item">
+                                <div class="feature-icon-box"><i class="fas fa-calendar-alt"></i></div>
+                                <div>
+                                    <h4>Periode Akademik & Semester</h4>
+                                    <p>Penetapan status periode aktif, rentang tanggal pelaksanaan, dan batas waktu submit proyek.</p>
+                                </div>
+                            </div>
+                            <div class="feature-item">
+                                <div class="feature-icon-box"><i class="fas fa-book-reader"></i></div>
+                                <div>
+                                    <h4>Mata Kuliah Multi-Dosen (Team Teaching)</h4>
+                                    <p>Satu mata kuliah dapat diampu oleh dua atau lebih dosen, dan satu dosen dapat mengampu banyak mata kuliah lintas semester.</p>
+                                </div>
+                            </div>
+                            <div class="feature-item">
+                                <div class="feature-icon-box"><i class="fas fa-tasks"></i></div>
+                                <div>
+                                    <h4>Checklist Mata Kuliah di Kartu Proyek</h4>
+                                    <p>Mahasiswa menandai capaian mata kuliah langsung pada kartu tugas proyek untuk pemenuhan CPL (Capaian Pembelajaran Lulusan).</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <img src="images/presentation/pbl_curriculum_teams.jpg" alt="Integrasi Kurikulum" class="slide-banner-img" onerror="this.style.display='none'">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SLIDE 4: MODUL 2 KELOMPOK & PROPOSAL -->
+                <div class="slide-item" data-slide="4">
+                    <div>
+                        <div class="slide-tag"><i class="fas fa-users"></i> Modul 2</div>
+                        <h2 class="slide-title">Manajemen Kelompok, 4 Skema PBL & Proposal</h2>
+                        <p class="slide-subtitle">
+                            Pengorganisasian tim mandiri dengan batasan kuota kelas, skema terarah, dan gerbang validasi proposal resmi.
+                        </p>
+                    </div>
+
+                    <div class="slide-grid-2">
+                        <div>
+                            <img src="images/presentation/pbl_curriculum_teams.jpg" alt="Manajemen Kelompok PBL" class="slide-banner-img" onerror="this.style.display='none'">
+                        </div>
+
+                        <div class="feature-card-list">
+                            <div class="feature-item">
+                                <div class="feature-icon-box"><i class="fas fa-sitemap"></i></div>
+                                <div>
+                                    <h4>4 Kategori Skema PBL</h4>
+                                    <p><strong>Internal</strong> (Solusi kampus), <strong>Eksternal</strong> (Industri/DUDI), <strong>Kewirausahaan</strong> (Startup bisnis), dan <strong>Kompetisi/Riset</strong>.</p>
+                                </div>
+                            </div>
+                            <div class="feature-item">
+                                <div class="feature-icon-box"><i class="fas fa-file-pdf"></i></div>
+                                <div>
+                                    <h4>Gerbang Proposal Proyek Internal</h4>
+                                    <p>Wajib mengunggah dokumen proposal (PDF) sebelum kelompok dapat melanjutkan pengerjaan papan proyek.</p>
+                                </div>
+                            </div>
+                            <div class="feature-item">
+                                <div class="feature-icon-box"><i class="fas fa-user-plus"></i></div>
+                                <div>
+                                    <h4>Sistem Undangan & Persetujuan Anggota</h4>
+                                    <p>Ketua kelompok mengirimkan undangan ke mahasiswa sekelas; anggota dapat menerima atau menolak undangan secara transparan.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SLIDE 5: MODUL 3 KANBAN ULTRA-SMOOTH -->
+                <div class="slide-item" data-slide="5">
+                    <div>
+                        <div class="slide-tag"><i class="fas fa-columns"></i> Modul 3</div>
+                        <h2 class="slide-title">Papan Kanban Ultra-Smooth & Logbook Aktivitas</h2>
+                        <p class="slide-subtitle">
+                            Ruang kerja agile modern dengan teknologi drag-and-drop hardware-accelerated setara Trello dan Linear.
+                        </p>
+                    </div>
+
+                    <div class="slide-grid-2">
+                        <div class="feature-card-list">
+                            <div class="feature-item">
+                                <div class="feature-icon-box"><i class="fas fa-bolt text-warning"></i></div>
+                                <div>
+                                    <h4>Akselerasi GPU 60-120 FPS</h4>
+                                    <p>Ditenagai <code>forceFallback: true</code>, <code>fallbackOnBody: true</code>, dan CSS transform layer untuk menghilangkan lag dan bug clipping container.</p>
+                                </div>
+                            </div>
+                            <div class="feature-item">
+                                <div class="feature-icon-box"><i class="fas fa-magic text-primary"></i></div>
+                                <div>
+                                    <h4>Efek Taktil 3D & Easing Alami</h4>
+                                    <p>Kartu melayang dengan rotasi 2.5°, elevasi bayangan dinamis, kurva bezier <code>cubic-bezier(0.2, 0, 0, 1)</code>, dan landing slot putus-putus.</p>
+                                </div>
+                            </div>
+                            <div class="feature-item">
+                                <div class="feature-icon-box"><i class="fas fa-clipboard-list text-success"></i></div>
+                                <div>
+                                    <h4>Logbook Harian & Kunjungan Mitra</h4>
+                                    <p>Pencatatan aktivitas mandiri anggota tim beserta bukti foto supervisi lapangan oleh mitra industri.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <img src="images/presentation/pbl_kanban_logbook.jpg" alt="Papan Kanban Ultra-Smooth" class="slide-banner-img" onerror="this.style.display='none'">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SLIDE 6: MODUL 4 EVALUASI 4 PILAR -->
+                <div class="slide-item" data-slide="6">
+                    <div>
+                        <div class="slide-tag"><i class="fas fa-balance-scale"></i> Modul 4</div>
+                        <h2 class="slide-title">Sistem Evaluasi 4 Pilar Mutu (Bobot Masing-Masing 25%)</h2>
+                        <p class="slide-subtitle">
+                            Penilaian objektif dan terstandarisasi industri oleh dosen pengampu dan tim penilai berdasarkan empat dimensi kualitas luaran.
+                        </p>
+                    </div>
+
+                    <div class="pillar-grid">
+                        <div class="pillar-card" style="--pillar-color: #3b82f6;">
+                            <div class="pillar-percent">25%</div>
+                            <div class="pillar-name">Relevansi Konsep</div>
+                            <div class="pillar-desc">Kesesuaian dengan capaian mata kuliah terintegrasi, arsitektur sistem jaringan, dan kebenaran teoritis.</div>
+                        </div>
+                        <div class="pillar-card" style="--pillar-color: #10b981;">
+                            <div class="pillar-percent">25%</div>
+                            <div class="pillar-name">Kualitas Produk</div>
+                            <div class="pillar-desc">Ketangguhan fungsionalitas, performa operasional, ketiadaan bug fatal, dan keandalan sistem.</div>
+                        </div>
+                        <div class="pillar-card" style="--pillar-color: #f59e0b;">
+                            <div class="pillar-percent">25%</div>
+                            <div class="pillar-name">Kreativitas</div>
+                            <div class="pillar-desc">Orisinalitas ide rancang bangun, inovasi pemecahan masalah, dan kebaruan metode teknologi yang diterapkan.</div>
+                        </div>
+                        <div class="pillar-card" style="--pillar-color: #ec4899;">
+                            <div class="pillar-percent">25%</div>
+                            <div class="pillar-name">Estetika</div>
+                            <div class="pillar-desc">Kerapian antarmuka pengguna (UI/UX), tata kelola pengkabelan/hardware, kerapian dokumentasi & source code.</div>
+                        </div>
+                    </div>
+
+                    <div class="callout-box">
+                        <i class="fas fa-calculator mr-2"></i> <strong>Formula Nilai Proyek Otomatis:</strong> 
+                        <code>Nilai Proyek = (0.25 × Relevansi) + (0.25 × Kualitas) + (0.25 × Kreativitas) + (0.25 × Estetika)</code>. 
+                        Terhubung ke Rubrik Dinamis 4 Skala Mutu (Kurang, Cukup, Baik, Sangat Baik) dan transkrip otomatis nilai grade A s/d E.
+                    </div>
+                </div>
+
+                <!-- SLIDE 7: MODUL 5 SHOWCASE SPA -->
+                <div class="slide-item" data-slide="7">
+                    <div>
+                        <div class="slide-tag"><i class="fas fa-globe"></i> Modul 5</div>
+                        <h2 class="slide-title">Showcase Inovasi Publik SPA & Kunjungan Mitra</h2>
+                        <p class="slide-subtitle">
+                            Etalase digital responsif berkecepatan tinggi tanpa reload halaman untuk memamerkan produk karya mahasiswa ke publik dan mitra industri.
+                        </p>
+                    </div>
+
+                    <div class="slide-grid-2">
+                        <div class="feature-card-list">
+                            <div class="feature-item">
+                                <div class="feature-icon-box"><i class="fas fa-rocket text-primary"></i></div>
+                                <div>
+                                    <h4>Arsitektur Single Page Application (SPA)</h4>
+                                    <p>Pencarian, filter skema, dan navigasi proyek bekerja instan tanpa reload browser (zero-latency).</p>
+                                </div>
+                            </div>
+                            <div class="feature-item">
+                                <div class="feature-icon-box"><i class="fas fa-photo-video text-warning"></i></div>
+                                <div>
+                                    <h4>Modal Portofolio Lengkap</h4>
+                                    <p>Menampilkan foto poster inovasi, video demonstrasi sistem, ringkasan teknologi, serta data tim pengembang.</p>
+                                </div>
+                            </div>
+                            <div class="feature-item">
+                                <div class="feature-icon-box"><i class="fas fa-handshake text-success"></i></div>
+                                <div>
+                                    <h4>Portal Kunjungan & Supervisi Mitra</h4>
+                                    <p>Pencatatan terbuka tanggal kunjungan industri, nama perwakilan mitra, dan dokumentasi evaluasi kepuasan.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <img src="images/presentation/pbl_ecosystem_overview.jpg" alt="Showcase Publik" class="slide-banner-img" onerror="this.style.display='none'">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SLIDE 8: SUMMARY & DEMO ACCESS -->
+                <div class="slide-item" data-slide="8">
+                    <div>
+                        <div class="slide-tag"><i class="fas fa-check-circle"></i> Ringkasan & Akses</div>
+                        <h2 class="slide-title">Kesiapan Sistem & Panduan Menjalankan</h2>
+                        <p class="slide-subtitle">
+                            Aplikasi telah melalui pengujian menyeluruh (100% lulus 50 unit/feature tests) dan berjalan aktif.
+                        </p>
+                    </div>
+
+                    <div class="slide-grid-2">
+                        <div class="feature-card-list">
+                            <div class="feature-item">
+                                <div class="feature-icon-box"><i class="fas fa-shield-alt text-success"></i></div>
+                                <div>
+                                    <h4>Kualitas Kode Terstandarisasi</h4>
+                                    <p>50 Tests Passed (235 assertions) & diformat rapi dengan Laravel Pint sesuai standar PSR-12.</p>
+                                </div>
+                            </div>
+                            <div class="feature-item">
+                                <div class="feature-icon-box"><i class="fas fa-server text-info"></i></div>
+                                <div>
+                                    <h4>Status Server Lokal</h4>
+                                    <p>Berjalan di <code>http://127.0.0.1:8000</code>. Portal Showcase publik dapat diakses tanpa login.</p>
+                                </div>
+                            </div>
+                            <div class="feature-item">
+                                <div class="feature-icon-box"><i class="fas fa-user-key text-warning"></i></div>
+                                <div>
+                                    <h4>Kredensial Default Login</h4>
+                                    <p>Admin: <code>admin</code> / <code>password</code> &bull; Dosen & Mahasiswa terintegrasi di sistem master.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 1.75rem; text-align: center;">
+                            <img src="sbadmin2/img/logo-campus.png" alt="Politala" style="width: 70px; margin-bottom: 1rem;">
+                            <h3 style="font-size: 1.2rem; margin-bottom: 0.5rem;">PBL TRKJ Politala</h3>
+                            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1.25rem;">
+                                Siap diujikan untuk presentasi sidang, akreditasi program studi, maupun implementasi kurikulum semester berjalan.
+                            </p>
+                            <a href="http://127.0.0.1:8000" target="_blank" class="btn-action btn-action-primary" style="justify-content: center; width: 100%; padding: 0.75rem;">
+                                <i class="fas fa-play-circle mr-1"></i> Buka Aplikasi Live
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Slide Navigation Controls -->
+            <div class="slide-controls-bar">
+                <div class="slide-counter" id="slideCounter">Slide 1 dari 8</div>
+
+                <!-- Thumbnails Quick Jump -->
+                <div class="slide-thumbs" id="slideThumbs">
+                    <button class="thumb-btn active" onclick="goToSlide(1)">1. Cover</button>
+                    <button class="thumb-btn" onclick="goToSlide(2)">2. Ekosistem</button>
+                    <button class="thumb-btn" onclick="goToSlide(3)">3. Modul 1</button>
+                    <button class="thumb-btn" onclick="goToSlide(4)">4. Modul 2</button>
+                    <button class="thumb-btn" onclick="goToSlide(5)">5. Modul 3</button>
+                    <button class="thumb-btn" onclick="goToSlide(6)">6. Modul 4</button>
+                    <button class="thumb-btn" onclick="goToSlide(7)">7. Modul 5</button>
+                    <button class="thumb-btn" onclick="goToSlide(8)">8. Akses</button>
+                </div>
+
+                <div class="nav-arrows">
+                    <button class="btn-nav-arrow" id="btnPrev" onclick="prevSlide()" title="Slide Sebelumnya (Panah Kiri)">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <button class="btn-nav-arrow" id="btnNext" onclick="nextSlide()" title="Slide Berikutnya (Panah Kanan / Spasi)">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+
+        </section>
+
+
+        <!-- ============================================== -->
+        <!-- VIEW 2: FULL MODULE DOCUMENTATION BOOK         -->
+        <!-- ============================================== -->
+        <section id="docBookView">
+            
+            <!-- Sticky TOC Sidebar -->
+            <aside class="doc-sidebar">
+                <nav class="doc-sidebar-nav">
+                    <a href="#doc-intro" class="doc-nav-link active"><i class="fas fa-info-circle"></i> 1. Pendahuluan</a>
+                    <a href="#doc-modul-1" class="doc-nav-link"><i class="fas fa-database"></i> 2. Modul 1: Master Data</a>
+                    <a href="#doc-modul-2" class="doc-nav-link"><i class="fas fa-users"></i> 3. Modul 2: Kelompok & Skema</a>
+                    <a href="#doc-modul-3" class="doc-nav-link"><i class="fas fa-columns"></i> 4. Modul 3: Kanban & Logbook</a>
+                    <a href="#doc-modul-4" class="doc-nav-link"><i class="fas fa-balance-scale"></i> 5. Modul 4: Evaluasi 4 Pilar</a>
+                    <a href="#doc-modul-5" class="doc-nav-link"><i class="fas fa-globe"></i> 6. Modul 5: Showcase SPA</a>
+                    <a href="#doc-tech" class="doc-nav-link"><i class="fas fa-cogs"></i> 7. Spesifikasi Teknis</a>
+                </nav>
+            </aside>
+
+            <!-- Main Documentation Content -->
+            <article class="doc-content">
+
+                <!-- INTRO -->
+                <div class="doc-section" id="doc-intro">
+                    <h2><i class="fas fa-layer-group text-primary"></i> 1. Pendahuluan & Identitas Sistem</h2>
+                    <p>
+                        Aplikasi <strong>PBL TRKJ Politala</strong> adalah Sistem Informasi Manajemen Evaluasi & Proyek yang dikembangkan khusus untuk Program Studi Teknologi Rekayasa Komputer Jaringan (TRKJ) Politeknik Negeri Tanah Laut.
+                    </p>
+                    <div class="callout-box">
+                        <strong>Kredit Pengembang:</strong> Develop by <strong>Dery Yuswanto Jaya, M.Kom</strong><br>
+                        <strong>Hak Cipta:</strong> &copy; 2026 TRKJ Politala. Seluruh Hak Cipta Dilindungi.
+                    </div>
+                    <p>
+                        Sistem ini mengadopsi metodologi pembelajaran <em>Project-Based Learning</em> (PBL) modern yang menempatkan mahasiswa sebagai pengembang solusi teknologi riil, dibimbing oleh dosen lintas mata kuliah serta dievaluasi bersama mitra industri.
+                    </p>
+                </div>
+
+                <!-- MODUL 1 -->
+                <div class="doc-section" id="doc-modul-1">
+                    <h2><i class="fas fa-database text-info"></i> 2. Modul 1: Manajemen Master Data & Kurikulum</h2>
+                    <p>
+                        Modul ini dioperasikan oleh Administrator untuk mengelola seluruh data fondasi perguruan tinggi yang terlibat dalam kegiatan PBL.
+                    </p>
+                    <h3>Fitur Utama:</h3>
+                    <ul style="padding-left: 1.25rem; color: var(--text-muted); margin-bottom: 1rem;">
+                        <li><strong>Periode Akademik:</strong> Penentuan semester dan tahun ajaran aktif serta jadwal batas evaluasi.</li>
+                        <li><strong>Struktur Kelas & Semester:</strong> Hierarki mahasiswa per angkatan dan per kelas.</li>
+                        <li><strong>Mata Kuliah Terintegrasi Multi-Dosen:</strong> Mendukung pengampu ganda (team teaching) dan relasi banyak-ke-banyak antara dosen dan mata kuliah.</li>
+                        <li><strong>Checklist Mata Kuliah:</strong> Setiap kartu tugas di kanban board dapat ditautkan dengan mata kuliah pendukung.</li>
+                    </ul>
+                    <img src="images/presentation/pbl_curriculum_teams.jpg" alt="Master Data & Kurikulum" style="width: 100%; border-radius: 12px; margin-top: 1rem; border: 1px solid var(--border);">
+                </div>
+
+                <!-- MODUL 2 -->
+                <div class="doc-section" id="doc-modul-2">
+                    <h2><i class="fas fa-users text-success"></i> 3. Modul 2: Kelompok, 4 Skema PBL & Proposal</h2>
+                    <p>
+                        Memungkinkan mahasiswa mengorganisasi tim kerja secara kolaboratif sesuai minat dan kategori topik inovasi.
+                    </p>
+                    <table class="doc-table">
+                        <thead>
+                            <tr>
+                                <th>Kategori Skema</th>
+                                <th>Deskripsi Proyek</th>
+                                <th>Persyaratan Wajib</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Internal</strong></td>
+                                <td>Pengembangan solusi teknologi untuk kebutuhan kampus Politala</td>
+                                <td><span class="badge-chip">Wajib Unggah Proposal (PDF)</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Eksternal</strong></td>
+                                <td>Proyek kolaborasi langsung dengan Dunia Usaha / Industri (DUDI)</td>
+                                <td>Nama Mitra & Kontak PIC Industri</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Kewirausahaan</strong></td>
+                                <td>Penciptaan model rintisan bisnis teknologi mandiri (Startup)</td>
+                                <td>Model Bisnis & Roadmap Produk</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Kompetisi / Riset</strong></td>
+                                <td>Karya inovasi terapan untuk perlombaan ilmiah nasional / riset</td>
+                                <td>Nama Ajang Lomba / Target Publikasi</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- MODUL 3 -->
+                <div class="doc-section" id="doc-modul-3">
+                    <h2><i class="fas fa-columns text-warning"></i> 4. Modul 3: Papan Kanban Ultra-Smooth & Logbook</h2>
+                    <p>
+                        Papan kerja interaktif dengan akselerasi GPU hardware-accelerated. Mengimplementasikan SortableJS dengan fallback DOM pada body untuk mencegah kartu terpotong oleh scrolling container.
+                    </p>
+                    <h3>Karakteristik Teknis Drag & Drop:</h3>
+                    <ul style="padding-left: 1.25rem; color: var(--text-muted); margin-bottom: 1rem;">
+                        <li><strong>Transform GPU:</strong> Menggunakan <code>will-change: transform, box-shadow</code> untuk pergerakan mulus di 60-120 FPS.</li>
+                        <li><strong>Physical Tilt:</strong> Kartu yang diseret memiliki kemiringan 2.5° dan elevasi bayangan dinamis.</li>
+                        <li><strong>Swap Threshold & Invert Swap:</strong> Mencegah kedipan saat menukar posisi kartu dengan tinggi yang berbeda.</li>
+                        <li><strong>Logbook Terintegrasi:</strong> Pencatatan aktivitas berkala anggota tim serta rekapitulasi pembimbingan.</li>
+                    </ul>
+                    <img src="images/presentation/pbl_kanban_logbook.jpg" alt="Kanban Ultra Smooth" style="width: 100%; border-radius: 12px; margin-top: 1rem; border: 1px solid var(--border);">
+                </div>
+
+                <!-- MODUL 4 -->
+                <div class="doc-section" id="doc-modul-4">
+                    <h2><i class="fas fa-balance-scale text-danger"></i> 5. Modul 4: Sistem Evaluasi 4 Pilar (25% per Pilar)</h2>
+                    <p>
+                        Sistem evaluasi dosen dan penguji menggunakan acuan 4 Pilar Mutu Produk dengan bobot merata 25%:
+                    </p>
+                    <table class="doc-table">
+                        <thead>
+                            <tr>
+                                <th>Pilar Mutu</th>
+                                <th>Bobot</th>
+                                <th>Indikator Penilaian</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>1. Relevansi Konsep</strong></td>
+                                <td>25%</td>
+                                <td>Kesesuaian dengan CPL kurikulum, ketepatan teori jaringan/rekayasa perangkat lunak.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>2. Kualitas Produk</strong></td>
+                                <td>25%</td>
+                                <td>Keandalan, ketiadaan bug fatal, efisiensi beban kerja, performa teknis sistem.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>3. Kreativitas</strong></td>
+                                <td>25%</td>
+                                <td>Orisinalitas, inovasi fitur, kebaruan pendekatan dalam menyelesaikan masalah.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>4. Estetika</strong></td>
+                                <td>25%</td>
+                                <td>Kerapian antarmuka pengguna (UI/UX), tata letak perangkat keras/kabel, keterbacaan kode.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="callout-box">
+                        <strong>Formula Nilai Proyek:</strong><br>
+                        <code>Nilai Proyek = (0.25 × Relevansi) + (0.25 × Kualitas) + (0.25 × Kreativitas) + (0.25 × Estetika)</code>
+                    </div>
+                </div>
+
+                <!-- MODUL 5 -->
+                <div class="doc-section" id="doc-modul-5">
+                    <h2><i class="fas fa-globe text-primary"></i> 6. Modul 5: Showcase Inovasi Publik SPA</h2>
+                    <p>
+                        Halaman beranda utama yang menyajikan pameran proyek mahasiswa berarsitektur Single Page Application (SPA). Dapat diakses secara terbuka tanpa perlu otentikasi login.
+                    </p>
+                    <h3>Fitur Unggulan Showcase:</h3>
+                    <ul style="padding-left: 1.25rem; color: var(--text-muted); margin-bottom: 1rem;">
+                        <li><strong>Pencarian Instan:</strong> Filter judul proyek, nama mahasiswa, dan kategori skema secara real-time.</li>
+                        <li><strong>Modal Media Interaktif:</strong> Memutar video demo inovasi dan menampilkan poster ilmiah.</li>
+                        <li><strong>Portal Kunjungan Industri:</strong> Pelaporan agenda pendampingan industri secara akuntabel.</li>
+                    </ul>
+                </div>
+
+                <!-- TECH SPECS -->
+                <div class="doc-section" id="doc-tech">
+                    <h2><i class="fas fa-cogs text-info"></i> 7. Spesifikasi Teknis & Pengujian</h2>
+                    <table class="doc-table">
+                        <thead>
+                            <tr>
+                                <th>Komponen</th>
+                                <th>Versi / Spesifikasi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>Framework</td><td>Laravel 12.20.0 (PHP 8.4)</td></tr>
+                            <tr><td>Styling Engine</td><td>Tailwind CSS v4 & Modernized SB Admin 2</td></tr>
+                            <tr><td>Drag & Drop Engine</td><td>SortableJS Hardware Accelerated Layer</td></tr>
+                            <tr><td>Database Engine</td><td>MySQL / MariaDB</td></tr>
+                            <tr><td>Automated Testing</td><td>50 Passed Feature & Unit Tests (235 assertions)</td></tr>
+                            <tr><td>Code Styling</td><td>PSR-12 Formatted via Laravel Pint</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </article>
+
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="page-footer">
+        &copy; 2026 TRKJ Politala. Seluruh Hak Cipta Dilindungi. | Develop by <strong>Dery Yuswanto Jaya, M.Kom</strong>
+    </footer>
+
+    <!-- INTERACTIVE JAVASCRIPT ENGINE -->
+    <script>
+        // State
+        let currentSlide = 1;
+        const totalSlides = 8;
+
+        // Elements
+        const slides = document.querySelectorAll('.slide-item');
+        const thumbs = document.querySelectorAll('.thumb-btn');
+        const counter = document.getElementById('slideCounter');
+        const progressBar = document.getElementById('progressBar');
+        const btnPrev = document.getElementById('btnPrev');
+        const btnNext = document.getElementById('btnNext');
+
+        function updateSlideUI() {
+            // Update active slide
+            slides.forEach((s, idx) => {
+                s.classList.toggle('active', (idx + 1) === currentSlide);
+            });
+
+            // Update thumbs
+            thumbs.forEach((t, idx) => {
+                t.classList.toggle('active', (idx + 1) === currentSlide);
+            });
+
+            // Update counter & progress
+            counter.innerText = `Slide ${currentSlide} dari ${totalSlides}`;
+            progressBar.style.width = `${(currentSlide / totalSlides) * 100}%`;
+
+            // Update nav buttons disabled state
+            btnPrev.disabled = (currentSlide === 1);
+            btnNext.disabled = (currentSlide === totalSlides);
+        }
+
+        function nextSlide() {
+            if (currentSlide < totalSlides) {
+                currentSlide++;
+                updateSlideUI();
+            }
+        }
+
+        function prevSlide() {
+            if (currentSlide > 1) {
+                currentSlide--;
+                updateSlideUI();
+            }
+        }
+
+        function goToSlide(n) {
+            if (n >= 1 && n <= totalSlides) {
+                currentSlide = n;
+                updateSlideUI();
+            }
+        }
+
+        // Keyboard controls
+        window.addEventListener('keydown', function(e) {
+            const slideView = document.getElementById('slideDeckView');
+            if (slideView.style.display === 'none') return;
+
+            if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+                e.preventDefault();
+                nextSlide();
+            } else if (e.key === 'ArrowLeft' || e.key === 'PageUp' || e.key === 'Backspace') {
+                e.preventDefault();
+                prevSlide();
+            } else if (e.key.toLowerCase() === 'f') {
+                toggleFullscreen();
+            }
+        });
+
+        // Switch between Slide Deck and Doc Book
+        function switchView(mode) {
+            const slideView = document.getElementById('slideDeckView');
+            const docView = document.getElementById('docBookView');
+            const btnSlide = document.getElementById('btnModeSlide');
+            const btnDoc = document.getElementById('btnModeDoc');
+
+            if (mode === 'slide') {
+                slideView.style.display = 'flex';
+                docView.style.display = 'none';
+                btnSlide.classList.add('active');
+                btnDoc.classList.remove('active');
+            } else {
+                slideView.style.display = 'none';
+                docView.style.display = 'grid';
+                btnDoc.classList.add('active');
+                btnSlide.classList.remove('active');
+            }
+        }
+
+        // Fullscreen Toggle
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(() => {});
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        // Initialize UI
+        updateSlideUI();
+    </script>
+</body>
+</html>

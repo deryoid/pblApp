@@ -66,6 +66,14 @@
                     @enderror
                 </div>
 
+                <div class="form-group">
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input" id="create_user" name="create_user" value="1" {{ old('create_user') ? 'checked' : '' }}>
+                        <label class="custom-control-label font-weight-bold" for="create_user">Buatkan akun pengguna langsung (Username & Sandi Awal = NIM)</label>
+                    </div>
+                    <small class="form-text text-muted">Jika tidak dicentang, data disimpan di Bank Data Mahasiswa dan mahasiswa dapat mendaftar mandiri via verifikasi NIM.</small>
+                </div>
+
                 <div class="d-flex align-items-center">
                     <button type="submit" class="btn btn-primary btn-sm">
                         Simpan

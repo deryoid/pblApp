@@ -47,43 +47,52 @@ class DataMahasiswaAdminController extends Controller
             'nim' => [
                 'required', 'string', 'max:50',
                 Rule::unique('mahasiswa', 'nim'),
-                Rule::unique('users', 'username'),
             ],
             'nama_mahasiswa' => ['required', 'string', 'max:255'],
             'kelas_id' => ['nullable', 'integer', 'exists:kelas,id'],
+            'create_user' => ['nullable', 'boolean'],
         ]);
 
-        DB::transaction(function () use ($validated) {
+        DB::transaction(function () use ($validated, $request) {
             $nim = $validated['nim'];
             $name = $validated['nama_mahasiswa'];
 
-            // buat email otomatis (ubah domain sesuai kebutuhan)
-            $email = strtolower($nim.'@politala.ac.id');
-            if (User::where('email', $email)->exists()) {
-                $email = strtolower($nim.'+'.Str::random(4).'@politala.ac.id');
+            // Cek apakah akun user dengan username = NIM sudah ada di tabel users
+            $user = User::where('username', $nim)->first();
+
+            // Jika user belum ada dan opsi create_user dicentang (atau default)
+            if (! $user && $request->boolean('create_user')) {
+                $email = strtolower($nim.'@politala.ac.id');
+                if (User::where('email', $email)->exists()) {
+                    $email = strtolower($nim.'+'.Str::random(4).'@politala.ac.id');
+                }
+
+                $user = User::create([
+                    'nama_user' => $name,
+                    'email' => $email,
+                    'email_verified_at' => now(),
+                    'no_hp' => '-',
+                    'username' => $nim,
+                    'password' => Hash::make($nim),
+                    'role' => 'mahasiswa',
+                    'remember_token' => Str::random(10),
+                ]);
+            } elseif ($user && $user->nama_user !== $name) {
+                // Sesuaikan nama user dengan data mahasiswa di Bank Data
+                $user->nama_user = $name;
+                $user->save();
             }
 
-            $user = User::create([
-                'nama_user' => $name,
-                'email' => $email,
-                'email_verified_at' => now(),
-                'no_hp' => '-',              // placeholder
-                'username' => $nim,            // username = NIM
-                'password' => Hash::make($nim), // password = NIM
-                'role' => 'mahasiswa',
-                'remember_token' => Str::random(10),
-            ]);
-
             Mahasiswa::create([
-                // 'uuid' otomatis diisi di model (booted creating)
-                'user_id' => $user->id,
+                'user_id' => $user?->id,
                 'nim' => $nim,
                 'nama_mahasiswa' => $name,
                 'kelas_id' => $validated['kelas_id'] ?? null,
+                'semester' => 1,
             ]);
         });
 
-        Alert::toast('Mahasiswa & akun Pengguna berhasil ditambahkan.', 'success');
+        Alert::toast('Data mahasiswa berhasil ditambahkan ke Bank Data.', 'success');
 
         return redirect()->route('mahasiswa.index');
     }
@@ -131,17 +140,21 @@ class DataMahasiswaAdminController extends Controller
         DB::transaction(function () use ($mahasiswa, $validated) {
             $user = $mahasiswa->user;
 
-            // sinkron nama
-            $user->nama_user = $validated['nama_mahasiswa'];
+            // Jika akun user ada, sesuaikan nama dan username NIM
+            if ($user) {
+                $user->nama_user = $validated['nama_mahasiswa'];
 
-            // jika NIM berubah: sync username & password user
-            if (! empty($validated['nim']) && $validated['nim'] !== $mahasiswa->nim) {
-                $newNim = $validated['nim'];
-                $user->username = $newNim;
-                $user->password = Hash::make($newNim); // password mengikuti NIM
-                $mahasiswa->nim = $newNim;
-                // (opsional) juga ubah email ke pola $newNim@domain
-                // $user->email = strtolower($newNim.'@politala.ac.id');
+                if (! empty($validated['nim']) && $validated['nim'] !== $mahasiswa->nim) {
+                    $newNim = $validated['nim'];
+                    $user->username = $newNim;
+                    $user->password = Hash::make($newNim);
+                }
+
+                $user->save();
+            }
+
+            if (! empty($validated['nim'])) {
+                $mahasiswa->nim = $validated['nim'];
             }
 
             $mahasiswa->nama_mahasiswa = $validated['nama_mahasiswa'];
@@ -151,7 +164,6 @@ class DataMahasiswaAdminController extends Controller
                 $mahasiswa->kelas_id = $validated['kelas_id'];
             }
 
-            $user->save();
             $mahasiswa->save();
         });
 
@@ -166,8 +178,9 @@ class DataMahasiswaAdminController extends Controller
     public function destroy(Mahasiswa $mahasiswa)
     {
         DB::transaction(function () use ($mahasiswa) {
-            // hapus akun user agar tidak orphan
-            $mahasiswa->user()->delete();
+            if ($mahasiswa->user) {
+                $mahasiswa->user()->delete();
+            }
             $mahasiswa->delete();
         });
 
@@ -177,8 +190,7 @@ class DataMahasiswaAdminController extends Controller
     }
 
     /**
-     * Sinkronkan user.role=mahasiswa ke tabel mahasiswa:
-     * - Buat record mahasiswa jika belum ada (by user_id/username=NIM)
+     * Sinkronkan user.role=mahasiswa ke tabel mahasiswa dan sebaliknya:
      * - Tautkan jika ada record by NIM
      * - Perbarui nama/NIM jika berubah
      * - Catat konflik jika NIM bentrok
@@ -244,14 +256,31 @@ class DataMahasiswaAdminController extends Controller
                     continue;
                 }
 
-                // Tidak ada -> buat baru
+                // Tidak ada di bank data -> buat baru dan tautkan ke user
                 Mahasiswa::create([
-                    // uuid auto dalam model
                     'user_id' => $user->id,
                     'nim' => $nim ?: (string) $user->username,
                     'nama_mahasiswa' => $nama,
+                    'semester' => 1,
                 ]);
                 $created++;
+            }
+
+            // Cari mahasiswa di Bank Data yang belum tertaut akun (user_id IS NULL)
+            $unlinkedMahasiswas = Mahasiswa::whereNull('user_id')->get();
+            foreach ($unlinkedMahasiswas as $unlinked) {
+                if ($unlinked->nim) {
+                    $matchedUser = User::where('username', $unlinked->nim)->first();
+                    if ($matchedUser) {
+                        $unlinked->user_id = $matchedUser->id;
+                        if ($matchedUser->nama_user && $matchedUser->nama_user !== $unlinked->nama_mahasiswa) {
+                            $matchedUser->nama_user = $unlinked->nama_mahasiswa;
+                            $matchedUser->save();
+                        }
+                        $unlinked->save();
+                        $attached++;
+                    }
+                }
             }
         });
 
@@ -279,7 +308,7 @@ class DataMahasiswaAdminController extends Controller
         ]);
 
         $path = $request->file('file')->getRealPath();
-        
+
         try {
             $result = $importService->importFromCsv($path);
         } catch (\Exception $e) {
@@ -301,4 +330,3 @@ class DataMahasiswaAdminController extends Controller
         return redirect()->route('mahasiswa.import.form');
     }
 }
-

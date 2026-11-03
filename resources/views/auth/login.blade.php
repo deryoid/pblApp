@@ -424,6 +424,10 @@
                     </a>
                 </form>
 
+                <div class="text-center mt-3 mb-2" style="font-size: 0.85rem; color: #64748b;">
+                    Belum punya akun mahasiswa? <a href="{{ route('register') }}" style="color: #2563eb; font-weight: 700; text-decoration: none;">Daftar Akun (Verifikasi NIM)</a>
+                </div>
+
                 <div class="quick-actions-box">
                     <a href="{{ route('home') }}" class="btn-quick-public" style="background:#eff6ff; color:#1d4ed8; border-color:#bfdbfe;">
                         <i class="fas fa-th-large"></i>
