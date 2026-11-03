@@ -30,15 +30,6 @@
         </a>
     </li>
 
-    {{-- Bahan Presentasi & Modul --}}
-    <li class="nav-item">
-        <a class="nav-link" href="{{ url('modul-presentasi.html') }}" target="_blank">
-            <i class="fas fa-fw fa-file-powerpoint text-warning"></i>
-            <span>Bahan Presentasi</span>
-            <span class="badge badge-warning ml-auto">Deck</span>
-        </a>
-    </li>
-
     <!-- Divider -->
     <hr class="sidebar-divider">
 

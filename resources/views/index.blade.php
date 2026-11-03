@@ -1529,7 +1529,6 @@
                     <li><a href="#dampak"><i class="fas fa-chart-line mr-1"></i> Dampak & Metrik</a></li>
                     <li><a href="#mitra"><i class="fas fa-handshake mr-1"></i> Mitra Industri</a></li>
                     <li><a href="{{ route('public.kunjungan.index') }}" target="_blank"><i class="fas fa-clipboard-check mr-1"></i> Kunjungan</a></li>
-                    <li><a href="{{ url('modul-presentasi.html') }}" target="_blank"><i class="fas fa-file-powerpoint mr-1 text-warning"></i> Modul & Slide</a></li>
                 </ul>
             </nav>
 
