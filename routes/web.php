@@ -20,12 +20,12 @@ Route::get('/', [\App\Http\Controllers\ShowcaseController::class, 'index'])->nam
 Route::get('/showcase/data', [\App\Http\Controllers\ShowcaseController::class, 'getData'])->name('showcase.data');
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::get('/login-form', [LoginController::class, 'showLoginForm'])->name('login.form');
-Route::post('/login', [LoginController::class, 'login'])->name('login.attempt');
+Route::post('/login', [LoginController::class, 'login'])->middleware('throttle:30,1')->name('login.attempt');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 // Pendaftaran Mahasiswa (Identifikasi NIM Bank Data)
 Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
-Route::post('/register', [RegisterController::class, 'register'])->name('register.attempt');
+Route::post('/register', [RegisterController::class, 'register'])->middleware('throttle:20,1')->name('register.attempt');
 
 // Google OAuth routes
 Route::get('/auth/google', [GoogleAuthController::class, 'redirect'])->name('auth.google');

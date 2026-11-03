@@ -24,7 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Configure web middleware group
         $middleware->web(append: [
-            // Add any web-specific middleware here if needed
+            \App\Http\Middleware\SecurityHeaders::class,
         ]);
 
         // daftar alias (kayak $routeMiddleware lama)
