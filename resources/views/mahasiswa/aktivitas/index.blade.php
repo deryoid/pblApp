@@ -126,7 +126,7 @@ if (!function_exists('avatarUrl')) {
             
             <div class="d-inline-flex align-items-center mt-2 mr-2">
               <i class="far fa-calendar-alt mr-1"></i>
-              <span class="truncate">{{ $list['rentang_tanggal'] ?: '—' }}</span>
+              <span class="truncate">{{ $list['rentang_tanggal'] ?: '-' }}</span>
             </div>
 
             <span class="badge badge-soft mt-2 mr-2" title="Jumlah aktivitas">

@@ -83,12 +83,12 @@
                     @foreach($old as $i => $row)
                         <div class="form-row align-items-end entry-row mb-2">
                             <div class="col-md-10">
-                                <label>Mahasiswa (NIM — Nama — Kelas)</label>
+                                <label>Mahasiswa (NIM - Nama - Kelas)</label>
                                 <select name="entries[{{ $i }}][nim]" class="form-control select-nim @error('entries.'.$i.'.nim') is-invalid @enderror" required>
                                     <option value="">-- Pilih --</option>
                                     @forelse($mahasiswas as $m)
                                         <option value="{{ $m->nim }}" {{ ($row['nim']??'')==$m->nim?'selected':'' }}>
-                                            {{ $m->nim }} — {{ $m->nama_mahasiswa }}{{ $m->kelas ? ' ('.$m->kelas->kelas.')' : '' }}
+                                            {{ $m->nim }} - {{ $m->nama_mahasiswa }}{{ $m->kelas ? ' ('.$m->kelas->kelas.')' : '' }}
                                         </option>
                                     @empty
                                     @endforelse
@@ -215,11 +215,11 @@ document.addEventListener('DOMContentLoaded', function(){
     row.className = 'form-row align-items-end entry-row mb-2';
     row.innerHTML = `
       <div class="col-md-10">
-        <label>Mahasiswa (NIM — Nama — Kelas)</label>
+        <label>Mahasiswa (NIM - Nama - Kelas)</label>
         <select class="form-control select-nim" required>
           <option value="">-- Pilih --</option>
           @foreach($mahasiswas as $m)
-            <option value="{{ $m->nim }}">{{ $m->nim }} — {{ $m->nama_mahasiswa }}{{ $m->kelas ? ' ('.$m->kelas->kelas.')' : '' }}</option>
+            <option value="{{ $m->nim }}">{{ $m->nim }} - {{ $m->nama_mahasiswa }}{{ $m->kelas ? ' ('.$m->kelas->kelas.')' : '' }}</option>
           @endforeach
         </select>
       </div>

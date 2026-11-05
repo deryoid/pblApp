@@ -1,8 +1,8 @@
 <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow-sm px-2 px-sm-4">
 
     <!-- Sidebar Toggle (Topbar) -->
-    <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-2 mr-sm-3" style="color: #64748b;">
-        <i class="fa fa-bars"></i>
+    <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-2 mr-sm-3" style="color: #64748b;" aria-label="Toggle navigasi sidebar">
+        <i class="fa fa-bars" aria-hidden="true"></i>
     </button>
 
     <!-- Left breadcrumb / Quick Brand -->
@@ -34,8 +34,9 @@
             <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button"
                 data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                 @auth
-                    <img class="img-profile rounded-circle mr-2" alt="Avatar"
-                         src="{{ Auth::user()->profile_photo_data_url ?? asset('sbadmin2/img/undraw_profile.svg') }}"
+                    <img class="img-profile rounded-circle mr-2" alt="Avatar Pengguna"
+                         src="{{ Auth::user()->profile_photo_data_url ?? asset('sbadmin2/img/avatar-default.svg') }}"
+                         width="38" height="38"
                          style="width:38px;height:38px;object-fit:cover;border:2px solid #2563eb;box-shadow: 0 2px 6px rgba(37,99,235,0.25);">
                     <div class="d-none d-sm-block text-left mr-2">
                         <div class="font-weight-bold text-dark text-truncate" style="font-size: 0.85rem; line-height: 1.2; max-width: 140px;">

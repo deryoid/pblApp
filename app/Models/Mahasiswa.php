@@ -28,6 +28,16 @@ class Mahasiswa extends Model
         'kelas_id',
         'semester',
         'is_profile_complete',
+        'angkatan',
+        'nik',
+        'jk',
+        'nama_ibu',
+        'agama',
+        'tempat_lahir',
+        'tanggal_lahir',
+        'alamat',
+        'no_hp',
+        'email_kampus',
     ];
 
     protected function casts(): array
@@ -35,7 +45,17 @@ class Mahasiswa extends Model
         return [
             'semester' => 'integer',
             'is_profile_complete' => 'boolean',
+            'tanggal_lahir' => 'date',
         ];
+    }
+
+    public function getJenisKelaminTextAttribute(): string
+    {
+        return match (strtoupper((string) $this->jk)) {
+            'L' => 'Laki-laki',
+            'P' => 'Perempuan',
+            default => $this->jk ?: '-',
+        };
     }
 
     protected static function booted()
@@ -93,7 +113,7 @@ class Mahasiswa extends Model
 
     public function checkAndUpdateProfileCompletion(): bool
     {
-        $hasPhone = ! empty($this->user?->no_hp);
+        $hasPhone = ! empty($this->user?->no_hp) || ! empty($this->no_hp);
         $hasNim = ! empty($this->nim);
         $hasClass = ! empty($this->kelas_id);
 

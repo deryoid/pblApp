@@ -160,6 +160,11 @@ class User extends Authenticatable
         return $this->hasOne(\App\Models\Mahasiswa::class);
     }
 
+    public function dosen(): HasOne
+    {
+        return $this->hasOne(\App\Models\Dosen::class);
+    }
+
     public function penugasanPenilai(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(\App\Models\ProjectDosenPenilai::class, 'dosen_id');

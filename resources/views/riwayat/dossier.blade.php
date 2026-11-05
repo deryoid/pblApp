@@ -1,7 +1,7 @@
 {{-- Dossier Riwayat PBL Per Orang --}}
 @php
     $mhsUser = $mahasiswa->user;
-    $photoUrl = ($mhsUser && $mhsUser->profile_photo_data_url) ? $mhsUser->profile_photo_data_url : asset('sbadmin2/img/undraw_profile.svg');
+    $photoUrl = ($mhsUser && $mhsUser->profile_photo_data_url) ? $mhsUser->profile_photo_data_url : asset('sbadmin2/img/avatar-default.svg');
 @endphp
 
 <style>
@@ -110,7 +110,7 @@
 <div class="riwayat-header-card p-4 mb-4">
     <div class="row align-items-center">
         <div class="col-lg-7 d-flex align-items-center flex-column flex-sm-row text-center text-sm-left mb-3 mb-lg-0">
-            <img src="{{ $photoUrl }}" alt="{{ $mahasiswa->nama_mahasiswa }}" class="riwayat-avatar mr-sm-4 mb-3 mb-sm-0">
+            <img src="{{ $photoUrl }}" alt="Foto {{ $mahasiswa->nama_mahasiswa }}" width="100" height="100" class="riwayat-avatar mr-sm-4 mb-3 mb-sm-0">
             <div>
                 <div class="d-flex align-items-center justify-content-center justify-content-sm-start flex-wrap gap-2 mb-1">
                     <h3 class="font-weight-bold mb-0 text-white">{{ $mahasiswa->nama_mahasiswa }}</h3>

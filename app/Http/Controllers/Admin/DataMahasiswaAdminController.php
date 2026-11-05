@@ -29,7 +29,9 @@ class DataMahasiswaAdminController extends Controller
      */
     public function create()
     {
-        return view('admin.mahasiswa.create');
+        $kelasList = \App\Models\Kelas::orderBy('kelas')->get(['id', 'kelas']);
+
+        return view('admin.mahasiswa.create', compact('kelasList'));
     }
 
     /**
@@ -39,8 +41,8 @@ class DataMahasiswaAdminController extends Controller
     {
         // Normalisasi
         $request->merge([
-            'nim' => strtoupper(preg_replace('/\s+/', '', $request->nim)),
-            'nama_mahasiswa' => preg_replace('/\s+/', ' ', trim($request->nama_mahasiswa)),
+            'nim' => strtoupper(preg_replace('/\s+/', '', (string) $request->nim)),
+            'nama_mahasiswa' => preg_replace('/\s+/', ' ', trim((string) $request->nama_mahasiswa)),
         ]);
 
         $validated = $request->validate([
@@ -50,6 +52,16 @@ class DataMahasiswaAdminController extends Controller
             ],
             'nama_mahasiswa' => ['required', 'string', 'max:255'],
             'kelas_id' => ['nullable', 'integer', 'exists:kelas,id'],
+            'angkatan' => ['nullable', 'string', 'max:10'],
+            'nik' => ['nullable', 'string', 'max:30'],
+            'jk' => ['nullable', 'in:L,P'],
+            'nama_ibu' => ['nullable', 'string', 'max:255'],
+            'agama' => ['nullable', 'string', 'max:50'],
+            'tempat_lahir' => ['nullable', 'string', 'max:255'],
+            'tanggal_lahir' => ['nullable', 'date'],
+            'alamat' => ['nullable', 'string', 'max:1000'],
+            'no_hp' => ['nullable', 'string', 'max:30'],
+            'email_kampus' => ['nullable', 'email', 'max:255'],
             'create_user' => ['nullable', 'boolean'],
         ]);
 
@@ -62,7 +74,7 @@ class DataMahasiswaAdminController extends Controller
 
             // Jika user belum ada dan opsi create_user dicentang (atau default)
             if (! $user && $request->boolean('create_user')) {
-                $email = strtolower($nim.'@politala.ac.id');
+                $email = ! empty($validated['email_kampus']) ? $validated['email_kampus'] : strtolower($nim.'@politala.ac.id');
                 if (User::where('email', $email)->exists()) {
                     $email = strtolower($nim.'+'.Str::random(4).'@politala.ac.id');
                 }
@@ -71,25 +83,44 @@ class DataMahasiswaAdminController extends Controller
                     'nama_user' => $name,
                     'email' => $email,
                     'email_verified_at' => now(),
-                    'no_hp' => '-',
+                    'no_hp' => $validated['no_hp'] ?? '-',
                     'username' => $nim,
                     'password' => Hash::make($nim),
                     'role' => 'mahasiswa',
                     'remember_token' => Str::random(10),
                 ]);
-            } elseif ($user && $user->nama_user !== $name) {
-                // Sesuaikan nama user dengan data mahasiswa di Bank Data
-                $user->nama_user = $name;
+            } elseif ($user) {
+                if ($user->nama_user !== $name) {
+                    $user->nama_user = $name;
+                }
+                if (! empty($validated['no_hp']) && ($user->no_hp === '-' || empty($user->no_hp))) {
+                    $user->no_hp = $validated['no_hp'];
+                }
+                if (! empty($validated['email_kampus']) && (empty($user->email) || str_contains($user->email, '@example.com'))) {
+                    $user->email = $validated['email_kampus'];
+                }
                 $user->save();
             }
 
-            Mahasiswa::create([
+            $mhs = Mahasiswa::create([
                 'user_id' => $user?->id,
                 'nim' => $nim,
                 'nama_mahasiswa' => $name,
                 'kelas_id' => $validated['kelas_id'] ?? null,
+                'angkatan' => $validated['angkatan'] ?? null,
+                'nik' => $validated['nik'] ?? null,
+                'jk' => $validated['jk'] ?? null,
+                'nama_ibu' => $validated['nama_ibu'] ?? null,
+                'agama' => $validated['agama'] ?? null,
+                'tempat_lahir' => $validated['tempat_lahir'] ?? null,
+                'tanggal_lahir' => $validated['tanggal_lahir'] ?? null,
+                'alamat' => $validated['alamat'] ?? null,
+                'no_hp' => $validated['no_hp'] ?? null,
+                'email_kampus' => $validated['email_kampus'] ?? null,
                 'semester' => 1,
             ]);
+
+            $mhs->checkAndUpdateProfileCompletion();
         });
 
         Alert::toast('Data mahasiswa berhasil ditambahkan ke Bank Data.', 'success');
@@ -110,9 +141,10 @@ class DataMahasiswaAdminController extends Controller
      */
     public function edit(Mahasiswa $mahasiswa)
     {
-        $mahasiswa->load('user');
+        $mahasiswa->load('user', 'kelas');
+        $kelasList = \App\Models\Kelas::orderBy('kelas')->get(['id', 'kelas']);
 
-        return view('admin.mahasiswa.edit', compact('mahasiswa'));
+        return view('admin.mahasiswa.edit', compact('mahasiswa', 'kelasList'));
     }
 
     /**
@@ -121,10 +153,10 @@ class DataMahasiswaAdminController extends Controller
     public function update(Request $request, Mahasiswa $mahasiswa)
     {
         if ($request->has('nim')) {
-            $request->merge(['nim' => strtoupper(preg_replace('/\s+/', '', $request->nim))]);
+            $request->merge(['nim' => strtoupper(preg_replace('/\s+/', '', (string) $request->nim))]);
         }
         if ($request->has('nama_mahasiswa')) {
-            $request->merge(['nama_mahasiswa' => preg_replace('/\s+/', ' ', trim($request->nama_mahasiswa))]);
+            $request->merge(['nama_mahasiswa' => preg_replace('/\s+/', ' ', trim((string) $request->nama_mahasiswa))]);
         }
 
         $validated = $request->validate([
@@ -135,6 +167,16 @@ class DataMahasiswaAdminController extends Controller
             ],
             'nama_mahasiswa' => ['required', 'string', 'max:255'],
             'kelas_id' => ['nullable', 'integer', 'exists:kelas,id'],
+            'angkatan' => ['nullable', 'string', 'max:10'],
+            'nik' => ['nullable', 'string', 'max:30'],
+            'jk' => ['nullable', 'in:L,P'],
+            'nama_ibu' => ['nullable', 'string', 'max:255'],
+            'agama' => ['nullable', 'string', 'max:50'],
+            'tempat_lahir' => ['nullable', 'string', 'max:255'],
+            'tanggal_lahir' => ['nullable', 'date'],
+            'alamat' => ['nullable', 'string', 'max:1000'],
+            'no_hp' => ['nullable', 'string', 'max:30'],
+            'email_kampus' => ['nullable', 'email', 'max:255'],
         ]);
 
         DB::transaction(function () use ($mahasiswa, $validated) {
@@ -150,6 +192,13 @@ class DataMahasiswaAdminController extends Controller
                     $user->password = Hash::make($newNim);
                 }
 
+                if (! empty($validated['no_hp'])) {
+                    $user->no_hp = $validated['no_hp'];
+                }
+                if (! empty($validated['email_kampus'])) {
+                    $user->email = $validated['email_kampus'];
+                }
+
                 $user->save();
             }
 
@@ -159,11 +208,14 @@ class DataMahasiswaAdminController extends Controller
 
             $mahasiswa->nama_mahasiswa = $validated['nama_mahasiswa'];
 
-            // Update kelas jika ada
-            if (array_key_exists('kelas_id', $validated)) {
-                $mahasiswa->kelas_id = $validated['kelas_id'];
+            // Update field lainnya jika disediakan
+            foreach (['kelas_id', 'angkatan', 'nik', 'jk', 'nama_ibu', 'agama', 'tempat_lahir', 'tanggal_lahir', 'alamat', 'no_hp', 'email_kampus'] as $field) {
+                if (array_key_exists($field, $validated)) {
+                    $mahasiswa->{$field} = $validated[$field];
+                }
             }
 
+            $mahasiswa->checkAndUpdateProfileCompletion();
             $mahasiswa->save();
         });
 
@@ -284,7 +336,7 @@ class DataMahasiswaAdminController extends Controller
             }
         });
 
-        $msg = "Sinkronisasi selesai — dibuat: {$created}, diperbarui: {$updated}, ditautkan: {$attached}, dilewati: {$skipped}, konflik: {$conflict}";
+        $msg = "Sinkronisasi selesai: dibuat: {$created}, diperbarui: {$updated}, ditautkan: {$attached}, dilewati: {$skipped}, konflik: {$conflict}";
         Alert::toast($msg, $conflict ? 'warning' : 'success');
 
         return redirect()->route('mahasiswa.index');
@@ -302,15 +354,17 @@ class DataMahasiswaAdminController extends Controller
         $request->validate([
             'file' => [
                 'required', 'file',
-                'mimetypes:text/plain,text/csv,application/vnd.ms-excel',
-                'max:2048',
+                'mimes:xlsx,xls,csv,txt',
+                'max:5120',
             ],
         ]);
 
-        $path = $request->file('file')->getRealPath();
+        $file = $request->file('file');
+        $path = $file->getRealPath();
+        $ext = $file->getClientOriginalExtension();
 
         try {
-            $result = $importService->importFromCsv($path);
+            $result = $importService->importFile($path, $ext);
         } catch (\Exception $e) {
             return back()->withErrors(['file' => $e->getMessage()]);
         }
@@ -322,9 +376,9 @@ class DataMahasiswaAdminController extends Controller
 
         if ($errors) {
             session()->flash('import_errors', $errors);
-            \RealRashid\SweetAlert\Facades\Alert::toast("Import selesai — user baru: {$stats['created_users']}, mhs baru: {$stats['created_mhs']}, diperbarui: {$stats['updated_mhs']}, ditautkan: {$stats['attached']}, dilewati: {$stats['skipped']}, konflik: {$stats['conflict']} (ada error)", 'warning');
+            \RealRashid\SweetAlert\Facades\Alert::toast("Import selesai: user baru: {$stats['created_users']}, mhs baru: {$stats['created_mhs']}, diperbarui: {$stats['updated_mhs']}, ditautkan: {$stats['attached']}, dilewati: {$stats['skipped']}, konflik: {$stats['conflict']} (ada error)", 'warning');
         } else {
-            \RealRashid\SweetAlert\Facades\Alert::toast("Import selesai — user baru: {$stats['created_users']}, mhs baru: {$stats['created_mhs']}, diperbarui: {$stats['updated_mhs']}, ditautkan: {$stats['attached']}, dilewati: {$stats['skipped']}, konflik: {$stats['conflict']}", 'success');
+            \RealRashid\SweetAlert\Facades\Alert::toast("Import selesai: user baru: {$stats['created_users']}, mhs baru: {$stats['created_mhs']}, diperbarui: {$stats['updated_mhs']}, ditautkan: {$stats['attached']}, dilewati: {$stats['skipped']}, konflik: {$stats['conflict']}", 'success');
         }
 
         return redirect()->route('mahasiswa.import.form');

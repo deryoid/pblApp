@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\DataDosenAdminController;
 use App\Http\Controllers\Admin\DataKelompokAdminController;
 use App\Http\Controllers\Admin\DataMahasiswaAdminController;
 use App\Http\Controllers\Admin\EvaluasiController as AdminEval;
@@ -86,14 +87,23 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'profile.complete'])->group
     Route::get('mahasiswa/select2', [DataMahasiswaAdminController::class, 'select2'])->name('mahasiswa.select2');
     Route::post('mahasiswa/sync', [DataMahasiswaAdminController::class, 'sync'])->name('mahasiswa.sync');
     Route::get('/admin/mahasiswa/template-csv', function () {
-        $csv = "NIM,Nama\n230411100001,Budi Santoso\n230411100002,Siti Aminah\n230411100003,Agus Saputra\n";
+        $csv = "Angkatan,NIM,Nama Mahasiswa,NIK,JK,Nama Ibu,Agama,Kelas,Tempat Lahir,Tanggal Lahir,Alamat,No. HP,Email Kampus\n"
+            ."2024,C030324001,Budi Santoso,6301012005040001,L,Siti Aminah,Islam,2A,Pelaihari,2004-05-12,\"Jl. A. Yani KM 6, Pelaihari\",081234567890,c030324001@politala.ac.id\n"
+            ."2024,C030324002,Ayu Lestari,6301016508040002,P,Nurul Hidayah,Islam,2B,Banjarmasin,2004-08-25,\"Jl. Gatot Subroto No. 15\",081398765432,c030324002@politala.ac.id\n";
 
         return response($csv, 200, [
             'Content-Type' => 'text/csv',
             'Content-Disposition' => 'attachment; filename="template-mahasiswa.csv"',
         ]);
     })->name('mahasiswa.template.csv');
+    Route::get('/admin/mahasiswa/template-excel', function () {
+        return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\MahasiswaTemplateExport, 'template-mahasiswa.xlsx');
+    })->name('mahasiswa.template.excel');
     Route::resource('mahasiswa', DataMahasiswaAdminController::class);
+
+    // Bank Data Dosen
+    Route::post('dosen/sync', [DataDosenAdminController::class, 'sync'])->name('dosen.sync');
+    Route::resource('dosen', DataDosenAdminController::class);
 
     // Kelompok
     Route::get('kelompok', [DataKelompokAdminController::class, 'index'])->name('kelompok.index');

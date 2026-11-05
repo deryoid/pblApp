@@ -117,8 +117,10 @@
                                     <div class="p-3 border rounded-xl d-flex align-items-center justify-content-between bg-light">
                                         <div class="d-flex align-items-center">
                                             <img 
-                                                src="{{ $userMhs?->profile_photo_data_url ?? asset('sbadmin2/img/undraw_profile.svg') }}" 
-                                                alt="Foto" 
+                                                src="{{ $userMhs?->profile_photo_data_url ?? asset('sbadmin2/img/avatar-default.svg') }}" 
+                                                alt="Foto {{ $mhs->nama_mahasiswa ?? $userMhs?->nama_user }}" 
+                                                width="44"
+                                                height="44"
                                                 class="rounded-circle mr-3 shadow-sm flex-shrink-0" 
                                                 style="width: 44px; height: 44px; object-fit: cover; border: 2px solid {{ $isKetuaMhs ? '#2563eb' : '#e2e8f0' }};"
                                             >

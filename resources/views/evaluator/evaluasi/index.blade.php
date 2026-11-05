@@ -32,7 +32,7 @@
       <span class="ml-3 small text-muted">
         <strong>Periode:</strong>
         <span class="badge badge-light border">
-          {{ optional($periodeAktif)->periode ?? '—' }}
+          {{ optional($periodeAktif)->periode ?? '-' }}
         </span>
       </span>
     </div>
@@ -96,7 +96,7 @@
                           @endforeach
                         </div>
                       @else
-                        <span class="text-muted small">—</span>
+                        <span class="text-muted small">-</span>
                       @endif
                 </td>
                 <td>

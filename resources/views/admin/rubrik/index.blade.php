@@ -102,7 +102,7 @@
                                     @php
                                         $desc = $row['descriptors'][$cat->kode] ?? null;
                                         $descId = $desc['id'] ?? null;
-                                        $descText = $desc['text'] ?? '—';
+                                        $descText = $desc['text'] ?? '-';
                                     @endphp
                                     <td class="align-middle descriptor-cell" style="vertical-align: top; background: #fff; position: relative;">
                                         <div class="d-flex flex-column justify-content-between h-100">

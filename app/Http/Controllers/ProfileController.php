@@ -38,16 +38,30 @@ class ProfileController extends Controller
             $request->merge(['no_hp' => preg_replace('/\s+/', '', trim($request->no_hp))]);
         }
 
-        $validated = $request->validate([
+        $rules = [
             'nama_user' => 'required|string|max:255',
             'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             'no_hp' => 'required|string|max:30',
             'username' => ['required', 'string', 'max:50', 'alpha_dash', Rule::unique('users', 'username')->ignore($user->id)],
-            'nim' => ['nullable', 'string', 'max:50'],
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048', // Max 2MB
             'remove_photo' => 'sometimes|boolean',
-            'kelas_id' => ['nullable', 'integer', 'exists:kelas,id'],
-        ]);
+        ];
+
+        if ($user->role === 'mahasiswa') {
+            $mhsId = $user->mahasiswa?->id;
+            $rules['nim'] = ['nullable', 'string', 'max:50', Rule::unique('mahasiswa', 'nim')->ignore($mhsId)];
+            $rules['kelas_id'] = ['nullable', 'integer', 'exists:kelas,id'];
+            $rules['angkatan'] = ['nullable', 'string', 'max:10'];
+            $rules['nik'] = ['nullable', 'string', 'max:30'];
+            $rules['jk'] = ['nullable', 'in:L,P'];
+            $rules['nama_ibu'] = ['nullable', 'string', 'max:255'];
+            $rules['agama'] = ['nullable', 'string', 'max:50'];
+            $rules['tempat_lahir'] = ['nullable', 'string', 'max:255'];
+            $rules['tanggal_lahir'] = ['nullable', 'date'];
+            $rules['alamat'] = ['nullable', 'string', 'max:1000'];
+        }
+
+        $validated = $request->validate($rules);
 
         $user->nama_user = $validated['nama_user'];
         $user->email = $validated['email'];
@@ -81,15 +95,51 @@ class ProfileController extends Controller
         // Update data mahasiswa & status kelengkapan profil
         if ($user->role === 'mahasiswa') {
             $mhs = $user->mahasiswa;
-            if ($mhs) {
-                if (! empty($validated['kelas_id'])) {
-                    $mhs->kelas_id = $validated['kelas_id'];
+            if (! $mhs && ! empty($validated['nim'])) {
+                $mhs = \App\Models\Mahasiswa::where('nim', $validated['nim'])->first();
+                if ($mhs && ! $mhs->user_id) {
+                    $mhs->user_id = $user->id;
                 }
+            }
+
+            if ($mhs) {
+                $mhs->nama_mahasiswa = $user->nama_user;
+                $mhs->no_hp = $user->no_hp;
+                $mhs->email_kampus = $user->email;
+
                 if (! empty($validated['nim'])) {
                     $mhs->nim = $validated['nim'];
                 }
-                $mhs->nama_mahasiswa = $user->nama_user;
+                if (array_key_exists('kelas_id', $validated)) {
+                    $mhs->kelas_id = $validated['kelas_id'];
+                }
+                if (array_key_exists('angkatan', $validated)) {
+                    $mhs->angkatan = $validated['angkatan'];
+                }
+                if (array_key_exists('nik', $validated)) {
+                    $mhs->nik = $validated['nik'];
+                }
+                if (array_key_exists('jk', $validated)) {
+                    $mhs->jk = $validated['jk'];
+                }
+                if (array_key_exists('nama_ibu', $validated)) {
+                    $mhs->nama_ibu = $validated['nama_ibu'];
+                }
+                if (array_key_exists('agama', $validated)) {
+                    $mhs->agama = $validated['agama'];
+                }
+                if (array_key_exists('tempat_lahir', $validated)) {
+                    $mhs->tempat_lahir = $validated['tempat_lahir'];
+                }
+                if (array_key_exists('tanggal_lahir', $validated)) {
+                    $mhs->tanggal_lahir = $validated['tanggal_lahir'];
+                }
+                if (array_key_exists('alamat', $validated)) {
+                    $mhs->alamat = $validated['alamat'];
+                }
+
                 $mhs->checkAndUpdateProfileCompletion();
+                $mhs->save();
             }
         }
 

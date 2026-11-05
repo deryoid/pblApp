@@ -5,7 +5,7 @@
     <a class="sidebar-brand d-flex align-items-center justify-content-center"
        href="{{ $role==='admin' ? url('admin/') : ($role==='evaluator' ? url('evaluator/') : url('mahasiswa/')) }}">
         <div class="sidebar-brand-icon">
-            <img src="{{ asset('sbadmin2/img/logo-campus.png') }}" alt="Logo" style="width:38px;height:auto;">
+            <img src="{{ asset('sbadmin2/img/logo-campus.png') }}" alt="Logo Politeknik Negeri Tanah Laut" width="38" height="38" style="width:38px;height:auto;">
         </div>
         <div class="sidebar-brand-text mx-2">PBL TRKJ <span>Politala</span></div>
     </a>
@@ -55,11 +55,19 @@
             </div>
         </li>
 
-        {{-- Mahasiswa --}}
+        {{-- Bank Data Mahasiswa --}}
         <li class="nav-item {{ request()->routeIs('mahasiswa.*') ? 'active' : '' }}">
             <a class="nav-link" href="{{ route('mahasiswa.index') }}">
                 <i class="fas fa-fw fa-user-graduate"></i>
-                <span>Mahasiswa</span>
+                <span>Bank Data Mahasiswa</span>
+            </a>
+        </li>
+
+        {{-- Bank Data Dosen --}}
+        <li class="nav-item {{ request()->routeIs('dosen.*') ? 'active' : '' }}">
+            <a class="nav-link" href="{{ route('dosen.index') }}">
+                <i class="fas fa-fw fa-chalkboard-teacher"></i>
+                <span>Bank Data Dosen</span>
             </a>
         </li>
 
@@ -210,8 +218,9 @@
                         </h6>
                         @forelse($anggotaKelompok as $am)
                             <span class="collapse-item d-flex align-items-center text-truncate" title="{{ $am->nama_mahasiswa ?? $am->nama }}">
-                                <img src="{{ ($am->user && $am->user->profile_photo_data_url) ? $am->user->profile_photo_data_url : asset('sbadmin2/img/undraw_profile.svg') }}"
+                                <img src="{{ ($am->user && $am->user->profile_photo_data_url) ? $am->user->profile_photo_data_url : asset('sbadmin2/img/avatar-default.svg') }}"
                                      alt="Foto {{ $am->nama_mahasiswa ?? $am->nama }}" class="rounded-circle mr-2 flex-shrink-0"
+                                     width="22" height="22"
                                      style="width:22px;height:22px;object-fit:cover;">
                                 <span class="text-truncate" style="font-size:0.8rem;">{{ $am->nama_mahasiswa ?? $am->nama }}</span>
                                 @php $r = strtolower($am->pivot->role ?? ''); @endphp
@@ -280,6 +289,14 @@
             <a class="nav-link" href="{{ route('mahasiswa.riwayat.index') }}">
                 <i class="fas fa-fw fa-history"></i>
                 <span>Riwayat PBL Saya</span>
+            </a>
+        </li>
+
+        {{-- Biodata & Profil --}}
+        <li class="nav-item {{ request()->routeIs('profile.*') ? 'active' : '' }}">
+            <a class="nav-link" href="{{ route('profile.edit') }}">
+                <i class="fas fa-fw fa-user-cog"></i>
+                <span>Biodata & Profil</span>
             </a>
         </li>
     @endif

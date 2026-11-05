@@ -53,7 +53,7 @@ class RubrikPenilaianController extends Controller
                 $row['descriptors'][$cat->kode] = [
                     'id' => $skala?->id,
                     'kategori_nama' => $cat->nama_kategori,
-                    'text' => $skala?->deskripsi ?? '—',
+                    'text' => $skala?->deskripsi ?? '-',
                 ];
             }
 

@@ -120,8 +120,10 @@
                                             @forelse($anggotaKelompok as $am)
                                                 <li class="list-group-item d-flex align-items-center">
                                                     <img
-                                                        src="{{ ($am->user && $am->user->profile_photo_data_url) ? $am->user->profile_photo_data_url : asset('sbadmin2/img/undraw_profile.svg') }}"
+                                                        src="{{ ($am->user && $am->user->profile_photo_data_url) ? $am->user->profile_photo_data_url : asset('sbadmin2/img/avatar-default.svg') }}"
                                                         alt="Foto {{ $am->nama_mahasiswa }}"
+                                                        width="32"
+                                                        height="32"
                                                         class="rounded-circle mr-2"
                                                         style="width:32px;height:32px;object-fit:cover;"
                                                     >

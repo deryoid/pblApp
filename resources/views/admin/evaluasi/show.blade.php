@@ -181,14 +181,14 @@
       </div>
       <h1 class="h3 mb-1">Detail Evaluasi</h1>
       <div class="text-muted">
-        <i class="fas fa-users mr-1"></i>{{ $kelompok->nama_kelompok ?? '—' }}
+        <i class="fas fa-users mr-1"></i>{{ $kelompok->nama_kelompok ?? '-' }}
         <span class="mx-2">•</span>
-        <span class="badge badge-light border">{{ $periode->periode ?? '—' }}</span>
+        <span class="badge badge-light border">{{ $periode->periode ?? '-' }}</span>
       </div>
     </div>
     <div class="ml-auto text-right">
       <div class="text-muted small">Evaluator:
-        <strong>{{ Auth::user()->name ?? '—' }}</strong>
+        <strong>{{ Auth::user()->name ?? '-' }}</strong>
       </div>
     </div>
   </div>
@@ -1183,14 +1183,14 @@
       const mitraSummary = cardData.evaluasi_mitra_summary || {};
       const mitraScoreEl = cardEl.querySelector('.score-mitra-val');
       if (mitraScoreEl) {
-        mitraScoreEl.textContent = mitraSummary.avg !== null ? mitraSummary.avg : '—';
+        mitraScoreEl.textContent = mitraSummary.avg !== null ? mitraSummary.avg : '-';
       }
 
       // Update dosen score display
       const dosenSummary = cardData.evaluasi_dosen_summary || {};
       const dosenScoreEl = cardEl.querySelector('.score-dosen-val');
       if (dosenScoreEl) {
-        dosenScoreEl.textContent = dosenSummary.avg !== null ? dosenSummary.avg : '—';
+        dosenScoreEl.textContent = dosenSummary.avg !== null ? dosenSummary.avg : '-';
       }
 
       // Add border-success if there are evaluations
@@ -1571,7 +1571,7 @@
       const avg = validScores.length ? Math.round(validScores.reduce((sum, value) => sum + value, 0) / validScores.length) : null;
       const scoreEl = cardEl.querySelector('.score-mitra-val');
       if (scoreEl) {
-        scoreEl.textContent = avg !== null ? avg : '—';
+        scoreEl.textContent = avg !== null ? avg : '-';
       }
 
       const scoreCard = cardEl.querySelector('.score-card');
@@ -2467,7 +2467,7 @@
 
       const scoreEl = cardEl.querySelector('.score-dosen-val');
       if (scoreEl) {
-        scoreEl.textContent = avg !== null ? avg : '—';
+        scoreEl.textContent = avg !== null ? avg : '-';
       }
 
       const scoreCard = cardEl.querySelector('.score-card');
