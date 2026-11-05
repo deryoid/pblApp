@@ -38,10 +38,13 @@
                 @endif
             </div>
 
-            {{-- Tombol Tambah --}}
-            <div>
+            {{-- Tombol Aksi --}}
+            <div class="d-flex align-items-center" style="gap: 0.5rem;">
+                <a href="{{ route('matakuliah.import.form') }}" class="btn btn-outline-success btn-sm">
+                    <i class="fas fa-file-excel mr-1" aria-hidden="true"></i> Import Excel / CSV
+                </a>
                 <a href="{{ route('matakuliah.create') }}" class="btn btn-primary btn-sm">
-                    <i class="fas fa-plus mr-1"></i> Tambah Mata Kuliah
+                    <i class="fas fa-plus mr-1" aria-hidden="true"></i> Tambah Mata Kuliah
                 </a>
             </div>
         </div>

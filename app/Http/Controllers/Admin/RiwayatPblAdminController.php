@@ -24,6 +24,10 @@ class RiwayatPblAdminController extends Controller
         $search = $request->input('search');
         $kelasId = $request->input('kelas_id');
         $periodeId = $request->input('periode_id');
+        $perPage = (int) $request->input('per_page', 15);
+        if (! in_array($perPage, [15, 25, 50, 100], true)) {
+            $perPage = 15;
+        }
 
         $query = Mahasiswa::with(['user', 'kelas', 'kelompoks.periode'])
             ->withCount('kelompoks');
@@ -45,7 +49,7 @@ class RiwayatPblAdminController extends Controller
             });
         }
 
-        $mahasiswas = $query->orderBy('nama_mahasiswa', 'asc')->paginate(15)->withQueryString();
+        $mahasiswas = $query->orderBy('nama_mahasiswa', 'asc')->paginate($perPage)->withQueryString();
         $kelasList = Kelas::orderBy('kelas')->get();
         $periodes = Periode::orderByDesc('id')->get();
 
@@ -55,7 +59,8 @@ class RiwayatPblAdminController extends Controller
             'periodes',
             'search',
             'kelasId',
-            'periodeId'
+            'periodeId',
+            'perPage'
         ));
     }
 

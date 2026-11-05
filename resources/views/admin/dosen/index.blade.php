@@ -28,8 +28,14 @@
                     </a>
                 </div>
 
-                {{-- Kanan: Sinkronkan Akun --}}
-                <div>
+                {{-- Kanan: Import + Sinkron --}}
+                <div class="d-flex align-items-center flex-wrap" style="gap: 0.5rem;">
+                    {{-- Import Excel / CSV --}}
+                    <a href="{{ route('dosen.import.form') }}" class="btn btn-success btn-sm">
+                        <i class="fas fa-file-excel mr-1" aria-hidden="true"></i> Import Excel / CSV
+                    </a>
+
+                    {{-- Sinkronkan Akun --}}
                     <form action="{{ route('dosen.sync') }}" method="POST" class="m-0">
                         @csrf
                         <button type="submit" class="btn btn-secondary btn-sm" title="Sinkronkan akun dosen dari tabel pengguna" aria-label="Sinkronkan akun dosen dari tabel pengguna">

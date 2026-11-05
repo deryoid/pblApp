@@ -214,4 +214,81 @@ class BankDataDosenTest extends TestCase
 
         $response->assertStatus(302);
     }
+
+    /**
+     * Admin can view dosen import form.
+     */
+    public function test_admin_can_view_dosen_import_form(): void
+    {
+        $response = $this->actingAs($this->admin)->get(route('dosen.import.form'));
+
+        $response->assertStatus(200);
+        $response->assertSee('Import Bank Data Dosen');
+        $response->assertSee('Mulai Import');
+    }
+
+    /**
+     * Admin can download excel template for dosen.
+     */
+    public function test_admin_can_download_dosen_excel_template(): void
+    {
+        $response = $this->actingAs($this->admin)->get(route('dosen.template.excel'));
+
+        $response->assertStatus(200);
+        $response->assertHeader('content-disposition');
+    }
+
+    /**
+     * Admin can download csv template for dosen.
+     */
+    public function test_admin_can_download_dosen_csv_template(): void
+    {
+        $response = $this->actingAs($this->admin)->get(route('dosen.template.csv'));
+
+        $response->assertStatus(200);
+        $response->assertHeader('content-disposition');
+    }
+
+    /**
+     * Admin can import dosen from CSV.
+     */
+    public function test_admin_can_import_dosen_from_csv(): void
+    {
+        $csvContent = "NIP,Nama Dosen,Nomor Telp,Keahlian\n";
+        $csvContent .= "198811112015011001,Dr. Hendra Gunawan,081299887766,Jaringan Komputer & IoT\n";
+        $csvContent .= '199205052020022002,Dewi Sartika M.Kom,85711223344,Sistem Informasi';
+
+        $tmpFile = tempnam(sys_get_temp_dir(), 'dosen_').'.csv';
+        file_put_contents($tmpFile, $csvContent);
+
+        $uploadedFile = new \Illuminate\Http\UploadedFile(
+            $tmpFile,
+            'dosen.csv',
+            'text/csv',
+            null,
+            true
+        );
+
+        $response = $this->actingAs($this->admin)->post(route('dosen.import'), [
+            'file' => $uploadedFile,
+        ]);
+
+        $response->assertRedirect(route('dosen.import.form'));
+
+        $this->assertDatabaseHas('dosen', [
+            'nip' => '198811112015011001',
+            'nama_dosen' => 'Dr. Hendra Gunawan',
+            'no_hp' => '081299887766',
+            'keahlian' => 'Jaringan Komputer & IoT',
+        ]);
+
+        $this->assertDatabaseHas('dosen', [
+            'nip' => '199205052020022002',
+            'nama_dosen' => 'Dewi Sartika M.Kom',
+            'no_hp' => '085711223344',
+            'keahlian' => 'Sistem Informasi',
+        ]);
+
+        @unlink($tmpFile);
+    }
 }

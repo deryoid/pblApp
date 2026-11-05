@@ -6,50 +6,62 @@ use App\Http\Controllers\Controller;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(\Illuminate\Http\Request $request): \Illuminate\View\View
     {
-        // Get active period
-        $activePeriode = \App\Models\Periode::where('status_periode', 'Aktif')->first();
+        // Get all periods for the dropdown selector
+        $periodes = \App\Models\Periode::orderByDesc('id')->get();
+        $activePeriode = $periodes->firstWhere('status_periode', 'Aktif');
 
-        // Data Akademik
-        $totalPeriodes = \App\Models\Periode::count();
-        $activePeriodeCount = \App\Models\Periode::where('status_periode', 'Aktif')->count();
+        $selectedPeriodeId = $request->query('periode_id');
+        $selectedPeriode = null;
+        if ($selectedPeriodeId) {
+            $selectedPeriode = $periodes->firstWhere('id', (int) $selectedPeriodeId);
+        }
+        if (! $selectedPeriode) {
+            $selectedPeriode = $activePeriode ?? $periodes->first();
+        }
+
+        // Data Akademik Global
+        $totalPeriodes = $periodes->count();
+        $activePeriodeCount = $periodes->where('status_periode', 'Aktif')->count();
         $totalKelas = \App\Models\Kelas::count();
         $totalKelompoks = \App\Models\Kelompok::count();
-        $activeKelompoks = $activePeriode ? \App\Models\Kelompok::where('periode_id', $activePeriode->id)->count() : 0;
 
-        // Data Pengguna
+        // Data Pengguna Global
         $totalUsers = \App\Models\User::count();
         $totalAdmins = \App\Models\User::where('role', 'admin')->count();
         $totalEvaluators = \App\Models\User::where('role', 'evaluator')->count();
         $totalMahasiswas = \App\Models\Mahasiswa::count();
-        $activeMahasiswas = $activePeriode ? \App\Models\Mahasiswa::whereHas('kelompoks', function ($query) use ($activePeriode) {
-            $query->where('kelompok.periode_id', $activePeriode->id);
+
+        // Data Khusus Periode yang Dipilih
+        $activeKelompoks = $selectedPeriode ? \App\Models\Kelompok::where('periode_id', $selectedPeriode->id)->count() : 0;
+        $activeMahasiswas = $selectedPeriode ? \App\Models\Mahasiswa::whereHas('kelompoks', function ($query) use ($selectedPeriode) {
+            $query->where('kelompok.periode_id', $selectedPeriode->id);
         })->count() : 0;
 
         // Data Evaluasi
         $totalSesiEvaluasi = \App\Models\EvaluasiMaster::count();
-        $activeSesiEvaluasi = $activePeriode ? \App\Models\EvaluasiMaster::where('periode_id', $activePeriode->id)->count() : 0;
+        $activeSesiEvaluasi = $selectedPeriode ? \App\Models\EvaluasiMaster::where('periode_id', $selectedPeriode->id)->count() : 0;
 
         // Data Kunjungan Mitra
         $totalKunjungan = \App\Models\KunjunganMitra::count();
-        $kunjunganPerPeriode = $activePeriode ? \App\Models\KunjunganMitra::where('periode_id', $activePeriode->id)->count() : 0;
+        $kunjunganPerPeriode = $selectedPeriode ? \App\Models\KunjunganMitra::where('periode_id', $selectedPeriode->id)->count() : 0;
 
-        // Status Kunjungan
-        $statusKunjungan = $activePeriode ? \App\Models\KunjunganMitra::where('periode_id', $activePeriode->id)
+        // Status Kunjungan pada Periode Terpilih
+        $statusKunjungan = $selectedPeriode ? \App\Models\KunjunganMitra::where('periode_id', $selectedPeriode->id)
             ->selectRaw('status_kunjungan, COUNT(*) as count')
             ->groupBy('status_kunjungan')
             ->pluck('count', 'status_kunjungan')
             ->toArray() : [];
 
-        // Data Proyek
+        // Data Proyek pada Periode Terpilih
         $totalProyekLists = \App\Models\ProjectList::count();
         $totalProyekCards = \App\Models\ProjectCard::count();
-        $proyekPerPeriode = $activePeriode ? \App\Models\ProjectList::where('periode_id', $activePeriode->id)->count() : 0;
+        $proyekPerPeriode = $selectedPeriode ? \App\Models\ProjectList::where('periode_id', $selectedPeriode->id)->count() : 0;
 
         // Status Proyek Cards
-        $statusProyek = $activePeriode ? \App\Models\ProjectCard::whereHas('projectList', function ($query) use ($activePeriode) {
-            $query->where('periode_id', $activePeriode->id);
+        $statusProyek = $selectedPeriode ? \App\Models\ProjectCard::whereHas('projectList', function ($query) use ($selectedPeriode) {
+            $query->where('periode_id', $selectedPeriode->id);
         })->selectRaw('status, COUNT(*) as count')
             ->groupBy('status')
             ->pluck('count', 'status')
@@ -57,10 +69,10 @@ class DashboardController extends Controller
 
         // Data Aktivitas
         $totalAktivitasLists = \App\Models\AktivitasList::count();
-        $aktivitasPerPeriode = $activePeriode ? \App\Models\AktivitasList::where('periode_id', $activePeriode->id)->count() : 0;
+        $aktivitasPerPeriode = $selectedPeriode ? \App\Models\AktivitasList::where('periode_id', $selectedPeriode->id)->count() : 0;
 
         // Status Evaluasi Aktivitas
-        $statusEvaluasiAktivitas = $activePeriode ? \App\Models\AktivitasList::where('periode_id', $activePeriode->id)
+        $statusEvaluasiAktivitas = $selectedPeriode ? \App\Models\AktivitasList::where('periode_id', $selectedPeriode->id)
             ->selectRaw('status_evaluasi, COUNT(*) as count')
             ->groupBy('status_evaluasi')
             ->pluck('count', 'status_evaluasi')
@@ -68,17 +80,24 @@ class DashboardController extends Controller
 
         // Recent Activities (last 5)
         $recentKunjungan = \App\Models\KunjunganMitra::with(['kelompok', 'user'])
-            ->when($activePeriode, function ($query) use ($activePeriode) {
-                return $query->where('periode_id', $activePeriode->id);
+            ->when($selectedPeriode, function ($query) use ($selectedPeriode) {
+                return $query->where('periode_id', $selectedPeriode->id);
             })
             ->orderBy('created_at', 'desc')
             ->limit(5)
             ->get();
 
-        // Progress evaluasi per kelompok
+        // Progress evaluasi per kelompok pada periode terpilih
         $evaluasiProgress = [];
-        if ($activePeriode) {
-            $kelompoks = \App\Models\Kelompok::where('periode_id', $activePeriode->id)->get();
+        $kelompokPeriode = collect();
+        if ($selectedPeriode) {
+            $kelompoks = \App\Models\Kelompok::with(['mahasiswas.user', 'projectCards'])
+                ->where('periode_id', $selectedPeriode->id)
+                ->orderBy('nama_kelompok')
+                ->get();
+
+            $kelompokPeriode = $kelompoks;
+
             foreach ($kelompoks as $kelompok) {
                 $sesiEvaluasi = \App\Models\EvaluasiMaster::where('kelompok_id', $kelompok->id)->get();
                 $totalSesi = $sesiEvaluasi->count();
@@ -94,14 +113,14 @@ class DashboardController extends Controller
         }
 
         return view('admin.index', compact(
-            'activePeriode',
+            'periodes', 'selectedPeriode', 'activePeriode',
             'totalPeriodes', 'activePeriodeCount', 'totalKelas', 'totalKelompoks', 'activeKelompoks',
             'totalUsers', 'totalAdmins', 'totalEvaluators', 'totalMahasiswas', 'activeMahasiswas',
             'totalSesiEvaluasi', 'activeSesiEvaluasi',
             'totalKunjungan', 'kunjunganPerPeriode', 'statusKunjungan',
             'totalProyekLists', 'totalProyekCards', 'proyekPerPeriode', 'statusProyek',
             'totalAktivitasLists', 'aktivitasPerPeriode', 'statusEvaluasiAktivitas',
-            'recentKunjungan', 'evaluasiProgress'
+            'recentKunjungan', 'evaluasiProgress', 'kelompokPeriode'
         ));
     }
 

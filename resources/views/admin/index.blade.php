@@ -1,35 +1,80 @@
 @extends('layout.app')
 @section('content')
                 <div class="container-fluid">
-                    <!-- Page Heading -->
+                    <!-- Page Heading with Periode Switcher -->
                     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-                        <h1 class="h3 mb-0 text-gray-800">Dashboard PBL</h1>
-                        @if($activePeriode)
-                            <span class="badge badge-info">Periode Aktif: {{ $activePeriode->periode }}</span>
-                        @endif
+                        <div>
+                            <h1 class="h3 mb-1 text-gray-800 font-weight-bold">Dashboard PBL</h1>
+                            <p class="text-secondary small mb-0 font-weight-500">
+                                Ringkasan statistik, aktivitas, dan perkembangan proyek mahasiswa per periode.
+                            </p>
+                        </div>
+                        <div class="mt-3 mt-sm-0 d-flex align-items-center flex-wrap" style="gap: 0.5rem;">
+                            <form method="GET" action="{{ url('admin') }}" class="m-0 d-flex align-items-center">
+                                <label for="periodeSwitch" class="small font-weight-bold text-gray-700 mr-2 mb-0 text-nowrap">
+                                    <i class="fas fa-calendar-alt text-primary mr-1" aria-hidden="true"></i>Pilih Periode:
+                                </label>
+                                <select name="periode_id" id="periodeSwitch" class="form-control form-control-sm font-weight-bold" onchange="this.form.submit()" style="min-width: 200px;">
+                                    @foreach($periodes as $p)
+                                        <option value="{{ $p->id }}" {{ $selectedPeriode && $selectedPeriode->id == $p->id ? 'selected' : '' }}>
+                                            {{ $p->periode }} {{ $p->status_periode === 'Aktif' ? '(Aktif)' : '' }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </form>
+                        </div>
                     </div>
 
-                    <!-- Info Periode Aktif -->
-                    @if($activePeriode)
+                    <!-- Info Periode Terpilih -->
+                    @if($selectedPeriode)
                     <div class="row mb-4">
                         <div class="col-12">
-                            <div class="card border-left-info shadow h-100 py-3">
-                                <div class="card-body">
-                                    <div class="row no-gutters align-items-center">
-                                        <div class="col">
-                                            <div class="h5 mb-2 font-weight-bold text-gray-800">
-                                                <i class="fas fa-calendar-alt mr-2"></i>Periode Aktif
+                            <div class="card shadow-sm border border-gray-200 py-2">
+                                <div class="card-body py-2">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-5 mb-2 mb-md-0 border-md-right">
+                                            <div class="d-flex align-items-center">
+                                                <div class="p-2.5 rounded-circle bg-primary-soft text-primary mr-3 d-flex align-items-center justify-content-center" style="width:44px;height:44px;">
+                                                    <i class="fas fa-calendar-alt fa-lg" aria-hidden="true"></i>
+                                                </div>
+                                                <div>
+                                                    <div class="d-flex align-items-center" style="gap: 0.5rem;">
+                                                        <h2 class="h5 mb-0 font-weight-bold text-gray-900">{{ $selectedPeriode->periode }}</h2>
+                                                        @if($selectedPeriode->status_periode === 'Aktif')
+                                                            <span class="badge badge-success px-2 py-0.5">Aktif</span>
+                                                        @else
+                                                            <span class="badge badge-secondary px-2 py-0.5">{{ $selectedPeriode->status_periode ?: 'Selesai' }}</span>
+                                                        @endif
+                                                    </div>
+                                                    @if($selectedPeriode->tanggal_mulai && $selectedPeriode->tanggal_selesai)
+                                                        <div class="small text-secondary mt-0.5">
+                                                            <i class="far fa-clock mr-1" aria-hidden="true"></i>
+                                                            {{ \Carbon\Carbon::parse($selectedPeriode->tanggal_mulai)->format('d M Y') }} -
+                                                            {{ \Carbon\Carbon::parse($selectedPeriode->tanggal_selesai)->format('d M Y') }}
+                                                        </div>
+                                                    @endif
+                                                </div>
                                             </div>
-                                            <div class="text-gray-700">{{ $activePeriode->periode }}</div>
-                                            @if($activePeriode->tanggal_mulai && $activePeriode->tanggal_selesai)
-                                            <div class="small text-muted mt-1">
-                                                {{ \Carbon\Carbon::parse($activePeriode->tanggal_mulai)->format('d M Y') }} -
-                                                {{ \Carbon\Carbon::parse($activePeriode->tanggal_selesai)->format('d M Y') }}
-                                            </div>
-                                            @endif
                                         </div>
-                                        <div class="col-auto">
-                                            <i class="fas fa-calendar fa-2x text-gray-300"></i>
+                                        <div class="col-md-7">
+                                            <div class="d-flex align-items-center justify-content-around flex-wrap text-center py-1" style="gap: 1rem;">
+                                                <div>
+                                                    <div class="h5 mb-0 font-weight-bold text-primary">{{ $activeKelompoks }}</div>
+                                                    <span class="small text-muted font-weight-500">Kelompok PBL</span>
+                                                </div>
+                                                <div class="border-left pl-3">
+                                                    <div class="h5 mb-0 font-weight-bold text-success">{{ $activeMahasiswas }}</div>
+                                                    <span class="small text-muted font-weight-500">Mahasiswa Terlibat</span>
+                                                </div>
+                                                <div class="border-left pl-3">
+                                                    <div class="h5 mb-0 font-weight-bold text-info">{{ $kunjunganPerPeriode }}</div>
+                                                    <span class="small text-muted font-weight-500">Kunjungan Mitra</span>
+                                                </div>
+                                                <div class="border-left pl-3">
+                                                    <div class="h5 mb-0 font-weight-bold text-warning">{{ $activeSesiEvaluasi }}</div>
+                                                    <span class="small text-muted font-weight-500">Sesi Evaluasi</span>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -40,8 +85,8 @@
                     <div class="row mb-4">
                         <div class="col-12">
                             <div class="alert alert-warning">
-                                <i class="fas fa-exclamation-triangle mr-2"></i>
-                                <strong>Belum ada periode aktif</strong> - Silakan buat periode baru untuk memulai kegiatan PBL.
+                                <i class="fas fa-exclamation-triangle mr-2" aria-hidden="true"></i>
+                                <strong>Belum ada data periode PBL</strong> - Silakan buat periode baru untuk memulai kegiatan PBL.
                             </div>
                         </div>
                     </div>

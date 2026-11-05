@@ -241,4 +241,66 @@ class DataDosenAdminController extends Controller
 
         return redirect()->route('dosen.index');
     }
+
+    /**
+     * Tampilkan formulir impor data dosen.
+     */
+    public function importForm(): View
+    {
+        return view('admin.dosen.import');
+    }
+
+    /**
+     * Proses unggah berkas impor data dosen.
+     */
+    public function import(Request $request, \App\Services\DosenImportService $importService): RedirectResponse
+    {
+        $request->validate([
+            'file' => [
+                'required', 'file',
+                'mimes:xlsx,xls,csv,txt',
+                'max:5120',
+            ],
+        ]);
+
+        $file = $request->file('file');
+        $path = $file->getRealPath();
+        $ext = $file->getClientOriginalExtension();
+
+        try {
+            $result = $importService->importFile($path, $ext);
+        } catch (\Exception $e) {
+            return back()->withErrors(['file' => $e->getMessage()]);
+        }
+
+        $stats = $result['stats'];
+        $errors = $result['errors'];
+
+        session()->flash('import_stats', $stats);
+
+        if (! empty($errors)) {
+            session()->flash('import_errors', $errors);
+            Alert::toast("Import selesai: dibuat: {$stats['created_dosen']}, diperbarui: {$stats['updated_dosen']}, ditautkan: {$stats['attached']} (ada error)", 'warning');
+        } else {
+            Alert::toast("Import selesai: dibuat: {$stats['created_dosen']}, diperbarui: {$stats['updated_dosen']}, ditautkan: {$stats['attached']}", 'success');
+        }
+
+        return redirect()->route('dosen.import.form');
+    }
+
+    /**
+     * Unduh template impor Excel (.xlsx) untuk Dosen.
+     */
+    public function templateExcel()
+    {
+        return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\DosenTemplateExport, 'template-dosen.xlsx');
+    }
+
+    /**
+     * Unduh template impor CSV untuk Dosen.
+     */
+    public function templateCsv()
+    {
+        return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\DosenTemplateExport, 'template-dosen.csv', \Maatwebsite\Excel\Excel::CSV);
+    }
 }

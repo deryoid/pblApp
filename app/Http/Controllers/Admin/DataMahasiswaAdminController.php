@@ -19,7 +19,7 @@ class DataMahasiswaAdminController extends Controller
      */
     public function index()
     {
-        $data = Mahasiswa::with('user')->latest()->get();
+        $data = Mahasiswa::with(['user', 'kelas'])->latest()->get();
 
         return view('admin.mahasiswa.index', compact('data'));
     }

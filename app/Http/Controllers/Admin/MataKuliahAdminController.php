@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exports\MataKuliahTemplateExport;
 use App\Http\Controllers\Controller;
 use App\Models\MataKuliah;
 use App\Models\User;
+use App\Services\MataKuliahImportService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use Maatwebsite\Excel\Facades\Excel;
 use RealRashid\SweetAlert\Facades\Alert;
 
 class MataKuliahAdminController extends Controller
@@ -150,5 +153,67 @@ class MataKuliahAdminController extends Controller
         Alert::toast('Mata kuliah berhasil dihapus.', 'success');
 
         return redirect()->route('matakuliah.index');
+    }
+
+    /**
+     * Tampilkan formulir impor data mata kuliah.
+     */
+    public function importForm(): View
+    {
+        return view('admin.matakuliah.import');
+    }
+
+    /**
+     * Proses unggah berkas impor data mata kuliah.
+     */
+    public function import(Request $request, MataKuliahImportService $importService): RedirectResponse
+    {
+        $request->validate([
+            'file' => [
+                'required', 'file',
+                'mimes:xlsx,xls,csv,txt',
+                'max:5120',
+            ],
+        ]);
+
+        $file = $request->file('file');
+        $path = $file->getRealPath();
+        $ext = $file->getClientOriginalExtension();
+
+        try {
+            $result = $importService->importFile($path, $ext);
+        } catch (\Exception $e) {
+            return back()->withErrors(['file' => $e->getMessage()]);
+        }
+
+        $stats = $result['stats'];
+        $errors = $result['errors'];
+
+        session()->flash('import_stats', $stats);
+
+        if (! empty($errors)) {
+            session()->flash('import_errors', $errors);
+            Alert::toast("Import selesai: dibuat: {$stats['created_matkul']}, diperbarui: {$stats['updated_matkul']}, dosen disinkronkan: {$stats['synced_dosen']} (ada error)", 'warning');
+        } else {
+            Alert::toast("Import selesai: dibuat: {$stats['created_matkul']}, diperbarui: {$stats['updated_matkul']}, dosen disinkronkan: {$stats['synced_dosen']}", 'success');
+        }
+
+        return redirect()->route('matakuliah.import.form');
+    }
+
+    /**
+     * Unduh template impor Excel (.xlsx) untuk Mata Kuliah.
+     */
+    public function templateExcel()
+    {
+        return Excel::download(new MataKuliahTemplateExport, 'template-mata-kuliah.xlsx');
+    }
+
+    /**
+     * Unduh template impor CSV untuk Mata Kuliah.
+     */
+    public function templateCsv()
+    {
+        return Excel::download(new MataKuliahTemplateExport, 'template-mata-kuliah.csv', \Maatwebsite\Excel\Excel::CSV);
     }
 }

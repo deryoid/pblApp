@@ -6,47 +6,57 @@ use App\Http\Controllers\Controller;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(\Illuminate\Http\Request $request): \Illuminate\View\View
     {
-        // Get active period
-        $activePeriode = \App\Models\Periode::where('status_periode', 'Aktif')->first();
+        // Get all periods for the dropdown selector
+        $periodes = \App\Models\Periode::orderByDesc('id')->get();
+        $activePeriode = $periodes->firstWhere('status_periode', 'Aktif');
 
-        // Data Akademik
-        $totalPeriodes = \App\Models\Periode::count();
+        $selectedPeriodeId = $request->query('periode_id');
+        $selectedPeriode = null;
+        if ($selectedPeriodeId) {
+            $selectedPeriode = $periodes->firstWhere('id', (int) $selectedPeriodeId);
+        }
+        if (! $selectedPeriode) {
+            $selectedPeriode = $activePeriode ?? $periodes->first();
+        }
+
+        // Data Akademik Global
+        $totalPeriodes = $periodes->count();
         $totalKelas = \App\Models\Kelas::count();
         $totalKelompoks = \App\Models\Kelompok::count();
-        $activeKelompoks = $activePeriode ? \App\Models\Kelompok::where('periode_id', $activePeriode->id)->count() : 0;
+
+        // Data Khusus Periode Terpilih
+        $activeKelompoks = $selectedPeriode ? \App\Models\Kelompok::where('periode_id', $selectedPeriode->id)->count() : 0;
 
         // Data Mahasiswa
         $totalMahasiswas = \App\Models\Mahasiswa::count();
-        $activeMahasiswas = $activePeriode ? \App\Models\Mahasiswa::whereHas('kelompoks', function ($query) use ($activePeriode) {
-            $query->where('kelompok.periode_id', $activePeriode->id);
+        $activeMahasiswas = $selectedPeriode ? \App\Models\Mahasiswa::whereHas('kelompoks', function ($query) use ($selectedPeriode) {
+            $query->where('kelompok.periode_id', $selectedPeriode->id);
         })->count() : 0;
 
         // Data Evaluasi - khusus untuk evaluator
         $totalSesiEvaluasi = \App\Models\EvaluasiMaster::count();
-        $activeSesiEvaluasi = $activePeriode ? \App\Models\EvaluasiMaster::where('periode_id', $activePeriode->id)->count() : 0;
+        $activeSesiEvaluasi = $selectedPeriode ? \App\Models\EvaluasiMaster::where('periode_id', $selectedPeriode->id)->count() : 0;
 
         // Progress evaluasi evaluator
-        // Since evaluasi_master table doesn't have status column, we'll track based on related data
-        $pendingEvaluations = 0; // No status column, set to 0
-        $completedEvaluations = 0; // No status column, set to 0
+        $pendingEvaluations = 0;
+        $completedEvaluations = 0;
 
-        // Data Proyek yang perlu dievaluasi
+        // Data Proyek yang perlu dievaluasi pada periode terpilih
         $totalProyekCards = \App\Models\ProjectCard::count();
-        // Since project_lists table doesn't have status column, count all project cards in active period
-        $proyekToEvaluate = $activePeriode ? \App\Models\ProjectCard::whereHas('projectList', function ($query) use ($activePeriode) {
-            $query->where('periode_id', $activePeriode->id);
+        $proyekToEvaluate = $selectedPeriode ? \App\Models\ProjectCard::whereHas('projectList', function ($query) use ($selectedPeriode) {
+            $query->where('periode_id', $selectedPeriode->id);
         })->count() : 0;
 
         // Data Aktivitas yang perlu dievaluasi
         $totalAktivitasLists = \App\Models\AktivitasList::count();
-        $aktivitasToEvaluate = $activePeriode ? \App\Models\AktivitasList::where('periode_id', $activePeriode->id)
+        $aktivitasToEvaluate = $selectedPeriode ? \App\Models\AktivitasList::where('periode_id', $selectedPeriode->id)
             ->where('status_evaluasi', '!=', 'Sudah Evaluasi')
             ->count() : 0;
 
-        // Jadwal evaluasi (since evaluasi_master doesn't have tanggal column, we'll show recent evaluations)
-        $todayEvaluations = $activePeriode ? \App\Models\EvaluasiMaster::where('periode_id', $activePeriode->id)
+        // Jadwal evaluasi
+        $todayEvaluations = $selectedPeriode ? \App\Models\EvaluasiMaster::where('periode_id', $selectedPeriode->id)
             ->with(['kelompok', 'creator'])
             ->orderBy('created_at', 'desc')
             ->limit(5)
@@ -54,32 +64,38 @@ class DashboardController extends Controller
 
         // Progress evaluasi per kelompok
         $evaluasiProgress = [];
-        if ($activePeriode) {
-            $kelompoks = \App\Models\Kelompok::where('periode_id', $activePeriode->id)->get();
+        $kelompokPeriode = collect();
+        if ($selectedPeriode) {
+            $kelompoks = \App\Models\Kelompok::with(['mahasiswas.user', 'projectCards'])
+                ->where('periode_id', $selectedPeriode->id)
+                ->orderBy('nama_kelompok')
+                ->get();
+
+            $kelompokPeriode = $kelompoks;
+
             foreach ($kelompoks as $kelompok) {
                 $sesiEvaluasi = \App\Models\EvaluasiMaster::where('kelompok_id', $kelompok->id)->get();
                 $totalSesi = $sesiEvaluasi->count();
-                // Since evaluasi_master doesn't have status column, we'll show basic info
-                $selesaiSesi = 0; // No status column, set to 0
+                $selesaiSesi = 0;
 
                 $evaluasiProgress[] = [
                     'nama_kelompok' => $kelompok->nama_kelompok,
                     'total_sesi' => $totalSesi,
                     'selesai_sesi' => $selesaiSesi,
-                    'progress' => 0, // No status tracking available
+                    'progress' => 0,
                 ];
             }
         }
 
         return view('evaluator.index', compact(
-            'activePeriode',
+            'periodes', 'selectedPeriode', 'activePeriode',
             'totalPeriodes', 'totalKelas', 'totalKelompoks', 'activeKelompoks',
             'totalMahasiswas', 'activeMahasiswas',
             'totalSesiEvaluasi', 'activeSesiEvaluasi',
             'pendingEvaluations', 'completedEvaluations',
             'totalProyekCards', 'proyekToEvaluate',
             'totalAktivitasLists', 'aktivitasToEvaluate',
-            'todayEvaluations', 'evaluasiProgress'
+            'todayEvaluations', 'evaluasiProgress', 'kelompokPeriode'
         ));
     }
 }

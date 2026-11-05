@@ -44,6 +44,9 @@ class AppServiceProvider extends ServiceProvider
             URL::forceScheme('https');
         }
 
+        // Set Bootstrap 4 pagination styling for all tables & pagination links
+        \Illuminate\Pagination\Paginator::useBootstrapFour();
+
         // Set locale waktu ke Indonesia untuk Carbon
         try {
             Carbon::setLocale('id');

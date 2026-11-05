@@ -74,6 +74,10 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'profile.complete'])->group
     Route::delete('kelas/{uuid}', [KelasController::class, 'destroy'])->name('kelas.destroy');
 
     // Mata Kuliah
+    Route::get('matakuliah/import', [MataKuliahAdminController::class, 'importForm'])->name('matakuliah.import.form');
+    Route::post('matakuliah/import', [MataKuliahAdminController::class, 'import'])->name('matakuliah.import');
+    Route::get('matakuliah/template-excel', [MataKuliahAdminController::class, 'templateExcel'])->name('matakuliah.template.excel');
+    Route::get('matakuliah/template-csv', [MataKuliahAdminController::class, 'templateCsv'])->name('matakuliah.template.csv');
     Route::resource('matakuliah', MataKuliahAdminController::class);
 
     // Rubrik Penilaian Dinamis
@@ -102,6 +106,10 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'profile.complete'])->group
     Route::resource('mahasiswa', DataMahasiswaAdminController::class);
 
     // Bank Data Dosen
+    Route::get('dosen/import', [DataDosenAdminController::class, 'importForm'])->name('dosen.import.form');
+    Route::post('dosen/import', [DataDosenAdminController::class, 'import'])->name('dosen.import');
+    Route::get('dosen/template-excel', [DataDosenAdminController::class, 'templateExcel'])->name('dosen.template.excel');
+    Route::get('dosen/template-csv', [DataDosenAdminController::class, 'templateCsv'])->name('dosen.template.csv');
     Route::post('dosen/sync', [DataDosenAdminController::class, 'sync'])->name('dosen.sync');
     Route::resource('dosen', DataDosenAdminController::class);
 

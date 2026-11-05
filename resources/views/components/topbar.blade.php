@@ -30,24 +30,23 @@
         <div class="topbar-divider d-none d-sm-block" style="border-right: 1px solid #e2e8f0; height: 2rem; margin: 0 0.75rem;"></div>
 
         <!-- Nav Item - User Information -->
+        @auth
         <li class="nav-item dropdown no-arrow">
             <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button"
                 data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                @auth
-                    <img class="img-profile rounded-circle mr-2" alt="Avatar Pengguna"
-                         src="{{ Auth::user()->profile_photo_data_url ?? asset('sbadmin2/img/avatar-default.svg') }}"
-                         width="38" height="38"
-                         style="width:38px;height:38px;object-fit:cover;border:2px solid #2563eb;box-shadow: 0 2px 6px rgba(37,99,235,0.25);">
-                    <div class="d-none d-sm-block text-left mr-2">
-                        <div class="font-weight-bold text-dark text-truncate" style="font-size: 0.85rem; line-height: 1.2; max-width: 140px;">
-                            {{ Auth::user()->nama_user }}
-                        </div>
-                        <span class="badge badge-primary px-2 py-0.5 mt-0.5" style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.04em;">
-                            {{ Auth::user()->role }}
-                        </span>
+                <img class="img-profile rounded-circle mr-2" alt="Avatar Pengguna"
+                     src="{{ Auth::user()->profile_photo_data_url ?? asset('sbadmin2/img/avatar-default.svg') }}"
+                     width="38" height="38"
+                     style="width:38px;height:38px;object-fit:cover;border:2px solid #2563eb;box-shadow: 0 2px 6px rgba(37,99,235,0.25);">
+                <div class="d-none d-sm-block text-left mr-2">
+                    <div class="font-weight-bold text-dark text-truncate" style="font-size: 0.85rem; line-height: 1.2; max-width: 140px;">
+                        {{ Auth::user()->nama_user }}
                     </div>
-                    <i class="fas fa-chevron-down text-muted small ml-1"></i>
-                @endauth 
+                    <span class="badge badge-primary px-2 py-0.5 mt-0.5" style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.04em;">
+                        {{ Auth::user()->role }}
+                    </span>
+                </div>
+                <i class="fas fa-chevron-down text-muted small ml-1"></i>
             </a>
 
             <!-- Dropdown - User Information -->
@@ -76,6 +75,7 @@
                 </a>
             </div>
         </li>
+        @endauth
 
     </ul>
 

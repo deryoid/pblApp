@@ -23,22 +23,22 @@
     </div>
 
     <!-- Filter Card -->
-    <div class="card shadow-sm border-0 rounded-xl mb-4">
+    <div class="card shadow-sm border border-gray-200 mb-4">
         <div class="card-body p-3">
             <form method="GET" action="{{ route('evaluator.riwayat.index') }}">
                 <div class="row align-items-end">
-                    <div class="col-md-4 mb-2 mb-md-0">
-                        <label class="small font-weight-bold text-gray-700">Pencarian NIM / Nama</label>
+                    <div class="col-md-3 mb-2 mb-md-0">
+                        <label for="riwayatSearch" class="small font-weight-bold text-gray-700">Pencarian NIM / Nama</label>
                         <div class="input-group input-group-sm">
                             <div class="input-group-prepend">
-                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                <span class="input-group-text"><i class="fas fa-search" aria-hidden="true"></i></span>
                             </div>
-                            <input type="text" name="search" class="form-control" placeholder="Cari nama atau NIM..." value="{{ $search }}">
+                            <input type="text" name="search" id="riwayatSearch" class="form-control" placeholder="Cari nama atau NIM..." value="{{ $search }}">
                         </div>
                     </div>
                     <div class="col-md-3 mb-2 mb-md-0">
-                        <label class="small font-weight-bold text-gray-700">Filter Kelas</label>
-                        <select name="kelas_id" class="form-control form-control-sm">
+                        <label for="riwayatKelas" class="small font-weight-bold text-gray-700">Filter Kelas</label>
+                        <select name="kelas_id" id="riwayatKelas" class="form-control form-control-sm">
                             <option value="">-- Semua Kelas --</option>
                             @foreach($kelasList as $k)
                                 <option value="{{ $k->id }}" {{ (string)$kelasId === (string)$k->id ? 'selected' : '' }}>
@@ -47,9 +47,9 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="col-md-3 mb-2 mb-md-0">
-                        <label class="small font-weight-bold text-gray-700">Filter Periode</label>
-                        <select name="periode_id" class="form-control form-control-sm">
+                    <div class="col-md-2 mb-2 mb-md-0">
+                        <label for="riwayatPeriode" class="small font-weight-bold text-gray-700">Filter Periode</label>
+                        <select name="periode_id" id="riwayatPeriode" class="form-control form-control-sm">
                             <option value="">-- Semua Periode --</option>
                             @foreach($periodes as $p)
                                 <option value="{{ $p->id }}" {{ (string)$periodeId === (string)$p->id ? 'selected' : '' }}>
@@ -58,10 +58,24 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="col-md-2">
-                        <button type="submit" class="btn btn-primary btn-sm btn-block font-weight-bold">
-                            <i class="fas fa-filter mr-1"></i> Terapkan
+                    <div class="col-md-2 mb-2 mb-md-0">
+                        <label for="riwayatPerPage" class="small font-weight-bold text-gray-700">Per Halaman</label>
+                        <select name="per_page" id="riwayatPerPage" class="form-control form-control-sm">
+                            <option value="15" {{ $perPage == 15 ? 'selected' : '' }}>15 Baris</option>
+                            <option value="25" {{ $perPage == 25 ? 'selected' : '' }}>25 Baris</option>
+                            <option value="50" {{ $perPage == 50 ? 'selected' : '' }}>50 Baris</option>
+                            <option value="100" {{ $perPage == 100 ? 'selected' : '' }}>100 Baris</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex" style="gap: 0.35rem;">
+                        <button type="submit" class="btn btn-primary btn-sm flex-grow-1 font-weight-bold">
+                            <i class="fas fa-filter mr-1" aria-hidden="true"></i> Saring
                         </button>
+                        @if($search || $kelasId || $periodeId || $perPage != 15)
+                            <a href="{{ route('evaluator.riwayat.index') }}" class="btn btn-outline-secondary btn-sm" title="Reset Saringan">
+                                <i class="fas fa-undo" aria-hidden="true"></i>
+                            </a>
+                        @endif
                     </div>
                 </div>
             </form>
@@ -69,15 +83,15 @@
     </div>
 
     <!-- Tabel Daftar Mahasiswa -->
-    <div class="card shadow-sm border-0 rounded-xl overflow-hidden mb-4">
+    <div class="card shadow-sm border border-gray-200 overflow-hidden mb-4">
         <div class="card-header bg-white py-3 d-flex align-items-center justify-content-between">
-            <h6 class="m-0 font-weight-bold text-gray-900">
-                <i class="fas fa-users text-primary mr-1"></i> Daftar Mahasiswa TRKJ (Total: {{ $mahasiswas->total() }})
-            </h6>
+            <h2 class="h6 m-0 font-weight-bold text-gray-900">
+                <i class="fas fa-users text-primary mr-1" aria-hidden="true"></i> Daftar Mahasiswa TRKJ (Total: {{ $mahasiswas->total() }})
+            </h2>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover table-striped mb-0 align-middle">
+                <table class="table table-hover table-striped mb-0 align-middle no-datatable">
                     <thead class="thead-light">
                         <tr>
                             <th class="text-center" style="width: 50px;">No</th>
