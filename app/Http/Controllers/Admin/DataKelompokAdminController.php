@@ -19,7 +19,7 @@ class DataKelompokAdminController extends Controller
     public function index(Request $request)
     {
         $periodes = Periode::orderByDesc('id')->get(['id', 'periode', 'status_periode']);
-        $activePeriode = Periode::where('status_periode', 'Aktif')->orderByDesc('id')->first();
+        $activePeriode = Periode::getLatestActive();
 
         $qPeriode = $request->get('periode_id') ?: ($activePeriode?->id);
 

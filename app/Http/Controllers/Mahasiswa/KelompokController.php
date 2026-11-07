@@ -22,23 +22,15 @@ class KelompokController extends Controller
         $user = Auth::user();
         $mahasiswa = $user->mahasiswa;
 
-        $activePeriode = Periode::where('status_periode', 'Aktif')->orderByDesc('id')->first();
+        $activePeriode = Periode::getLatestActive();
         $periodeId = $activePeriode?->id;
 
         $kelompok = null;
-        if ($mahasiswa) {
-            if ($periodeId) {
-                $kelompok = $mahasiswa->kelompoks()
-                    ->wherePivot('periode_id', $periodeId)
-                    ->with(['mahasiswas.user', 'periode'])
-                    ->first();
-            }
-            if (! $kelompok) {
-                $kelompok = $mahasiswa->kelompoks()
-                    ->with(['mahasiswas.user', 'periode'])
-                    ->latest('kelompok_mahasiswa.created_at')
-                    ->first();
-            }
+        if ($mahasiswa && $periodeId) {
+            $kelompok = $mahasiswa->kelompoks()
+                ->wherePivot('periode_id', $periodeId)
+                ->with(['mahasiswas.user', 'periode'])
+                ->first();
         }
 
         if ($kelompok) {
@@ -84,6 +76,9 @@ class KelompokController extends Controller
             $incomingInvitations = KelompokJoinRequest::where('mahasiswa_id', $mahasiswa->id)
                 ->where('type', 'invite')
                 ->where('status', 'pending')
+                ->when($periodeId, function ($q) use ($periodeId) {
+                    $q->whereHas('kelompok', fn ($sq) => $sq->where('periode_id', $periodeId));
+                })
                 ->with(['kelompok.periode', 'kelompok.mahasiswas.user', 'invitedBy'])
                 ->latest()
                 ->get();
@@ -110,7 +105,7 @@ class KelompokController extends Controller
             return back();
         }
 
-        $activePeriode = Periode::where('status_periode', 'Aktif')->orderByDesc('id')->first();
+        $activePeriode = Periode::getLatestActive();
         if (! $activePeriode) {
             Alert::toast('Tidak ada periode PBL yang sedang aktif.', 'warning');
 
@@ -135,7 +130,7 @@ class KelompokController extends Controller
             'skema_kategori.in' => 'Skema kategori harus salah satu dari: Internal, External, Hibah/Penelitian, Lomba.',
         ]);
 
-        DB::transaction(function () use ($validated, $activePeriode, $mahasiswa) {
+        DB::transaction(function () use ($validated, $activePeriode, $mahasiswa, $user) {
             $kelompok = Kelompok::create([
                 'nama_kelompok' => $validated['nama_kelompok'],
                 'skema_kategori' => $validated['skema_kategori'],
@@ -151,6 +146,8 @@ class KelompokController extends Controller
                 'role' => 'Ketua',
                 'periode_id' => $activePeriode->id,
             ]);
+
+            \Illuminate\Support\Facades\Cache::forget('mahasiswa_dashboard_'.$user->id);
         });
 
         Alert::toast('Kelompok berhasil dibuat. Anda sekarang adalah Ketua Kelompok.', 'success');
@@ -166,7 +163,7 @@ class KelompokController extends Controller
         $user = Auth::user();
         $mahasiswa = $user->mahasiswa;
 
-        $activePeriode = Periode::where('status_periode', 'Aktif')->orderByDesc('id')->first();
+        $activePeriode = Periode::getLatestActive();
         if (! $activePeriode) {
             Alert::toast('Periode aktif tidak ditemukan.', 'error');
 
@@ -298,6 +295,8 @@ class KelompokController extends Controller
             if ($kelompok->isFull()) {
                 $kelompok->update(['status_bergabung' => 'penuh']);
             }
+
+            \Illuminate\Support\Facades\Cache::forget('mahasiswa_dashboard_'.$user->id);
         });
 
         Alert::toast('Selamat! Anda telah resmi bergabung ke kelompok '.$kelompok->nama_kelompok.'.', 'success');

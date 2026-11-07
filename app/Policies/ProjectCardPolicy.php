@@ -2,10 +2,10 @@
 
 namespace App\Policies;
 
-use App\Models\User;
 use App\Models\Mahasiswa;
 use App\Models\Periode;
 use App\Models\ProjectCard;
+use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class ProjectCardPolicy
@@ -15,15 +15,17 @@ class ProjectCardPolicy
     protected function resolveKelompokId(User $user): ?int
     {
         $mhs = Mahasiswa::where('user_id', $user->id)->first();
-        if (!$mhs) return null;
-        $periodeAktif = Periode::where('status_periode','Aktif')->orderByDesc('created_at')->first();
-        $kelompok = null;
-        if ($periodeAktif) {
-            $kelompok = $mhs->kelompoks()->wherePivot('periode_id', $periodeAktif->id)->first();
+        if (! $mhs) {
+            return null;
         }
-        if (!$kelompok) {
-            $kelompok = $mhs->kelompoks()->latest('kelompok_mahasiswa.created_at')->first();
+
+        $periodeAktif = Periode::getLatestActive();
+        if (! $periodeAktif) {
+            return null;
         }
+
+        $kelompok = $mhs->kelompoks()->wherePivot('periode_id', $periodeAktif->id)->first();
+
         return $kelompok?->id;
     }
 
@@ -35,6 +37,7 @@ class ProjectCardPolicy
     public function update(User $user, ProjectCard $card): bool
     {
         $kelompokId = $this->resolveKelompokId($user);
+
         return $kelompokId !== null && $card->kelompok_id === $kelompokId;
     }
 
@@ -48,4 +51,3 @@ class ProjectCardPolicy
         return $this->update($user, $card);
     }
 }
-

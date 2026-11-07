@@ -175,27 +175,19 @@
     @else
         <div class="sidebar-heading">Kelompok Mahasiswa</div>
 
-        {{-- Kelompok Saya (Periode Aktif) --}}
+        {{-- Kelompok Saya (Periode Aktif/Terbaru) --}}
         @php
             $mhs = \App\Models\Mahasiswa::where('user_id', Auth::id())->first();
-            $periodeAktif = \App\Models\Periode::where('status_periode','Aktif')->orderByDesc('created_at')->first();
+            $periodeAktif = \App\Models\Periode::getLatestActive();
             $kelompokSaya = null;
             $anggotaKelompok = collect();
-            if ($mhs) {
-                if ($periodeAktif) {
-                    $kelompokSaya = $mhs->kelompoks()->wherePivot('periode_id', $periodeAktif->id)->first();
-                    if ($kelompokSaya) {
-                        $anggotaKelompok = $kelompokSaya->mahasiswas()
-                            ->wherePivot('periode_id', $periodeAktif->id)
-                            ->with('user')
-                            ->get();
-                    }
-                }
-                if (!$kelompokSaya) {
-                    $kelompokSaya = $mhs->kelompoks()->latest('kelompok_mahasiswa.created_at')->first();
-                    if ($kelompokSaya) {
-                        $anggotaKelompok = $kelompokSaya->mahasiswas()->with('user')->get();
-                    }
+            if ($mhs && $periodeAktif) {
+                $kelompokSaya = $mhs->kelompoks()->wherePivot('periode_id', $periodeAktif->id)->first();
+                if ($kelompokSaya) {
+                    $anggotaKelompok = $kelompokSaya->mahasiswas()
+                        ->wherePivot('periode_id', $periodeAktif->id)
+                        ->with('user')
+                        ->get();
                 }
             }
         @endphp

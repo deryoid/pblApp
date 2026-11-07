@@ -16,7 +16,9 @@ class AktivitasCardController extends Controller
     public function store(Request $req)
     {
         [$kelompok] = $this->resolveKelompokSaya();
-        if (!$kelompok) return back()->withErrors('Anda belum tergabung dalam kelompok.');
+        if (! $kelompok) {
+            return back()->withErrors('Anda belum tergabung dalam kelompok.');
+        }
         $this->authorize('create', AktivitasCard::class);
 
         $data = $req->validate([
@@ -26,12 +28,13 @@ class AktivitasCardController extends Controller
             'bukti_kegiatan' => 'nullable|string', // 50MB
         ]);
 
-        $list = AktivitasList::where('uuid',$data['list'])->first();
-        if (!$list) return back()->withErrors('List/kolom tidak ditemukan.');
+        $list = AktivitasList::where('uuid', $data['list'])->first();
+        if (! $list) {
+            return back()->withErrors('List/kolom tidak ditemukan.');
+        }
 
-        $maxPos = AktivitasCard::where('list_aktivitas_id',$list->id)->max('position');
-        $pos = is_null($maxPos) ? 0 : $maxPos+1;
-
+        $maxPos = AktivitasCard::where('list_aktivitas_id', $list->id)->max('position');
+        $pos = is_null($maxPos) ? 0 : $maxPos + 1;
 
         AktivitasCard::create([
             'kelompok_id' => $kelompok->id,
@@ -65,6 +68,7 @@ class AktivitasCardController extends Controller
         ];
 
         $card->update($payload);
+
         return back();
     }
 
@@ -78,9 +82,9 @@ class AktivitasCardController extends Controller
             $kid = $card->kelompok_id;
             $card->delete();
 
-            AktivitasCard::where('kelompok_id',$kid)
-                ->where('list_aktivitas_id',$listId)
-                ->where('position','>', $pos)
+            AktivitasCard::where('kelompok_id', $kid)
+                ->where('list_aktivitas_id', $listId)
+                ->where('position', '>', $pos)
                 ->decrement('position');
         });
 
@@ -90,16 +94,12 @@ class AktivitasCardController extends Controller
     private function resolveKelompokSaya(): array
     {
         $mhs = Mahasiswa::where('user_id', Auth::id())->first();
-        $periodeAktif = Periode::where('status_periode','Aktif')->orderByDesc('created_at')->first();
+        $periodeAktif = Periode::getLatestActive();
         $kelompokSaya = null;
-        if ($mhs) {
-            if ($periodeAktif) {
-                $kelompokSaya = $mhs->kelompoks()->wherePivot('periode_id', $periodeAktif->id)->first();
-            }
-            if (!$kelompokSaya) {
-                $kelompokSaya = $mhs->kelompoks()->latest('kelompok_mahasiswa.created_at')->first();
-            }
+        if ($mhs && $periodeAktif) {
+            $kelompokSaya = $mhs->kelompoks()->wherePivot('periode_id', $periodeAktif->id)->first();
         }
+
         return [$kelompokSaya, $periodeAktif];
     }
 }

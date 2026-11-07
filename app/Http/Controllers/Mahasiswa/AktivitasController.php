@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Mahasiswa;
 
 use App\Http\Controllers\Controller;
-use App\Models\AktivitasList;
 use App\Models\AktivitasCard;
+use App\Models\AktivitasList;
 use App\Models\Mahasiswa;
 use App\Models\Periode;
 use Illuminate\Http\Request;
@@ -17,10 +17,10 @@ class AktivitasController extends Controller
     {
         [$kelompok, $periodeAktif] = $this->resolveKelompokSaya();
 
-        if (!$kelompok) {
+        if (! $kelompok) {
             return view('mahasiswa.aktivitas.index', [
-                'lists'        => [],
-                'kelompok'     => null,
+                'lists' => [],
+                'kelompok' => null,
                 'periodeAktif' => $periodeAktif,
             ]);
         }
@@ -35,8 +35,8 @@ class AktivitasController extends Controller
 
         if ($lists->isEmpty()) {
             return view('mahasiswa.aktivitas.index', [
-                'lists'        => [],
-                'kelompok'     => $kelompok,
+                'lists' => [],
+                'kelompok' => $kelompok,
                 'periodeAktif' => $periodeAktif,
             ]);
         }
@@ -51,7 +51,7 @@ class AktivitasController extends Controller
             ->orderBy('id')
             ->get()
             ->map(function (AktivitasCard $c) {
-                $hasUpdate = $c->updated_at && $c->created_at && !$c->updated_at->equalTo($c->created_at);
+                $hasUpdate = $c->updated_at && $c->created_at && ! $c->updated_at->equalTo($c->created_at);
                 $createdByName = optional($c->createdBy)->name;
                 $updatedByName = optional($c->updatedBy)->name;
                 // Gunakan foto profil data URL jika tersedia (sesuai topbar), fallback ke profile_photo_url
@@ -59,12 +59,13 @@ class AktivitasController extends Controller
                     ?: optional($c->createdBy)->profile_photo_url;
                 $updatedByAvatar = optional($c->updatedBy)->profile_photo_data_url
                     ?: optional($c->updatedBy)->profile_photo_url;
+
                 return [
                     // identitas & isi
-                    'id'                => $c->uuid,
-                    'list_id'           => $c->list_aktivitas_id, // untuk pengelompokan nanti
+                    'id' => $c->uuid,
+                    'list_id' => $c->list_aktivitas_id, // untuk pengelompokan nanti
                     'tanggal_aktivitas' => optional($c->tanggal_aktivitas)->toDateString(),
-                    'description'       => $c->description,
+                    'description' => $c->description,
                     'created_by_name' => $createdByName,
                     'updated_by_name' => $updatedByName,
                     'created_at_human' => ($c->created_at ? $c->created_at->locale('id')->diffForHumans() : null),
@@ -81,18 +82,18 @@ class AktivitasController extends Controller
             $listCards = $cards->get($list->id, collect())->values()->all();
 
             return [
-                'id'                 => $list->uuid,
-                'title'              => $list->name,
-                'rentang_tanggal'    => $list->rentang_tanggal,
+                'id' => $list->uuid,
+                'title' => $list->name,
+                'rentang_tanggal' => $list->rentang_tanggal,
                 'link_drive_logbook' => $list->link_drive_logbook,
-                'status_evaluasi'    => $list->status_evaluasi,
-                'cards'              => $listCards,
+                'status_evaluasi' => $list->status_evaluasi,
+                'cards' => $listCards,
             ];
         })->values()->all();
 
         return view('mahasiswa.aktivitas.index', [
-            'lists'        => $listsPayload,
-            'kelompok'     => $kelompok,
+            'lists' => $listsPayload,
+            'kelompok' => $kelompok,
             'periodeAktif' => $periodeAktif,
         ]);
     }
@@ -100,13 +101,13 @@ class AktivitasController extends Controller
     public function reorder(Request $request)
     {
         $data = $request->validate([
-            'card_id'  => 'required|string',
-            'to_list'  => 'required|string',
+            'card_id' => 'required|string',
+            'to_list' => 'required|string',
             'position' => 'required|integer|min:0',
         ]);
 
         [$kelompok] = $this->resolveKelompokSaya();
-        if (!$kelompok) {
+        if (! $kelompok) {
             return response()->json(['status' => 'no_group'], 403);
         }
 
@@ -114,14 +115,14 @@ class AktivitasController extends Controller
             ->where('kelompok_id', $kelompok->id)
             ->first();
 
-        if (!$card) {
+        if (! $card) {
             return response()->json(['status' => 'not_found'], 404);
         }
 
         $this->authorize('update', $card);
 
         $toList = AktivitasList::where('uuid', $data['to_list'])->first();
-        if (!$toList || $toList->kelompok_id !== $kelompok->id) {
+        if (! $toList || $toList->kelompok_id !== $kelompok->id) {
             return response()->json(['status' => 'invalid_list'], 422);
         }
 
@@ -129,11 +130,13 @@ class AktivitasController extends Controller
 
         DB::transaction(function () use ($card, $toList, $newPos) {
             $fromListId = $card->list_aktivitas_id;
-            $oldPos     = $card->position;
+            $oldPos = $card->position;
 
             if ($fromListId === $toList->id) {
                 // Geser dalam list yang sama
-                if ($newPos === $oldPos) return;
+                if ($newPos === $oldPos) {
+                    return;
+                }
 
                 if ($newPos > $oldPos) {
                     AktivitasCard::where('list_aktivitas_id', $fromListId)
@@ -157,7 +160,7 @@ class AktivitasController extends Controller
 
             $card->update([
                 'list_aktivitas_id' => $toList->id,
-                'position'          => $newPos,
+                'position' => $newPos,
             ]);
         });
 
@@ -167,23 +170,14 @@ class AktivitasController extends Controller
     private function resolveKelompokSaya(): array
     {
         $mhs = Mahasiswa::where('user_id', Auth::id())->first();
-        $periodeAktif = Periode::where('status_periode', 'Aktif')
-            ->orderByDesc('created_at')
-            ->first();
+        $periodeAktif = Periode::getLatestActive();
 
         $kelompokSaya = null;
 
-        if ($mhs) {
-            if ($periodeAktif) {
-                $kelompokSaya = $mhs->kelompoks()
-                    ->wherePivot('periode_id', $periodeAktif->id)
-                    ->first();
-            }
-            if (!$kelompokSaya) {
-                $kelompokSaya = $mhs->kelompoks()
-                    ->latest('kelompok_mahasiswa.created_at')
-                    ->first();
-            }
+        if ($mhs && $periodeAktif) {
+            $kelompokSaya = $mhs->kelompoks()
+                ->wherePivot('periode_id', $periodeAktif->id)
+                ->first();
         }
 
         return [$kelompokSaya, $periodeAktif];

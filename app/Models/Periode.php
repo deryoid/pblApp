@@ -40,6 +40,12 @@ class Periode extends Model
         });
     }
 
+    public static function getLatestActive(): ?self
+    {
+        return self::where('status_periode', 'Aktif')->orderByDesc('id')->first()
+            ?? self::orderByDesc('id')->first();
+    }
+
     public function kelompoks(): HasMany
     {
         return $this->hasMany(Kelompok::class);

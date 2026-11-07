@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Mahasiswa;
 
 use App\Http\Controllers\Controller;
-use App\Models\ProjectList;
 use App\Models\Mahasiswa;
 use App\Models\Periode;
+use App\Models\ProjectList;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Http\Request;
 use RealRashid\SweetAlert\Facades\Alert;
 
 class ProyekListController extends Controller
@@ -17,7 +17,9 @@ class ProyekListController extends Controller
     {
         $this->authorize('create', ProjectList::class);
         [$kelompok, $periodeAktif] = $this->resolveContext();
-        if (!$kelompok) return back()->withErrors('Anda belum tergabung dalam kelompok.');
+        if (! $kelompok) {
+            return back()->withErrors('Anda belum tergabung dalam kelompok.');
+        }
 
         $data = $request->validate([
             'name' => 'required|string|max:255',
@@ -36,6 +38,7 @@ class ProyekListController extends Controller
             'position' => $pos,
         ]);
         Alert::toast('Kolom ditambahkan.', 'success');
+
         return back();
     }
 
@@ -47,6 +50,7 @@ class ProyekListController extends Controller
         ]);
         $list->update($data);
         Alert::toast('Kolom diperbarui.', 'success');
+
         return back();
     }
 
@@ -67,16 +71,21 @@ class ProyekListController extends Controller
                 ->decrement('position');
         });
         Alert::toast('Kolom dihapus.', 'success');
+
         return back();
     }
 
     public function reorder(Request $request)
     {
         [$kelompok, $periodeAktif] = $this->resolveContext();
-        if (!$kelompok) return response()->json(['status' => 'no_group'], 403);
+        if (! $kelompok) {
+            return response()->json(['status' => 'no_group'], 403);
+        }
 
         $ids = $request->input('list_ids');
-        if (!is_array($ids) || empty($ids)) return response()->json(['status' => 'invalid'], 422);
+        if (! is_array($ids) || empty($ids)) {
+            return response()->json(['status' => 'invalid'], 422);
+        }
 
         $pid = $kelompok->periode_id ?? optional($periodeAktif)->id;
         DB::transaction(function () use ($ids, $kelompok, $pid) {
@@ -87,22 +96,19 @@ class ProyekListController extends Controller
                     ->update(['position' => $idx]);
             }
         });
+
         return response()->json(['status' => 'ok']);
     }
 
     private function resolveContext(): array
     {
         $mhs = Mahasiswa::where('user_id', Auth::id())->first();
-        $periodeAktif = Periode::where('status_periode','Aktif')->orderByDesc('created_at')->first();
+        $periodeAktif = Periode::getLatestActive();
         $kelompokSaya = null;
-        if ($mhs) {
-            if ($periodeAktif) {
-                $kelompokSaya = $mhs->kelompoks()->wherePivot('periode_id', $periodeAktif->id)->first();
-            }
-            if (!$kelompokSaya) {
-                $kelompokSaya = $mhs->kelompoks()->latest('kelompok_mahasiswa.created_at')->first();
-            }
+        if ($mhs && $periodeAktif) {
+            $kelompokSaya = $mhs->kelompoks()->wherePivot('periode_id', $periodeAktif->id)->first();
         }
+
         return [$kelompokSaya, $periodeAktif];
     }
 }

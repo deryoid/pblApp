@@ -56,12 +56,7 @@ class Kelompok extends Model
     // Accessor untuk periode aktif (digunakan di penilaian mitra public)
     public function getPeriodeAktifIdAttribute(): ?int
     {
-        // Cari periode aktif dari database
-        $periodeAktif = \App\Models\Periode::where('status_periode', 'Aktif')
-            ->orderByDesc('created_at')
-            ->first();
-
-        return $periodeAktif ? $periodeAktif->id : null;
+        return \App\Models\Periode::getLatestActive()?->id;
     }
 
     public function periode(): BelongsTo

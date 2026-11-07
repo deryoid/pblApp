@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers\Admin;
 
-use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
 use App\Models\Periode;
+use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use RealRashid\SweetAlert\Facades\Alert;
-use App\Http\Controllers\Controller;
 
 class PeriodeController extends Controller
 {
@@ -15,10 +15,11 @@ class PeriodeController extends Controller
      */
     public function index()
     {
-            $data = Periode::orderByRaw("CASE WHEN status_periode = 'Aktif' THEN 0 ELSE 1 END")
-                   ->latest() // urutkan by created_at DESC
-                   ->get();
-            return view('admin.periode.index', compact('data'));
+        $data = Periode::orderByRaw("CASE WHEN status_periode = 'Aktif' THEN 0 ELSE 1 END")
+            ->latest() // urutkan by created_at DESC
+            ->get();
+
+        return view('admin.periode.index', compact('data'));
     }
 
     /**
@@ -35,20 +36,24 @@ class PeriodeController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-        'periode'        => 'required|string|max:150|unique:periode,periode', // ganti 'periode' jika nama tabel Anda jamak
-        'status_periode' => ['required', Rule::in(['Aktif','Tidak Aktif'])],
+            'periode' => 'required|string|max:150|unique:periode,periode', // ganti 'periode' jika nama tabel Anda jamak
+            'status_periode' => ['required', Rule::in(['Aktif', 'Tidak Aktif'])],
         ], [
-        'periode.unique' => 'Periode sudah ada, tidak boleh duplikat.',
+            'periode.unique' => 'Periode sudah ada, tidak boleh duplikat.',
         ]);
 
         // Default ke "Aktif" jika tidak dikirim dari form
         $validated['status_periode'] = $validated['status_periode'] ?? 'Aktif';
 
+        if ($validated['status_periode'] === 'Aktif') {
+            Periode::where('status_periode', 'Aktif')->update(['status_periode' => 'Tidak Aktif']);
+        }
+
         Periode::create($validated);
         Alert::toast('Periode berhasil ditambahkan.', 'success');
+
         return redirect()->route('periode.index');
     }
-   
 
     /**
      * Display the specified resource.
@@ -64,6 +69,7 @@ class PeriodeController extends Controller
     public function edit(string $uuid)
     {
         $periode = Periode::where('uuid', $uuid)->firstOrFail();
+
         return view('admin.periode.edit', compact('periode'));
     }
 
@@ -75,17 +81,22 @@ class PeriodeController extends Controller
         $periode = Periode::where('uuid', $uuid)->firstOrFail();
 
         $validated = $request->validate([
-        'periode' => [
-            'sometimes','required','string','max:150',
-            Rule::unique('periode','periode')->ignore($periode->id ?? null), // sesuaikan nama tabel
-        ],
-            'status_periode' => ['sometimes','required', Rule::in(['Aktif','Tidak Aktif'])],
+            'periode' => [
+                'sometimes', 'required', 'string', 'max:150',
+                Rule::unique('periode', 'periode')->ignore($periode->id ?? null), // sesuaikan nama tabel
+            ],
+            'status_periode' => ['sometimes', 'required', Rule::in(['Aktif', 'Tidak Aktif'])],
         ], [
             'periode.unique' => 'Periode sudah ada, tidak boleh duplikat.',
         ]);
 
+        if (($validated['status_periode'] ?? '') === 'Aktif') {
+            Periode::where('id', '!=', $periode->id)->where('status_periode', 'Aktif')->update(['status_periode' => 'Tidak Aktif']);
+        }
+
         $periode->update($validated);
         Alert::toast('Periode berhasil diubah.', 'success');
+
         return redirect()->route('periode.index');
     }
 
@@ -96,8 +107,9 @@ class PeriodeController extends Controller
     {
         $periode = Periode::where('uuid', $uuid)->firstOrFail();
         $periode->delete();
-        
+
         Alert::toast('Periode berhasil dihapus.', 'success');
+
         return redirect()->route('periode.index');
     }
 }

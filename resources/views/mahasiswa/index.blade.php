@@ -40,37 +40,25 @@
 
                     {{-- Info Periode Aktif & Kelompok Saya --}}
                     @php
-                        // Cache the queries for better performance (excluding binary data)
-                        $cacheKey = 'mahasiswa_dashboard_' . Auth::id();
-                        $dashboardData = \Illuminate\Support\Facades\Cache::remember($cacheKey, 300, function () {
+                        $periodeAktif = \App\Models\Periode::getLatestActive();
+                        // Cache the queries for better performance (excluding binary data), keyed with active period ID
+                        $cacheKey = 'mahasiswa_dashboard_' . Auth::id() . '_' . ($periodeAktif?->id ?? '0');
+                        $dashboardData = \Illuminate\Support\Facades\Cache::remember($cacheKey, 300, function () use ($periodeAktif) {
                             $mhs = \App\Models\Mahasiswa::where('user_id', Auth::id())->first();
-                            $periodeAktif = \App\Models\Periode::where('status_periode','Aktif')->orderByDesc('created_at')->first();
                             $kelompokSaya = null;
                             $anggotaKelompok = collect();
-                            $labelPeriode = $periodeAktif? $periodeAktif->periode : null;
+                            $labelPeriode = $periodeAktif ? $periodeAktif->periode : null;
 
-                            if ($mhs) {
-                                if ($periodeAktif) {
-                                    $kelompokSaya = $mhs->kelompoks()->wherePivot('periode_id', $periodeAktif->id)->first();
-                                    if ($kelompokSaya) {
-                                        $anggotaKelompok = $kelompokSaya->mahasiswas()
-                                            ->wherePivot('periode_id', $periodeAktif->id)
-                                            ->with(['user' => function($query) {
-                                                // Exclude large binary fields from cache
-                                                $query->select('id', 'uuid', 'nama_user', 'email', 'username', 'role', 'no_hp', 'created_at', 'updated_at');
-                                            }])
-                                            ->get();
-                                    }
-                                }
-                                // fallback: pakai keanggotaan terbaru jika tidak ada di periode aktif
-                                if (!$kelompokSaya) {
-                                    $kelompokSaya = $mhs->kelompoks()->latest('kelompok_mahasiswa.created_at')->first();
-                                    if ($kelompokSaya) {
-                                        $anggotaKelompok = $kelompokSaya->mahasiswas()->with(['user' => function($query) {
+                            if ($mhs && $periodeAktif) {
+                                $kelompokSaya = $mhs->kelompoks()->wherePivot('periode_id', $periodeAktif->id)->first();
+                                if ($kelompokSaya) {
+                                    $anggotaKelompok = $kelompokSaya->mahasiswas()
+                                        ->wherePivot('periode_id', $periodeAktif->id)
+                                        ->with(['user' => function($query) {
                                             // Exclude large binary fields from cache
                                             $query->select('id', 'uuid', 'nama_user', 'email', 'username', 'role', 'no_hp', 'created_at', 'updated_at');
-                                        }])->get();
-                                    }
+                                        }])
+                                        ->get();
                                 }
                             }
 
@@ -138,7 +126,15 @@
                                             @endforelse
                                         </ul>
                                     @else
-                                        <div class="text-muted px-3 py-2">Belum tergabung dalam kelompok.</div>
+                                        <div class="text-center py-4 px-3">
+                                            <div class="rounded-circle bg-light text-muted mx-auto d-flex align-items-center justify-content-center mb-2" style="width:44px;height:44px;">
+                                                <i class="fas fa-users text-secondary"></i>
+                                            </div>
+                                            <p class="text-muted small mb-2">Belum tergabung dalam kelompok pada periode {{ $labelPeriode ?? 'aktif' }}.</p>
+                                            <a href="{{ route('mahasiswa.kelompok.index') }}" class="btn btn-xs btn-primary font-weight-bold px-3 py-1 shadow-sm">
+                                                <i class="fas fa-users-cog mr-1"></i> Bentuk atau Gabung Kelompok
+                                            </a>
+                                        </div>
                                     @endif
                                 </div>
                             </div>

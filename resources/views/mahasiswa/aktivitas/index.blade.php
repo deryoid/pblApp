@@ -40,6 +40,18 @@ if (!function_exists('avatarUrl')) {
 }
 @endphp
 <div class="container-fluid">
+  @if(!isset($kelompok) || !$kelompok)
+    <div class="alert alert-warning border-0 shadow-sm d-flex flex-column flex-md-row align-items-md-center justify-content-between p-3 mb-4 rounded-xl">
+      <div class="mb-2 mb-md-0">
+        <i class="fas fa-exclamation-triangle mr-2"></i>
+        Anda belum memiliki kelompok pada periode PBL {{ $periodeAktif?->periode ?? 'terbaru' }}. Kelompok PBL diulang setiap periode baru. Silakan bentuk kelompok baru atau terima undangan bergabung terlebih dahulu.
+      </div>
+      <a href="{{ route('mahasiswa.kelompok.index') }}" class="btn btn-sm btn-primary shadow-sm font-weight-bold flex-shrink-0">
+        <i class="fas fa-users mr-1"></i> Kelola Kelompok
+      </a>
+    </div>
+  @endif
+
   <div class="d-flex align-items-center mb-3 flex-wrap">
     <div class="d-flex align-items-baseline mr-3 mb-2 mb-md-0">
       <h1 class="h3 text-gray-800 mb-0">Aktivitas</h1>

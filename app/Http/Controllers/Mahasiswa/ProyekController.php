@@ -187,15 +187,10 @@ class ProyekController extends Controller
     private function resolveKelompokSaya(): array
     {
         $mhs = Mahasiswa::where('user_id', Auth::id())->first();
-        $periodeAktif = Periode::where('status_periode', 'Aktif')->orderByDesc('created_at')->first();
+        $periodeAktif = Periode::getLatestActive();
         $kelompokSaya = null;
-        if ($mhs) {
-            if ($periodeAktif) {
-                $kelompokSaya = $mhs->kelompoks()->wherePivot('periode_id', $periodeAktif->id)->first();
-            }
-            if (! $kelompokSaya) {
-                $kelompokSaya = $mhs->kelompoks()->latest('kelompok_mahasiswa.created_at')->first();
-            }
+        if ($mhs && $periodeAktif) {
+            $kelompokSaya = $mhs->kelompoks()->wherePivot('periode_id', $periodeAktif->id)->first();
         }
 
         return [$kelompokSaya, $periodeAktif];

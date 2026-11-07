@@ -97,8 +97,29 @@ class Mahasiswa extends Model
     public function kelompoks(): BelongsToMany
     {
         return $this->belongsToMany(Kelompok::class, 'kelompok_mahasiswa')
-            ->withPivot('role')
+            ->withPivot('role', 'periode_id')
             ->withTimestamps();
+    }
+
+    public function kelompokForPeriode(?int $periodeId = null): ?Kelompok
+    {
+        if (! $periodeId) {
+            $latestPeriode = Periode::getLatestActive();
+            $periodeId = $latestPeriode?->id;
+        }
+
+        if (! $periodeId) {
+            return null;
+        }
+
+        return $this->kelompoks()
+            ->wherePivot('periode_id', $periodeId)
+            ->first();
+    }
+
+    public function getKelompokAktifAttribute(): ?Kelompok
+    {
+        return $this->kelompokForPeriode();
     }
 
     public function nilaiAP(): HasMany
