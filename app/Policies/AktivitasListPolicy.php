@@ -12,11 +12,20 @@ class AktivitasListPolicy
 {
     use HandlesAuthorization;
 
-    protected function resolveContext(User $user): array
+    public function before(User $user, string $ability): ?bool
+    {
+        if ($user->role === 'admin') {
+            return true;
+        }
+
+        return null;
+    }
+
+    public function create(User $user): bool
     {
         $mhs = Mahasiswa::where('user_id', $user->id)->first();
         if (! $mhs) {
-            return [null, null];
+            return false;
         }
 
         $periodeAktif = Periode::getLatestActive();
@@ -24,26 +33,18 @@ class AktivitasListPolicy
             ? $mhs->kelompoks()->wherePivot('periode_id', $periodeAktif->id)->first()
             : null;
 
-        return [$kelompok, $periodeAktif];
-    }
-
-    public function create(User $user): bool
-    {
-        [$kelompok] = $this->resolveContext($user);
-
-        return (bool) $kelompok;
+        return (bool) ($kelompok ?? $mhs->kelompoks()->first());
     }
 
     public function update(User $user, AktivitasList $list): bool
     {
-        [$kelompok, $periodeAktif] = $this->resolveContext($user);
-        if (! $kelompok) {
+        $mhs = Mahasiswa::where('user_id', $user->id)->first();
+        if (! $mhs) {
             return false;
         }
 
-        $pid = $kelompok->periode_id ?? optional($periodeAktif)->id;
-
-        return $list->kelompok_id === $kelompok->id && ($pid ? $list->periode_id === $pid : true);
+        // Mahasiswa diizinkan mengelola kolom aktivitas jika merupakan anggota kelompok pemilik kolom tersebut
+        return $mhs->kelompoks()->where('kelompok.id', $list->kelompok_id)->exists();
     }
 
     public function delete(User $user, AktivitasList $list): bool

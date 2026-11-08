@@ -183,6 +183,9 @@ class AktivitasListController extends Controller
         if ($mhs && $periodeAktif) {
             $kelompokSaya = $mhs->kelompoks()->wherePivot('periode_id', $periodeAktif->id)->first();
         }
+        if ($mhs && ! $kelompokSaya) {
+            $kelompokSaya = $mhs->kelompoks()->latest('kelompok.id')->first();
+        }
 
         return [$kelompokSaya, $periodeAktif];
     }

@@ -43,17 +43,24 @@ class ProjectCard extends Model
         return ! empty($this->proposal_file_path);
     }
 
-    protected $casts = [
-        'labels' => 'array',
-        'due_date' => 'datetime',
-        'tanggal_mulai' => 'date',
-        'tanggal_selesai' => 'date',
-        'biaya_barang' => 'decimal:2',
-        'biaya_jasa' => 'decimal:2',
-        'progress' => 'integer',
-        'comments_count' => 'integer',
-        'attachments_count' => 'integer',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'kelompok_id' => 'integer',
+            'periode_id' => 'integer',
+            'list_id' => 'integer',
+            'position' => 'integer',
+            'labels' => 'array',
+            'due_date' => 'datetime',
+            'tanggal_mulai' => 'date',
+            'tanggal_selesai' => 'date',
+            'biaya_barang' => 'decimal:2',
+            'biaya_jasa' => 'decimal:2',
+            'progress' => 'integer',
+            'comments_count' => 'integer',
+            'attachments_count' => 'integer',
+        ];
+    }
 
     protected static function booted(): void
     {

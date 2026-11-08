@@ -14,12 +14,18 @@ class AktivitasList extends Model
 
     protected $guarded = ['id'];
 
-    protected $casts = [
-        'rentang_tanggal' => 'string',
-        'status_evaluasi' => 'string',
-        'w_ap_kehadiran' => 'decimal:2',
-        'w_ap_presentasi' => 'decimal:2',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'kelompok_id' => 'integer',
+            'periode_id' => 'integer',
+            'position' => 'integer',
+            'rentang_tanggal' => 'string',
+            'status_evaluasi' => 'string',
+            'w_ap_kehadiran' => 'decimal:2',
+            'w_ap_presentasi' => 'decimal:2',
+        ];
+    }
 
     protected static function booted(): void
     {

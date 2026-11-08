@@ -14,9 +14,16 @@ class AktivitasCard extends Model
 
     protected $guarded = ['id'];
 
-    protected $casts = [
-        'tanggal_aktivitas' => 'date',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'kelompok_id' => 'integer',
+            'periode_id' => 'integer',
+            'list_aktivitas_id' => 'integer',
+            'position' => 'integer',
+            'tanggal_aktivitas' => 'date',
+        ];
+    }
 
     protected static function booted(): void
     {

@@ -470,4 +470,68 @@ class ProyekMahasiswaTest extends TestCase
             'description' => 'Mengerjakan desain arsitektur sistem IoT',
         ]);
     }
+
+    public function test_student_can_delete_empty_list_even_when_active_period_differs(): void
+    {
+        // Simulasi periode aktif baru dibuat di sistem
+        $newPeriod = Periode::create([
+            'periode' => '2027/2028 Genap',
+            'status_periode' => 'Aktif',
+        ]);
+        $this->periode->update(['status_periode' => 'Tidak Aktif']);
+
+        $listToDelete = ProjectList::create([
+            'kelompok_id' => $this->kelompok->id,
+            'periode_id' => $this->periode->id,
+            'name' => 'Kolom Uji Hapus',
+            'position' => 99,
+        ]);
+
+        $response = $this->actingAs($this->studentUser)->delete(route('proyek.lists.destroy', $listToDelete));
+        $response->assertRedirect();
+        $this->assertDatabaseMissing('project_lists', ['id' => $listToDelete->id]);
+    }
+
+    public function test_student_cannot_delete_other_group_list(): void
+    {
+        $otherKelompok = Kelompok::create([
+            'nama_kelompok' => 'Kelompok Lain 99',
+            'skema_kategori' => 'Internal',
+            'periode_id' => $this->periode->id,
+            'semester' => 3,
+        ]);
+
+        $otherList = ProjectList::create([
+            'kelompok_id' => $otherKelompok->id,
+            'periode_id' => $this->periode->id,
+            'name' => 'Kolom Milik Orang Lain',
+            'position' => 0,
+        ]);
+
+        $response = $this->actingAs($this->studentUser)->delete(route('proyek.lists.destroy', $otherList));
+        $response->assertStatus(403);
+        $this->assertDatabaseHas('project_lists', ['id' => $otherList->id]);
+    }
+
+    public function test_student_can_delete_card_even_when_active_period_differs(): void
+    {
+        // Simulasi perubahan periode aktif
+        Periode::create([
+            'periode' => '2028/2029 Ganjil',
+            'status_periode' => 'Aktif',
+        ]);
+        $this->periode->update(['status_periode' => 'Tidak Aktif']);
+
+        $cardToDelete = ProjectCard::create([
+            'kelompok_id' => $this->kelompok->id,
+            'periode_id' => $this->periode->id,
+            'list_id' => $this->list1->id,
+            'title' => 'Kartu Uji Hapus',
+            'skema_pbl' => 'External',
+        ]);
+
+        $response = $this->actingAs($this->studentUser)->delete(route('proyek.cards.destroy', $cardToDelete));
+        $response->assertRedirect();
+        $this->assertDatabaseMissing('project_cards', ['id' => $cardToDelete->id]);
+    }
 }

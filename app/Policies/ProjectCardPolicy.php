@@ -12,33 +12,39 @@ class ProjectCardPolicy
 {
     use HandlesAuthorization;
 
-    protected function resolveKelompokId(User $user): ?int
+    public function before(User $user, string $ability): ?bool
     {
-        $mhs = Mahasiswa::where('user_id', $user->id)->first();
-        if (! $mhs) {
-            return null;
+        if ($user->role === 'admin') {
+            return true;
         }
 
-        $periodeAktif = Periode::getLatestActive();
-        if (! $periodeAktif) {
-            return null;
-        }
-
-        $kelompok = $mhs->kelompoks()->wherePivot('periode_id', $periodeAktif->id)->first();
-
-        return $kelompok?->id;
+        return null;
     }
 
     public function create(User $user): bool
     {
-        return (bool) $this->resolveKelompokId($user);
+        $mhs = Mahasiswa::where('user_id', $user->id)->first();
+        if (! $mhs) {
+            return false;
+        }
+
+        $periodeAktif = Periode::getLatestActive();
+        $kelompok = $periodeAktif
+            ? $mhs->kelompoks()->wherePivot('periode_id', $periodeAktif->id)->first()
+            : null;
+
+        return (bool) ($kelompok ?? $mhs->kelompoks()->first());
     }
 
     public function update(User $user, ProjectCard $card): bool
     {
-        $kelompokId = $this->resolveKelompokId($user);
+        $mhs = Mahasiswa::where('user_id', $user->id)->first();
+        if (! $mhs) {
+            return false;
+        }
 
-        return $kelompokId !== null && $card->kelompok_id === $kelompokId;
+        // Mahasiswa diizinkan mengelola kartu jika merupakan anggota kelompok pemilik kartu tersebut
+        return $mhs->kelompoks()->where('kelompok.id', $card->kelompok_id)->exists();
     }
 
     public function delete(User $user, ProjectCard $card): bool

@@ -14,8 +14,14 @@ class ProjectList extends Model
 
     protected $guarded = ['id'];
 
-    protected $casts = [
-    ];
+    protected function casts(): array
+    {
+        return [
+            'kelompok_id' => 'integer',
+            'periode_id' => 'integer',
+            'position' => 'integer',
+        ];
+    }
 
     protected static function booted(): void
     {
