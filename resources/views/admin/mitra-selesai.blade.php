@@ -374,31 +374,44 @@
     @endif
 </div>
 
+@push('scripts')
 <script>
     $(document).ready(function() {
+        const dtLang = {
+            search: "_INPUT_",
+            searchPlaceholder: "Cari data...",
+            lengthMenu: "Tampilkan _MENU_ data",
+            info: "Menampilkan _START_ - _END_ dari _TOTAL_ data",
+            infoEmpty: "Menampilkan 0 data",
+            infoFiltered: "(disaring dari _MAX_ data)",
+            zeroRecords: "Tidak ditemukan data yang cocok",
+            emptyTable: "Belum ada data tersedia pada tabel",
+            paginate: {
+                first: '<i class="fas fa-angle-double-left" aria-hidden="true"></i>',
+                last: '<i class="fas fa-angle-double-right" aria-hidden="true"></i>',
+                next: '<i class="fas fa-angle-right" aria-hidden="true"></i>',
+                previous: '<i class="fas fa-angle-left" aria-hidden="true"></i>'
+            }
+        };
+
         $('#kelompokTable').DataTable({
             pageLength: 25,
             order: [[2, 'desc']],
-            language: {
-                url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json'
-            }
+            language: dtLang
         });
 
         $('#mitraTable').DataTable({
             pageLength: 25,
             order: [[3, 'desc']],
-            language: {
-                url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json'
-            }
+            language: dtLang
         });
 
         $('#detailTable').DataTable({
             pageLength: 25,
             order: [[7, 'desc']],
-            language: {
-                url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json'
-            }
+            language: dtLang
         });
     });
 </script>
+@endpush
 @endsection

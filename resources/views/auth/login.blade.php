@@ -413,6 +413,9 @@
                             <input type="checkbox" name="remember" value="1" style="width: 16px; height: 16px; accent-color: #2563eb;">
                             <span>Ingat sesi saya</span>
                         </label>
+                        <a href="{{ route('password.request') }}" style="color: #2563eb; font-weight: 600; text-decoration: none; font-size: 0.8125rem;">
+                            Lupa kata sandi?
+                        </a>
                     </div>
 
                     <button type="submit" class="btn-submit-login">

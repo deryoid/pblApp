@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\PenilaianEvaluasiController;
 use App\Http\Controllers\Admin\PeriodeController;
 use App\Http\Controllers\Admin\RubrikPenilaianController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
@@ -27,6 +28,13 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 // Pendaftaran Mahasiswa (Identifikasi NIM Bank Data)
 Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
 Route::post('/register', [RegisterController::class, 'register'])->middleware('throttle:20,1')->name('register.attempt');
+
+// Lupa & Reset Kata Sandi via Kode Email
+Route::get('/forgot-password', [ForgotPasswordController::class, 'showLinkRequestForm'])->name('password.request');
+Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetCode'])->middleware('throttle:10,1')->name('password.email');
+Route::get('/reset-password', [ForgotPasswordController::class, 'showResetForm'])->name('password.reset');
+Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword'])->middleware('throttle:15,1')->name('password.update');
+Route::post('/forgot-password/resend', [ForgotPasswordController::class, 'resendCode'])->middleware('throttle:5,1')->name('password.resend');
 
 // Google OAuth routes
 Route::get('/auth/google', [GoogleAuthController::class, 'redirect'])->name('auth.google');

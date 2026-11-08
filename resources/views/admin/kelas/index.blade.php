@@ -21,9 +21,9 @@
                 <table class="table table-bordered table-hover small" id="dataTable" width="100%" cellspacing="0">
                     <thead>
                         <tr>
-                            <th class="text-center" style="width: 45px;">No</th>
+                            <th class="text-center no-sort" style="width: 45px;">No</th>
                             <th>Nama Kelas</th>
-                            <th class="text-center align-middle" style="width: 90px;">
+                            <th class="text-center align-middle no-sort" style="width: 90px;">
                                 <i class="fas fa-cogs fa-sm" aria-hidden="true"></i>
                             </th>
                         </tr>

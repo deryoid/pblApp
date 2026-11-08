@@ -54,14 +54,14 @@
                 <table class="table table-bordered table-hover small" id="dataTable" width="100%" cellspacing="0">
                     <thead>
                         <tr>
-                            <th class="text-center" style="width: 45px;">No</th>
-                            <th>Kode MK</th>
+                            <th class="text-center no-sort" style="width: 45px;">No</th>
+                            <th style="width: 110px;">Kode MK</th>
                             <th>Nama Mata Kuliah</th>
-                            <th class="text-center" style="width: 90px;">Semester</th>
-                            <th class="text-center" style="width: 60px;">SKS</th>
+                            <th class="text-center" style="width: 100px;">Semester</th>
+                            <th class="text-center" style="width: 70px;">SKS</th>
                             <th>Dosen Pengampu</th>
-                            <th class="text-center" style="width: 80px;">Status</th>
-                            <th class="text-center align-middle" style="width: 90px;">
+                            <th class="text-center" style="width: 90px;">Status</th>
+                            <th class="text-center align-middle no-sort" style="width: 90px;">
                                 <i class="fas fa-cogs fa-sm" aria-hidden="true"></i>
                             </th>
                         </tr>

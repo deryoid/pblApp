@@ -13,19 +13,19 @@
         <div class="alert alert-success">{{ session('status') }}</div>
     @endif
 
-    <div class="card shadow">
+    <div class="card shadow-sm border border-gray-200 mb-4">
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-bordered table-hover small" width="100%" cellspacing="0">
+                <table class="table table-bordered table-hover small no-datatable" width="100%" cellspacing="0">
                     <thead>
                         <tr>
                             <th class="text-center" style="width: 45px;">No</th>
-                            <th>Periode</th>
+                            <th style="width: 130px;">Periode</th>
                             <th>Kelompok</th>
                             <th>Perusahaan</th>
-                            <th>Tanggal Kunjungan</th>
-                            <th class="text-center">Status</th>
-                            <th class="text-center">Bukti</th>
+                            <th style="width: 130px;">Tanggal Kunjungan</th>
+                            <th class="text-center" style="width: 140px;">Status</th>
+                            <th class="text-center" style="width: 90px;">Bukti</th>
                             <th>Diinput Oleh</th>
                             <th class="text-center align-middle" style="width: 90px;"><i class="fas fa-cogs fa-sm"></i></th>
                         </tr>

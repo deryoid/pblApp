@@ -9,7 +9,7 @@
             <p class="text-secondary small mb-0 font-weight-500">Kelola master bank data dosen pengampu dan penilai PBL (NIP, Nama, Nomor Telp, Keahlian).</p>
         </div>
         <div class="mt-2 mt-sm-0 d-flex flex-wrap" style="gap: 0.5rem;">
-            <div class="badge badge-light border px-2.5 py-1.5 text-dark font-weight-600">
+            <div class="badge badge-light border px-3 py-2 text-dark font-weight-600">
                 <i class="fas fa-chalkboard-teacher mr-1 text-primary" aria-hidden="true"></i> Total Dosen: {{ $data->count() }}
             </div>
             <div class="badge-status-linked">
@@ -51,15 +51,15 @@
                 <table class="table table-bordered table-hover small" id="dataTable" width="100%" cellspacing="0">
                     <thead>
                         <tr>
-                            <th class="text-center" style="width: 45px;">No</th>
-                            <th>NIP</th>
+                            <th class="text-center no-sort" style="width: 45px;">No</th>
+                            <th style="width: 120px;">NIP</th>
                             <th>Nama Dosen</th>
-                            <th>Nomor Telp / WA</th>
+                            <th style="width: 140px;">Nomor Telp / WA</th>
                             <th>Keahlian / Spesialisasi</th>
                             <th>Akun Pengguna</th>
-                            <th class="text-center">Status Akun</th>
-                            <th class="text-center">Atur Sandi</th>
-                            <th class="text-center align-middle" style="width: 100px;">
+                            <th class="text-center" style="width: 110px;">Status Akun</th>
+                            <th class="text-center no-sort" style="width: 100px;">Atur Sandi</th>
+                            <th class="text-center align-middle no-sort" style="width: 100px;">
                                 <i class="fas fa-cogs fa-sm" aria-hidden="true"></i>
                             </th>
                         </tr>
@@ -69,7 +69,7 @@
                         @php $u = $d->user; @endphp
                         <tr>
                             <td class="text-center align-middle">{{ $loop->iteration }}</td>
-                            <td class="align-middle font-weight-bold text-nowrap">
+                            <td class="align-middle font-weight-bold text-nowrap text-primary">
                                 {{ $d->nip ?? '-' }}
                             </td>
                             <td class="align-middle font-weight-500">
@@ -120,7 +120,17 @@
                                 @if($u)
                                 <form action="{{ route('user.reset-password', $u) }}" method="POST" class="m-0 d-inline">
                                     @csrf
-                                    <button type="submit" class="btn btn-xs btn-outline-warning text-nowrap" aria-label="Reset kata sandi akun dosen {{ $d->nama_dosen }}" title="Reset Password Akun">
+                                    <button type="button" class="btn btn-xs btn-outline-warning text-nowrap"
+                                        onclick="var form = this.closest('form');
+                                        Swal.fire({
+                                            title: 'Reset Kata Sandi Dosen?',
+                                            text: 'Kata sandi akun dosen {{ $d->nama_dosen }} akan diatur ulang menjadi default ({{ $u->username }}@pbl).',
+                                            icon: 'warning',
+                                            showCancelButton: true,
+                                            confirmButtonText: 'Ya, Reset',
+                                            cancelButtonText: 'Batal'
+                                        }).then((result) => { if (result.isConfirmed) form.submit(); });"
+                                        aria-label="Reset kata sandi akun dosen {{ $d->nama_dosen }}" title="Reset Password Akun">
                                         <i class="fas fa-key mr-1" aria-hidden="true"></i> Reset
                                     </button>
                                 </form>

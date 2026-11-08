@@ -1,4 +1,4 @@
-// Call the dataTables jQuery plugin with modern defaults and safe empty table handling
+// Call the dataTables jQuery plugin with modern defaults, responsive containers, and safe empty table handling
 $(document).ready(function() {
   if ($.fn && $.fn.dataTable) {
     $.fn.dataTable.ext.errMode = 'none';
@@ -15,10 +15,32 @@ $(document).ready(function() {
         $tbl.find('tbody').empty();
       }
 
+      // If wrapped in .table-responsive, convert outer wrapper so controls (search/pagination) don't scroll off-screen
+      var $parentResponsive = $tbl.parent('.table-responsive');
+      if ($parentResponsive.length) {
+        $parentResponsive.removeClass('table-responsive').addClass('table-wrapper-outer');
+      }
+
+      // Automatically identify non-sortable columns (No, Aksi, Action icons, Atur Sandi)
+      var nonSortableTargets = [];
+      $tbl.find('thead th').each(function(idx) {
+        var $th = $(this);
+        var text = $th.text().trim().toLowerCase();
+        if ($th.hasClass('no-sort') || text === 'no' || text === '#' || $th.find('.fa-cogs, .fa-cog').length > 0 || $th.hasClass('action-col') || text === 'aksi' || text === 'atur sandi') {
+          $th.addClass('no-sort');
+          nonSortableTargets.push(idx);
+        }
+      });
+
       $tbl.DataTable({
-        responsive: true,
         pageLength: 10,
         autoWidth: false,
+        dom: "<'row mb-3 align-items-center'<'col-12 col-md-6'l><'col-12 col-md-6'f>>" +
+             "<'row'<'col-12 table-responsive'tr>>" +
+             "<'row mt-3 align-items-center'<'col-12 col-md-5'i><'col-12 col-md-7'p>>",
+        columnDefs: nonSortableTargets.length ? [
+          { targets: nonSortableTargets, orderable: false }
+        ] : [],
         language: {
           search: "_INPUT_",
           searchPlaceholder: "Cari data...",

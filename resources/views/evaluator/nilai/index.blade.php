@@ -70,36 +70,37 @@
                     <!-- Tabel Nilai -->
                     @if($mahasiswaNilai->count() > 0)
                         <div class="table-responsive">
-                            <table class="table table-bordered table-hover small">
+                            <table class="table table-bordered table-hover small" id="dataTable" width="100%" cellspacing="0">
                                 <thead>
                                     <tr>
-                                        <th class="text-center" width="5%">No</th>
-                                        <th width="12%">NIM</th>
-                                        <th width="30%">Nama Mahasiswa</th>
-                                        <th width="15%">Kelas</th>
-                                        <th class="text-center" width="15%">Nilai Aktifitas</th>
-                                        <th class="text-center" width="15%">Nilai Proyek</th>
+                                        <th class="text-center no-sort" style="width: 45px;">No</th>
+                                        <th style="width: 130px;">NIM</th>
+                                        <th>Nama Mahasiswa</th>
+                                        <th style="width: 120px;">Kelas</th>
+                                        <th class="text-center" style="width: 130px;">Nilai Aktivitas</th>
+                                        <th class="text-center" style="width: 130px;">Nilai Proyek</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php $no = 1; ?>
                                     @foreach($mahasiswaNilai as $data)
                                         <tr>
-                                            <td class="text-center align-middle">{{ $no++ }}</td>
-                                            <td class="align-middle font-weight-bold text-nowrap">{{ $data['mahasiswa']->nim }}</td>
-                                            <td class="align-middle">{{ $data['mahasiswa']->nama_mahasiswa }}</td>
-                                            <td class="align-middle">{{ $data['kelas']->kelas ?? '-' }}</td>
+                                            <td class="text-center align-middle">{{ $loop->iteration }}</td>
+                                            <td class="align-middle font-weight-bold text-nowrap text-primary">{{ $data['mahasiswa']->nim }}</td>
+                                            <td class="align-middle font-weight-500">{{ $data['mahasiswa']->nama_mahasiswa }}</td>
+                                            <td class="align-middle text-nowrap">
+                                                <span class="badge badge-light border text-dark">{{ $data['kelas']->kelas ?? '-' }}</span>
+                                            </td>
                                             <td class="text-center align-middle">
-                                                <span class="badge badge-info badge-pill">
+                                                <span class="badge badge-info px-2.5 py-1 font-weight-bold" style="font-size: 0.85rem;">
                                                     {{ $data['nilai_aktifitas'] }}
                                                 </span>
                                             </td>
                                             <td class="text-center align-middle">
-                                                <span class="badge badge-primary badge-pill">
+                                                <span class="badge badge-primary px-2.5 py-1 font-weight-bold" style="font-size: 0.85rem;">
                                                     {{ $data['nilai_proyek'] }}
                                                 </span>
                                             </td>
-                                            </tr>
+                                        </tr>
                                     @endforeach
                                 </tbody>
                             </table>

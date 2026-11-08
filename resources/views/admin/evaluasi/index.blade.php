@@ -67,9 +67,10 @@
         <table class="table table-sm table-hover" id="tbl-evaluasi">
           <thead class="thead-light">
             <tr>
+              <th class="text-center" style="width: 45px;">No</th>
               <th>Kelompok</th>
-              <th>Anggota</th>
-              <th>Evaluasi</th>
+              <th>Anggota Tim</th>
+              <th>Progress Evaluasi</th>
               <th style="width:80px; text-align: center;">Aksi</th>
             </tr>
           </thead>
@@ -84,32 +85,34 @@
                                 );
               @endphp
               <tr data-search="{{ $searchStr }}">
-                <td>
-                  <div class="font-weight-bold">{{ $k->nama_kelompok }}</div>
-                  <div class="small-muted truncate">Ketua: {{ $k->ketua_nama ?? '-' }}</div>
+                <td class="text-center align-middle font-weight-bold text-muted">
+                  {{ $kelompoks->firstItem() + $loop->index }}
                 </td>
-                <td align="center">
-                  {{-- Jumlah anggota --}}
-                      @if($k->mahasiswas && $k->mahasiswas->count())
-                        <div class="text-left">
-                          @foreach($k->mahasiswas as $m)
-                            <span class="d-block small">{{ $loop->iteration }}. {{ $m->nama }}</span>
-                          @endforeach
-                        </div>
-                      @else
-                        <span class="text-muted small">-</span>
-                      @endif
+                <td class="align-middle">
+                  <div class="font-weight-bold text-dark">{{ $k->nama_kelompok }}</div>
+                  <div class="small-muted">Ketua: <span class="font-weight-500 text-dark">{{ $k->ketua_nama ?? '-' }}</span></div>
                 </td>
-                <td>
-                  <div class="d-flex align-items-center">
-                    <span class="badge mr-2">
-                      Evaluasi : 
-                    </span>
+                <td class="align-middle">
+                  @if($k->mahasiswas && $k->mahasiswas->count())
+                    <ul class="list-unstyled mb-0 small" style="line-height: 1.45;">
+                      @foreach($k->mahasiswas as $m)
+                        <li class="py-0.5">
+                          <span class="badge badge-light border text-nowrap mr-1">{{ $m->nim }}</span>
+                          <span class="font-weight-500">{{ $m->nama }}</span>
+                        </li>
+                      @endforeach
+                    </ul>
+                  @else
+                    <span class="text-muted small"><em>Belum ada anggota</em></span>
+                  @endif
+                </td>
+                <td class="align-middle">
+                  <div class="d-flex align-items-center flex-wrap" style="gap: 0.5rem;">
                     <div class="activity-boxes">
                       {!! $k->activity_boxes !!}
                     </div>
-                    <span class="small-muted ml-2">
-                      {{ $k->evaluated_activities_count }}/{{ $k->total_activities }}
+                    <span class="badge badge-light border text-dark font-weight-bold ml-1">
+                      {{ $k->evaluated_activities_count }}/{{ $k->total_activities }} Sesi
                     </span>
                   </div>
                 </td>
@@ -123,7 +126,7 @@
               </tr>
             @empty
               <tr>
-                <td colspan="4" class="text-center text-muted py-4">Belum ada data evaluasi.</td>
+                <td colspan="5" class="text-center text-muted py-4">Belum ada data evaluasi.</td>
               </tr>
             @endforelse
           </tbody>

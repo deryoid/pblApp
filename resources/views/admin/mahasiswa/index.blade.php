@@ -9,7 +9,7 @@
             <p class="text-secondary small mb-0 font-weight-500">Master bank data mahasiswa program studi. Data dapat diimport via Excel/CSV dan disesuaikan langsung oleh mahasiswa.</p>
         </div>
         <div class="mt-2 mt-sm-0 d-flex flex-wrap" style="gap: 0.5rem;">
-            <div class="badge badge-light border px-2.5 py-1.5 text-dark font-weight-600">
+            <div class="badge badge-light border px-3 py-2 text-dark font-weight-600">
                 <i class="fas fa-user-graduate mr-1 text-primary" aria-hidden="true"></i> Total Data: {{ $data->count() }}
             </div>
             <div class="badge-status-linked">
@@ -51,15 +51,15 @@
                 <table class="table table-bordered table-hover small" id="dataTable" width="100%" cellspacing="0">
                     <thead>
                         <tr>
-                            <th class="text-center" style="width: 45px;">No</th>
-                            <th>Angkatan</th>
-                            <th>NIM</th>
+                            <th class="text-center no-sort" style="width: 45px;">No</th>
+                            <th class="text-center" style="width: 90px;">Angkatan</th>
+                            <th style="width: 120px;">NIM</th>
                             <th>Nama Mahasiswa (Bank Data)</th>
-                            <th>Kelas</th>
+                            <th style="width: 100px;">Kelas</th>
                             <th>Akun Pengguna</th>
-                            <th class="text-center">Status Akun</th>
-                            <th class="text-center">Atur Sandi</th>
-                            <th class="text-center align-middle" style="width: 120px;">
+                            <th class="text-center" style="width: 130px;">Status Akun</th>
+                            <th class="text-center no-sort" style="width: 100px;">Atur Sandi</th>
+                            <th class="text-center align-middle no-sort" style="width: 130px;">
                                 <i class="fas fa-cogs fa-sm" aria-hidden="true"></i>
                             </th>
                         </tr>
@@ -72,7 +72,7 @@
                             <td class="align-middle text-nowrap text-center font-weight-bold">
                                 {{ $m->angkatan ?? '-' }}
                             </td>
-                            <td class="align-middle font-weight-bold text-nowrap">{{ $m->nim ?? '-' }}</td>
+                            <td class="align-middle font-weight-bold text-nowrap text-primary">{{ $m->nim ?? '-' }}</td>
                             <td class="align-middle font-weight-500">
                                 <div class="text-dark font-weight-600">{{ $m->nama_mahasiswa }}</div>
                                 @if($m->no_hp || $m->email_kampus)
@@ -116,7 +116,17 @@
                                 @if($u)
                                 <form action="{{ route('user.reset-password', $u) }}" method="POST" class="m-0 d-inline">
                                     @csrf
-                                    <button type="submit" class="btn btn-xs btn-outline-warning text-nowrap" aria-label="Reset kata sandi akun {{ $m->nama_mahasiswa }}" title="Reset Password Akun">
+                                    <button type="button" class="btn btn-xs btn-outline-warning text-nowrap"
+                                        onclick="var form = this.closest('form');
+                                        Swal.fire({
+                                            title: 'Reset Kata Sandi?',
+                                            text: 'Kata sandi akun {{ $m->nama_mahasiswa }} akan diatur ulang menjadi default ({{ $u->username }}@pbl).',
+                                            icon: 'warning',
+                                            showCancelButton: true,
+                                            confirmButtonText: 'Ya, Reset',
+                                            cancelButtonText: 'Batal'
+                                        }).then((result) => { if (result.isConfirmed) form.submit(); });"
+                                        aria-label="Reset kata sandi akun {{ $m->nama_mahasiswa }}" title="Reset Password Akun">
                                         <i class="fas fa-key mr-1" aria-hidden="true"></i> Reset
                                     </button>
                                 </form>
@@ -128,7 +138,7 @@
                             {{-- AKSI --}}
                             <td class="text-center align-middle text-nowrap">
                                 <div class="table-action-group">
-                                    {{-- Modal Detail Biodata --}}
+                                    {{-- Modal Detail Biodata Trigger --}}
                                     <button type="button" class="btn btn-sm btn-outline-primary btn-action-icon" data-toggle="modal" data-target="#modalDetail{{ $m->id }}" aria-label="Lihat detail biodata {{ $m->nama_mahasiswa }}" title="Lihat Detail Biodata">
                                         <i class="fas fa-eye fa-sm" aria-hidden="true"></i>
                                     </button>
@@ -160,100 +170,6 @@
                                         </button>
                                     </form>
                                 </div>
-
-                                {{-- MODAL DETAIL BIODATA --}}
-                                <div class="modal fade" id="modalDetail{{ $m->id }}" tabindex="-1" role="dialog" aria-labelledby="modalLabel{{ $m->id }}" aria-hidden="true">
-                                    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
-                                        <div class="modal-content text-left">
-                                            <div class="modal-header bg-light">
-                                                <h2 class="modal-title font-weight-bold h5 mb-0" id="modalLabel{{ $m->id }}">
-                                                    <i class="fas fa-id-card text-primary mr-2" aria-hidden="true"></i>Detail Biodata Mahasiswa
-                                                </h2>
-                                                <button type="button" class="close" data-dismiss="modal" aria-label="Tutup dialog detail">
-                                                    <span aria-hidden="true">&times;</span>
-                                                </button>
-                                            </div>
-                                            <div class="modal-body p-4">
-                                                <div class="row">
-                                                    <div class="col-md-6 mb-3">
-                                                        <strong class="text-muted d-block small">Nama Mahasiswa</strong>
-                                                        <span class="font-weight-bold h6 text-dark">{{ $m->nama_mahasiswa }}</span>
-                                                    </div>
-                                                    <div class="col-md-3 mb-3">
-                                                        <strong class="text-muted d-block small">NIM</strong>
-                                                        <span class="font-weight-bold text-dark">{{ $m->nim ?? '-' }}</span>
-                                                    </div>
-                                                    <div class="col-md-3 mb-3">
-                                                        <strong class="text-muted d-block small">Tahun Angkatan</strong>
-                                                        <span class="badge badge-info px-2 py-1">{{ $m->angkatan ?? '-' }}</span>
-                                                    </div>
-                                                </div>
-
-                                                <hr class="my-2">
-
-                                                <div class="row">
-                                                    <div class="col-md-4 mb-3">
-                                                        <strong class="text-muted d-block small">Kelas Akademik</strong>
-                                                        <span>{{ $m->kelas->kelas ?? 'Belum ditentukan' }}</span>
-                                                    </div>
-                                                    <div class="col-md-4 mb-3">
-                                                        <strong class="text-muted d-block small">NIK (Kependudukan)</strong>
-                                                        <span>{{ $m->nik ?? '-' }}</span>
-                                                    </div>
-                                                    <div class="col-md-4 mb-3">
-                                                        <strong class="text-muted d-block small">Jenis Kelamin</strong>
-                                                        <span>{{ $m->jenis_kelamin_text }}</span>
-                                                    </div>
-                                                </div>
-
-                                                <div class="row">
-                                                    <div class="col-md-4 mb-3">
-                                                        <strong class="text-muted d-block small">Agama</strong>
-                                                        <span>{{ $m->agama ?? '-' }}</span>
-                                                    </div>
-                                                    <div class="col-md-4 mb-3">
-                                                        <strong class="text-muted d-block small">Tempat, Tanggal Lahir</strong>
-                                                        <span>
-                                                            {{ $m->tempat_lahir ?? '-' }},
-                                                            {{ $m->tanggal_lahir ? $m->tanggal_lahir->format('d/m/Y') : '-' }}
-                                                        </span>
-                                                    </div>
-                                                    <div class="col-md-4 mb-3">
-                                                        <strong class="text-muted d-block small">Nama Ibu Kandung</strong>
-                                                        <span>{{ $m->nama_ibu ?? '-' }}</span>
-                                                    </div>
-                                                </div>
-
-                                                <div class="row">
-                                                    <div class="col-md-6 mb-3">
-                                                        <strong class="text-muted d-block small">Nomor Telepon / WhatsApp</strong>
-                                                        <span>{{ $m->no_hp ?? ($u?->no_hp ?? '-') }}</span>
-                                                    </div>
-                                                    <div class="col-md-6 mb-3">
-                                                        <strong class="text-muted d-block small">Email Kampus</strong>
-                                                        <span>{{ $m->email_kampus ?? ($u?->email ?? '-') }}</span>
-                                                    </div>
-                                                </div>
-
-                                                <div class="mb-3">
-                                                    <strong class="text-muted d-block small">Alamat Lengkap / Domisili</strong>
-                                                    <span>{{ $m->alamat ?? '-' }}</span>
-                                                </div>
-
-                                                <div class="alert alert-light border mb-0 small">
-                                                    <i class="fas fa-user-circle mr-1 text-primary"></i>
-                                                    Akun Sistem: <strong>{{ $u ? $u->username.' ('.$u->email.')' : 'Belum Terdaftar / Belum Diklaim' }}</strong>
-                                                </div>
-                                            </div>
-                                            <div class="modal-footer bg-light py-2">
-                                                <a href="{{ route('mahasiswa.edit', $m) }}" class="btn btn-primary btn-sm">
-                                                    <i class="fas fa-edit mr-1"></i> Edit Mahasiswa
-                                                </a>
-                                                <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Tutup</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
                             </td>
                         </tr>
                         @empty
@@ -282,4 +198,101 @@
     </div>
 
 </div>
+
+{{-- MODALS BIODATA DILETAKKAN DI LUAR TABEL AGAR TIDAK MENGGANGGU PENCARIAN & LAYOUT DATATABLES --}}
+@foreach($data as $m)
+@php $u = $m->user; @endphp
+<div class="modal fade" id="modalDetail{{ $m->id }}" tabindex="-1" role="dialog" aria-labelledby="modalLabel{{ $m->id }}" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content text-left">
+            <div class="modal-header bg-light">
+                <h2 class="modal-title font-weight-bold h5 mb-0" id="modalLabel{{ $m->id }}">
+                    <i class="fas fa-id-card text-primary mr-2" aria-hidden="true"></i>Detail Biodata Mahasiswa
+                </h2>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Tutup dialog detail">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <strong class="text-muted d-block small">Nama Mahasiswa</strong>
+                        <span class="font-weight-bold h6 text-dark">{{ $m->nama_mahasiswa }}</span>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <strong class="text-muted d-block small">NIM</strong>
+                        <span class="font-weight-bold text-dark">{{ $m->nim ?? '-' }}</span>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <strong class="text-muted d-block small">Tahun Angkatan</strong>
+                        <span class="badge badge-info px-2 py-1">{{ $m->angkatan ?? '-' }}</span>
+                    </div>
+                </div>
+
+                <hr class="my-2">
+
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <strong class="text-muted d-block small">Kelas Akademik</strong>
+                        <span>{{ $m->kelas->kelas ?? 'Belum ditentukan' }}</span>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <strong class="text-muted d-block small">NIK (Kependudukan)</strong>
+                        <span>{{ $m->nik ?? '-' }}</span>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <strong class="text-muted d-block small">Jenis Kelamin</strong>
+                        <span>{{ $m->jenis_kelamin_text }}</span>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <strong class="text-muted d-block small">Agama</strong>
+                        <span>{{ $m->agama ?? '-' }}</span>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <strong class="text-muted d-block small">Tempat, Tanggal Lahir</strong>
+                        <span>
+                            {{ $m->tempat_lahir ?? '-' }},
+                            {{ $m->tanggal_lahir ? $m->tanggal_lahir->format('d/m/Y') : '-' }}
+                        </span>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <strong class="text-muted d-block small">Nama Ibu Kandung</strong>
+                        <span>{{ $m->nama_ibu ?? '-' }}</span>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <strong class="text-muted d-block small">Nomor Telepon / WhatsApp</strong>
+                        <span>{{ $m->no_hp ?? ($u?->no_hp ?? '-') }}</span>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <strong class="text-muted d-block small">Email Kampus</strong>
+                        <span>{{ $m->email_kampus ?? ($u?->email ?? '-') }}</span>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <strong class="text-muted d-block small">Alamat Lengkap / Domisili</strong>
+                    <span>{{ $m->alamat ?? '-' }}</span>
+                </div>
+
+                <div class="alert alert-light border mb-0 small">
+                    <i class="fas fa-user-circle mr-1 text-primary"></i>
+                    Akun Sistem: <strong>{{ $u ? $u->username.' ('.$u->email.')' : 'Belum Terdaftar / Belum Diklaim' }}</strong>
+                </div>
+            </div>
+            <div class="modal-footer bg-light py-2">
+                <a href="{{ route('mahasiswa.edit', $m) }}" class="btn btn-primary btn-sm">
+                    <i class="fas fa-edit mr-1"></i> Edit Mahasiswa
+                </a>
+                <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+@endforeach
 @endsection
