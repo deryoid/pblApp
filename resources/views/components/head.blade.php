@@ -64,7 +64,7 @@
             box-shadow: 4px 0 24px rgba(0, 0, 0, 0.25) !important;
             border-right: 1px solid rgba(255, 255, 255, 0.07) !important;
             transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-            z-index: 1040;
+            z-index: 20;
             display: flex;
             flex-direction: column;
         }
@@ -837,20 +837,116 @@
             color: #dc2626 !important;
         }
 
-        /* Stacking context safety for page contents */
-        #content-wrapper {
-            position: relative;
-            z-index: 1;
+        /* ----- Modern Modal Styling & Stacking Context Fixes ----- */
+        .modal {
+            z-index: 1060 !important;
         }
 
-        #content {
-            position: relative;
-            z-index: 1;
+        .modal-backdrop {
+            z-index: 1050 !important;
+            background-color: #0b1120 !important;
         }
 
-        .container-fluid {
-            position: relative;
-            z-index: 1;
+        .modal-backdrop.show {
+            opacity: 0.65 !important;
+            backdrop-filter: blur(4px) !important;
+            -webkit-backdrop-filter: blur(4px) !important;
+        }
+
+        .modal-dialog {
+            margin: 1.75rem auto !important;
+            transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        }
+
+        .modal.fade .modal-dialog {
+            transform: scale(0.96) translateY(-10px) !important;
+        }
+
+        .modal.show .modal-dialog {
+            transform: scale(1) translateY(0) !important;
+        }
+
+        .modal-content {
+            border: 1px solid rgba(0, 0, 0, 0.08) !important;
+            border-radius: 16px !important;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35), 0 10px 20px -5px rgba(0, 0, 0, 0.15) !important;
+            background: #ffffff !important;
+            overflow: hidden !important;
+        }
+
+        .modal-header {
+            padding: 1.15rem 1.5rem !important;
+            border-bottom: 1px solid #f1f5f9 !important;
+            background: #ffffff !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+        }
+
+        .modal-header .modal-title {
+            font-size: 1.1rem !important;
+            font-weight: 700 !important;
+            color: #0f172a !important;
+            letter-spacing: -0.01em;
+            margin: 0 !important;
+        }
+
+        .modal-header .close {
+            margin: 0 !important;
+            padding: 0.35rem 0.6rem !important;
+            color: #64748b !important;
+            font-size: 1.35rem !important;
+            opacity: 0.7 !important;
+            transition: all 0.15s ease !important;
+            border-radius: 8px !important;
+            outline: none !important;
+        }
+
+        .modal-header .close:hover {
+            color: #0f172a !important;
+            opacity: 1 !important;
+            background-color: #f1f5f9 !important;
+            transform: scale(1.05);
+        }
+
+        .modal-body {
+            padding: 1.5rem !important;
+            background: #ffffff !important;
+        }
+
+        .modal-body .form-group label {
+            font-size: 0.8125rem !important;
+            font-weight: 600 !important;
+            color: #334155 !important;
+            margin-bottom: 0.4rem !important;
+        }
+
+        .modal-body .form-control {
+            border-radius: 10px !important;
+            border: 1px solid #cbd5e1 !important;
+            padding: 0.55rem 0.85rem !important;
+            font-size: 0.875rem !important;
+            color: #1e293b !important;
+            background-color: #ffffff !important;
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out !important;
+        }
+
+        .modal-body .form-control:focus {
+            border-color: #3b82f6 !important;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18) !important;
+            background-color: #ffffff !important;
+        }
+
+        .modal-footer {
+            padding: 1rem 1.5rem !important;
+            border-top: 1px solid #f1f5f9 !important;
+            background: #f8fafc !important;
+            border-bottom-left-radius: 16px !important;
+            border-bottom-right-radius: 16px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: flex-end !important;
+            gap: 0.5rem !important;
         }
 
         /* ----- Modern Cards ----- */
@@ -1482,7 +1578,7 @@
             border: 1px solid var(--border-color) !important;
             border-radius: 10px !important;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
-            z-index: 1060 !important;
+            z-index: 1075 !important;
             overflow: hidden;
         }
 

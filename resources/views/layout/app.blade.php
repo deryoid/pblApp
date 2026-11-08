@@ -71,6 +71,17 @@
     @stack('scripts')
     @include('sweetalert::alert')
 
+    <!-- Modal Stacking Context & Backdrop Safety -->
+    <script>
+        $(document).ready(function() {
+            $(document).on('show.bs.modal', '.modal', function() {
+                if (!$(this).parent().is('body')) {
+                    $(this).appendTo('body');
+                }
+            });
+        });
+    </script>
+
     <!-- Mobile Sidebar Backdrop Auto-Close -->
     <script>
         document.addEventListener('click', function(e) {
