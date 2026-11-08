@@ -325,7 +325,37 @@
                     </div>
                 </div>
 
-                @if($errors->any())
+                {{-- Solusi Terbaik Jika Akun Sudah Terdaftar / Duplikat Ditemukan --}}
+                @if(session('existing_user_resolution'))
+                    @php
+                        $res = session('existing_user_resolution');
+                    @endphp
+                    <div class="alert border-0 shadow-sm rounded-lg mb-4 p-3" style="background: #fffbeb; border-left: 4px solid #f59e0b !important;">
+                        <div class="d-flex align-items-start gap-3">
+                            <div style="background: #fef3c7; width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                <i class="fas fa-user-check text-warning" style="font-size: 1.25rem;"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="font-weight-bold text-dark mb-1" style="font-size: 0.95rem;">
+                                    {{ $res['title'] ?? 'Akun Sudah Terdaftar' }}
+                                </h6>
+                                <p class="text-secondary mb-2" style="font-size: 0.825rem; line-height: 1.45;">
+                                    {{ $res['message'] }}
+                                </p>
+                                <div class="d-flex flex-wrap align-items-center gap-2 pt-1">
+                                    <a href="{{ route('login', ['login' => $res['login_key'] ?? '']) }}" class="btn btn-primary btn-sm font-weight-bold px-3 py-2 text-white shadow-sm" style="border-radius: 8px; font-size: 0.8125rem;">
+                                        <i class="fas fa-sign-in-alt mr-1"></i> Masuk Sekarang ke Akun Anda
+                                    </a>
+                                    <a href="{{ route('login') }}" class="btn btn-outline-secondary btn-sm px-3 py-2" style="border-radius: 8px; font-size: 0.8125rem;">
+                                        <i class="fas fa-key mr-1"></i> Halaman Masuk
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
+                @if($errors->any() && !session('existing_user_resolution'))
                     <div class="alert alert-danger py-2 px-3 small rounded-lg mb-3">
                         <ul class="mb-0 pl-3">
                             @foreach($errors->all() as $err)

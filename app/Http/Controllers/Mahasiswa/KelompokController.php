@@ -45,6 +45,7 @@ class KelompokController extends Controller
 
             // Mahasiswa yang tersedia untuk diundang (belum memiliki kelompok pada periode ini)
             $availableStudents = collect();
+            $kelasList = collect();
             if (! $kelompok->isFull()) {
                 $takenMahasiswaIds = DB::table('kelompok_mahasiswa')
                     ->where('periode_id', $kelompok->periode_id)
@@ -59,6 +60,8 @@ class KelompokController extends Controller
                     ->whereNotIn('id', $pendingInvitedIds)
                     ->orderBy('nama_mahasiswa')
                     ->get();
+
+                $kelasList = \App\Models\Kelas::orderBy('kelas')->get(['id', 'kelas']);
             }
 
             return view('mahasiswa.kelompok.index', compact(
@@ -66,7 +69,8 @@ class KelompokController extends Controller
                 'activePeriode',
                 'isKetua',
                 'sentInvitations',
-                'availableStudents'
+                'availableStudents',
+                'kelasList'
             ));
         }
 
@@ -84,10 +88,13 @@ class KelompokController extends Controller
                 ->get();
         }
 
+        $nextKelompokNumber = Kelompok::getNextNumberForPeriode($periodeId ?? 0);
+
         return view('mahasiswa.kelompok.index', compact(
             'kelompok',
             'activePeriode',
-            'incomingInvitations'
+            'incomingInvitations',
+            'nextKelompokNumber'
         ));
     }
 
@@ -130,9 +137,11 @@ class KelompokController extends Controller
             'skema_kategori.in' => 'Skema kategori harus salah satu dari: Internal, External, Hibah/Penelitian, Lomba.',
         ]);
 
-        DB::transaction(function () use ($validated, $activePeriode, $mahasiswa, $user) {
+        $formattedNamaKelompok = Kelompok::formatNamaKelompok($activePeriode->id, $validated['nama_kelompok']);
+
+        DB::transaction(function () use ($validated, $formattedNamaKelompok, $activePeriode, $mahasiswa, $user) {
             $kelompok = Kelompok::create([
-                'nama_kelompok' => $validated['nama_kelompok'],
+                'nama_kelompok' => $formattedNamaKelompok,
                 'skema_kategori' => $validated['skema_kategori'],
                 'periode_id' => $activePeriode->id,
                 'semester' => $validated['semester'] ?? $mahasiswa->semester ?? 1,

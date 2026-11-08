@@ -42,7 +42,7 @@ class ProjectListPolicy
         }
         $pid = $kelompok->periode_id ?? optional($periodeAktif)->id;
 
-        return $list->kelompok_id === $kelompok->id && ($pid ? $list->periode_id === $pid : true);
+        return $list->kelompok_id === $kelompok->id && ($list->periode_id && $pid ? $list->periode_id === $pid : true);
     }
 
     public function delete(User $user, ProjectList $list): bool

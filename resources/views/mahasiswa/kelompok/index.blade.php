@@ -173,6 +173,24 @@
                         @else
                             <form action="{{ route('mahasiswa.kelompok.invite') }}" method="POST">
                                 @csrf
+
+                                {{-- Filter Kelas --}}
+                                <div class="form-group mb-3">
+                                    <label for="filter_kelas" class="font-weight-bold small text-dark d-flex align-items-center justify-content-between">
+                                        <span><i class="fas fa-filter text-primary mr-1"></i> Filter Kelas Rekan:</span>
+                                        <span class="badge badge-light border text-primary" id="count_available_students">
+                                            {{ $availableStudents->count() }} Mahasiswa Tersedia
+                                        </span>
+                                    </label>
+                                    <select id="filter_kelas" class="form-control form-control-sm">
+                                        <option value="">-- Semua Kelas (Tampilkan Semua) --</option>
+                                        @foreach(($kelasList ?? []) as $k)
+                                            <option value="{{ $k->id }}">Kelas {{ $k->kelas }}</option>
+                                        @endforeach
+                                    </select>
+                                    <small class="text-muted d-block mt-1">Saring rekan mahasiswa berdasarkan kelas sebelum memilih.</small>
+                                </div>
+
                                 <div class="form-group mb-3">
                                     <label for="mahasiswa_id" class="font-weight-bold small text-dark">
                                         Pilih Mahasiswa yang Belum Memiliki Kelompok <span class="text-danger">*</span>
@@ -180,7 +198,7 @@
                                     <select name="mahasiswa_id" id="mahasiswa_id" class="form-control select2 @error('mahasiswa_id') is-invalid @enderror" required style="width:100%;">
                                         <option value="">-- Cari Nama atau NIM Mahasiswa --</option>
                                         @foreach($availableStudents as $avail)
-                                            <option value="{{ $avail->id }}">
+                                            <option value="{{ $avail->id }}" data-kelas="{{ $avail->kelas_id }}">
                                                 {{ $avail->nama_mahasiswa }} (NIM: {{ $avail->nim }} - {{ $avail->kelas?->kelas ?? 'Kelas -' }})
                                             </option>
                                         @endforeach
@@ -360,11 +378,29 @@
                             @csrf
 
                             <div class="form-group mb-3">
-                                <label for="nama_kelompok" class="font-weight-bold small text-dark">
-                                    Nama Kelompok <span class="text-danger">*</span>
+                                <label for="nama_kelompok" class="font-weight-bold small text-dark d-flex align-items-center justify-content-between">
+                                    <span>Nama Kelompok <span class="text-danger">*</span></span>
+                                    <span class="badge badge-primary px-2 py-1 shadow-sm font-weight-bold">
+                                        Nomor: Kelompok {{ $nextKelompokNumber ?? 1 }}
+                                    </span>
                                 </label>
-                                <input type="text" name="nama_kelompok" id="nama_kelompok" class="form-control @error('nama_kelompok') is-invalid @enderror" placeholder="Contoh: Kelompok Inovasi AI" value="{{ old('nama_kelompok') }}" required>
-                                @error('nama_kelompok') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text font-weight-bold bg-primary text-white border-primary shadow-sm" id="kelompokPrefix">
+                                            Kelompok {{ $nextKelompokNumber ?? 1 }} -
+                                        </span>
+                                    </div>
+                                    <input type="text" name="nama_kelompok" id="nama_kelompok" class="form-control @error('nama_kelompok') is-invalid @enderror" placeholder="Ketikkan Nama Kelompok (misal: CyberGuard / Inovasi AI)" value="{{ old('nama_kelompok') }}" required>
+                                </div>
+                                @error('nama_kelompok') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                                <div class="d-flex align-items-center justify-content-between mt-2 flex-wrap">
+                                    <small class="text-muted">
+                                        <i class="fas fa-info-circle text-primary mr-1"></i>Nomor kelompok dibuat urut otomatis sesuai urutan yang masuk pertama kali ke database.
+                                    </small>
+                                    <span class="badge badge-light border text-primary small py-1 px-2 mt-1 mt-md-0 shadow-sm" id="kelompokLivePreview">
+                                        Pratinjau: <strong>Kelompok {{ $nextKelompokNumber ?? 1 }}</strong>
+                                    </span>
+                                </div>
                             </div>
 
                             <div class="form-group mb-3">
@@ -421,3 +457,62 @@
     @endif
 </div>
 @endsection
+
+@push('scripts')
+<script>
+$(document).ready(function() {
+    // 1. Inisialisasi Select2 untuk dropdown pemilihan mahasiswa
+    if (window.jQuery && jQuery().select2) {
+        $('#mahasiswa_id').select2({
+            width: '100%',
+            placeholder: '-- Cari Nama atau NIM Mahasiswa --',
+            allowClear: true
+        });
+    }
+
+    // 2. Filter Berdasarkan Kelas Rekan Mahasiswa
+    var rawMhsOptions = [];
+    $('#mahasiswa_id option').each(function() {
+        var val = $(this).val();
+        if (val) {
+            rawMhsOptions.push({
+                id: val,
+                text: $(this).text().trim(),
+                kelasId: $(this).data('kelas') ? String($(this).data('kelas')) : ''
+            });
+        }
+    });
+
+    $('#filter_kelas').on('change', function() {
+        var selectedKelas = $(this).val() ? String($(this).val()) : '';
+        var filtered = rawMhsOptions.filter(function(item) {
+            return !selectedKelas || item.kelasId === selectedKelas;
+        });
+
+        var $select = $('#mahasiswa_id');
+        $select.empty().append('<option value="">-- Cari Nama atau NIM Mahasiswa --</option>');
+        filtered.forEach(function(item) {
+            $select.append(new Option(item.text, item.id, false, false));
+        });
+
+        if ($select.hasClass('select2-hidden-accessible')) {
+            $select.val('').trigger('change');
+        }
+
+        $('#count_available_students').text(filtered.length + ' Mahasiswa Tersedia');
+    });
+
+    // 3. Pratinjau Interaktif Penomoran Nama Kelompok
+    var nextKelompokNum = "{{ $nextKelompokNumber ?? 1 }}";
+    $('#nama_kelompok').on('input', function() {
+        var raw = $(this).val().trim();
+        var cleaned = raw.replace(/^Kelompok\s*\d*\s*[-:]?\s*/i, '');
+        if (cleaned.length > 0) {
+            $('#kelompokLivePreview').html('Pratinjau: <strong>Kelompok ' + nextKelompokNum + ' - ' + cleaned + '</strong>');
+        } else {
+            $('#kelompokLivePreview').html('Pratinjau: <strong>Kelompok ' + nextKelompokNum + '</strong>');
+        }
+    });
+});
+</script>
+@endpush

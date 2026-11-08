@@ -112,6 +112,14 @@ class AktivitasListController extends Controller
         }
 
         DB::transaction(function () use ($uuids, $kelompok, $pid) {
+            // Pass 1: Hindari tabrakan unique constraint
+            foreach ($uuids as $idx => $uuid) {
+                AktivitasList::where('kelompok_id', $kelompok->id)
+                    ->where('periode_id', $pid)
+                    ->where('uuid', $uuid)
+                    ->update(['position' => $idx + 10000]);
+            }
+            // Pass 2: Tetapkan posisi final
             foreach ($uuids as $idx => $uuid) {
                 AktivitasList::where('kelompok_id', $kelompok->id)
                     ->where('periode_id', $pid)

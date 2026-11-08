@@ -21,7 +21,14 @@ class ProyekController extends Controller
         if (! $kelompok) {
             $board = null;
 
-            return view('mahasiswa.proyek.index', compact('kelompok', 'periodeAktif', 'board'));
+            return view('mahasiswa.proyek.index', [
+                'kelompok' => null,
+                'periodeAktif' => $periodeAktif,
+                'board' => null,
+                'lists' => [],
+                'mataKuliahList' => collect(),
+                'kelompokSemester' => 1,
+            ]);
         }
 
         $mhs = Mahasiswa::where('user_id', Auth::id())->first();
@@ -36,14 +43,13 @@ class ProyekController extends Controller
         // Muat list (kolom) dinamis dan kartu per list berdasarkan kelompok+periode
         $pid = $kelompok->periode_id ?? optional($periodeAktif)->id;
         $lists = ProjectList::where('kelompok_id', $kelompok->id)
-            ->where('periode_id', $pid)
+            ->when($pid, fn ($q) => $q->where(fn ($sub) => $sub->where('periode_id', $pid)->orWhereNull('periode_id')))
             ->orderBy('position')
             ->get()
-            ->map(function ($list) use ($kelompok, $pid) {
+            ->map(function ($list) use ($kelompok) {
                 $cards = ProjectCard::with(['createdBy', 'updatedBy', 'mataKuliahs.dosenPengampu'])
                     ->where('list_id', $list->id)
                     ->where('kelompok_id', $kelompok->id)
-                    ->where('periode_id', $pid)
                     ->orderBy('position')
                     ->orderBy('id')
                     ->get()
@@ -136,8 +142,8 @@ class ProyekController extends Controller
             return response()->json(['status' => 'no_group'], 403);
         }
 
-        $card = ProjectCard::where('uuid', $request->card_id)
-            ->where('kelompok_id', $kelompok->id)
+        $card = ProjectCard::where('kelompok_id', $kelompok->id)
+            ->where(fn ($q) => $q->where('uuid', $request->card_id)->orWhere('id', $request->card_id))
             ->first();
         if (! $card) {
             return response()->json(['status' => 'not_found'], 404);
@@ -145,7 +151,9 @@ class ProyekController extends Controller
         $this->authorize('update', $card);
 
         $fromListId = $card->list_id;
-        $toList = \App\Models\ProjectList::where('uuid', $request->to_list)->first();
+        $toList = \App\Models\ProjectList::where('kelompok_id', $kelompok->id)
+            ->where(fn ($q) => $q->where('uuid', $request->to_list)->orWhere('id', $request->to_list))
+            ->first();
         if (! $toList) {
             return response()->json(['status' => 'invalid_list'], 422);
         }

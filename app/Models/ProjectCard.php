@@ -21,6 +21,18 @@ class ProjectCard extends Model
 
     protected $guarded = ['id'];
 
+    public function getRouteKeyName(): string
+    {
+        return 'uuid';
+    }
+
+    public function resolveRouteBinding($value, $field = null)
+    {
+        return $this->where($field ?? 'uuid', $value)
+            ->orWhere('id', $value)
+            ->first() ?? abort(404);
+    }
+
     public function getProposalUrlAttribute(): ?string
     {
         return $this->proposal_file_path ? asset('storage/'.$this->proposal_file_path) : null;
@@ -109,10 +121,5 @@ class ProjectCard extends Model
     public function penilaianDosen(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(\App\Models\PenilaianProyekDosen::class, 'project_card_id');
-    }
-
-    public function getRouteKeyName(): string
-    {
-        return 'uuid';
     }
 }

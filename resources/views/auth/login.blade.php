@@ -363,18 +363,30 @@
                     <p>Sistem Informasi Manajemen Evaluasi & Proyek</p>
                 </div>
 
+                @if(session('account_exists_alert') || request('login'))
+                    <div class="alert alert-info border-0 shadow-sm rounded-lg mb-3" style="background: #eff6ff; border-left: 4px solid #2563eb !important; padding: 0.875rem 1rem;">
+                        <div class="d-flex align-items-start gap-2">
+                            <i class="fas fa-info-circle text-primary mt-1" style="font-size: 1.1rem;"></i>
+                            <div style="font-size: 0.825rem; color: #1e3a8a; line-height: 1.45;">
+                                <strong style="color: #1e40af;">{{ is_array(session('account_exists_alert')) ? (session('account_exists_alert')['title'] ?? 'Akun Terdaftar Ditemukan!') : 'Akun Terdaftar Ditemukan!' }}</strong><br>
+                                {{ is_array(session('account_exists_alert')) ? (session('account_exists_alert')['message'] ?? 'Akun Anda sudah terdaftar di sistem. Silakan masukkan kata sandi Anda untuk melanjutkan.') : 'Akun Anda sudah terdaftar di sistem. Silakan masukkan kata sandi Anda untuk melanjutkan.' }}
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
                 <form method="POST" action="{{ route('login.attempt') }}">
                     @csrf
                     
                     <div class="input-group-custom">
-                        <label class="form-label-custom">Nama Pengguna (Username)</label>
+                        <label class="form-label-custom">Nama Pengguna (NIM / Username / Email)</label>
                         <i class="fas fa-user input-icon" style="top: 38px;"></i>
                         <input 
                             type="text" 
                             name="username" 
                             class="form-control-modern" 
-                            placeholder="Masukkan username Anda" 
-                            value="{{ old('username') }}" 
+                            placeholder="Masukkan NIM, username, atau email Anda" 
+                            value="{{ old('username', request('login', request('username', session('prefill_username', '')))) }}" 
                             required 
                             autofocus
                         >
@@ -471,6 +483,14 @@
                 icon.classList.add('fa-eye');
             }
         };
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const userInput = document.querySelector('input[name="username"]');
+            const passInput = document.getElementById('passwordInput');
+            if (userInput && userInput.value.trim() !== '' && passInput) {
+                passInput.focus();
+            }
+        });
     </script>
 </body>
 </html>

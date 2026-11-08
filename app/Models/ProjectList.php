@@ -34,6 +34,13 @@ class ProjectList extends Model
         return 'uuid';
     }
 
+    public function resolveRouteBinding($value, $field = null)
+    {
+        return $this->where($field ?? 'uuid', $value)
+            ->orWhere('id', $value)
+            ->first() ?? abort(404);
+    }
+
     public function cards()
     {
         return $this->hasMany(ProjectCard::class, 'list_id');

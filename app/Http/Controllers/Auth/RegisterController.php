@@ -54,14 +54,13 @@ class RegisterController extends Controller
 
         $request->validate([
             'nim' => ['required', 'string', 'max:50'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'email' => ['required', 'email', 'max:255'],
             'no_hp' => ['required', 'string', 'max:30'],
             'password' => ['required', 'string', 'min:6', 'confirmed'],
         ], [
             'nim.required' => 'NIM wajib diisi.',
             'email.required' => 'Alamat email wajib diisi.',
             'email.email' => 'Format alamat email tidak valid.',
-            'email.unique' => 'Email ini sudah terdaftar pada akun lain.',
             'no_hp.required' => 'Nomor HP / WhatsApp wajib diisi.',
             'password.required' => 'Kata sandi wajib diisi.',
             'password.min' => 'Kata sandi minimal 6 karakter.',
@@ -77,35 +76,130 @@ class RegisterController extends Controller
             ]);
         }
 
-        // 2. Cek apakah NIM ini sudah memiliki akun pengguna
-        if ($bankMhs->user_id !== null) {
-            return back()->withInput()->withErrors([
-                'nim' => 'NIM '.$nim.' sudah terhubung dengan akun pengguna aktif. Silakan masuk melalui halaman login.',
+        // 2. Cek apakah NIM ini sudah memiliki akun pengguna aktif (di bank data atau di users)
+        $existingUserByNim = $bankMhs->user_id
+            ? User::find($bankMhs->user_id)
+            : User::where('username', $nim)->first();
+
+        if ($existingUserByNim || $bankMhs->user_id !== null) {
+            $userFound = $existingUserByNim ?: User::where('username', $nim)->first();
+            $loginKey = $userFound?->username ?: $nim;
+
+            $resolution = [
+                'title' => 'Akun dengan NIM Ini Sudah Terdaftar!',
+                'message' => 'NIM '.$nim.' ('.$bankMhs->nama_mahasiswa.') sudah memiliki akun pengguna aktif di sistem PBL. Anda tidak perlu mendaftar ulang. Silakan langsung masuk menggunakan NIM atau email Anda.',
+                'login_key' => $loginKey,
+                'email' => $userFound?->email,
+                'nama' => $bankMhs->nama_mahasiswa,
+            ];
+
+            Alert::info(
+                'Akun Sudah Terdaftar',
+                'NIM '.$nim.' sudah terdaftar atas nama '.$bankMhs->nama_mahasiswa.'. Silakan masuk langsung dengan akun Anda.'
+            )->autoClose(8000);
+
+            return back()->withInput()->with('existing_user_resolution', $resolution)->withErrors([
+                'nim' => 'NIM '.$nim.' sudah terhubung dengan akun pengguna aktif ('.$bankMhs->nama_mahasiswa.'). Silakan masuk melalui halaman login.',
             ]);
         }
 
-        // 3. Cek apakah username NIM sudah dipakai di tabel users
+        // 3. Cek apakah alamat email sudah digunakan di tabel users
+        $existingUserByEmail = User::where('email', $email)->first();
+
+        if ($existingUserByEmail) {
+            // Skenario A: Auto-link Google OAuth / Unlinked Student
+            // Hanya berlaku jika akun dibuat via Google OAuth dan belum memiliki NIM resmi di Bank Data
+            $userMahasiswa = $existingUserByEmail->mahasiswa;
+            $canAutoLink = ($existingUserByEmail->role === 'mahasiswa' && $bankMhs->user_id === null)
+                && (
+                    $existingUserByEmail->google_id !== null
+                    && (empty($userMahasiswa) || empty($userMahasiswa->nim))
+                );
+
+            if ($canAutoLink) {
+                DB::transaction(function () use ($existingUserByEmail, $bankMhs, $nim, $email, $noHp, $request) {
+                    // Hapus record mahasiswa dummy tanpa NIM yang mungkin dibuat saat Google login sebelumnya
+                    if ($existingUserByEmail->mahasiswa && $existingUserByEmail->mahasiswa->id !== $bankMhs->id && empty($existingUserByEmail->mahasiswa->nim)) {
+                        $existingUserByEmail->mahasiswa->delete();
+                    }
+
+                    $existingUserByEmail->update([
+                        'nama_user' => $bankMhs->nama_mahasiswa,
+                        'username' => $nim,
+                        'no_hp' => $noHp,
+                        'password' => Hash::make($request->password),
+                        'role' => 'mahasiswa',
+                        'email_verified_at' => $existingUserByEmail->email_verified_at ?: now(),
+                    ]);
+
+                    $bankMhs->user_id = $existingUserByEmail->id;
+                    $bankMhs->email_kampus = $bankMhs->email_kampus ?: $email;
+                    $bankMhs->is_profile_complete = ! empty($bankMhs->kelas_id);
+                    $bankMhs->save();
+                });
+
+                Auth::login($existingUserByEmail);
+                $request->session()->regenerate();
+
+                Alert::success(
+                    'Sinkronisasi Akun Berhasil!',
+                    'Akun Anda dengan email '.$email.' berhasil disinkronkan dan ditautkan dengan Bank Data Mahasiswa (NIM '.$nim.'). Selamat datang, '.$bankMhs->nama_mahasiswa.'!'
+                )->autoClose(7000);
+
+                return redirect()->to('/mahasiswa');
+            }
+
+            // Skenario B: Email sudah terdaftar pada akun lain yang sudah aktif
+            $resolution = [
+                'title' => 'Email Ini Sudah Terdaftar!',
+                'message' => 'Alamat email '.$email.' sudah terdaftar pada akun dengan username "'.$existingUserByEmail->username.'" ('.$existingUserByEmail->nama_user.'). Jika ini akun Anda, silakan masuk ke akun tersebut.',
+                'login_key' => $existingUserByEmail->username,
+                'email' => $email,
+                'nama' => $existingUserByEmail->nama_user,
+            ];
+
+            Alert::warning(
+                'Email Sudah Terdaftar',
+                'Email '.$email.' sudah terdaftar pada akun '.$existingUserByEmail->username.'. Silakan gunakan akun tersebut untuk masuk.'
+            )->autoClose(8000);
+
+            return back()->withInput()->with('existing_user_resolution', $resolution)->withErrors([
+                'email' => 'Email ini sudah terdaftar pada akun '.$existingUserByEmail->username.'. Silakan login dengan akun tersebut atau gunakan email aktif lainnya.',
+            ]);
+        }
+
+        // 4. Cek apakah username NIM sudah dipakai di tabel users
         if (User::where('username', $nim)->exists()) {
-            return back()->withInput()->withErrors([
-                'nim' => 'Akun dengan username NIM ini sudah ada di sistem. Silakan login atau hubungi administrator.',
+            $userByNimUsername = User::where('username', $nim)->first();
+            $resolution = [
+                'title' => 'Username NIM Sudah Digunakan!',
+                'message' => 'Username dengan NIM '.$nim.' sudah ada di sistem. Silakan login ke akun Anda.',
+                'login_key' => $nim,
+                'email' => $userByNimUsername?->email,
+                'nama' => $userByNimUsername?->nama_user,
+            ];
+
+            return back()->withInput()->with('existing_user_resolution', $resolution)->withErrors([
+                'nim' => 'Akun dengan username NIM '.$nim.' sudah ada di sistem. Silakan login atau hubungi administrator.',
             ]);
         }
 
-        // 4. Buat akun User dan tautkan ke Bank Data Mahasiswa
+        // 5. Buat akun User baru dan tautkan ke Bank Data Mahasiswa
         $user = DB::transaction(function () use ($bankMhs, $nim, $email, $noHp, $request) {
             $newUser = User::create([
-                'nama_user' => $bankMhs->nama_mahasiswa, // Sesuaikan dengan nama resmi di Bank Data Mahasiswa
+                'nama_user' => $bankMhs->nama_mahasiswa,
                 'username' => $nim,
                 'email' => $email,
                 'no_hp' => $noHp,
                 'password' => Hash::make($request->password),
-                'role' => 'mahasiswa', // Pendaftaran mandiri dikhususkan untuk role mahasiswa
+                'role' => 'mahasiswa',
                 'email_verified_at' => now(),
                 'remember_token' => Str::random(10),
             ]);
 
             // Tautkan data user ke record Bank Data Mahasiswa
             $bankMhs->user_id = $newUser->id;
+            $bankMhs->email_kampus = $bankMhs->email_kampus ?: $email;
             $bankMhs->is_profile_complete = ! empty($bankMhs->kelas_id);
             $bankMhs->save();
 

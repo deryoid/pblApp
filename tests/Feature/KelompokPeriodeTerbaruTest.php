@@ -123,18 +123,19 @@ class KelompokPeriodeTerbaruTest extends TestCase
         $responseP2->assertSee('Formulir Buat Kelompok Baru');
         $responseP2->assertSee('2025/2026 Genap');
 
-        // Mahasiswa A dapat membentuk kelompok baru untuk Periode 2
+        // Mahasiswa A dapat membentuk kelompok baru untuk Periode 2 dengan mengetikkan nama tim
+        // Sistem otomatis membuatkan nomor kelompok sesuai urutan masuk pertama kali ke database (Kelompok 1)
         $storeResponse = $this->actingAs($this->userA)->post(route('mahasiswa.kelompok.store'), [
-            'nama_kelompok' => 'Kelompok Inovasi Baru P2',
+            'nama_kelompok' => 'Inovasi Baru P2',
             'skema_kategori' => 'Internal',
             'semester' => 4,
         ]);
 
         $storeResponse->assertRedirect(route('mahasiswa.kelompok.index'));
 
-        // Pastikan kelompok baru tercatat di database dengan periode_id terbaru (Periode 2)
+        // Pastikan kelompok baru tercatat di database dengan nomor kelompok urut (Kelompok 1 - Inovasi Baru P2)
         $this->assertDatabaseHas('kelompok', [
-            'nama_kelompok' => 'Kelompok Inovasi Baru P2',
+            'nama_kelompok' => 'Kelompok 1 - Inovasi Baru P2',
             'periode_id' => $this->periode2->id,
         ]);
 
@@ -292,5 +293,72 @@ class KelompokPeriodeTerbaruTest extends TestCase
         $riwayatResponse->assertStatus(200);
         $riwayatResponse->assertSee('Kelompok Riset AI P1');
         $riwayatResponse->assertSee('Kelompok Mobile App P2');
+    }
+
+    /**
+     * 5. Saat mengetikkan nama kelompok, nomor kelompok otomatis dibuat urut sesuai yang masuk pertama kali ke database.
+     */
+    public function test_group_number_is_sequentially_assigned_when_entering_name(): void
+    {
+        // Grup ke-1 yang masuk ke database
+        $name1 = Kelompok::formatNamaKelompok($this->periode1->id, 'CyberGuard');
+        $this->assertEquals('Kelompok 1 - CyberGuard', $name1);
+        Kelompok::create([
+            'nama_kelompok' => $name1,
+            'skema_kategori' => 'Internal',
+            'periode_id' => $this->periode1->id,
+        ]);
+
+        // Grup ke-2 yang masuk ke database
+        $name2 = Kelompok::formatNamaKelompok($this->periode1->id, 'AgroTech Innovators');
+        $this->assertEquals('Kelompok 2 - AgroTech Innovators', $name2);
+        Kelompok::create([
+            'nama_kelompok' => $name2,
+            'skema_kategori' => 'External',
+            'periode_id' => $this->periode1->id,
+        ]);
+
+        // Grup ke-3 yang masuk ke database tanpa mengetikkan prefix Kelompok
+        $name3 = Kelompok::formatNamaKelompok($this->periode1->id, 'AI Vision Crew');
+        $this->assertEquals('Kelompok 3 - AI Vision Crew', $name3);
+        Kelompok::create([
+            'nama_kelompok' => $name3,
+            'skema_kategori' => 'Lomba',
+            'periode_id' => $this->periode1->id,
+        ]);
+
+        // Grup ke-4 jika dikosongkan namanya
+        $name4 = Kelompok::formatNamaKelompok($this->periode1->id, '');
+        $this->assertEquals('Kelompok 4', $name4);
+    }
+
+    /**
+     * 6. Form undangan rekan kelompok menyediakan select filter kelas dan opsi mahasiswa dengan data-kelas.
+     */
+    public function test_invitation_form_has_class_filter_select(): void
+    {
+        $kelompok = Kelompok::create([
+            'nama_kelompok' => 'Kelompok 1 - Alpha',
+            'skema_kategori' => 'Internal',
+            'periode_id' => $this->periode1->id,
+            'max_members' => 4,
+            'status_bergabung' => 'terbuka',
+        ]);
+        $kelompok->mahasiswas()->attach($this->mhsA->id, [
+            'role' => 'Ketua',
+            'periode_id' => $this->periode1->id,
+        ]);
+
+        $response = $this->actingAs($this->userA)->get(route('mahasiswa.kelompok.index'));
+        $response->assertStatus(200);
+
+        // Verifikasi elemen select filter kelas
+        $response->assertSee('id="filter_kelas"', false);
+        $response->assertSee('Filter Kelas Rekan');
+        $response->assertSee('Kelas '.$this->kelas->kelas);
+
+        // Verifikasi opsi mahasiswa memiliki data-kelas untuk filter JavaScript
+        $response->assertSee('data-kelas="'.$this->mhsB->kelas_id.'"', false);
+        $response->assertSee($this->mhsB->nama_mahasiswa);
     }
 }

@@ -15,16 +15,25 @@ class ProyekCardController extends Controller
 {
     public function store(Request $request)
     {
-        [$kelompok] = $this->resolveKelompokSaya();
+        [$kelompok, $periodeAktif] = $this->resolveKelompokSaya();
         if (! $kelompok) {
+            Alert::error('Gagal', 'Anda belum tergabung dalam kelompok.');
+
             return back()->withErrors('Anda belum tergabung dalam kelompok.');
         }
         $this->authorize('create', \App\Models\ProjectCard::class);
 
+        if ($request->filled('link_drive_proyek')) {
+            $driveUrl = trim($request->input('link_drive_proyek'));
+            if (! preg_match('~^https?://~i', $driveUrl)) {
+                $request->merge(['link_drive_proyek' => 'https://'.$driveUrl]);
+            }
+        }
+
         $data = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'list' => 'required|string', // uuid list tujuan
+            'list' => 'required|string', // uuid atau id list tujuan
             'labels' => 'nullable|string', // CSV
             // field lama (kompat) & baru (skema revisi)
             'due_date' => 'nullable|date',
@@ -44,7 +53,7 @@ class ProyekCardController extends Controller
             'mata_kuliah_ids.*' => 'exists:mata_kuliah,id',
         ]);
 
-        $skema = $data['skema_pbl'] ?: ($kelompok->skema_kategori ?: 'Internal');
+        $skema = ! empty($data['skema_pbl']) ? $data['skema_pbl'] : ($kelompok->skema_kategori ?: 'Internal');
         $proposalPath = null;
         if ($request->hasFile('proposal_file')) {
             $proposalPath = $request->file('proposal_file')->store('proposals', 'public');
@@ -52,6 +61,8 @@ class ProyekCardController extends Controller
 
         // Syarat wajib proposal jika skema Internal
         if (strtolower($skema) === 'internal' && empty($proposalPath)) {
+            Alert::error('Proposal Wajib', 'Sebelum memulai proyek internal, kelompok wajib mengunggah berkas proposal proyek (PDF/DOC/DOCX).');
+
             return back()->withErrors([
                 'proposal_file' => 'Sebelum memulai proyek internal, kelompok wajib mengunggah berkas proposal proyek (PDF/DOC/DOCX).',
             ])->withInput();
@@ -60,9 +71,13 @@ class ProyekCardController extends Controller
         $labels = $this->parseLabels($data['labels'] ?? null);
 
         // Tentukan list tujuan
-        $list = \App\Models\ProjectList::where('uuid', $data['list'])->first();
+        $list = \App\Models\ProjectList::where('kelompok_id', $kelompok->id)
+            ->where(fn ($q) => $q->where('uuid', $data['list'])->orWhere('id', $data['list']))
+            ->first();
         if (! $list) {
-            return back()->withErrors('List/kolom tidak ditemukan.');
+            Alert::error('Gagal', 'List/kolom tidak ditemukan.');
+
+            return back()->withErrors('List/kolom tidak ditemukan.')->withInput();
         }
 
         // Tentukan position di kolom tujuan (append di akhir)
@@ -71,7 +86,7 @@ class ProyekCardController extends Controller
 
         $createdCard = ProjectCard::create([
             'kelompok_id' => $kelompok->id,
-            'periode_id' => $kelompok->periode_id ?? null,
+            'periode_id' => $kelompok->periode_id ?? optional($periodeAktif)->id,
             'list_id' => $list->id,
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
@@ -91,6 +106,7 @@ class ProyekCardController extends Controller
             'biaya_barang' => $data['biaya_barang'] ?? 0,
             'biaya_jasa' => $data['biaya_jasa'] ?? 0,
             'status_proyek' => $data['status_proyek'] ?? 'Proses',
+            'status' => $data['status_proyek'] ?? 'Proses',
             'link_drive_proyek' => $data['link_drive_proyek'] ?? null,
             'kendala' => $data['kendala'] ?? null,
             'catatan' => $data['catatan'] ?? null,
@@ -112,6 +128,13 @@ class ProyekCardController extends Controller
     {
         [$kelompok] = $this->resolveKelompokSaya();
         $this->authorize('update', $card);
+
+        if ($request->filled('link_drive_proyek')) {
+            $driveUrl = trim($request->input('link_drive_proyek'));
+            if (! preg_match('~^https?://~i', $driveUrl)) {
+                $request->merge(['link_drive_proyek' => 'https://'.$driveUrl]);
+            }
+        }
 
         $data = $request->validate([
             'title' => 'required|string|max:255',
@@ -135,7 +158,7 @@ class ProyekCardController extends Controller
             'mata_kuliah_ids.*' => 'exists:mata_kuliah,id',
         ]);
 
-        $skema = $data['skema_pbl'] ?: ($card->skema_pbl ?: ($kelompok?->skema_kategori ?: 'Internal'));
+        $skema = ! empty($data['skema_pbl']) ? $data['skema_pbl'] : ($card->skema_pbl ?: ($kelompok?->skema_kategori ?: 'Internal'));
         $proposalPath = $card->proposal_file_path;
 
         if ($request->hasFile('proposal_file')) {
@@ -147,6 +170,8 @@ class ProyekCardController extends Controller
 
         // Syarat wajib proposal jika proyek Internal
         if (strtolower($skema) === 'internal' && empty($proposalPath)) {
+            Alert::error('Proposal Wajib', 'Sebelum memulai proyek internal, kelompok wajib mengunggah berkas proposal proyek (PDF/DOC/DOCX).');
+
             return back()->withErrors([
                 'proposal_file' => 'Sebelum memulai proyek internal, kelompok wajib mengunggah berkas proposal proyek (PDF/DOC/DOCX).',
             ])->withInput();
@@ -172,15 +197,15 @@ class ProyekCardController extends Controller
             'biaya_barang' => $data['biaya_barang'] ?? $card->biaya_barang,
             'biaya_jasa' => $data['biaya_jasa'] ?? $card->biaya_jasa,
             'status_proyek' => $data['status_proyek'] ?? $card->status_proyek,
+            'status' => $data['status_proyek'] ?? $card->status,
             'link_drive_proyek' => $data['link_drive_proyek'] ?? $card->link_drive_proyek,
             'kendala' => $data['kendala'] ?? $card->kendala,
             'catatan' => $data['catatan'] ?? $card->catatan,
             'updated_by' => Auth::id(),
         ]);
 
-        if ($request->has('mata_kuliah_ids')) {
-            $card->mataKuliahs()->sync($request->input('mata_kuliah_ids', []));
-        }
+        // Sync mata kuliah (jika form dikirim, update sesuai input, kosong jika tidak dicentang)
+        $card->mataKuliahs()->sync($request->input('mata_kuliah_ids', []));
 
         Alert::toast('Kartu diperbarui.', 'success');
 
@@ -191,6 +216,10 @@ class ProyekCardController extends Controller
     {
         [$kelompok] = $this->resolveKelompokSaya();
         $this->authorize('delete', $card);
+
+        if ($card->proposal_file_path) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($card->proposal_file_path);
+        }
 
         DB::transaction(function () use ($card) {
             $listId = $card->list_id;

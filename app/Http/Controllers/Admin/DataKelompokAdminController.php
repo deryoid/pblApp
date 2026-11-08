@@ -184,51 +184,18 @@ class DataKelompokAdminController extends Controller
 
         try {
             DB::transaction(function () use ($validated, $periodeId, $attach, &$namaKelompok) {
+                $rawInput = ! empty($validated['nama_kelompok']) ? $validated['nama_kelompok'] : null;
+                $nama = Kelompok::formatNamaKelompok($periodeId, $rawInput);
 
-                // jika user MENGISI nama_kelompok → pakai itu
-                if (! empty($validated['nama_kelompok'])) {
-                    $nama = $validated['nama_kelompok'];
-                    $kelompok = Kelompok::create([
-                        'uuid' => (string) Str::uuid(),
-                        'periode_id' => $periodeId,
-                        'nama_kelompok' => $nama,
-                        'skema_kategori' => $validated['skema_kategori'] ?? 'Internal',
-                        'link_drive' => $validated['link_drive'] ?? null,
-                    ]);
-                    $kelompok->mahasiswas()->attach($attach);
-                    $namaKelompok = $nama;
-
-                    return;
-                }
-
-                // kalau KOSONG → auto-generate unik per-periode (dengan retry)
-                $attempt = 0;
-                $maxAttempt = 25;
-                do {
-                    $attempt++;
-                    $n = Kelompok::where('periode_id', $periodeId)->count() + $attempt;
-                    $candidate = 'Kelompok '.$n;
-
-                    try {
-                        $kelompok = Kelompok::create([
-                            'uuid' => (string) Str::uuid(),
-                            'periode_id' => $periodeId,
-                            'nama_kelompok' => $candidate,
-                            'skema_kategori' => $validated['skema_kategori'] ?? 'Internal',
-                            'link_drive' => $validated['link_drive'] ?? null,
-                        ]);
-                        $kelompok->mahasiswas()->attach($attach);
-                        $namaKelompok = $candidate;
-                        break;
-                    } catch (\Illuminate\Database\QueryException $e) {
-                        $msg = strtolower($e->getMessage());
-                        $isUnique = str_contains($msg, 'duplicate') || str_contains($msg, 'unique');
-                        if (! $isUnique || $attempt >= $maxAttempt) {
-                            throw $e;
-                        }
-                        // retry next number
-                    }
-                } while (true);
+                $kelompok = Kelompok::create([
+                    'uuid' => (string) Str::uuid(),
+                    'periode_id' => $periodeId,
+                    'nama_kelompok' => $nama,
+                    'skema_kategori' => $validated['skema_kategori'] ?? 'Internal',
+                    'link_drive' => $validated['link_drive'] ?? null,
+                ]);
+                $kelompok->mahasiswas()->attach($attach);
+                $namaKelompok = $nama;
             });
         } catch (\Illuminate\Database\QueryException $e) {
             // khusus kalau user isi manual dan bentrok unik

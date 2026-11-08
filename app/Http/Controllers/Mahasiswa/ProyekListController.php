@@ -18,6 +18,8 @@ class ProyekListController extends Controller
         $this->authorize('create', ProjectList::class);
         [$kelompok, $periodeAktif] = $this->resolveContext();
         if (! $kelompok) {
+            Alert::error('Gagal', 'Anda belum tergabung dalam kelompok.');
+
             return back()->withErrors('Anda belum tergabung dalam kelompok.');
         }
 
@@ -58,15 +60,15 @@ class ProyekListController extends Controller
     {
         $this->authorize('delete', $list);
         if ($list->cards()->exists()) {
-            return back()->withErrors('Tidak dapat menghapus kolom yang berisi kartu.');
+            Alert::error('Gagal', 'Tidak dapat menghapus kolom yang masih berisi kartu. Pindahkan atau hapus kartu di dalamnya terlebih dahulu.');
+
+            return back()->withErrors('Tidak dapat menghapus kolom yang masih berisi kartu. Pindahkan atau hapus kartu di dalamnya terlebih dahulu.');
         }
         $kid = $list->kelompok_id;
-        $pid = $list->periode_id;
         $pos = $list->position;
-        DB::transaction(function () use ($list, $kid, $pid, $pos) {
+        DB::transaction(function () use ($list, $kid, $pos) {
             $list->delete();
             ProjectList::where('kelompok_id', $kid)
-                ->where('periode_id', $pid)
                 ->where('position', '>', $pos)
                 ->decrement('position');
         });
@@ -77,7 +79,7 @@ class ProyekListController extends Controller
 
     public function reorder(Request $request)
     {
-        [$kelompok, $periodeAktif] = $this->resolveContext();
+        [$kelompok] = $this->resolveContext();
         if (! $kelompok) {
             return response()->json(['status' => 'no_group'], 403);
         }
@@ -87,12 +89,17 @@ class ProyekListController extends Controller
             return response()->json(['status' => 'invalid'], 422);
         }
 
-        $pid = $kelompok->periode_id ?? optional($periodeAktif)->id;
-        DB::transaction(function () use ($ids, $kelompok, $pid) {
+        DB::transaction(function () use ($ids, $kelompok) {
+            // Pass 1: Set ke posisi sementara untuk mencegah tabrakan unique constraint
             foreach ($ids as $idx => $uuid) {
                 ProjectList::where('kelompok_id', $kelompok->id)
-                    ->where('periode_id', $pid)
-                    ->where('uuid', $uuid)
+                    ->where(fn ($q) => $q->where('uuid', $uuid)->orWhere('id', $uuid))
+                    ->update(['position' => $idx + 10000]);
+            }
+            // Pass 2: Set ke posisi final urut
+            foreach ($ids as $idx => $uuid) {
+                ProjectList::where('kelompok_id', $kelompok->id)
+                    ->where(fn ($q) => $q->where('uuid', $uuid)->orWhere('id', $uuid))
                     ->update(['position' => $idx]);
             }
         });

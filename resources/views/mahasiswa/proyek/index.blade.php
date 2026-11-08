@@ -1,6 +1,6 @@
 @extends('layout.app')
 @section('content')
-@push('style')
+@push('styles')
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
@@ -25,6 +25,7 @@
         align-items: flex-start;
         gap: 1.5rem;
         padding: 0.5rem 0.2rem;
+        min-height: 70vh;
       }
 
       /* Board Columns (Lists) */
@@ -32,12 +33,14 @@
         background: #f4f5f7;
         border-radius: 12px;
         width: 320px;
+        min-width: 320px;
         flex-shrink: 0;
         display: flex;
         flex-direction: column;
         max-height: calc(100vh - 160px);
         border: 1px solid #ebecf0;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+        transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1), opacity 0.2s ease;
       }
 
       /* Column Header */
@@ -50,6 +53,10 @@
         position: sticky;
         top: 0;
         z-index: 10;
+        cursor: grab;
+      }
+      .board-col-head:active {
+        cursor: grabbing;
       }
       .board-col-head h6 {
         font-weight: 600;
@@ -63,7 +70,7 @@
         overflow-y: auto;
         overflow-x: hidden;
         flex: 1;
-        min-height: 100px;
+        min-height: 120px;
       }
       .board-list::-webkit-scrollbar {
         width: 6px;
@@ -76,35 +83,73 @@
       /* Board Cards */
       .board-card {
         background: #ffffff;
-        border-radius: 8px;
-        border: 1px solid rgba(9, 30, 66, 0.04);
-        box-shadow: 0 1px 2px rgba(9, 30, 66, 0.15);
+        border-radius: 10px;
+        border: 1px solid rgba(9, 30, 66, 0.08);
+        border-left: 4px solid #4e73df;
+        box-shadow: 0 1px 3px rgba(9, 30, 66, 0.08);
         cursor: grab;
-        transition: all 0.2s ease-in-out;
+        transition: transform 0.18s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.18s cubic-bezier(0.2, 0, 0, 1);
         position: relative;
         overflow: hidden;
+        user-select: none;
       }
       .board-card:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(9, 30, 66, 0.15);
-        border-color: #dfe1e6;
+        box-shadow: 0 6px 14px rgba(9, 30, 66, 0.12);
+        border-color: #cbd5e1;
       }
       .board-card:active {
         cursor: grabbing;
       }
-      .board-card.sortable-ghost {
-        opacity: 0.4;
-        background: #ebecf0;
+
+      /* Sortable drag state */
+      .board-card.sortable-chosen {
+        opacity: 0.95;
+        cursor: grabbing !important;
+        transform: scale(1.02);
+        box-shadow: 0 10px 25px -5px rgba(78, 115, 223, 0.25);
+        z-index: 1000;
       }
+      .board-card.sortable-ghost {
+        opacity: 0.35 !important;
+        background: rgba(78, 115, 223, 0.08) !important;
+        border: 2px dashed #4e73df !important;
+        border-radius: 10px !important;
+        box-shadow: none !important;
+        transform: scale(0.98);
+      }
+      .board-card.sortable-drag,
+      .sortable-fallback {
+        opacity: 1 !important;
+        cursor: grabbing !important;
+        transform: rotate(2deg) scale(1.03) !important;
+        box-shadow: 0 16px 30px rgba(78, 115, 223, 0.3) !important;
+        border-left: 4px solid #4e73df !important;
+        border-radius: 10px !important;
+        z-index: 99999 !important;
+      }
+
+      /* Card Completed */
       .card-completed {
-        background: #fafbfc;
-        border: 1px dashed #c1c7d0;
+        background: linear-gradient(135deg, #ffffff 0%, #f8fbf9 100%) !important;
+        border-left: 4px solid #22a06b !important;
+      }
+      .card-completed::after {
+        content: '✓';
+        position: absolute;
+        top: 4px;
+        right: 8px;
+        color: #22a06b;
+        font-size: 16px;
+        font-weight: bold;
+        opacity: 0.6;
+        pointer-events: none;
       }
 
       /* Card Content Elements */
       .card-title-full {
-        font-size: 0.9rem;
-        font-weight: 500;
+        font-size: 0.92rem;
+        font-weight: 600;
         line-height: 1.4;
         color: #172b4d;
         white-space: normal;
@@ -145,22 +190,23 @@
       .badge-pill {
         padding: 0.3em 0.7em;
         font-weight: 500;
-        border-radius: 4px; /* More modern than full pill */
+        border-radius: 4px;
       }
 
       /* Action Buttons inside Card Header */
       .btn-icon-only {
-        width: 26px;
-        height: 26px;
+        width: 28px;
+        height: 28px;
         padding: 0;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        border-radius: 4px;
+        border-radius: 6px;
         background: transparent;
         color: #6b778c;
-        border: none;
+        border: 1px solid rgba(9, 30, 66, 0.08);
         box-shadow: none;
+        transition: all 0.15s ease;
       }
       .btn-icon-only:hover {
         background: #ebecf0;
@@ -175,7 +221,7 @@
         height: 8px;
         border-radius: 10px;
         background-color: #ebecf0;
-        margin-top: 12px;
+        margin-top: 10px;
         box-shadow: none;
       }
       .progress-bar {
@@ -188,12 +234,66 @@
         font-size: 0.75rem;
         font-weight: 500;
         padding: 0.3rem 0.6rem;
-        border-radius: 4px;
+        border-radius: 6px;
         box-shadow: none;
       }
+      .truncate {
+        max-width: 150px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .x-small { font-size: .75rem; }
+      .text-body-2 { font-size: .88rem; line-height: 1.35; }
+      .clamp-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      .user-chip {
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid rgba(0,0,0,.06);
+        border-radius: 12px;
+        padding: 0 6px 0 2px;
+        background: #fff;
+      }
+      .user-name {
+        max-width: 140px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .user-avatar {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        margin-right: 6px;
+        object-fit: cover;
+      }
+      .border-top-light { border-top: 1px solid #f1f2f4; }
+      .btn-drive { padding: .18rem .5rem; }
+      .labels-wrap { display: flex; flex-wrap: wrap; }
     </style>
 @endpush
 <div class="container-fluid">
+  @if($errors->any())
+    <div class="alert alert-danger border-0 shadow-sm d-flex flex-column p-3 mb-4 rounded-xl alert-dismissible fade show" role="alert">
+      <div class="d-flex align-items-center mb-1">
+        <i class="fas fa-exclamation-circle text-danger mr-2"></i>
+        <strong class="text-danger">Terjadi kesalahan pada formulir proyek:</strong>
+      </div>
+      <ul class="mb-0 pl-4 text-dark small">
+        @foreach($errors->all() as $error)
+          <li>{{ $error }}</li>
+        @endforeach
+      </ul>
+      <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+  @endif
   @php
     if (!function_exists('schemeBadgeClass')) {
       function schemeBadgeClass($skema) {
@@ -307,45 +407,32 @@
               <div
                 class="card board-card shadow-xs mb-2 hover-raise {{ ($card['status_proyek'] ?? '') === 'Selesai' ? 'card-completed' : '' }}"
                 data-card-id="{{ $card['id'] }}"
-                data-title="{{ $card['title'] }}"
+                data-title="{{ e($card['title']) }}"
                 data-title-search="{{ strtolower($card['title']) }}"
-                data-desc="{{ $card['description'] ?? '' }}"
-                data-labels='@json($card['labels'] ?? [])'
-                data-progress="{{ $card['progress'] ?? 0 }}"
-                data-tmulai="{{ $tglMulai ?? '' }}"
-                data-tselesai="{{ $tglSelesai ?? '' }}"
-                data-mitra="{{ $card['nama_mitra'] ?? '' }}"
-                data-kontak="{{ $card['kontak_mitra'] ?? '' }}"
-                data-skema="{{ $card['skema_pbl'] ?? '' }}"
-                data-status="{{ $card['status_proyek'] ?? '' }}"
-                data-bbar="{{ $card['biaya_barang'] ?? '' }}"
-                data-bjas="{{ $card['biaya_jasa'] ?? '' }}"
-                data-drive="{{ $card['link_drive_proyek'] ?? '' }}"
-                data-proposal="{{ $card['proposal_url'] ?? '' }}"
-                data-kendala="{{ e($card['kendala'] ?? '') }}"
-                data-catatan="{{ e($card['catatan'] ?? '') }}"
-                data-matkul-ids='@json($card['mata_kuliah_ids'] ?? [])'
-                              >
+                data-card='@json($card, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP)'
+              >
                 <div class="card-body p-2 d-flex flex-column">
 
                  {{-- HEADER: Status Lock → Aksi (kanan atas) → Judul penuh → Tanggal --}}
                   <div class="d-flex align-items-center mb-1">
                     @if(($card['status_proyek'] ?? '') === 'Selesai')
-                      <span class="badge badge-success mr-2" title="Proyek selesai - tidak dapat diubah">
-                        <i class="fas fa-lock mr-1"></i>Selesai
+                      <span class="badge badge-success mr-2" title="Proyek Selesai">
+                        <i class="fas fa-check-circle mr-1"></i>Selesai
                       </span>
                     @endif
                     <div class="ml-auto d-flex align-items-center">
                       <button type="button"
                               class="btn btn-primary btn-icon-only btn-sm btn-circle btn-edit-card mr-1"
-                              title="Ubah" data-toggle="modal" data-target="#modalEditCard" aria-label="Ubah proyek">
+                              title="Ubah proyek" aria-label="Ubah proyek">
                         <i class="fas fa-edit"></i>
                       </button>
                       {{-- Share Link Penilaian Mitra --}}
                       <button type="button"
-                              class="btn btn-info btn-icon-only btn-sm btn-circle mr-1"
+                              class="btn btn-info btn-icon-only btn-sm btn-circle mr-1 btn-share-mitra"
                               title="Share Link Penilaian Mitra"
-                              onclick="sharePenilaianMitra('{{ $card['id'] }}','{{ addslashes($card['title']) }}')">
+                              data-card-id="{{ $card['id'] }}"
+                              data-card-title="{{ e($card['title']) }}"
+                              aria-label="Share link penilaian mitra">
                         <i class="fas fa-share-alt" aria-hidden="true"></i>
                       </button>
                       <form method="POST"
@@ -354,7 +441,7 @@
                         @csrf @method('DELETE')
                         <button type="button"
                                 class="btn btn-danger btn-icon-only btn-circle btn-sm btn-delete-card"
-                                title="Hapus" aria-label="Hapus proyek">
+                                title="Hapus proyek" aria-label="Hapus proyek">
                           <i class="fas fa-trash"></i>
                         </button>
                       </form>
@@ -454,9 +541,15 @@
                   </div>
 
                   {{-- FOOTER --}}
-                  <div class="d-flex align-items-center x-small mt-auto pt-1 border-top-light">
+                  <div class="d-flex align-items-center x-small mt-auto pt-1 border-top-light flex-wrap">
                     <span class="badge {{ statusBadgeClass($card['status_proyek'] ?? '') }}">{{ $card['status_proyek'] ?? 'Proses' }}</span>
-                    <span class="ml-3 text-muted"><i class="far fa-comment mr-1"></i>{{ $card['comments'] ?? 0 }}</span>
+                    @if(!empty($card['proposal_url']))
+                      <a href="{{ $card['proposal_url'] }}" target="_blank" rel="noopener"
+                         class="ml-2 btn btn-outline-danger btn-sm py-0 px-2 font-weight-bold" title="Lihat Berkas Proposal">
+                        <i class="fas fa-file-pdf mr-1"></i> Proposal
+                      </a>
+                    @endif
+                    <span class="ml-2 text-muted"><i class="far fa-comment mr-1"></i>{{ $card['comments'] ?? 0 }}</span>
                     @if(!empty($card['link_drive_proyek']))
                       <a href="{{ $card['link_drive_proyek'] }}" target="_blank" rel="noopener"
                          class="ml-auto btn btn-outline-dark btn-sm border btn-drive">
@@ -502,28 +595,50 @@
       <form method="POST" action="{{ route('proyek.cards.store') }}" enctype="multipart/form-data">
         @csrf
         <div class="modal-body">
-          <input type="hidden" name="list" id="addCardListId" value="">
-          <div class="form-group"><label>Judul Proyek <span class="text-danger">*</span></label><input name="title" type="text" class="form-control" placeholder="Contoh: Implementasi Sistem Monitoring IOT" required></div>
-          <div class="form-group"><label>Deskripsi Proyek</label><textarea name="description" class="form-control" rows="3" placeholder="Jelaskan ruang lingkup luaran proyek..."></textarea></div>
-          <div class="form-group"><label>Label (pisahkan koma)</label><input name="labels" type="text" class="form-control" placeholder="Internal, Riset, IoT"></div>
-          <div class="form-group"><label>Kontak Mitra (jika External)</label><input name="kontak_mitra" type="text" class="form-control" placeholder="08xxxxxxxx"></div>
+          <input type="hidden" name="list" id="addCardListId" value="{{ old('list') }}">
+          <div class="form-group">
+            <label>Judul Proyek <span class="text-danger">*</span></label>
+            <input name="title" type="text" class="form-control" value="{{ old('title') }}" placeholder="Contoh: Implementasi Sistem Monitoring IOT" required>
+          </div>
+          <div class="form-group">
+            <label>Deskripsi Proyek</label>
+            <textarea name="description" class="form-control" rows="3" placeholder="Jelaskan ruang lingkup luaran proyek...">{{ old('description') }}</textarea>
+          </div>
+          <div class="form-group">
+            <label>Label (pisahkan koma)</label>
+            <input name="labels" type="text" class="form-control" value="{{ old('labels') }}" placeholder="Internal, Riset, IoT">
+          </div>
+          <div class="form-group">
+            <label>Kontak Mitra (jika External)</label>
+            <input name="kontak_mitra" type="text" class="form-control" value="{{ old('kontak_mitra') }}" placeholder="08xxxxxxxx">
+          </div>
           <div class="form-row">
-            <div class="form-group col-md-6"><label>Tanggal Mulai</label><input name="tanggal_mulai" type="date" class="form-control"></div>
-            <div class="form-group col-md-6"><label>Tanggal Selesai</label><input name="tanggal_selesai" type="date" class="form-control"></div>
+            <div class="form-group col-md-6">
+              <label>Tanggal Mulai</label>
+              <input name="tanggal_mulai" type="date" class="form-control" value="{{ old('tanggal_mulai') }}">
+            </div>
+            <div class="form-group col-md-6">
+              <label>Tanggal Selesai</label>
+              <input name="tanggal_selesai" type="date" class="form-control" value="{{ old('tanggal_selesai') }}">
+            </div>
           </div>
           <div class="form-row">
             <div class="form-group col-md-6">
               <label>Skema Kategori Proyek <span class="text-danger">*</span></label>
               <select name="skema_pbl" id="addSkema" class="form-control" required>
-                <option value="Internal" {{ ($kelompok->skema_kategori ?? '') === 'Internal' ? 'selected' : '' }}>Internal (Wajib Proposal)</option>
-                <option value="External" {{ ($kelompok->skema_kategori ?? '') === 'External' ? 'selected' : '' }}>External (Mitra Industri)</option>
-                <option value="Hibah/Penelitian" {{ ($kelompok->skema_kategori ?? '') === 'Hibah/Penelitian' ? 'selected' : '' }}>Hibah/Penelitian</option>
-                <option value="Lomba" {{ ($kelompok->skema_kategori ?? '') === 'Lomba' ? 'selected' : '' }}>Lomba</option>
+                @php $currentSkema = old('skema_pbl', $kelompok->skema_kategori ?? 'Internal'); @endphp
+                <option value="Internal" {{ $currentSkema === 'Internal' ? 'selected' : '' }}>Internal (Wajib Proposal)</option>
+                <option value="External" {{ $currentSkema === 'External' ? 'selected' : '' }}>External (Mitra Industri)</option>
+                <option value="Hibah/Penelitian" {{ $currentSkema === 'Hibah/Penelitian' ? 'selected' : '' }}>Hibah/Penelitian</option>
+                <option value="Lomba" {{ $currentSkema === 'Lomba' ? 'selected' : '' }}>Lomba</option>
               </select>
             </div>
             <div class="form-group col-md-6">
               <label>Status</label>
-              <select name="status_proyek" class="form-control"><option value="Proses">Proses</option><option value="Dibatalkan">Dibatalkan</option></select>
+              <select name="status_proyek" class="form-control">
+                <option value="Proses" {{ old('status_proyek') === 'Proses' ? 'selected' : '' }}>Proses</option>
+                <option value="Dibatalkan" {{ old('status_proyek') === 'Dibatalkan' ? 'selected' : '' }}>Dibatalkan</option>
+              </select>
             </div>
           </div>
 
@@ -557,14 +672,32 @@
             </small>
           </div>
 
-          <div class="form-group"><label>Nama Mitra (Opsional untuk Internal)</label><input name="nama_mitra" type="text" class="form-control" placeholder="Nama instansi/mitra..."></div>
-          <div class="form-row">
-            <div class="form-group col-md-6"><label>Biaya Barang</label><input name="biaya_barang" type="number" step="0.01" min="0" class="form-control" value="0"></div>
-            <div class="form-group col-md-6"><label>Biaya Jasa</label><input name="biaya_jasa" type="number" step="0.01" min="0" class="form-control" value="0"></div>
+          <div class="form-group">
+            <label>Nama Mitra (Opsional untuk Internal)</label>
+            <input name="nama_mitra" type="text" class="form-control" value="{{ old('nama_mitra') }}" placeholder="Nama instansi/mitra...">
           </div>
-          <div class="form-group"><label>Link Folder Google Drive</label><input name="link_drive_proyek" type="url" class="form-control" placeholder="https://drive.google.com/..."></div>
-          <div class="form-group"><label>Kendala</label><textarea name="kendala" class="form-control" rows="2" placeholder="Kendala pengerjaan..."></textarea></div>
-          <div class="form-group mb-0"><label>Catatan Dosen</label><textarea name="catatan" class="form-control" rows="2" readonly></textarea></div>
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label>Biaya Barang</label>
+              <input name="biaya_barang" type="number" step="0.01" min="0" class="form-control" value="{{ old('biaya_barang', 0) }}">
+            </div>
+            <div class="form-group col-md-6">
+              <label>Biaya Jasa</label>
+              <input name="biaya_jasa" type="number" step="0.01" min="0" class="form-control" value="{{ old('biaya_jasa', 0) }}">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Link Folder Google Drive</label>
+            <input name="link_drive_proyek" type="text" class="form-control" value="{{ old('link_drive_proyek') }}" placeholder="https://drive.google.com/...">
+          </div>
+          <div class="form-group">
+            <label>Kendala</label>
+            <textarea name="kendala" class="form-control" rows="2" placeholder="Kendala pengerjaan...">{{ old('kendala') }}</textarea>
+          </div>
+          <div class="form-group mb-0">
+            <label>Catatan Dosen</label>
+            <textarea name="catatan" class="form-control" rows="2" readonly></textarea>
+          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
@@ -714,158 +847,14 @@
 </div>
 @endsection
 
-@push('styles')
-<style>
-  .board-wrapper{overflow-x:auto;overflow-y:hidden}
-  .board{min-height:70vh;padding-bottom:.5rem}
-  .board-column{width:300px;min-width:300px;margin-right:1rem;display:flex;flex-direction:column}
-  .board-list{min-height:20px}
-  .board-col-head{
-    position:sticky;top:0;z-index:2;background:#fff;border:1px solid #eef1f5;border-radius:.75rem;
-    padding:.6rem .7rem;box-shadow:0 2px 6px rgba(0,0,0,.03);margin-bottom:.5rem
-  }
-  .board-card{border-left:3px solid #4e73df;cursor:grab;border-radius:.75rem;overflow:hidden;user-select:none;-webkit-user-select:none;transition:transform 0.18s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.18s cubic-bezier(0.2, 0, 0, 1), opacity 0.18s ease;will-change:transform,box-shadow}
-  .board-card:hover{cursor:grab;transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,.08)}
-  .board-card:active{cursor:grabbing}
-
-  /* Saat card dipilih untuk didrag */
-  .board-card.sortable-chosen{
-    opacity: 0.95;
-    cursor: grabbing !important;
-    transform: scale(1.02);
-    box-shadow: 0 10px 25px -5px rgba(78, 115, 223, 0.25), 0 8px 10px -6px rgba(78, 115, 223, 0.15);
-    z-index: 1000;
-  }
-
-  /* Bayangan slot placeholder tempat card mendarat */
-  .board-card.sortable-ghost{
-    opacity: 0.35 !important;
-    background: rgba(78, 115, 223, 0.08) !important;
-    border: 2px dashed #4e73df !important;
-    border-radius: 0.75rem !important;
-    box-shadow: none !important;
-    transform: scale(0.98);
-  }
-
-  /* Card tiruan yang melayang mengikuti kursor */
-  .board-card.sortable-drag,
-  .sortable-fallback {
-    opacity: 1 !important;
-    cursor: grabbing !important;
-    transform: rotate(2.5deg) scale(1.04) !important;
-    box-shadow: 0 20px 35px -5px rgba(78, 115, 223, 0.35), 0 10px 15px -5px rgba(0, 0, 0, 0.15) !important;
-    border: 1px solid rgba(78, 115, 223, 0.3) !important;
-    border-left: 4px solid #4e73df !important;
-    border-radius: 0.75rem !important;
-    pointer-events: none !important;
-    z-index: 99999 !important;
-    will-change: transform, top, left;
-  }
-
-  .board-column{transition:transform 0.2s cubic-bezier(0.2, 0, 0, 1), opacity 0.2s ease}
-  .board-column.sortable-chosen{opacity: 0.95;box-shadow: 0 12px 28px rgba(0, 0, 0, 0.1)}
-  .board-column.sortable-ghost{opacity: 0.35 !important;background: rgba(234, 236, 244, 0.6) !important;border: 2px dashed #b7b9cc !important;border-radius: 0.75rem !important}
-  .board-col-head{cursor: grab}
-  .board-col-head:active{cursor: grabbing}
-  .progress.progress-sm{height:6px}
-  .badge-soft{background:#eef2ff;color:#4e73df}
-  .truncate{max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .x-small{font-size:.75rem}
-  .text-body-2{font-size:.9rem;line-height:1.35}
-  .clamp-2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-  .shadow-xs{box-shadow:0 1px 3px rgba(0,0,0,.06)}
-  .user-chip{display:inline-flex;align-items:center;border:1px solid rgba(0,0,0,.06);border-radius:12px;padding:0 6px 0 2px;background:#fff}
-  .user-name{max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .user-avatar{width:20px;height:20px;border-radius:50%;border:1px solid rgba(0,0,0,.06);margin-right:6px;object-fit:cover}
-
-  /* Tambahan baru */
-  .hover-raise{transition:transform .12s ease, box-shadow .12s ease}
-  .hover-raise:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(0,0,0,.06)}
-  .card-title-row{min-height:1.4rem}
-  .card-title-text{font-size:.95rem;line-height:1.2;max-width:14rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .date-chip{font-size:.75rem;line-height:1;padding:.28rem .5rem;border-radius:999px;background:#f1f5ff;color:#2743d3;border:1px solid #e5e9ff;white-space:nowrap}
-  .date-chip-danger{background:#fff2f2;color:#b42318;border-color:#ffd9d7}
-  .border-top-light{border-top:1px solid #f1f2f4}
-  .btn-drive{padding:.18rem .5rem}
-  .labels-wrap{display:flex;flex-wrap:wrap}
-
-  /* Card yang sudah selesai */
-  .card-completed {
-    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%) !important;
-    border-left: 4px solid #28a745 !important;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.04) !important;
-    border-radius: 0.75rem;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .card-completed::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 40px;
-    height: 40px;
-    background: linear-gradient(135deg, rgba(40, 167, 69, 0.1) 0%, rgba(32, 201, 151, 0.05) 100%);
-    border-radius: 0 0.75rem 0 0.75rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .card-completed::after {
-    content: '✓';
-    position: absolute;
-    top: 2px;
-    right: 8px;
-    color: #28a745;
-    font-size: 18px;
-    font-weight: bold;
-    z-index: 1;
-  }
-
-  .card-completed:hover {
-    transform: translateY(-1px) !important;
-    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.15) !important;
-    transition: all 0.2s ease !important;
-  }
-
-  .card-completed .btn-edit-card,
-  .card-completed .btn-delete-card {
-    background-color: #e9ecef !important;
-    color: #6c757d !important;
-    border-color: #dee2e6 !important;
-    opacity: 0.7;
-    cursor: not-allowed;
-    pointer-events: none;
-  }
-
-  .card-completed .btn-edit-card:hover,
-  .card-completed .btn-delete-card:hover {
-    background-color: #e9ecef !important;
-    transform: none !important;
-    box-shadow: none !important;
-  }
-
-  /* Badge yang lebih bagus untuk proyek selesai */
-  .card-completed .badge-success {
-    background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important;
-    box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3) !important;
-    font-weight: 600;
-    padding: 0.35rem 0.65rem;
-  }
-</style>
-@endpush
-
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 (function(){
   const reorderUrl = "{{ route('proyek.reorder') }}";
   const reorderListsUrl = "{{ route('proyek.lists.reorder') }}";
 
-  // Fallback buka modal Add List (BS4/BS5)
+  // Fallback buka modal (BS4/BS5)
   function showModal(id){
     const $el = $('#'+id);
     if (typeof $el.modal === 'function') { $el.modal('show'); return; }
@@ -892,13 +881,11 @@
       swapThreshold: 0.65,
       invertSwap: true,
       direction: 'vertical',
-      emptyInsertThreshold: 15,
+      emptyInsertThreshold: 20,
       bubbleScroll: true,
       scroll: true,
       scrollSensitivity: 80,
       scrollSpeed: 15,
-      filter: '.card-completed',
-      preventOnFilter: false,
       delay: 0,
       delayOnTouchOnly: false,
       onEnd:function(evt){
@@ -947,7 +934,10 @@
     search.addEventListener('input', function(){
       const q = this.value.trim().toLowerCase();
       document.querySelectorAll('.board-card').forEach(function(card){
-        const hay = ((card.getAttribute('data-title-search')||'') + ' ' + (card.getAttribute('data-desc')||'')).toLowerCase();
+        const cardData = $(card).data('card') || {};
+        const title = (cardData.title || card.getAttribute('data-title-search') || '').toLowerCase();
+        const desc = (cardData.description || card.getAttribute('data-desc') || '').toLowerCase();
+        const hay = title + ' ' + desc;
         card.style.display = hay.includes(q) ? '' : 'none';
       });
     });
@@ -980,15 +970,17 @@
       $(selectMatkulEl).find('option').prop('disabled', false).show();
     }
 
-    if ($(selectMatkulEl).hasClass('select2-hidden-accessible')) {
-      $(selectMatkulEl).select2('destroy');
+    if (window.jQuery && jQuery().select2) {
+      if ($(selectMatkulEl).hasClass('select2-hidden-accessible')) {
+        $(selectMatkulEl).select2('destroy');
+      }
+      $(selectMatkulEl).select2({
+        dropdownParent: $(selectMatkulEl).closest('.modal'),
+        placeholder: '-- Pilih Mata Kuliah Terkait --',
+        allowClear: true,
+        width: '100%'
+      });
     }
-    $(selectMatkulEl).select2({
-      dropdownParent: $(selectMatkulEl).closest('.modal'),
-      placeholder: '-- Pilih Mata Kuliah Terkait --',
-      allowClear: true,
-      width: '100%'
-    });
   }
 
   // Event listener skema change di Modal Add & Edit
@@ -1002,58 +994,77 @@
 
   // Tambah kartu: isi list id
   $(document).on('click','.btn-add-card',function(){
-    $('#addCardListId').val($(this).data('list-id'));
-    $('#addMataKuliah').val(null);
-    updateMatkulFilter('#addSkema', '#addMataKuliah', '#addMatkulHelp', '#addMatkulBadgeNote');
+    const listId = $(this).data('list-id');
+    $('#addCardListId').val(listId);
+    $('#modalAddCard').modal('show');
   });
 
   $('#modalAddCard').on('shown.bs.modal', function () {
+    if (!$('#addCardListId').val()) {
+      const firstCol = $('.board-column').first().data('col-id');
+      if (firstCol) $('#addCardListId').val(firstCol);
+    }
     updateMatkulFilter('#addSkema', '#addMataKuliah', '#addMatkulHelp', '#addMatkulBadgeNote');
   });
 
   // Hapus kartu
   $(document).on('click','.btn-delete-card',function(){
     const form = $(this).closest('form');
-    Swal.fire({title:'Hapus Proyek?',icon:'warning',showCancelButton:true,confirmButtonText:'Ya, hapus'})
-      .then(r=>{ if(r.isConfirmed) form.submit(); });
+    Swal.fire({
+      title: 'Hapus Proyek?',
+      text: 'Data proyek dan relasinya akan dihapus.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Ya, hapus',
+      cancelButtonText: 'Batal'
+    }).then(r=>{ if(r.isConfirmed) form.submit(); });
   });
 
   // Hapus kolom
   $(document).on('click','.btn-delete-list',function(){
     const form = $(this).closest('form');
-    Swal.fire({title:'Hapus kolom?',text:'Kolom harus kosong.',icon:'warning',showCancelButton:true,confirmButtonText:'Ya, hapus'})
-      .then(r=>{ if(r.isConfirmed) form.submit(); });
+    Swal.fire({
+      title: 'Hapus kolom?',
+      text: 'Kolom harus kosong dari kartu sebelum dapat dihapus.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Ya, hapus',
+      cancelButtonText: 'Batal'
+    }).then(r=>{ if(r.isConfirmed) form.submit(); });
   });
 
   // Edit kartu: isi modal
-  $(document).on('click','.btn-edit-card',function(){
-    const card = $(this).closest('.board-card');
-    const id = card.data('card-id');
-    $('#editTitle').val(card.data('title'));
-    $('#editDescription').val(card.data('desc')||'');
-    $('#editLabels').val(((card.data('labels'))||[]).join(', '));
-    $('#editStart').val(card.data('tmulai')||'');
-    $('#editEnd').val(card.data('tselesai')||'');
-    $('#editProgress').val(card.data('progress')||0);
-    const skemaVal = card.data('skema')||'Internal';
+  $(document).on('click','.btn-edit-card',function(e){
+    e.preventDefault();
+    const cardEl = $(this).closest('.board-card');
+    const card = cardEl.data('card') || {};
+    const id = card.id || cardEl.data('card-id');
+
+    $('#editTitle').val(card.title || cardEl.data('title') || '');
+    $('#editDescription').val(card.description || '');
+    $('#editLabels').val((card.labels || []).join(', '));
+    $('#editStart').val(card.tanggal_mulai || '');
+    $('#editEnd').val(card.tanggal_selesai || '');
+    $('#editProgress').val(card.progress ?? 0);
+    const skemaVal = card.skema_pbl || 'Internal';
     $('#editSkema').val(skemaVal);
-    $('#editStatus').val(card.data('status')||'Proses');
-    $('#editMitra').val(card.data('mitra')||'');
-    $('#editKontak').val(card.data('kontak')||'');
-    $('#editBiayaBarang').val(card.data('bbar')||'');
-    $('#editBiayaJasa').val(card.data('bjas')||'');
-    $('#editDrive').val(card.data('drive')||'');
-    $('#editKendala').val(card.data('kendala')||'');
-    $('#editCatatan').val(card.data('catatan')||'');
+    $('#editStatus').val(card.status_proyek || 'Proses');
+    $('#editMitra').val(card.nama_mitra || '');
+    $('#editKontak').val(card.kontak_mitra || '');
+    $('#editBiayaBarang').val(card.biaya_barang ?? 0);
+    $('#editBiayaJasa').val(card.biaya_jasa ?? 0);
+    $('#editDrive').val(card.link_drive_proyek || '');
+    $('#editKendala').val(card.kendala || '');
+    $('#editCatatan').val(card.catatan || '');
 
     // Update filter skema terlebih dahulu
     updateMatkulFilter('#editSkema', '#editMataKuliah', '#editMatkulHelp', '#editMatkulBadgeNote');
 
     // Set nilai mata kuliah yang sudah dipilih
-    const matkulIds = card.data('matkul-ids') || [];
+    const matkulIds = (card.mata_kuliah_ids || []).map(String);
     $('#editMataKuliah').val(matkulIds).trigger('change');
 
-    const proposalUrl = card.data('proposal');
+    const proposalUrl = card.proposal_url;
     if (proposalUrl) {
       $('#editProposalWrapper').show();
       $('#editProposalLink').attr('href', proposalUrl);
@@ -1062,7 +1073,12 @@
       $('#editProposalLink').attr('href', '#');
     }
 
-    $('#editCardForm').attr('action', "{{ url('mahasiswa/proyek/cards') }}/"+id);
+    $('#editCardForm').attr('action', "{{ url('mahasiswa/proyek/cards') }}/" + id);
+    showModal('modalEditCard');
+  });
+
+  $('#modalEditCard').on('shown.bs.modal', function () {
+    updateMatkulFilter('#editSkema', '#editMataKuliah', '#editMatkulHelp', '#editMatkulBadgeNote');
   });
 
   // Edit kolom
@@ -1073,6 +1089,15 @@
   });
 
   // Share Link Penilaian Mitra
+  $(document).on('click', '.btn-share-mitra', function(e) {
+    e.preventDefault();
+    const cardEl = $(this).closest('.board-card');
+    const cardData = cardEl.data('card') || {};
+    const cardId = $(this).data('card-id') || cardData.id;
+    const cardTitle = $(this).data('card-title') || cardData.title || 'Proyek';
+    window.sharePenilaianMitra(cardId, cardTitle);
+  });
+
   window.sharePenilaianMitra = function(cardId, cardTitle) {
     const baseUrl = window.location.origin;
     const shareUrl = `${baseUrl}/penilaian-mitra/${cardId}`;
@@ -1083,11 +1108,11 @@
         <div class="text-left">
           <p class="mb-3">Bagikan link ini kepada mitra untuk menilai proyek:</p>
           <div class="form-group mb-3">
-            <label class="small text-muted">Proyek:</label>
-            <div class="font-weight-bold">${cardTitle}</div>
+            <label class="small text-muted font-weight-bold">Proyek:</label>
+            <div class="font-weight-bold text-dark">${cardTitle}</div>
           </div>
           <div class="form-group mb-3">
-            <label class="small text-muted">Link Penilaian:</label>
+            <label class="small text-muted font-weight-bold">Link Penilaian Mitra:</label>
             <div class="input-group">
               <input type="text" id="shareLinkInput" class="form-control" value="${shareUrl}" readonly>
               <div class="input-group-append">
@@ -1097,9 +1122,9 @@
               </div>
             </div>
           </div>
-          <div class="alert alert-info small">
-            <i class="fas fa-info-circle mr-2"></i>
-            Mitra dapat mengakses link ini tanpa perlu login untuk memberikan penilaian.
+          <div class="alert alert-info small mb-0">
+            <i class="fas fa-info-circle mr-1"></i>
+            Mitra dapat langsung mengakses link ini tanpa login untuk mengisi rubrik penilaian proyek.
           </div>
         </div>
       `,
@@ -1113,13 +1138,12 @@
   // Copy link to clipboard
   window.copyShareLink = function() {
     const input = document.getElementById('shareLinkInput');
+    if (!input) return;
     input.select();
     input.setSelectionRange(0, 99999);
 
     try {
       document.execCommand('copy');
-
-      // Show success message
       const originalValue = input.value;
       input.value = 'Tersalin!';
       input.classList.add('bg-success', 'text-white');
@@ -1129,12 +1153,11 @@
         input.classList.remove('bg-success', 'text-white');
       }, 2000);
 
-      // Show toast notification
       if (typeof Swal !== 'undefined') {
         Swal.fire({
           icon: 'success',
           title: 'Berhasil!',
-          text: 'Link penilaian berhasil disalin.',
+          text: 'Link penilaian berhasil disalin ke clipboard.',
           toast: true,
           position: 'top-end',
           showConfirmButton: false,
@@ -1143,8 +1166,6 @@
         });
       }
     } catch (err) {
-      console.error('Failed to copy link:', err);
-
       if (typeof Swal !== 'undefined') {
         Swal.fire({
           icon: 'error',
@@ -1154,6 +1175,15 @@
       }
     }
   };
+
+  @if($errors->any())
+    Swal.fire({
+      icon: 'error',
+      title: 'Perhatian',
+      html: '{!! implode("<br>", array_map("e", $errors->all())) !!}',
+      confirmButtonText: 'Tutup'
+    });
+  @endif
 })();
 </script>
 @endpush

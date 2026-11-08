@@ -59,6 +59,74 @@ class Kelompok extends Model
         return \App\Models\Periode::getLatestActive()?->id;
     }
 
+    public static function getNextNumberForPeriode(int $periodeId): int
+    {
+        $kelompoks = self::where('periode_id', $periodeId)->get(['nama_kelompok']);
+        $maxNumber = 0;
+        foreach ($kelompoks as $k) {
+            if (preg_match('/^Kelompok\s+(\d+)/i', $k->nama_kelompok, $matches)) {
+                $num = (int) $matches[1];
+                if ($num > $maxNumber) {
+                    $maxNumber = $num;
+                }
+            }
+        }
+
+        return max($maxNumber + 1, $kelompoks->count() + 1);
+    }
+
+    public static function formatNamaKelompok(int $periodeId, ?string $rawName = null): string
+    {
+        $rawName = trim((string) $rawName);
+        $nextNum = self::getNextNumberForPeriode($periodeId);
+
+        // Jika user tidak mengisi apa-apa
+        if ($rawName === '') {
+            $num = $nextNum;
+            do {
+                $candidate = "Kelompok {$num}";
+                if (! self::where('periode_id', $periodeId)->where('nama_kelompok', $candidate)->exists()) {
+                    return $candidate;
+                }
+                $num++;
+            } while (true);
+        }
+
+        // Cek jika sudah memiliki format "Kelompok {angka} - {nama}" atau "Kelompok {angka}"
+        if (preg_match('/^Kelompok\s+(\d+)(?:\s*[-:]\s*(.*))?$/i', $rawName, $matches)) {
+            $num = (int) $matches[1];
+            $suffix = isset($matches[2]) ? trim($matches[2]) : '';
+            if ($suffix !== '') {
+                return "Kelompok {$num} - {$suffix}";
+            }
+
+            return "Kelompok {$num}";
+        }
+
+        // Bersihkan prefix kata "Kelompok" tanpa angka, misal "Kelompok CyberGuard"
+        $cleaned = trim((string) preg_replace('/^Kelompok\s*[-:]?\s*/i', '', $rawName));
+        if ($cleaned === '') {
+            $num = $nextNum;
+            do {
+                $candidate = "Kelompok {$num}";
+                if (! self::where('periode_id', $periodeId)->where('nama_kelompok', $candidate)->exists()) {
+                    return $candidate;
+                }
+                $num++;
+            } while (true);
+        }
+
+        // Bentuk nama dengan format "Kelompok {nextNum} - {cleaned}"
+        $num = $nextNum;
+        do {
+            $candidate = "Kelompok {$num} - {$cleaned}";
+            if (! self::where('periode_id', $periodeId)->where('nama_kelompok', $candidate)->exists()) {
+                return $candidate;
+            }
+            $num++;
+        } while (true);
+    }
+
     public function periode(): BelongsTo
     {
         return $this->belongsTo(Periode::class);

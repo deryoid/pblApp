@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\View\View;
 use RealRashid\SweetAlert\Facades\Alert;
 
 class LoginController extends Controller
@@ -12,7 +14,7 @@ class LoginController extends Controller
     /**
      * Tampilkan form login (jika sudah login → redirect sesuai role).
      */
-    public function showLoginForm()
+    public function showLoginForm(): View|RedirectResponse
     {
         if (Auth::check()) {
             $user = Auth::user();
@@ -29,31 +31,39 @@ class LoginController extends Controller
     }
 
     /**
-     * Proses login (username + password).
+     * Proses login (mendukung username, NIM, atau email).
      */
-    public function login(Request $request)
+    public function login(Request $request): RedirectResponse
     {
         // Validasi input
         $request->validate([
             'username' => ['required', 'string'],
             'password' => ['required', 'string'],
+        ], [
+            'username.required' => 'NIM, username, atau email wajib diisi.',
+            'password.required' => 'Kata sandi wajib diisi.',
         ]);
 
         $remember = (bool) $request->boolean('remember');
+        $loginInput = trim((string) $request->input('username'));
+        $password = (string) $request->input('password');
 
-        // Siapkan kredensial
-        $credentials = $request->only('username', 'password');
+        // Deteksi apakah input berupa alamat email
+        $isEmail = filter_var($loginInput, FILTER_VALIDATE_EMAIL);
 
-        // Coba login
+        $credentials = [
+            $isEmail ? 'email' : 'username' => $isEmail ? strtolower($loginInput) : $loginInput,
+            'password' => $password,
+        ];
+
+        // 1. Percobaan login primer
         if (Auth::attempt($credentials, $remember)) {
             $request->session()->regenerate();
 
-            // Toast sukses
             Alert::toast('Anda berhasil masuk.', 'success');
 
             $user = Auth::user();
 
-            // Redirect berdasarkan role
             return match ($user->role) {
                 'admin' => redirect()->to('/admin'),
                 'evaluator', 'dosen' => redirect()->to('/evaluator'),
@@ -62,16 +72,35 @@ class LoginController extends Controller
             };
         }
 
-        // Gagal login
-        Alert::toast('Username atau password salah.', 'error');
+        // 2. Jika input berupa teks (bukan email) dan huruf kecil, coba dengan huruf kapital (format standar NIM)
+        if (! $isEmail) {
+            $uppercaseNIM = strtoupper($loginInput);
+            if ($uppercaseNIM !== $loginInput && Auth::attempt(['username' => $uppercaseNIM, 'password' => $password], $remember)) {
+                $request->session()->regenerate();
 
-        return back()->withInput(); // kembalikan input username
+                Alert::toast('Anda berhasil masuk.', 'success');
+
+                $user = Auth::user();
+
+                return match ($user->role) {
+                    'admin' => redirect()->to('/admin'),
+                    'evaluator', 'dosen' => redirect()->to('/evaluator'),
+                    'mahasiswa' => redirect()->to('/mahasiswa'),
+                    default => redirect()->intended('/'),
+                };
+            }
+        }
+
+        // Gagal login
+        Alert::toast('Username/Email atau kata sandi tidak cocok. Silakan periksa kembali.', 'error');
+
+        return back()->withInput();
     }
 
     /**
      * Logout.
      */
-    public function logout(Request $request)
+    public function logout(Request $request): RedirectResponse
     {
         Auth::logout();
         $request->session()->invalidate();

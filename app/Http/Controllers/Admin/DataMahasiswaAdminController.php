@@ -63,6 +63,8 @@ class DataMahasiswaAdminController extends Controller
             'no_hp' => ['nullable', 'string', 'max:30'],
             'email_kampus' => ['nullable', 'email', 'max:255'],
             'create_user' => ['nullable', 'boolean'],
+        ], [
+            'nim.unique' => 'Mahasiswa dengan NIM ini sudah terdaftar dalam Bank Data Mahasiswa. Anda dapat mengedit data mahasiswa tersebut melalui menu aksi edit.',
         ]);
 
         DB::transaction(function () use ($validated, $request) {

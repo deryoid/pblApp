@@ -35,12 +35,17 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
+        $isMahasiswa = $request->input('role') === 'mahasiswa';
+        $username = $isMahasiswa
+            ? strtoupper(preg_replace('/\s+/', '', (string) $request->username))
+            : strtolower(trim((string) $request->username));
+
         // Normalisasi ringan
         $request->merge([
-            'nama_user' => preg_replace('/\s+/', ' ', trim($request->nama_user)),
-            'email' => strtolower(trim($request->email)),
-            'username' => strtolower(trim($request->username)),
-            'no_hp' => preg_replace('/\s+/', '', trim($request->no_hp)),
+            'nama_user' => preg_replace('/\s+/', ' ', trim((string) $request->nama_user)),
+            'email' => strtolower(trim((string) $request->email)),
+            'username' => $username,
+            'no_hp' => preg_replace('/\s+/', '', trim((string) $request->no_hp)),
         ]);
 
         $validated = $request->validate([
@@ -50,7 +55,28 @@ class UserController extends Controller
             'username' => 'required|string|max:50|alpha_dash|unique:users,username', // <- unique
             'password' => 'nullable|string|min:5|confirmed', // kosong = pakai default
             'role' => 'required|in:admin,dosen,evaluator,mahasiswa',
+        ], [
+            'email.unique' => 'Email ini sudah terdaftar pada akun lain. Silakan periksa daftar pengguna untuk mengedit akun yang sudah ada.',
+            'username.unique' => 'Username ini sudah terdaftar pada akun lain. Silakan periksa daftar pengguna untuk mengedit akun yang sudah ada.',
         ]);
+
+        // Pencegahan akun ganda: jika role mahasiswa, periksa apakah NIM sudah terhubung ke akun lain
+        if ($validated['role'] === 'mahasiswa') {
+            $nim = strtoupper($validated['username']);
+            $existingMhs = \App\Models\Mahasiswa::where('nim', $nim)->first();
+
+            if ($existingMhs && $existingMhs->user_id) {
+                $linkedUser = User::find($existingMhs->user_id);
+                Alert::warning(
+                    'Akun Sudah Ada',
+                    "Mahasiswa dengan NIM {$nim} sudah memiliki akun pengguna aktif (Username: {$linkedUser?->username}). Anda dapat mengedit akun yang sudah ada."
+                );
+
+                return back()->withInput()->withErrors([
+                    'username' => "Mahasiswa dengan NIM {$nim} sudah memiliki akun pengguna aktif ({$linkedUser?->username}).",
+                ]);
+            }
+        }
 
         $payload = [
             'nama_user' => $validated['nama_user'],

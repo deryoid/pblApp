@@ -54,6 +54,9 @@ class DataDosenAdminController extends Controller
             'keahlian' => ['nullable', 'string', 'max:1000'],
             'email' => ['nullable', 'email', 'max:255', Rule::unique('users', 'email')],
             'create_user' => ['nullable', 'boolean'],
+        ], [
+            'nip.unique' => 'Dosen dengan NIP ini sudah terdaftar dalam Bank Data Dosen.',
+            'email.unique' => 'Email ini sudah digunakan oleh akun lain. Silakan periksa daftar pengguna.',
         ]);
 
         DB::transaction(function () use ($validated, $request) {
