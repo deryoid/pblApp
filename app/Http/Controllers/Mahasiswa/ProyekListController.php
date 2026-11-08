@@ -29,7 +29,7 @@ class ProyekListController extends Controller
 
         $pid = $kelompok->periode_id ?? optional($periodeAktif)->id;
         $maxPos = ProjectList::where('kelompok_id', $kelompok->id)
-            ->where('periode_id', $pid)
+            ->where(fn ($q) => $q->where('periode_id', $pid)->orWhereNull('periode_id'))
             ->max('position');
         $pos = is_null($maxPos) ? 0 : ($maxPos + 1);
 
@@ -40,6 +40,34 @@ class ProyekListController extends Controller
             'position' => $pos,
         ]);
         Alert::toast('Kolom ditambahkan.', 'success');
+
+        return back();
+    }
+
+    public function quickSetup(Request $request)
+    {
+        $this->authorize('create', ProjectList::class);
+        [$kelompok, $periodeAktif] = $this->resolveContext();
+        if (! $kelompok) {
+            Alert::error('Gagal', 'Anda belum tergabung dalam kelompok.');
+
+            return back()->withErrors('Anda belum tergabung dalam kelompok.');
+        }
+
+        $pid = $kelompok->periode_id ?? optional($periodeAktif)->id;
+        $defaults = ['Perencanaan', 'Pelaksanaan', 'Selesai'];
+
+        foreach ($defaults as $idx => $name) {
+            ProjectList::firstOrCreate([
+                'kelompok_id' => $kelompok->id,
+                'periode_id' => $pid,
+                'name' => $name,
+            ], [
+                'position' => $idx,
+            ]);
+        }
+
+        Alert::success('Berhasil', 'Kolom standar proyek berhasil dibuat.');
 
         return back();
     }

@@ -21,6 +21,13 @@ class AktivitasListController extends Controller
             return back()->withErrors('Anda belum tergabung dalam kelompok.');
         }
 
+        if ($req->filled('link_drive_logbook')) {
+            $driveUrl = trim((string) $req->input('link_drive_logbook'));
+            if (! preg_match('~^https?://~i', $driveUrl)) {
+                $req->merge(['link_drive_logbook' => 'https://'.$driveUrl]);
+            }
+        }
+
         $data = $req->validate([
             'name' => 'required|string|max:255',
             'rentang_tanggal' => 'nullable|string|max:255',
@@ -29,7 +36,9 @@ class AktivitasListController extends Controller
         ]);
 
         $pid = $kelompok->periode_id ?? optional($periodeAktif)->id;
-        $maxPos = AktivitasList::where('kelompok_id', $kelompok->id)->where('periode_id', $pid)->max('position');
+        $maxPos = AktivitasList::where('kelompok_id', $kelompok->id)
+            ->where(fn ($q) => $q->where('periode_id', $pid)->orWhereNull('periode_id'))
+            ->max('position');
         $pos = is_null($maxPos) ? 0 : $maxPos + 1;
 
         AktivitasList::create([
@@ -47,9 +56,43 @@ class AktivitasListController extends Controller
         return back();
     }
 
+    public function quickSetup(Request $req)
+    {
+        $this->authorize('create', AktivitasList::class);
+        [$kelompok, $periodeAktif] = $this->resolveContext();
+        if (! $kelompok) {
+            return back()->withErrors('Anda belum tergabung dalam kelompok.');
+        }
+
+        $pid = $kelompok->periode_id ?? optional($periodeAktif)->id;
+        $defaults = ['Minggu 1', 'Minggu 2', 'Minggu 3', 'Minggu 4'];
+
+        foreach ($defaults as $idx => $name) {
+            AktivitasList::firstOrCreate([
+                'kelompok_id' => $kelompok->id,
+                'periode_id' => $pid,
+                'name' => $name,
+            ], [
+                'position' => $idx,
+                'status_evaluasi' => 'Belum Evaluasi',
+            ]);
+        }
+
+        Alert::success('Berhasil', 'Kolom aktivitas mingguan berhasil dibuat.');
+
+        return back();
+    }
+
     public function update(Request $req, AktivitasList $list)
     {
         $this->authorize('update', $list);
+
+        if ($req->filled('link_drive_logbook')) {
+            $driveUrl = trim((string) $req->input('link_drive_logbook'));
+            if (! preg_match('~^https?://~i', $driveUrl)) {
+                $req->merge(['link_drive_logbook' => 'https://'.$driveUrl]);
+            }
+        }
 
         $data = $req->validate([
             'name' => 'required|string|max:255',

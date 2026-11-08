@@ -322,6 +322,7 @@ Route::prefix('mahasiswa')->middleware(['auth', 'mahasiswa', 'profile.complete']
     Route::post('proyek/reorder', [\App\Http\Controllers\Mahasiswa\ProyekController::class, 'reorder'])->name('proyek.reorder');
 
     // List Proyek
+    Route::post('proyek/lists/quick-setup', [\App\Http\Controllers\Mahasiswa\ProyekListController::class, 'quickSetup'])->name('proyek.lists.quick-setup');
     Route::post('proyek/lists', [\App\Http\Controllers\Mahasiswa\ProyekListController::class, 'store'])->name('proyek.lists.store');
     Route::put('proyek/lists/{list:uuid}', [\App\Http\Controllers\Mahasiswa\ProyekListController::class, 'update'])->name('proyek.lists.update');
     Route::delete('proyek/lists/{list:uuid}', [\App\Http\Controllers\Mahasiswa\ProyekListController::class, 'destroy'])->name('proyek.lists.destroy');
@@ -337,6 +338,7 @@ Route::prefix('mahasiswa')->middleware(['auth', 'mahasiswa', 'profile.complete']
     Route::post('aktivitas/reorder', [\App\Http\Controllers\Mahasiswa\AktivitasController::class, 'reorder'])->name('aktivitas.reorder');
 
     // List Aktivitas
+    Route::post('aktivitas/lists/quick-setup', [\App\Http\Controllers\Mahasiswa\AktivitasListController::class, 'quickSetup'])->name('aktivitas.lists.quick-setup');
     Route::post('aktivitas/lists', [\App\Http\Controllers\Mahasiswa\AktivitasListController::class, 'store'])->name('aktivitas.lists.store');
     Route::put('aktivitas/lists/{list:uuid}', [\App\Http\Controllers\Mahasiswa\AktivitasListController::class, 'update'])->name('aktivitas.lists.update');
     Route::delete('aktivitas/lists/{list:uuid}', [\App\Http\Controllers\Mahasiswa\AktivitasListController::class, 'destroy'])->name('aktivitas.lists.destroy');

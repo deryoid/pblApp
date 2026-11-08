@@ -343,8 +343,11 @@
     </div>
     <div class="ml-auto d-flex align-items-center">
       @if(isset($kelompok) && $kelompok)
-        <button id="btnAddList" type="button" class="btn btn-success btn-circle btn-sm mr-2" data-toggle="modal" data-target="#modalAddList" title="Tambah Kolom">
-          <i class="fas fa-plus"></i>
+        <button type="button" class="btn btn-primary btn-sm shadow-sm mr-2 btn-add-card" data-list-id="{{ $lists[0]['id'] ?? '' }}" data-toggle="modal" data-target="#modalAddCard" title="Tambah Proyek">
+          <i class="fas fa-plus mr-1"></i> Tambah Proyek
+        </button>
+        <button id="btnAddList" type="button" class="btn btn-outline-success btn-sm shadow-sm mr-2" data-toggle="modal" data-target="#modalAddList" title="Tambah Kolom">
+          <i class="fas fa-columns mr-1"></i> Tambah Kolom
         </button>
       @endif
       <input id="boardSearch" type="text" class="form-control form-control-sm" placeholder="Cari kartu…" style="max-width: 220px;">
@@ -572,13 +575,30 @@
     </div>
   </div>
   @else
-  <div class="card shadow-sm">
-    <div class="card-body text-center text-muted">
-      <p class="mb-2">Belum ada kolom untuk kelompok ini.</p>
+  <div class="card shadow-sm border-0 rounded-xl">
+    <div class="card-body text-center py-5">
+      <div class="mb-3">
+        <i class="fas fa-clipboard-list text-muted fa-3x"></i>
+      </div>
+      <h5 class="text-gray-800 font-weight-bold mb-2">Belum ada kolom untuk kelompok ini.</h5>
+      <p class="text-muted small mb-4" style="max-width: 500px; margin: auto;">
+        Mulai buat proyek kelompok Anda dengan menginisialisasi kolom standar Kanban atau menambahkan proyek/kolom pertama secara mandiri.
+      </p>
       @if(isset($kelompok) && $kelompok)
-        <button id="btnAddListEmpty" type="button" class="btn btn-success btn-sm" data-toggle="modal" data-target="#modalAddList">
-          <i class="fas fa-plus mr-1"></i> Tambah Kolom
-        </button>
+        <div class="d-flex align-items-center justify-content-center flex-wrap gap-2">
+          <button type="button" class="btn btn-primary btn-sm shadow-sm mr-2 btn-add-card" data-list-id="" data-toggle="modal" data-target="#modalAddCard">
+            <i class="fas fa-plus mr-1"></i> Tambah Proyek Pertama
+          </button>
+          <button id="btnAddListEmpty" type="button" class="btn btn-success btn-sm shadow-sm mr-2" data-toggle="modal" data-target="#modalAddList">
+            <i class="fas fa-columns mr-1"></i> Tambah Kolom Kustom
+          </button>
+          <form method="POST" action="{{ route('proyek.lists.quick-setup') }}" class="d-inline">
+            @csrf
+            <button type="submit" class="btn btn-outline-primary btn-sm shadow-sm">
+              <i class="fas fa-magic mr-1"></i> Gunakan Kolom Standar PBL
+            </button>
+          </form>
+        </div>
       @endif
     </div>
   </div>
@@ -586,7 +606,7 @@
 </div>
 
 {{-- Modal tambah kartu --}}
-<div class="modal fade" id="modalAddCard" tabindex="-1" role="dialog" aria-hidden="true">
+<div class="modal fade" id="modalAddCard" role="dialog" aria-hidden="true">
   <div class="modal-dialog" role="document">
     <div class="modal-content">
       <div class="modal-header"><h5 class="modal-title">Tambah Proyek/Kegiatan</h5>
@@ -709,7 +729,7 @@
 </div>
 
 {{-- Modal edit kartu --}}
-<div class="modal fade" id="modalEditCard" tabindex="-1" role="dialog" aria-hidden="true">
+<div class="modal fade" id="modalEditCard" role="dialog" aria-hidden="true">
   <div class="modal-dialog" role="document">
     <div class="modal-content">
       <div class="modal-header"><h5 class="modal-title">Ubah Proyek/Kegiatan</h5>
@@ -805,7 +825,7 @@
 </div>
 
 {{-- Modal tambah kolom --}}
-<div class="modal fade" id="modalAddList" tabindex="-1" role="dialog" aria-hidden="true">
+<div class="modal fade" id="modalAddList" role="dialog" aria-hidden="true">
   <div class="modal-dialog" role="document">
     <div class="modal-content">
       <div class="modal-header"><h5 class="modal-title">Tambah Kolom</h5>
@@ -826,7 +846,7 @@
 </div>
 
 {{-- Modal edit kolom --}}
-<div class="modal fade" id="modalEditList" tabindex="-1" role="dialog" aria-hidden="true">
+<div class="modal fade" id="modalEditList" role="dialog" aria-hidden="true">
   <div class="modal-dialog" role="document">
     <div class="modal-content">
       <div class="modal-header"><h5 class="modal-title">Ubah Kolom</h5>
@@ -854,78 +874,77 @@
   const reorderUrl = "{{ route('proyek.reorder') }}";
   const reorderListsUrl = "{{ route('proyek.lists.reorder') }}";
 
-  // Fallback buka modal (BS4/BS5)
+  // Fallback buka modal (BS4/BS5) jika dipanggil programatik
   function showModal(id){
     const $el = $('#'+id);
     if (typeof $el.modal === 'function') { $el.modal('show'); return; }
     const el = document.getElementById(id);
     if (window.bootstrap && el) { bootstrap.Modal.getOrCreateInstance(el).show(); }
   }
-  $(document).on('click','#btnAddList, #btnAddListEmpty',function(e){
-    e.preventDefault(); showModal('modalAddList');
-  });
 
-  // Drag antar kartu dengan konfigurasi ultra-smooth
-  document.querySelectorAll('.board-list').forEach(function(listEl){
-    new Sortable(listEl, {
-      group:'board',
-      animation: 200,
-      easing: 'cubic-bezier(0.2, 0, 0, 1)',
-      ghostClass: 'sortable-ghost',
-      chosenClass: 'sortable-chosen',
-      dragClass: 'sortable-drag',
-      fallbackClass: 'sortable-fallback',
-      forceFallback: true,
-      fallbackOnBody: true,
-      fallbackTolerance: 4,
-      swapThreshold: 0.65,
-      invertSwap: true,
-      direction: 'vertical',
-      emptyInsertThreshold: 20,
-      bubbleScroll: true,
-      scroll: true,
-      scrollSensitivity: 80,
-      scrollSpeed: 15,
-      delay: 0,
-      delayOnTouchOnly: false,
-      onEnd:function(evt){
-        const cardId = evt.item.getAttribute('data-card-id');
-        const toList = evt.to.getAttribute('data-list-id');
-        const newIndex = evt.newIndex;
-        $.post(reorderUrl, {card_id:cardId,to_list:toList,position:newIndex,_token:'{{ csrf_token() }}'})
-         .fail(()=> Swal.fire('Gagal','Tidak dapat menyimpan urutan','error'));
-      }
+  // Inisialisasi drag-and-drop kartu & kolom jika Sortable tersedia
+  if (typeof Sortable !== 'undefined') {
+    document.querySelectorAll('.board-list').forEach(function(listEl){
+      new Sortable(listEl, {
+        group:'board',
+        animation: 200,
+        easing: 'cubic-bezier(0.2, 0, 0, 1)',
+        ghostClass: 'sortable-ghost',
+        chosenClass: 'sortable-chosen',
+        dragClass: 'sortable-drag',
+        fallbackClass: 'sortable-fallback',
+        forceFallback: true,
+        fallbackOnBody: true,
+        fallbackTolerance: 4,
+        swapThreshold: 0.65,
+        invertSwap: true,
+        direction: 'vertical',
+        emptyInsertThreshold: 20,
+        bubbleScroll: true,
+        scroll: true,
+        scrollSensitivity: 80,
+        scrollSpeed: 15,
+        delay: 0,
+        delayOnTouchOnly: false,
+        onEnd:function(evt){
+          const cardId = evt.item.getAttribute('data-card-id');
+          const toList = evt.to.getAttribute('data-list-id');
+          const newIndex = evt.newIndex;
+          $.post(reorderUrl, {card_id:cardId,to_list:toList,position:newIndex,_token:'{{ csrf_token() }}'})
+           .fail(()=> Swal.fire('Gagal','Tidak dapat menyimpan urutan','error'));
+        }
+      });
     });
-  });
 
-  // Drag urutkan kolom (handle: head) dengan konfigurasi ultra-smooth
-  const boardEl = document.getElementById('board');
-  if (boardEl){
-    new Sortable(boardEl, {
-      group:'board-columns',
-      animation: 220,
-      easing: 'cubic-bezier(0.2, 0, 0, 1)',
-      handle:'.board-col-head',
-      ghostClass: 'sortable-ghost',
-      chosenClass: 'sortable-chosen',
-      dragClass: 'sortable-drag',
-      fallbackClass: 'sortable-fallback',
-      forceFallback: true,
-      fallbackOnBody: true,
-      fallbackTolerance: 5,
-      swapThreshold: 0.65,
-      invertSwap: true,
-      direction: 'horizontal',
-      bubbleScroll: true,
-      scroll: true,
-      scrollSensitivity: 100,
-      scrollSpeed: 20,
-      onEnd:function(){
-        const ids = Array.from(boardEl.querySelectorAll('.board-column')).map(col=>col.getAttribute('data-col-id'));
-        $.post(reorderListsUrl, {list_ids:ids,_token:'{{ csrf_token() }}'})
-         .fail(()=> Swal.fire('Gagal','Tidak dapat menyimpan urutan kolom','error'));
-      }
-    });
+    // Drag urutkan kolom (handle: head) dengan konfigurasi ultra-smooth
+    const boardEl = document.getElementById('board');
+    if (boardEl){
+      new Sortable(boardEl, {
+        group:'board-columns',
+        animation: 220,
+        easing: 'cubic-bezier(0.2, 0, 0, 1)',
+        handle:'.board-col-head',
+        ghostClass: 'sortable-ghost',
+        chosenClass: 'sortable-chosen',
+        dragClass: 'sortable-drag',
+        fallbackClass: 'sortable-fallback',
+        forceFallback: true,
+        fallbackOnBody: true,
+        fallbackTolerance: 5,
+        swapThreshold: 0.65,
+        invertSwap: true,
+        direction: 'horizontal',
+        bubbleScroll: true,
+        scroll: true,
+        scrollSensitivity: 100,
+        scrollSpeed: 20,
+        onEnd:function(){
+          const ids = Array.from(boardEl.querySelectorAll('.board-column')).map(col=>col.getAttribute('data-col-id'));
+          $.post(reorderListsUrl, {list_ids:ids,_token:'{{ csrf_token() }}'})
+           .fail(()=> Swal.fire('Gagal','Tidak dapat menyimpan urutan kolom','error'));
+        }
+      });
+    }
   }
 
   // Cari
@@ -994,9 +1013,8 @@
 
   // Tambah kartu: isi list id
   $(document).on('click','.btn-add-card',function(){
-    const listId = $(this).data('list-id');
+    const listId = $(this).data('list-id') || '';
     $('#addCardListId').val(listId);
-    $('#modalAddCard').modal('show');
   });
 
   $('#modalAddCard').on('shown.bs.modal', function () {
@@ -1177,12 +1195,14 @@
   };
 
   @if($errors->any())
-    Swal.fire({
-      icon: 'error',
-      title: 'Perhatian',
-      html: '{!! implode("<br>", array_map("e", $errors->all())) !!}',
-      confirmButtonText: 'Tutup'
-    });
+    if (typeof Swal !== 'undefined') {
+      Swal.fire({
+        icon: 'error',
+        title: 'Perhatian',
+        html: '{!! implode("<br>", array_map("e", $errors->all())) !!}',
+        confirmButtonText: 'Tutup'
+      });
+    }
   @endif
 })();
 </script>

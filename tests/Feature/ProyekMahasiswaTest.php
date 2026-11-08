@@ -389,4 +389,85 @@ class ProyekMahasiswaTest extends TestCase
         $otherCard->refresh();
         $this->assertSame('Kartu Kelompok Lain', $otherCard->title);
     }
+
+    public function test_student_can_quick_setup_default_project_columns(): void
+    {
+        ProjectCard::query()->delete();
+        ProjectList::query()->delete();
+
+        $response = $this->actingAs($this->studentUser)->post(route('proyek.lists.quick-setup'));
+        $response->assertRedirect();
+
+        $this->assertDatabaseHas('project_lists', [
+            'kelompok_id' => $this->kelompok->id,
+            'name' => 'Perencanaan',
+        ]);
+        $this->assertDatabaseHas('project_lists', [
+            'kelompok_id' => $this->kelompok->id,
+            'name' => 'Pelaksanaan',
+        ]);
+        $this->assertDatabaseHas('project_lists', [
+            'kelompok_id' => $this->kelompok->id,
+            'name' => 'Selesai',
+        ]);
+    }
+
+    public function test_student_can_create_project_even_when_group_has_no_columns_auto_creates_default_list(): void
+    {
+        ProjectCard::query()->delete();
+        ProjectList::query()->delete();
+
+        $response = $this->actingAs($this->studentUser)->post(route('proyek.cards.store'), [
+            'title' => 'Sistem IoT Smart Campus',
+            'skema_pbl' => 'External',
+            'status_proyek' => 'Proses',
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('project_lists', [
+            'kelompok_id' => $this->kelompok->id,
+            'name' => 'Perencanaan',
+        ]);
+        $this->assertDatabaseHas('project_cards', [
+            'kelompok_id' => $this->kelompok->id,
+            'title' => 'Sistem IoT Smart Campus',
+        ]);
+    }
+
+    public function test_student_can_quick_setup_default_aktivitas_columns(): void
+    {
+        $response = $this->actingAs($this->studentUser)->post(route('aktivitas.lists.quick-setup'));
+        $response->assertRedirect();
+
+        $this->assertDatabaseHas('aktivitas_lists', [
+            'kelompok_id' => $this->kelompok->id,
+            'name' => 'Minggu 1',
+        ]);
+        $this->assertDatabaseHas('aktivitas_lists', [
+            'kelompok_id' => $this->kelompok->id,
+            'name' => 'Minggu 4',
+        ]);
+    }
+
+    public function test_student_can_create_aktivitas_even_when_no_columns_auto_creates_default_list(): void
+    {
+        \App\Models\AktivitasCard::query()->delete();
+        \App\Models\AktivitasList::query()->delete();
+
+        $response = $this->actingAs($this->studentUser)->post(route('aktivitas.cards.store'), [
+            'description' => 'Mengerjakan desain arsitektur sistem IoT',
+            'tanggal_aktivitas' => '2026-11-08',
+            'bukti_kegiatan' => 'https://drive.google.com/logbook',
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('aktivitas_lists', [
+            'kelompok_id' => $this->kelompok->id,
+            'name' => 'Minggu 1',
+        ]);
+        $this->assertDatabaseHas('aktivitas_cards', [
+            'kelompok_id' => $this->kelompok->id,
+            'description' => 'Mengerjakan desain arsitektur sistem IoT',
+        ]);
+    }
 }

@@ -22,15 +22,33 @@ class AktivitasCardController extends Controller
         $this->authorize('create', AktivitasCard::class);
 
         $data = $req->validate([
-            'list' => 'required|string',
+            'list' => 'nullable|string',
             'tanggal_aktivitas' => 'nullable|date',
             'description' => 'nullable|string',
             'bukti_kegiatan' => 'nullable|string', // 50MB
         ]);
 
-        $list = AktivitasList::where('uuid', $data['list'])->first();
+        $list = null;
+        if (! empty($data['list'])) {
+            $list = AktivitasList::where('kelompok_id', $kelompok->id)
+                ->where(fn ($q) => $q->where('uuid', $data['list'])->orWhere('id', $data['list']))
+                ->first();
+        }
+
         if (! $list) {
-            return back()->withErrors('List/kolom tidak ditemukan.');
+            $list = AktivitasList::where('kelompok_id', $kelompok->id)
+                ->orderBy('position')
+                ->first();
+        }
+
+        if (! $list) {
+            $list = AktivitasList::create([
+                'kelompok_id' => $kelompok->id,
+                'periode_id' => $kelompok->periode_id,
+                'name' => 'Minggu 1',
+                'position' => 0,
+                'status_evaluasi' => 'Belum Evaluasi',
+            ]);
         }
 
         $maxPos = AktivitasCard::where('list_aktivitas_id', $list->id)->max('position');

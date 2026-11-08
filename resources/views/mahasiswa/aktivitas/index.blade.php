@@ -40,6 +40,23 @@ if (!function_exists('avatarUrl')) {
 }
 @endphp
 <div class="container-fluid">
+  @if($errors->any())
+    <div class="alert alert-danger border-0 shadow-sm d-flex flex-column p-3 mb-4 rounded-xl alert-dismissible fade show" role="alert">
+      <div class="d-flex align-items-center mb-1">
+        <i class="fas fa-exclamation-circle text-danger mr-2"></i>
+        <strong class="text-danger">Terjadi kesalahan pada formulir aktivitas:</strong>
+      </div>
+      <ul class="mb-0 pl-4 text-dark small">
+        @foreach($errors->all() as $error)
+          <li>{{ $error }}</li>
+        @endforeach
+      </ul>
+      <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <span aria-hidden="true">&times;</span>
+      </button>
+    </div>
+  @endif
+
   @if(!isset($kelompok) || !$kelompok)
     <div class="alert alert-warning border-0 shadow-sm d-flex flex-column flex-md-row align-items-md-center justify-content-between p-3 mb-4 rounded-xl">
       <div class="mb-2 mb-md-0">
@@ -66,8 +83,11 @@ if (!function_exists('avatarUrl')) {
     </div>
     <div class="ml-auto d-flex align-items-center">
       @if(isset($kelompok) && $kelompok)
-        <button class="btn btn-success btn-circle btn-sm mr-2" data-toggle="modal" data-target="#modalAddList" title="Tambah Kolom">
-          <i class="fas fa-plus"></i>
+        <button type="button" class="btn btn-primary btn-sm shadow-sm mr-2 btn-add-card" data-list-id="{{ $lists[0]['id'] ?? '' }}" data-toggle="modal" data-target="#modalAddCard" title="Tambah Aktivitas">
+          <i class="fas fa-plus mr-1"></i> Tambah Aktivitas
+        </button>
+        <button type="button" class="btn btn-outline-success btn-sm shadow-sm mr-2" data-toggle="modal" data-target="#modalAddList" title="Tambah Kolom">
+          <i class="fas fa-columns mr-1"></i> Tambah Kolom
         </button>
       @endif
       <input id="boardSearch" type="text" class="form-control form-control-sm" placeholder="Cari..." style="max-width:220px;">
@@ -222,13 +242,30 @@ if (!function_exists('avatarUrl')) {
     </div>
   </div>
   @else
-  <div class="card shadow-sm">
-    <div class="card-body text-center text-muted">
-      <p class="mb-2">Belum ada kolom aktivitas.</p>
+  <div class="card shadow-sm border-0 rounded-xl">
+    <div class="card-body text-center py-5">
+      <div class="mb-3">
+        <i class="fas fa-calendar-check text-muted fa-3x"></i>
+      </div>
+      <h5 class="text-gray-800 font-weight-bold mb-2">Belum ada kolom aktivitas.</h5>
+      <p class="text-muted small mb-4" style="max-width: 500px; margin: auto;">
+        Kolom aktivitas digunakan untuk mencatat progres mingguan dan logbook PBL kelompok Anda.
+      </p>
       @if(isset($kelompok) && $kelompok)
-      <button class="btn btn-success btn-sm" data-toggle="modal" data-target="#modalAddList">
-        <i class="fas fa-plus mr-1"></i> Tambah Kolom
-      </button>
+        <div class="d-flex align-items-center justify-content-center flex-wrap gap-2">
+          <button type="button" class="btn btn-primary btn-sm shadow-sm mr-2 btn-add-card" data-list-id="" data-toggle="modal" data-target="#modalAddCard">
+            <i class="fas fa-plus mr-1"></i> Tambah Aktivitas Pertama
+          </button>
+          <button class="btn btn-success btn-sm shadow-sm mr-2" data-toggle="modal" data-target="#modalAddList">
+            <i class="fas fa-columns mr-1"></i> Tambah Kolom Kustom
+          </button>
+          <form method="POST" action="{{ route('aktivitas.lists.quick-setup') }}" class="d-inline">
+            @csrf
+            <button type="submit" class="btn btn-outline-primary btn-sm shadow-sm">
+              <i class="fas fa-magic mr-1"></i> Inisialisasi 4 Minggu Logbook
+            </button>
+          </form>
+        </div>
       @endif
     </div>
   </div>
@@ -236,7 +273,7 @@ if (!function_exists('avatarUrl')) {
 </div>
 
 {{-- Modal Tambah Card --}}
-<div class="modal fade" id="modalAddCard" tabindex="-1" role="dialog" aria-hidden="true">
+<div class="modal fade" id="modalAddCard" role="dialog" aria-hidden="true">
   <div class="modal-dialog" role="document">
     <div class="modal-content">
       <div class="modal-header"><h5 class="modal-title">Tambah Aktivitas</h5>
@@ -269,7 +306,7 @@ if (!function_exists('avatarUrl')) {
 </div>
 
 {{-- Modal Edit Card --}}
-<div class="modal fade" id="modalEditCard" tabindex="-1" role="dialog" aria-hidden="true">
+<div class="modal fade" id="modalEditCard" role="dialog" aria-hidden="true">
   <div class="modal-dialog" role="document">
     <div class="modal-content">
       <div class="modal-header"><h5 class="modal-title">Ubah Aktivitas</h5>
@@ -301,7 +338,7 @@ if (!function_exists('avatarUrl')) {
 </div>
 
 {{-- Modal Tambah List --}}
-<div class="modal fade" id="modalAddList" tabindex="-1" role="dialog" aria-hidden="true">
+<div class="modal fade" id="modalAddList" role="dialog" aria-hidden="true">
   <div class="modal-dialog" role="document">
     <div class="modal-content">
       <div class="modal-header"><h5 class="modal-title">Tambah Kolom</h5>
@@ -339,7 +376,7 @@ if (!function_exists('avatarUrl')) {
 </div>
 
 {{-- Modal Edit List --}}
-<div class="modal fade" id="modalEditList" tabindex="-1" role="dialog" aria-hidden="true">
+<div class="modal fade" id="modalEditList" role="dialog" aria-hidden="true">
   <div class="modal-dialog" role="document">
     <div class="modal-content">
       <div class="modal-header"><h5 class="modal-title">Ubah Kolom</h5>
@@ -547,71 +584,73 @@ if (!function_exists('avatarUrl')) {
   const reorderListsUrl = "{{ route('aktivitas.lists.reorder') }}";
 
   // Drag kartu dengan konfigurasi ultra-smooth
-  document.querySelectorAll('.board-list').forEach(function(listEl){
-    new Sortable(listEl, {
-      group: 'board',
-      animation: 200,
-      easing: 'cubic-bezier(0.2, 0, 0, 1)',
-      ghostClass: 'sortable-ghost',
-      chosenClass: 'sortable-chosen',
-      dragClass: 'sortable-drag',
-      fallbackClass: 'sortable-fallback',
-      forceFallback: true,
-      fallbackOnBody: true,
-      fallbackTolerance: 4,
-      swapThreshold: 0.65,
-      invertSwap: true,
-      direction: 'vertical',
-      emptyInsertThreshold: 15,
-      bubbleScroll: true,
-      scroll: true,
-      scrollSensitivity: 80,
-      scrollSpeed: 15,
-      filter: '.card-disabled',
-      preventOnFilter: false,
-      delay: 0,
-      delayOnTouchOnly: false,
-      onEnd: function(evt){
-        const cardEl = evt.item;
-        const cardId = cardEl.getAttribute('data-card-id');
-        const toList  = evt.to.getAttribute('data-list-id');
-        const newIndex = evt.newIndex;
-        $.post(reorderUrl, { card_id: cardId, to_list: toList, position: newIndex, _token: '{{ csrf_token() }}' })
-          .fail(()=> Swal.fire('Gagal','Tidak dapat menyimpan urutan','error'));
-      }
+  if (typeof Sortable !== 'undefined') {
+    document.querySelectorAll('.board-list').forEach(function(listEl){
+      new Sortable(listEl, {
+        group: 'board',
+        animation: 200,
+        easing: 'cubic-bezier(0.2, 0, 0, 1)',
+        ghostClass: 'sortable-ghost',
+        chosenClass: 'sortable-chosen',
+        dragClass: 'sortable-drag',
+        fallbackClass: 'sortable-fallback',
+        forceFallback: true,
+        fallbackOnBody: true,
+        fallbackTolerance: 4,
+        swapThreshold: 0.65,
+        invertSwap: true,
+        direction: 'vertical',
+        emptyInsertThreshold: 15,
+        bubbleScroll: true,
+        scroll: true,
+        scrollSensitivity: 80,
+        scrollSpeed: 15,
+        filter: '.card-disabled',
+        preventOnFilter: false,
+        delay: 0,
+        delayOnTouchOnly: false,
+        onEnd: function(evt){
+          const cardEl = evt.item;
+          const cardId = cardEl.getAttribute('data-card-id');
+          const toList  = evt.to.getAttribute('data-list-id');
+          const newIndex = evt.newIndex;
+          $.post(reorderUrl, { card_id: cardId, to_list: toList, position: newIndex, _token: '{{ csrf_token() }}' })
+            .fail(()=> Swal.fire('Gagal','Tidak dapat menyimpan urutan','error'));
+        }
+      });
     });
-  });
 
-  // Drag kolom dengan konfigurasi ultra-smooth
-  const boardEl = document.getElementById('board');
-  if (boardEl) {
-    new Sortable(boardEl, {
-      group:'board-columns',
-      animation: 220,
-      easing: 'cubic-bezier(0.2, 0, 0, 1)',
-      handle:'.board-col-head',
-      ghostClass: 'sortable-ghost',
-      chosenClass: 'sortable-chosen',
-      dragClass: 'sortable-drag',
-      fallbackClass: 'sortable-fallback',
-      forceFallback: true,
-      fallbackOnBody: true,
-      fallbackTolerance: 5,
-      swapThreshold: 0.65,
-      invertSwap: true,
-      direction: 'horizontal',
-      bubbleScroll: true,
-      scroll: true,
-      scrollSensitivity: 100,
-      scrollSpeed: 20,
-      filter: '.list-evaluated',
-      preventOnFilter: false,
-      onEnd: function(){
-        const ids = Array.from(boardEl.querySelectorAll('.board-column')).map(col => col.getAttribute('data-col-id'));
-        $.post(reorderListsUrl, { list_ids: ids, _token: '{{ csrf_token() }}' })
-          .fail(()=> Swal.fire('Gagal','Tidak dapat menyimpan urutan kolom','error'));
-      }
-    });
+    // Drag kolom dengan konfigurasi ultra-smooth
+    const boardEl = document.getElementById('board');
+    if (boardEl) {
+      new Sortable(boardEl, {
+        group:'board-columns',
+        animation: 220,
+        easing: 'cubic-bezier(0.2, 0, 0, 1)',
+        handle:'.board-col-head',
+        ghostClass: 'sortable-ghost',
+        chosenClass: 'sortable-chosen',
+        dragClass: 'sortable-drag',
+        fallbackClass: 'sortable-fallback',
+        forceFallback: true,
+        fallbackOnBody: true,
+        fallbackTolerance: 5,
+        swapThreshold: 0.65,
+        invertSwap: true,
+        direction: 'horizontal',
+        bubbleScroll: true,
+        scroll: true,
+        scrollSensitivity: 100,
+        scrollSpeed: 20,
+        filter: '.list-evaluated',
+        preventOnFilter: false,
+        onEnd: function(){
+          const ids = Array.from(boardEl.querySelectorAll('.board-column')).map(col => col.getAttribute('data-col-id'));
+          $.post(reorderListsUrl, { list_ids: ids, _token: '{{ csrf_token() }}' })
+            .fail(()=> Swal.fire('Gagal','Tidak dapat menyimpan urutan kolom','error'));
+        }
+      });
+    }
   }
 
   // Pencarian
@@ -696,6 +735,17 @@ if (!function_exists('avatarUrl')) {
 
     $('#editListForm').attr('action', "{{ url('mahasiswa/aktivitas/lists') }}/"+id);
   });
+
+  @if($errors->any())
+    if (typeof Swal !== 'undefined') {
+      Swal.fire({
+        icon: 'error',
+        title: 'Perhatian',
+        html: '{!! implode("<br>", array_map("e", $errors->all())) !!}',
+        confirmButtonText: 'Tutup'
+      });
+    }
+  @endif
 })();
 </script>
 @endpush

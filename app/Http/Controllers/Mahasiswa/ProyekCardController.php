@@ -33,7 +33,7 @@ class ProyekCardController extends Controller
         $data = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'list' => 'required|string', // uuid atau id list tujuan
+            'list' => 'nullable|string', // uuid atau id list tujuan
             'labels' => 'nullable|string', // CSV
             // field lama (kompat) & baru (skema revisi)
             'due_date' => 'nullable|date',
@@ -70,14 +70,30 @@ class ProyekCardController extends Controller
 
         $labels = $this->parseLabels($data['labels'] ?? null);
 
-        // Tentukan list tujuan
-        $list = \App\Models\ProjectList::where('kelompok_id', $kelompok->id)
-            ->where(fn ($q) => $q->where('uuid', $data['list'])->orWhere('id', $data['list']))
-            ->first();
-        if (! $list) {
-            Alert::error('Gagal', 'List/kolom tidak ditemukan.');
+        // Tentukan list tujuan (fallback ke list pertama atau buat list default jika belum ada)
+        $list = null;
+        if (! empty($data['list'])) {
+            $list = \App\Models\ProjectList::where('kelompok_id', $kelompok->id)
+                ->where(fn ($q) => $q->where('uuid', $data['list'])->orWhere('id', $data['list']))
+                ->first();
+        }
 
-            return back()->withErrors('List/kolom tidak ditemukan.')->withInput();
+        if (! $list) {
+            $pid = $kelompok->periode_id ?? optional($periodeAktif)->id;
+            $list = \App\Models\ProjectList::where('kelompok_id', $kelompok->id)
+                ->where(fn ($q) => $q->where('periode_id', $pid)->orWhereNull('periode_id'))
+                ->orderBy('position')
+                ->first();
+        }
+
+        if (! $list) {
+            $pid = $kelompok->periode_id ?? optional($periodeAktif)->id;
+            $list = \App\Models\ProjectList::create([
+                'kelompok_id' => $kelompok->id,
+                'periode_id' => $pid,
+                'name' => 'Perencanaan',
+                'position' => 0,
+            ]);
         }
 
         // Tentukan position di kolom tujuan (append di akhir)
