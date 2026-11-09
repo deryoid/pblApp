@@ -59,7 +59,7 @@
                             <span class="small font-weight-600 text-dark">{{ $kunjungan->user_nama ? htmlspecialchars($kunjungan->user_nama) : '-' }}</span>
                         </td>
                         <td class="text-center" style="white-space: nowrap;">
-                            <button class="btn btn-sm btn-outline-success shadow-none rounded-pill px-3" onclick="showBukti('{{ $kunjungan->id }}')" title="Lihat Foto Bukti">
+                            <button class="btn btn-sm btn-outline-success shadow-none rounded-pill px-3" onclick="showBukti('{{ $kunjungan->uuid ?: $kunjungan->id }}')" title="Lihat Foto Bukti">
                                 <i class="fas fa-image mr-1"></i> Foto
                             </button>
                         </td>

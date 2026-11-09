@@ -4,8 +4,8 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use RealRashid\SweetAlert\Facades\Alert;
 use Illuminate\Support\Facades\Auth;
+use RealRashid\SweetAlert\Facades\Alert;
 use Symfony\Component\HttpFoundation\Response;
 
 class Evaluator
@@ -17,14 +17,15 @@ class Evaluator
      */
     public function handle(Request $request, Closure $next): Response
     {
-   if (!Auth::check()) {
-            // Gagal login
+        if (! Auth::check()) {
             Alert::toast('Anda Belum Login.', 'error');
+
             return redirect()->route('login');
         }
-        if (Auth::user()->role != 'evaluator') {
-            // Gagal login
+
+        if (! in_array(Auth::user()->role, ['evaluator', 'dosen', 'admin'], true)) {
             Alert::toast('Kamu Tidak Memiliki Akses Evaluator', 'error');
+
             return redirect()->back();
         }
 

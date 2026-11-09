@@ -172,7 +172,7 @@ class ShowcaseController extends Controller
                 'status_proyek' => $card->status_proyek ?: 'Selesai',
                 'progress' => $card->progress > 0 ? $card->progress : 100,
                 'nama_mitra' => $card->nama_mitra,
-                'kontak_mitra' => $card->kontak_mitra,
+                'kontak_mitra' => $this->maskContact($card->kontak_mitra),
                 'alamat_mitra' => $card->alamat_mitra,
                 'link_drive' => $card->link_drive_proyek ?: ($card->kelompok?->link_drive ?: null),
                 'tanggal_mulai' => $card->tanggal_mulai ? $card->tanggal_mulai->format('d M Y') : null,
@@ -219,5 +219,39 @@ class ShowcaseController extends Controller
             'skemas' => $skemas,
             'semesters' => $semesters,
         ];
+    }
+
+    /**
+     * Masking kontak mitra untuk melindungi privasi pada endpoint publik.
+     */
+    protected function maskContact(?string $contact): ?string
+    {
+        if (empty($contact)) {
+            return null;
+        }
+
+        $contact = trim($contact);
+
+        if (filter_var($contact, FILTER_VALIDATE_EMAIL)) {
+            [$name, $domain] = explode('@', $contact, 2);
+            $len = strlen($name);
+            if ($len <= 2) {
+                $maskedName = substr($name, 0, 1).'*';
+            } else {
+                $maskedName = substr($name, 0, 2).str_repeat('*', max(3, $len - 3)).substr($name, -1);
+            }
+
+            return $maskedName.'@'.$domain;
+        }
+
+        $digitsOnly = preg_replace('/[^\d]/', '', $contact);
+        if (strlen($digitsOnly) >= 7) {
+            $prefix = substr($contact, 0, 4);
+            $suffix = substr($contact, -3);
+
+            return $prefix.'****'.$suffix;
+        }
+
+        return $contact;
     }
 }

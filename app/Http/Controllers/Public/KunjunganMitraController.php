@@ -90,7 +90,7 @@ class KunjunganMitraController extends Controller
 
             return response()->json([
                 'error' => true,
-                'message' => 'Server error: '.$e->getMessage(),
+                'message' => 'Gagal memuat data kunjungan.',
                 'html' => '<div class="alert alert-danger">Gagal memuat data. Silakan refresh halaman.</div>',
             ], 500);
         }
@@ -102,7 +102,9 @@ class KunjunganMitraController extends Controller
     public function getBukti($id)
     {
         try {
-            $kunjungan = KunjunganMitra::findOrFail($id);
+            $kunjungan = KunjunganMitra::where('uuid', $id)
+                ->orWhere('id', $id)
+                ->firstOrFail();
 
             // Allow access to all kunjungan for public view
             // No authorization check needed for read-only access

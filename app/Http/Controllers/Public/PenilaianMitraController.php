@@ -38,7 +38,7 @@ class PenilaianMitraController extends Controller
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            abort(500, 'Terjadi kesalahan saat memuat data penilaian: '.$e->getMessage());
+            abort(500, 'Terjadi kesalahan saat memuat data penilaian.');
         }
     }
 
@@ -103,7 +103,7 @@ class PenilaianMitraController extends Controller
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            abort(500, 'Terjadi kesalahan saat memuat data proyek: '.$e->getMessage());
+            abort(500, 'Terjadi kesalahan saat memuat data proyek.');
         }
     }
 
@@ -207,7 +207,7 @@ class PenilaianMitraController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal memuat data proyek: '.$e->getMessage(),
+                'message' => 'Gagal memuat data proyek.',
             ], 500);
         }
     }
@@ -239,6 +239,19 @@ class PenilaianMitraController extends Controller
                     'message' => 'Validasi gagal',
                     'errors' => $validator->errors(),
                 ], 422);
+            }
+
+            // IDOR Protection: Pastikan setiap mahasiswa_id terdaftar pada kelompok proyek ini
+            $card->loadMissing('list.kelompok.mahasiswas');
+            $validMahasiswaIds = $card->list?->kelompok?->mahasiswas?->pluck('id')->map(fn ($id) => (int) $id)->toArray() ?? [];
+
+            foreach ($request->evaluations as $evalData) {
+                if (! in_array((int) $evalData['mahasiswa_id'], $validMahasiswaIds, true)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Mahasiswa terpilih tidak terdaftar pada kelompok proyek ini.',
+                    ], 422);
+                }
             }
 
             // Process each evaluation

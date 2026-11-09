@@ -217,7 +217,8 @@ class ProfileController extends Controller
      */
     private function storeProfilePhoto($file, int $userId): string
     {
-        $fileName = 'profile_'.$userId.'_'.time().'.'.$file->getClientOriginalExtension();
+        $extension = $file->extension() ?: $file->getClientOriginalExtension() ?: 'jpg';
+        $fileName = 'profile_'.$userId.'_'.time().'.'.$extension;
         $file->storeAs('profile-photos', $fileName, 'public');
 
         return 'profile-photos/'.$fileName;
