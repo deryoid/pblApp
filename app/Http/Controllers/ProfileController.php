@@ -37,6 +37,9 @@ class ProfileController extends Controller
         if ($request->has('no_hp')) {
             $request->merge(['no_hp' => preg_replace('/\s+/', '', trim($request->no_hp))]);
         }
+        if ($request->has('nim')) {
+            $request->merge(['nim' => strtoupper(preg_replace('/\s+/', '', (string) $request->nim))]);
+        }
 
         $rules = [
             'nama_user' => 'required|string|max:255',
@@ -48,8 +51,30 @@ class ProfileController extends Controller
         ];
 
         if ($user->role === 'mahasiswa') {
-            $mhsId = $user->mahasiswa?->id;
-            $rules['nim'] = ['nullable', 'string', 'max:50', Rule::unique('mahasiswa', 'nim')->ignore($mhsId)];
+            $mhs = $user->getOrResolveMahasiswa();
+            $mhsId = $mhs?->id;
+            $rules['nim'] = [
+                'nullable',
+                'string',
+                'max:50',
+                function ($attribute, $value, $fail) use ($user, $mhsId) {
+                    if (empty($value)) {
+                        return;
+                    }
+                    $normalizedNim = strtoupper(preg_replace('/\s+/', '', (string) $value));
+
+                    // Cek apakah NIM ini sudah dipakai oleh akun mahasiswa lain yang aktif
+                    $takenByOther = \App\Models\Mahasiswa::where('nim', $normalizedNim)
+                        ->when($mhsId, fn ($q) => $q->where('id', '!=', $mhsId))
+                        ->whereNotNull('user_id')
+                        ->where('user_id', '!=', $user->id)
+                        ->exists();
+
+                    if ($takenByOther) {
+                        $fail('NIM '.$normalizedNim.' sudah digunakan oleh akun mahasiswa lain.');
+                    }
+                },
+            ];
             $rules['kelas_id'] = ['nullable', 'integer', 'exists:kelas,id'];
             $rules['angkatan'] = ['nullable', 'string', 'max:10'];
             $rules['nik'] = ['nullable', 'string', 'max:30'];
@@ -94,15 +119,56 @@ class ProfileController extends Controller
 
         // Update data mahasiswa & status kelengkapan profil
         if ($user->role === 'mahasiswa') {
-            $mhs = $user->mahasiswa;
-            if (! $mhs && ! empty($validated['nim'])) {
-                $mhs = \App\Models\Mahasiswa::where('nim', $validated['nim'])->first();
-                if ($mhs && ! $mhs->user_id) {
-                    $mhs->user_id = $user->id;
+            $mhs = $user->getOrResolveMahasiswa();
+            $targetNim = ! empty($validated['nim']) ? $validated['nim'] : null;
+
+            if ($targetNim) {
+                // Cek apakah ada record bank data lain dengan NIM ini yang belum terhubung ke user manapun (unlinked)
+                $duplicateBankMhs = \App\Models\Mahasiswa::where('nim', $targetNim)
+                    ->when($mhs, fn ($q) => $q->where('id', '!=', $mhs->id))
+                    ->whereNull('user_id')
+                    ->first();
+
+                if ($duplicateBankMhs) {
+                    if (! $mhs) {
+                        // User belum punya record mhs, langsung link ke record bank data ini
+                        $duplicateBankMhs->user_id = $user->id;
+                        $mhs = $duplicateBankMhs;
+                    } else {
+                        // Salin atribut bank data jika di record pengguna saat ini masih kosong
+                        $mhs->kelas_id = $mhs->kelas_id ?: $duplicateBankMhs->kelas_id;
+                        $mhs->angkatan = $mhs->angkatan ?: $duplicateBankMhs->angkatan;
+                        $mhs->nik = $mhs->nik ?: $duplicateBankMhs->nik;
+                        $mhs->jk = $mhs->jk ?: $duplicateBankMhs->jk;
+                        $mhs->nama_ibu = $mhs->nama_ibu ?: $duplicateBankMhs->nama_ibu;
+                        $mhs->agama = $mhs->agama ?: $duplicateBankMhs->agama;
+                        $mhs->tempat_lahir = $mhs->tempat_lahir ?: $duplicateBankMhs->tempat_lahir;
+                        $mhs->tanggal_lahir = $mhs->tanggal_lahir ?: $duplicateBankMhs->tanggal_lahir;
+                        $mhs->alamat = $mhs->alamat ?: $duplicateBankMhs->alamat;
+
+                        // Pindahkan relasi kelompok jika ada di record duplikat
+                        \Illuminate\Support\Facades\DB::table('kelompok_mahasiswa')
+                            ->where('mahasiswa_id', $duplicateBankMhs->id)
+                            ->update(['mahasiswa_id' => $mhs->id]);
+
+                        $duplicateBankMhs->delete();
+                    }
                 }
             }
 
+            if (! $mhs && $targetNim) {
+                $mhs = \App\Models\Mahasiswa::create([
+                    'user_id' => $user->id,
+                    'nim' => $targetNim,
+                    'nama_mahasiswa' => $user->nama_user,
+                    'kelas_id' => $validated['kelas_id'] ?? null,
+                ]);
+            }
+
             if ($mhs) {
+                if (! $mhs->user_id) {
+                    $mhs->user_id = $user->id;
+                }
                 $mhs->nama_mahasiswa = $user->nama_user;
                 $mhs->no_hp = $user->no_hp;
                 $mhs->email_kampus = $user->email;

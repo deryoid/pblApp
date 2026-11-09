@@ -161,11 +161,42 @@ class DataMahasiswaAdminController extends Controller
             $request->merge(['nama_mahasiswa' => preg_replace('/\s+/', ' ', trim((string) $request->nama_mahasiswa))]);
         }
 
+        $targetUser = $mahasiswa->user
+            ?? ($mahasiswa->nim ? \App\Models\User::where('username', $mahasiswa->nim)->first() : null);
+
         $validated = $request->validate([
             'nim' => [
                 'sometimes', 'required', 'string', 'max:50',
-                Rule::unique('mahasiswa', 'nim')->ignore($mahasiswa->id),       // ignore by PK id
-                Rule::unique('users', 'username')->ignore($mahasiswa->user_id), // ignore user pemilik
+                function ($attribute, $value, $fail) use ($mahasiswa, $targetUser) {
+                    if (empty($value)) {
+                        return;
+                    }
+                    $normalizedNim = strtoupper(preg_replace('/\s+/', '', (string) $value));
+
+                    $ignoreUserId = $mahasiswa->user_id ?: ($targetUser?->id);
+
+                    // Cek apakah NIM ini sudah digunakan oleh record mahasiswa lain yang aktif (memiliki akun user)
+                    $takenByOtherMhs = \App\Models\Mahasiswa::where('nim', $normalizedNim)
+                        ->where('id', '!=', $mahasiswa->id)
+                        ->whereNotNull('user_id')
+                        ->when($ignoreUserId, fn ($q) => $q->where('user_id', '!=', $ignoreUserId))
+                        ->exists();
+
+                    if ($takenByOtherMhs) {
+                        $fail('NIM '.$normalizedNim.' sudah digunakan oleh mahasiswa lain.');
+
+                        return;
+                    }
+
+                    // Cek apakah username di tabel users sudah digunakan oleh user lain
+                    $takenByOtherUser = \App\Models\User::where('username', $normalizedNim)
+                        ->when($ignoreUserId, fn ($q) => $q->where('id', '!=', $ignoreUserId))
+                        ->exists();
+
+                    if ($takenByOtherUser) {
+                        $fail('NIM / Username '.$normalizedNim.' sudah digunakan oleh akun pengguna lain.');
+                    }
+                },
             ],
             'nama_mahasiswa' => ['required', 'string', 'max:255'],
             'kelas_id' => ['nullable', 'integer', 'exists:kelas,id'],
@@ -182,16 +213,39 @@ class DataMahasiswaAdminController extends Controller
         ]);
 
         DB::transaction(function () use ($mahasiswa, $validated) {
-            $user = $mahasiswa->user;
+            $newNim = ! empty($validated['nim']) ? $validated['nim'] : $mahasiswa->nim;
+
+            // Jika ada record unlinked lain dengan NIM baru ini, bersihkan/merge agar tidak tabrakan unique constraint
+            if ($newNim && $newNim !== $mahasiswa->nim) {
+                $duplicateUnlinked = Mahasiswa::where('nim', $newNim)
+                    ->where('id', '!=', $mahasiswa->id)
+                    ->whereNull('user_id')
+                    ->first();
+
+                if ($duplicateUnlinked) {
+                    \Illuminate\Support\Facades\DB::table('kelompok_mahasiswa')
+                        ->where('mahasiswa_id', $duplicateUnlinked->id)
+                        ->update(['mahasiswa_id' => $mahasiswa->id]);
+
+                    $duplicateUnlinked->delete();
+                }
+            }
+
+            // Cari atau hubungkan user terkait
+            $user = $mahasiswa->user
+                ?? ($mahasiswa->nim ? User::where('username', $mahasiswa->nim)->first() : null)
+                ?? ($newNim ? User::where('username', $newNim)->first() : null);
+
+            if ($user && ! $mahasiswa->user_id) {
+                $mahasiswa->user_id = $user->id;
+            }
 
             // Jika akun user ada, sesuaikan nama dan username NIM
             if ($user) {
                 $user->nama_user = $validated['nama_mahasiswa'];
 
                 if (! empty($validated['nim']) && $validated['nim'] !== $mahasiswa->nim) {
-                    $newNim = $validated['nim'];
                     $user->username = $newNim;
-                    $user->password = Hash::make($newNim);
                 }
 
                 if (! empty($validated['no_hp'])) {
@@ -205,7 +259,7 @@ class DataMahasiswaAdminController extends Controller
             }
 
             if (! empty($validated['nim'])) {
-                $mahasiswa->nim = $validated['nim'];
+                $mahasiswa->nim = $newNim;
             }
 
             $mahasiswa->nama_mahasiswa = $validated['nama_mahasiswa'];

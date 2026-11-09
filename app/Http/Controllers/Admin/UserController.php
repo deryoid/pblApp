@@ -176,10 +176,23 @@ class UserController extends Controller
 
         // Jika user adalah mahasiswa, sesuaikan nama di Bank Data Mahasiswa
         if ($user->role === 'mahasiswa') {
-            $m = $user->mahasiswa;
+            $m = $user->getOrResolveMahasiswa();
             if ($m) {
+                $newNim = strtoupper($user->username);
+                if ($newNim !== $m->nim) {
+                    $unlinkedDuplicate = \App\Models\Mahasiswa::where('nim', $newNim)
+                        ->where('id', '!=', $m->id)
+                        ->whereNull('user_id')
+                        ->first();
+                    if ($unlinkedDuplicate) {
+                        \Illuminate\Support\Facades\DB::table('kelompok_mahasiswa')
+                            ->where('mahasiswa_id', $unlinkedDuplicate->id)
+                            ->update(['mahasiswa_id' => $m->id]);
+                        $unlinkedDuplicate->delete();
+                    }
+                    $m->nim = $newNim;
+                }
                 $m->nama_mahasiswa = $user->nama_user;
-                $m->nim = strtoupper($user->username);
                 $m->save();
             }
         }
