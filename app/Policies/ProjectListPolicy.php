@@ -2,7 +2,9 @@
 
 namespace App\Policies;
 
+use App\Models\Kelompok;
 use App\Models\Mahasiswa;
+use App\Models\Periode;
 use App\Models\ProjectList;
 use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
@@ -33,16 +35,47 @@ class ProjectListPolicy
 
     public function update(User $user, ProjectList $list): bool
     {
-        $mhs = $this->resolveMahasiswa($user);
-        if (! $mhs) {
-            return false;
+        if ($user->role === 'admin') {
+            return true;
         }
 
-        // Mahasiswa diizinkan mengelola list/kolom jika merupakan anggota kelompok pemilik kolom tersebut
-        return DB::table('kelompok_mahasiswa')
-            ->where('mahasiswa_id', $mhs->id)
+        $mhs = $this->resolveMahasiswa($user);
+
+        // 1. Cek langsung ke pivot kelompok_mahasiswa
+        if ($mhs && DB::table('kelompok_mahasiswa')
             ->where('kelompok_id', $list->kelompok_id)
-            ->exists();
+            ->where(function ($q) use ($mhs, $user) {
+                $q->where('mahasiswa_id', $mhs->id)
+                    ->orWhere('mahasiswa_id', $user->id);
+            })->exists()) {
+            return true;
+        }
+
+        // 2. Cek lewat relasi mahasiswas pada kelompok list
+        $kelompok = Kelompok::find($list->kelompok_id);
+        if ($kelompok) {
+            $memberUserIds = $kelompok->mahasiswas()->pluck('user_id')->filter()->all();
+            if (in_array($user->id, $memberUserIds, true)) {
+                return true;
+            }
+            if ($mhs) {
+                $memberMhsIds = $kelompok->mahasiswas()->pluck('mahasiswa.id')->filter()->all();
+                if (in_array($mhs->id, $memberMhsIds, true)) {
+                    return true;
+                }
+            }
+        }
+
+        // 3. Cek kelompok aktif mahasiswa
+        $periodeAktif = Periode::getLatestActive();
+        if ($mhs && $periodeAktif) {
+            $kelompokAktif = $mhs->kelompoks()->wherePivot('periode_id', $periodeAktif->id)->first();
+            if ($kelompokAktif && (int) $kelompokAktif->id === (int) $list->kelompok_id) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function delete(User $user, ProjectList $list): bool
@@ -59,6 +92,7 @@ class ProjectListPolicy
     {
         return $user->mahasiswa
             ?? Mahasiswa::where('user_id', $user->id)->first()
-            ?? Mahasiswa::where('nim', $user->username)->first();
+            ?? Mahasiswa::where('nim', $user->username)->first()
+            ?? Mahasiswa::where('email_kampus', $user->email)->first();
     }
 }

@@ -2,7 +2,9 @@
 
 namespace App\Policies;
 
+use App\Models\Kelompok;
 use App\Models\Mahasiswa;
+use App\Models\Periode;
 use App\Models\ProjectCard;
 use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
@@ -33,16 +35,51 @@ class ProjectCardPolicy
 
     public function update(User $user, ProjectCard $card): bool
     {
-        $mhs = $this->resolveMahasiswa($user);
-        if (! $mhs) {
-            return false;
+        if ($user->role === 'admin') {
+            return true;
         }
 
-        // Mahasiswa diizinkan mengelola kartu jika merupakan anggota kelompok pemilik kartu tersebut
-        return DB::table('kelompok_mahasiswa')
-            ->where('mahasiswa_id', $mhs->id)
+        if ($card->created_by === $user->id) {
+            return true;
+        }
+
+        $mhs = $this->resolveMahasiswa($user);
+
+        // 1. Cek langsung ke pivot kelompok_mahasiswa
+        if ($mhs && DB::table('kelompok_mahasiswa')
             ->where('kelompok_id', $card->kelompok_id)
-            ->exists();
+            ->where(function ($q) use ($mhs, $user) {
+                $q->where('mahasiswa_id', $mhs->id)
+                    ->orWhere('mahasiswa_id', $user->id);
+            })->exists()) {
+            return true;
+        }
+
+        // 2. Cek lewat relasi mahasiswas pada kelompok kartu
+        $kelompok = Kelompok::find($card->kelompok_id);
+        if ($kelompok) {
+            $memberUserIds = $kelompok->mahasiswas()->pluck('user_id')->filter()->all();
+            if (in_array($user->id, $memberUserIds, true)) {
+                return true;
+            }
+            if ($mhs) {
+                $memberMhsIds = $kelompok->mahasiswas()->pluck('mahasiswa.id')->filter()->all();
+                if (in_array($mhs->id, $memberMhsIds, true)) {
+                    return true;
+                }
+            }
+        }
+
+        // 3. Cek kelompok aktif mahasiswa
+        $periodeAktif = Periode::getLatestActive();
+        if ($mhs && $periodeAktif) {
+            $kelompokAktif = $mhs->kelompoks()->wherePivot('periode_id', $periodeAktif->id)->first();
+            if ($kelompokAktif && (int) $kelompokAktif->id === (int) $card->kelompok_id) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function delete(User $user, ProjectCard $card): bool
@@ -59,6 +96,7 @@ class ProjectCardPolicy
     {
         return $user->mahasiswa
             ?? Mahasiswa::where('user_id', $user->id)->first()
-            ?? Mahasiswa::where('nim', $user->username)->first();
+            ?? Mahasiswa::where('nim', $user->username)->first()
+            ?? Mahasiswa::where('email_kampus', $user->email)->first();
     }
 }
