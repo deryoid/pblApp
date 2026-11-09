@@ -1,5 +1,9 @@
 @extends('layout.app')
 
+@php
+    $mataKuliah = $mataKuliah ?? $matakuliah ?? null;
+@endphp
+
 @section('content')
 <div class="container-fluid">
 

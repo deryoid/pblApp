@@ -218,6 +218,26 @@ class MataKuliahAndProjectLinkTest extends TestCase
         $this->assertTrue($mk->dosenPengampu->contains($this->dosen2->id));
     }
 
+    public function test_admin_can_access_edit_mata_kuliah_page(): void
+    {
+        $mk = MataKuliah::create([
+            'kode_matkul' => 'MK402',
+            'nama_matkul' => 'Jaringan Komputer Lanjut',
+            'semester' => 4,
+            'sks' => 3,
+            'is_active' => true,
+        ]);
+        $mk->dosenPengampu()->sync([$this->dosen->id]);
+
+        $response = $this->actingAs($this->admin)->get(route('matakuliah.edit', $mk));
+
+        $response->assertOk();
+        $response->assertViewIs('admin.matakuliah.edit');
+        $response->assertViewHas('mataKuliah');
+        $response->assertSee('Jaringan Komputer Lanjut');
+        $response->assertSee($this->dosen->nama_user);
+    }
+
     public function test_admin_can_update_mata_kuliah_dosen_pengampu(): void
     {
         $mk = MataKuliah::create([

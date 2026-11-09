@@ -78,7 +78,7 @@ class MataKuliahAdminController extends Controller
         }
 
         $validated['dosen_id'] = ! empty($dosenIds) ? $dosenIds[0] : null;
-        $validated['is_active'] = $request->has('is_active') ? (bool) $request->input('is_active') : true;
+        $validated['is_active'] = $request->boolean('is_active');
 
         $mataKuliah = MataKuliah::create($validated);
         $mataKuliah->dosenPengampu()->sync($dosenIds);
@@ -94,11 +94,12 @@ class MataKuliahAdminController extends Controller
     public function edit(MataKuliah $matakuliah): View
     {
         $matakuliah->load('dosenPengampu');
+        $mataKuliah = $matakuliah;
         $dosenList = User::whereIn('role', ['dosen', 'evaluator', 'admin'])
             ->orderBy('nama_user')
             ->get();
 
-        return view('admin.matakuliah.edit', compact('matakuliah', 'dosenList'));
+        return view('admin.matakuliah.edit', compact('mataKuliah', 'matakuliah', 'dosenList'));
     }
 
     /**
@@ -133,7 +134,7 @@ class MataKuliahAdminController extends Controller
         }
 
         $validated['dosen_id'] = ! empty($dosenIds) ? $dosenIds[0] : null;
-        $validated['is_active'] = $request->has('is_active') ? (bool) $request->input('is_active') : true;
+        $validated['is_active'] = $request->boolean('is_active');
 
         $matakuliah->update($validated);
         $matakuliah->dosenPengampu()->sync($dosenIds);
