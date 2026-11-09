@@ -5,14 +5,26 @@
         <i class="fa fa-bars" aria-hidden="true"></i>
     </button>
 
+    @php
+        $topbarPeriodeAktif = \App\Models\Periode::getLatestActive();
+    @endphp
+
     <!-- Left breadcrumb / Quick Brand -->
     <div class="d-none d-sm-flex align-items-center">
         <span class="badge badge-primary mr-2">
             <i class="fas fa-layer-group mr-1"></i> PBL TRKJ Politala
         </span>
-        <span class="text-muted small font-weight-bold">
+        <span class="text-muted small font-weight-bold mr-2">
             Politeknik Negeri Tanah Laut
         </span>
+        @if($topbarPeriodeAktif)
+            <span class="d-none d-lg-inline-flex align-items-center px-2 py-0.5 rounded-pill text-xs font-weight-semibold text-secondary"
+                  style="background: #f1f5f9; border: 1px solid #e2e8f0; font-size: 0.72rem;"
+                  title="Periode PBL Aktif: {{ $topbarPeriodeAktif->periode }}">
+                <span class="status-pulse-dot mr-1.5" style="width: 5px; height: 5px;"></span>
+                Periode: <strong class="text-dark ml-1">{{ $topbarPeriodeAktif->periode }}</strong>
+            </span>
+        @endif
     </div>
 
     <!-- Topbar Navbar (Right Items) -->

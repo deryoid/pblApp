@@ -401,24 +401,56 @@
             box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3) !important;
         }
 
-        /* Period Footer Card */
-        .sidebar-period-card {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.06);
+        /* Active Period Header Chip (Global Context) */
+        .sidebar-period-chip {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.75), rgba(15, 23, 42, 0.85));
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .sidebar-period-chip:hover {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98));
+            border-color: rgba(56, 189, 248, 0.35);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.32);
+            transform: translateY(-1px);
+        }
+
+        .period-chip-icon {
+            width: 26px;
+            height: 26px;
+            border-radius: 7px;
+            background: rgba(56, 189, 248, 0.12);
+            border: 1px solid rgba(56, 189, 248, 0.25);
+            color: #38bdf8;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.725rem;
+            flex-shrink: 0;
             transition: all 0.2s ease;
         }
 
-        .sidebar-period-card:hover {
-            background: rgba(255, 255, 255, 0.05);
-            border-color: rgba(255, 255, 255, 0.1);
+        .sidebar-period-chip:hover .period-chip-icon {
+            background: rgba(56, 189, 248, 0.22);
+            border-color: rgba(56, 189, 248, 0.5);
+            color: #7dd3fc;
         }
 
-        .period-label {
-            font-size: 0.65rem;
+        .period-chip-label {
+            font-size: 0.58rem;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.08em;
             color: #64748b;
+        }
+
+        .period-chip-val {
+            font-size: 0.78rem;
+            color: #f1f5f9;
+            letter-spacing: 0.01em;
+            font-weight: 700;
         }
 
         .period-badge {
@@ -427,23 +459,12 @@
             background: rgba(16, 185, 129, 0.15);
             color: #34d399;
             border: 1px solid rgba(16, 185, 129, 0.35);
-            padding: 1px 6px;
+            padding: 2px 7px;
             border-radius: 9999px;
             display: inline-flex;
             align-items: center;
-        }
-
-        .period-name {
-            font-size: 0.775rem;
-            font-weight: 700;
-            color: #ffffff;
-            line-height: 1.3;
-        }
-
-        .period-desc {
-            font-size: 0.6875rem;
-            color: #94a3b8;
-            margin-top: 1px;
+            flex-shrink: 0;
+            line-height: 1.2;
         }
 
         /* Pulse Dot Animation */
@@ -472,7 +493,14 @@
             vertical-align: middle;
         }
 
-        /* Sidebar Toggle Button */
+        /* Sidebar Footer Wrapper & Toggle Button */
+        .sidebar-footer-wrapper {
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            background: rgba(0, 0, 0, 0.12);
+            padding: 0.85rem 1rem;
+            transition: all 0.2s ease;
+        }
+
         #sidebarToggle,
         .sidebar-toggler-btn {
             width: 2.25rem !important;
@@ -613,8 +641,13 @@
                 box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4) !important;
             }
 
+            .sidebar.toggled .sidebar-period-chip,
             .sidebar.toggled .sidebar-period-card {
                 display: none !important;
+            }
+
+            .sidebar.toggled .sidebar-footer-wrapper {
+                padding: 0.85rem 0.25rem !important;
             }
 
             .sidebar.toggled .sidebar-toggler-btn .toggler-icon {
@@ -744,10 +777,12 @@
                 display: inline-block !important;
             }
 
+            .sidebar.toggled .sidebar-period-chip,
             .sidebar.toggled .sidebar-period-card {
-                display: block !important;
+                display: flex !important;
             }
 
+            .sidebar.toggled .sidebar-footer-wrapper,
             .sidebar.toggled .sidebar-toggle-wrapper {
                 display: none !important;
             }

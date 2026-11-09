@@ -49,6 +49,27 @@
     </div>
     @endauth
 
+    {{-- Sidebar - Active Period Chip (Global Context) --}}
+    @if($periodeAktif)
+    <div class="sidebar-period-chip mx-3 mb-2 px-2.5 py-2 d-flex align-items-center justify-content-between"
+         title="Periode PBL Aktif: {{ $periodeAktif->periode }}{{ $periodeAktif->keterangan ? ' ('.$periodeAktif->keterangan.')' : '' }}">
+        <div class="d-flex align-items-center overflow-hidden mr-2">
+            <div class="period-chip-icon mr-2">
+                <i class="fas fa-calendar-alt"></i>
+            </div>
+            <div class="d-flex flex-column overflow-hidden text-left" style="line-height: 1.15;">
+                <span class="period-chip-label">PERIODE PBL</span>
+                <span class="period-chip-val text-truncate font-weight-bold">
+                    {{ $periodeAktif->periode }}
+                </span>
+            </div>
+        </div>
+        <span class="period-badge">
+            <span class="status-pulse-dot mr-1"></span>Aktif
+        </span>
+    </div>
+    @endif
+
     {{-- ======================= UTAMA ======================= --}}
     <div class="sidebar-heading">Utama</div>
 
@@ -348,30 +369,8 @@
         </li>
     @endif
 
-    {{-- Active Period Footer Card --}}
-    @if($periodeAktif)
-        <div class="sidebar-period-card mx-3 mt-auto mb-2 p-2.5 rounded-xl">
-            <div class="d-flex align-items-center justify-content-between mb-1">
-                <span class="period-label">
-                    <i class="fas fa-calendar-check mr-1 text-info"></i> Periode PBL
-                </span>
-                <span class="period-badge">
-                    <span class="status-pulse-dot mr-1"></span>Aktif
-                </span>
-            </div>
-            <div class="period-name text-truncate">
-                {{ $periodeAktif->periode }}
-            </div>
-            @if($periodeAktif->keterangan)
-                <div class="period-desc text-truncate">
-                    {{ $periodeAktif->keterangan }}
-                </div>
-            @endif
-        </div>
-    @endif
-
-    {{-- Sidebar Toggler (Sidebar) --}}
-    <div class="sidebar-toggle-wrapper text-center d-none d-md-block mb-3 mt-1">
+    {{-- Sidebar Footer / Toggler --}}
+    <div class="sidebar-footer-wrapper mt-auto pt-3 pb-3 text-center d-none d-md-block">
         <button class="sidebar-toggler-btn border-0" id="sidebarToggle" title="Perluas / Ciutkan Navigasi" aria-label="Toggle navigasi sidebar">
             <i class="fas fa-chevron-left toggler-icon"></i>
         </button>
