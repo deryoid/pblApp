@@ -366,12 +366,17 @@
         <div class="row">
             <div class="col-lg-7 mx-auto">
                 <div class="card shadow-sm border-0 rounded-xl">
-                    <div class="card-header bg-white border-bottom py-3 text-center">
-                        <div class="rounded-circle bg-light text-primary mx-auto d-flex align-items-center justify-content-center mb-2 shadow-sm" style="width:56px;height:56px;font-size:1.5rem;">
-                            <i class="fas fa-plus"></i>
+                    <div class="card-header bg-white border-bottom p-3 p-md-4">
+                        <div class="d-flex align-items-center w-100">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center mr-3 shadow-sm flex-shrink-0"
+                                 style="width: 48px; height: 48px; background: rgba(37, 99, 235, 0.1); border: 1px solid rgba(37, 99, 235, 0.2); color: #2563eb; font-size: 1.25rem;">
+                                <i class="fas fa-plus"></i>
+                            </div>
+                            <div>
+                                <h5 class="font-weight-bold text-dark mb-1" style="font-size: 1.15rem;">Bentuk Kelompok PBL Baru</h5>
+                                <p class="text-muted small mb-0">Belum tergabung dalam kelompok? Buat kelompok baru Anda sekarang dan undang rekan tim.</p>
+                            </div>
                         </div>
-                        <h5 class="font-weight-bold text-dark mb-1">Bentuk Kelompok PBL Baru</h5>
-                        <p class="text-muted small mb-0">Belum tergabung dalam kelompok? Buat kelompok baru Anda sekarang dan undang rekan tim.</p>
                     </div>
                     <div class="card-body p-4">
                         <form action="{{ route('mahasiswa.kelompok.store') }}" method="POST">

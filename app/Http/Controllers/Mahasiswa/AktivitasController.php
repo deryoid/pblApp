@@ -169,7 +169,7 @@ class AktivitasController extends Controller
 
     private function resolveKelompokSaya(): array
     {
-        $mhs = Mahasiswa::where('user_id', Auth::id())->first();
+        $mhs = Mahasiswa::resolveForUser(Auth::user());
         $periodeAktif = Periode::getLatestActive();
 
         $kelompokSaya = null;
@@ -178,6 +178,8 @@ class AktivitasController extends Controller
             $kelompokSaya = $mhs->kelompoks()
                 ->wherePivot('periode_id', $periodeAktif->id)
                 ->first();
+        } elseif ($mhs) {
+            $kelompokSaya = $mhs->kelompoks()->latest('kelompok.id')->first();
         }
 
         return [$kelompokSaya, $periodeAktif];

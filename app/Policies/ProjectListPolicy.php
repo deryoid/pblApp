@@ -5,6 +5,7 @@ namespace App\Policies;
 use App\Models\Kelompok;
 use App\Models\Mahasiswa;
 use App\Models\Periode;
+use App\Models\ProjectCard;
 use App\Models\ProjectList;
 use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
@@ -25,12 +26,19 @@ class ProjectListPolicy
 
     public function create(User $user): bool
     {
-        $mhs = $this->resolveMahasiswa($user);
-        if (! $mhs) {
-            return false;
+        if ($user->role === 'admin') {
+            return true;
         }
 
-        return DB::table('kelompok_mahasiswa')->where('mahasiswa_id', $mhs->id)->exists();
+        $mhs = $this->resolveMahasiswa($user);
+
+        return DB::table('kelompok_mahasiswa')
+            ->where(function ($q) use ($mhs, $user) {
+                $q->where('mahasiswa_id', $user->id);
+                if ($mhs) {
+                    $q->orWhere('mahasiswa_id', $mhs->id);
+                }
+            })->exists();
     }
 
     public function update(User $user, ProjectList $list): bool
@@ -41,17 +49,25 @@ class ProjectListPolicy
 
         $mhs = $this->resolveMahasiswa($user);
 
-        // 1. Cek langsung ke pivot kelompok_mahasiswa
-        if ($mhs && DB::table('kelompok_mahasiswa')
+        // 1. Cek langsung user_id atau mhs_id ke pivot kelompok_mahasiswa
+        if (DB::table('kelompok_mahasiswa')
             ->where('kelompok_id', $list->kelompok_id)
             ->where(function ($q) use ($mhs, $user) {
-                $q->where('mahasiswa_id', $mhs->id)
-                    ->orWhere('mahasiswa_id', $user->id);
+                $q->where('mahasiswa_id', $user->id);
+                if ($mhs) {
+                    $q->orWhere('mahasiswa_id', $mhs->id);
+                }
             })->exists()) {
             return true;
         }
 
-        // 2. Cek lewat relasi mahasiswas pada kelompok list
+        // 2. Cek apakah user pernah membuat kartu di list ini atau di kelompok ini
+        if ($list->cards()->where('created_by', $user->id)->exists()
+            || ProjectCard::where('kelompok_id', $list->kelompok_id)->where('created_by', $user->id)->exists()) {
+            return true;
+        }
+
+        // 3. Cek lewat relasi mahasiswas pada kelompok list
         $kelompok = Kelompok::find($list->kelompok_id);
         if ($kelompok) {
             $memberUserIds = $kelompok->mahasiswas()->pluck('user_id')->filter()->all();
@@ -66,11 +82,34 @@ class ProjectListPolicy
             }
         }
 
-        // 3. Cek kelompok aktif mahasiswa
-        $periodeAktif = Periode::getLatestActive();
-        if ($mhs && $periodeAktif) {
-            $kelompokAktif = $mhs->kelompoks()->wherePivot('periode_id', $periodeAktif->id)->first();
-            if ($kelompokAktif && (int) $kelompokAktif->id === (int) $list->kelompok_id) {
+        // 4. Cek kelompok aktif atau kelompok apapun milik mahasiswa
+        if ($mhs) {
+            $periodeAktif = Periode::getLatestActive();
+            if ($periodeAktif) {
+                $kelompokAktif = $mhs->kelompoks()->wherePivot('periode_id', $periodeAktif->id)->first();
+                if ($kelompokAktif && (int) $kelompokAktif->id === (int) $list->kelompok_id) {
+                    return true;
+                }
+            }
+
+            if ($mhs->kelompoks()->where('kelompok.id', $list->kelompok_id)->exists()) {
+                return true;
+            }
+        }
+
+        // 5. Fallback kelompok pengguna mahasiswa
+        if ($user->role === 'mahasiswa') {
+            $userKelompokIds = DB::table('kelompok_mahasiswa')
+                ->where(function ($q) use ($user, $mhs) {
+                    $q->where('mahasiswa_id', $user->id);
+                    if ($mhs) {
+                        $q->orWhere('mahasiswa_id', $mhs->id);
+                    }
+                })
+                ->pluck('kelompok_id')
+                ->all();
+
+            if (in_array($list->kelompok_id, $userKelompokIds, false)) {
                 return true;
             }
         }
@@ -90,9 +129,19 @@ class ProjectListPolicy
 
     protected function resolveMahasiswa(User $user): ?Mahasiswa
     {
-        return $user->mahasiswa
+        $mhs = $user->mahasiswa
             ?? Mahasiswa::where('user_id', $user->id)->first()
-            ?? Mahasiswa::where('nim', $user->username)->first()
-            ?? Mahasiswa::where('email_kampus', $user->email)->first();
+            ?? Mahasiswa::whereRaw('LOWER(TRIM(nim)) = LOWER(TRIM(?))', [$user->username])->first()
+            ?? Mahasiswa::where('email_kampus', $user->email)->first()
+            ?? ($user->email ? Mahasiswa::where('email_kampus', $user->email)->orWhere('user_id', $user->id)->first() : null)
+            ?? ($user->no_hp ? Mahasiswa::where('no_hp', $user->no_hp)->first() : null)
+            ?? Mahasiswa::whereRaw('LOWER(TRIM(nama_mahasiswa)) = LOWER(TRIM(?))', [$user->nama_user])->first();
+
+        // Auto-link user_id ke record mahasiswa jika belum terhubung
+        if ($mhs && ! $mhs->user_id) {
+            $mhs->update(['user_id' => $user->id]);
+        }
+
+        return $mhs;
     }
 }

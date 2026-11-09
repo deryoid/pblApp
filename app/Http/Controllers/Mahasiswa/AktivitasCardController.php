@@ -111,7 +111,7 @@ class AktivitasCardController extends Controller
 
     private function resolveKelompokSaya(): array
     {
-        $mhs = Mahasiswa::where('user_id', Auth::id())->first();
+        $mhs = Mahasiswa::resolveForUser(Auth::user());
         $periodeAktif = Periode::getLatestActive();
         $kelompokSaya = null;
         if ($mhs && $periodeAktif) {

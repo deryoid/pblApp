@@ -1043,11 +1043,12 @@
     const form = $(this).closest('form');
     Swal.fire({
       title: 'Hapus kolom?',
-      text: 'Kolom harus kosong dari kartu sebelum dapat dihapus.',
+      text: 'Semua kartu proyek di dalam kolom ini juga akan ikut dihapus.',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonText: 'Ya, hapus',
-      cancelButtonText: 'Batal'
+      cancelButtonText: 'Batal',
+      confirmButtonColor: '#e02424'
     }).then(r=>{ if(r.isConfirmed) form.submit(); });
   });
 

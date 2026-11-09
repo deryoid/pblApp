@@ -79,6 +79,26 @@ class Mahasiswa extends Model
         });
     }
 
+    public static function resolveForUser(?User $user): ?self
+    {
+        if (! $user) {
+            return null;
+        }
+
+        $mhs = $user->mahasiswa
+            ?? static::where('user_id', $user->id)->first()
+            ?? static::whereRaw('LOWER(TRIM(nim)) = LOWER(TRIM(?))', [$user->username])->first()
+            ?? ($user->email ? static::where('email_kampus', $user->email)->orWhere('user_id', $user->id)->first() : null)
+            ?? ($user->no_hp ? static::where('no_hp', $user->no_hp)->first() : null)
+            ?? static::whereRaw('LOWER(TRIM(nama_mahasiswa)) = LOWER(TRIM(?))', [$user->nama_user])->first();
+
+        if ($mhs && ! $mhs->user_id) {
+            $mhs->update(['user_id' => $user->id]);
+        }
+
+        return $mhs;
+    }
+
     public function getRouteKeyName(): string
     {
         return 'uuid';

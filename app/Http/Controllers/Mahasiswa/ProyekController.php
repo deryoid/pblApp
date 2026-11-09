@@ -31,7 +31,7 @@ class ProyekController extends Controller
             ]);
         }
 
-        $mhs = Mahasiswa::where('user_id', Auth::id())->first();
+        $mhs = Mahasiswa::resolveForUser(Auth::user());
         $kelompokSemester = (int) ($kelompok->semester ?? ($mhs->semester ?? 1));
 
         $mataKuliahList = MataKuliah::with('dosenPengampu')
@@ -194,11 +194,13 @@ class ProyekController extends Controller
 
     private function resolveKelompokSaya(): array
     {
-        $mhs = Mahasiswa::where('user_id', Auth::id())->first();
+        $mhs = Mahasiswa::resolveForUser(Auth::user());
         $periodeAktif = Periode::getLatestActive();
         $kelompokSaya = null;
         if ($mhs && $periodeAktif) {
             $kelompokSaya = $mhs->kelompoks()->wherePivot('periode_id', $periodeAktif->id)->first();
+        } elseif ($mhs) {
+            $kelompokSaya = $mhs->kelompoks()->latest('kelompok.id')->first();
         }
 
         return [$kelompokSaya, $periodeAktif];

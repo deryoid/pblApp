@@ -12,6 +12,7 @@ use App\Models\ProjectList;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -575,6 +576,71 @@ class ProyekMahasiswaTest extends TestCase
 
         // Pastikan halaman index tetap tampil normal tanpa error 403
         $indexResponse = $this->actingAs($this->studentUser)->get(route('proyek.index'));
+        $indexResponse->assertStatus(200);
+        $indexResponse->assertSee('Belum ada kolom untuk kelompok ini.');
+    }
+
+    public function test_online_server_scenario_unlinked_student_creates_project_and_deletes_columns_until_empty(): void
+    {
+        $unlinkedUser = User::create([
+            'nama_user' => 'Siswa Online',
+            'username' => '230411199999',
+            'email' => 'siswa.online@politala.ac.id',
+            'password' => Hash::make('password123'),
+            'role' => 'mahasiswa',
+            'no_hp' => '089999999999',
+        ]);
+
+        $mhsRecord = Mahasiswa::create([
+            'nama_mahasiswa' => 'Siswa Online',
+            'nim' => '230411199999',
+            'kelas_id' => $this->kelas->id,
+            'semester' => 3,
+            'user_id' => null,
+            'is_profile_complete' => true,
+        ]);
+
+        $newGroup = Kelompok::create([
+            'nama_kelompok' => 'Kelompok Online Test',
+            'skema_kategori' => 'External',
+            'periode_id' => $this->periode->id,
+        ]);
+
+        $newGroup->mahasiswas()->attach($mhsRecord->id, [
+            'periode_id' => $this->periode->id,
+            'role' => 'Ketua',
+        ]);
+
+        // 1. Mahasiswa membuat proyek baru saat kelompok belum punya kolom
+        $storeResponse = $this->actingAs($unlinkedUser)->post(route('proyek.cards.store'), [
+            'title' => 'Proyek Online Perdana',
+            'skema_pbl' => 'External',
+        ]);
+        $storeResponse->assertRedirect();
+
+        // Kolom 'Perencanaan' otomatis dibuat
+        $autoList = ProjectList::where('kelompok_id', $newGroup->id)->first();
+        $this->assertNotNull($autoList);
+        $this->assertSame('Perencanaan', $autoList->name);
+
+        $createdCard = ProjectCard::where('kelompok_id', $newGroup->id)->first();
+        $this->assertNotNull($createdCard);
+
+        // 2. Mahasiswa menghapus kartu proyek
+        $delCardResponse = $this->actingAs($unlinkedUser)->delete(route('proyek.cards.destroy', $createdCard));
+        $delCardResponse->assertRedirect();
+        $this->assertDatabaseMissing('project_cards', ['id' => $createdCard->id]);
+
+        // 3. Mahasiswa menghapus kolom sampai habis
+        $delListResponse = $this->actingAs($unlinkedUser)->delete(route('proyek.lists.destroy', $autoList));
+        $delListResponse->assertRedirect();
+        $this->assertDatabaseMissing('project_lists', ['id' => $autoList->id]);
+
+        // 4. Pastikan tidak ada 403, dan auto-link user_id berhasil
+        $mhsRecord->refresh();
+        $this->assertSame($unlinkedUser->id, $mhsRecord->user_id);
+
+        $indexResponse = $this->actingAs($unlinkedUser)->get(route('proyek.index'));
         $indexResponse->assertStatus(200);
         $indexResponse->assertSee('Belum ada kolom untuk kelompok ini.');
     }

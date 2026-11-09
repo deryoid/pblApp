@@ -127,7 +127,7 @@ class AktivitasListController extends Controller
                 ->decrement('position');
         });
 
-        Alert::toast('Kolom aktivitas dihapus.', 'success');
+        Alert::toast('Kolom aktivitas berhasil dihapus.', 'success');
 
         return back();
     }
@@ -176,7 +176,7 @@ class AktivitasListController extends Controller
 
     private function resolveContext(): array
     {
-        $mhs = Mahasiswa::where('user_id', Auth::id())->first();
+        $mhs = Mahasiswa::resolveForUser(Auth::user());
         $periodeAktif = Periode::getLatestActive();
         $kelompokSaya = null;
 

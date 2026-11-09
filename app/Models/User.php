@@ -160,6 +160,11 @@ class User extends Authenticatable
         return $this->hasOne(\App\Models\Mahasiswa::class);
     }
 
+    public function getOrResolveMahasiswa(): ?\App\Models\Mahasiswa
+    {
+        return \App\Models\Mahasiswa::resolveForUser($this);
+    }
+
     public function dosen(): HasOne
     {
         return $this->hasOne(\App\Models\Dosen::class);
@@ -184,7 +189,7 @@ class User extends Authenticatable
     {
         // Untuk mahasiswa, wajib memiliki no_hp dan data akademik (NIM, kelas_id, dan is_profile_complete)
         if ($this->role === 'mahasiswa') {
-            $mhs = $this->mahasiswa;
+            $mhs = $this->getOrResolveMahasiswa();
             if (! $mhs) {
                 return false;
             }

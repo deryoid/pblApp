@@ -87,20 +87,25 @@ class ProyekListController extends Controller
     public function destroy(ProjectList $list)
     {
         $this->authorize('delete', $list);
+
         if ($list->cards()->exists()) {
             Alert::error('Gagal', 'Tidak dapat menghapus kolom yang masih berisi kartu. Pindahkan atau hapus kartu di dalamnya terlebih dahulu.');
 
             return back()->withErrors('Tidak dapat menghapus kolom yang masih berisi kartu. Pindahkan atau hapus kartu di dalamnya terlebih dahulu.');
         }
+
         $kid = $list->kelompok_id;
         $pos = $list->position;
+
         DB::transaction(function () use ($list, $kid, $pos) {
             $list->delete();
+
             ProjectList::where('kelompok_id', $kid)
                 ->where('position', '>', $pos)
                 ->decrement('position');
         });
-        Alert::toast('Kolom dihapus.', 'success');
+
+        Alert::toast('Kolom berhasil dihapus.', 'success');
 
         return back();
     }
@@ -137,7 +142,7 @@ class ProyekListController extends Controller
 
     private function resolveContext(): array
     {
-        $mhs = Mahasiswa::where('user_id', Auth::id())->first();
+        $mhs = Mahasiswa::resolveForUser(Auth::user());
         $periodeAktif = Periode::getLatestActive();
         $kelompokSaya = null;
         if ($mhs && $periodeAktif) {
