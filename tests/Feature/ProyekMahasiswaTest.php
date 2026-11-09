@@ -534,4 +534,48 @@ class ProyekMahasiswaTest extends TestCase
         $response->assertRedirect();
         $this->assertDatabaseMissing('project_cards', ['id' => $cardToDelete->id]);
     }
+
+    public function test_student_can_delete_all_projects_and_lists_until_completely_empty(): void
+    {
+        // Tambahkan kartu ke list 1 dan list 2
+        $card1 = ProjectCard::create([
+            'kelompok_id' => $this->kelompok->id,
+            'periode_id' => $this->periode->id,
+            'list_id' => $this->list1->id,
+            'title' => 'Project 1',
+            'skema_pbl' => 'Internal',
+        ]);
+        $card2 = ProjectCard::create([
+            'kelompok_id' => $this->kelompok->id,
+            'periode_id' => $this->periode->id,
+            'list_id' => $this->list2->id,
+            'title' => 'Project 2',
+            'skema_pbl' => 'External',
+        ]);
+
+        // Hapus card 1
+        $r1 = $this->actingAs($this->studentUser)->delete(route('proyek.cards.destroy', $card1));
+        $r1->assertRedirect();
+        $this->assertDatabaseMissing('project_cards', ['id' => $card1->id]);
+
+        // Hapus list 1 (sekarang kosong)
+        $rList1 = $this->actingAs($this->studentUser)->delete(route('proyek.lists.destroy', $this->list1));
+        $rList1->assertRedirect();
+        $this->assertDatabaseMissing('project_lists', ['id' => $this->list1->id]);
+
+        // Hapus card 2 (kartu terakhir sampai habis)
+        $r2 = $this->actingAs($this->studentUser)->delete(route('proyek.cards.destroy', $card2));
+        $r2->assertRedirect();
+        $this->assertDatabaseMissing('project_cards', ['id' => $card2->id]);
+
+        // Hapus list 2 (kolom terakhir sampai habis)
+        $rList2 = $this->actingAs($this->studentUser)->delete(route('proyek.lists.destroy', $this->list2));
+        $rList2->assertRedirect();
+        $this->assertDatabaseMissing('project_lists', ['id' => $this->list2->id]);
+
+        // Pastikan halaman index tetap tampil normal tanpa error 403
+        $indexResponse = $this->actingAs($this->studentUser)->get(route('proyek.index'));
+        $indexResponse->assertStatus(200);
+        $indexResponse->assertSee('Belum ada kolom untuk kelompok ini.');
+    }
 }

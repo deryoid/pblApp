@@ -4,9 +4,9 @@ namespace App\Policies;
 
 use App\Models\AktivitasList;
 use App\Models\Mahasiswa;
-use App\Models\Periode;
 use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
+use Illuminate\Support\Facades\DB;
 
 class AktivitasListPolicy
 {
@@ -23,28 +23,26 @@ class AktivitasListPolicy
 
     public function create(User $user): bool
     {
-        $mhs = Mahasiswa::where('user_id', $user->id)->first();
+        $mhs = $this->resolveMahasiswa($user);
         if (! $mhs) {
             return false;
         }
 
-        $periodeAktif = Periode::getLatestActive();
-        $kelompok = $periodeAktif
-            ? $mhs->kelompoks()->wherePivot('periode_id', $periodeAktif->id)->first()
-            : null;
-
-        return (bool) ($kelompok ?? $mhs->kelompoks()->first());
+        return DB::table('kelompok_mahasiswa')->where('mahasiswa_id', $mhs->id)->exists();
     }
 
     public function update(User $user, AktivitasList $list): bool
     {
-        $mhs = Mahasiswa::where('user_id', $user->id)->first();
+        $mhs = $this->resolveMahasiswa($user);
         if (! $mhs) {
             return false;
         }
 
         // Mahasiswa diizinkan mengelola kolom aktivitas jika merupakan anggota kelompok pemilik kolom tersebut
-        return $mhs->kelompoks()->where('kelompok.id', $list->kelompok_id)->exists();
+        return DB::table('kelompok_mahasiswa')
+            ->where('mahasiswa_id', $mhs->id)
+            ->where('kelompok_id', $list->kelompok_id)
+            ->exists();
     }
 
     public function delete(User $user, AktivitasList $list): bool
@@ -55,5 +53,12 @@ class AktivitasListPolicy
     public function view(User $user, AktivitasList $list): bool
     {
         return $this->update($user, $list);
+    }
+
+    protected function resolveMahasiswa(User $user): ?Mahasiswa
+    {
+        return $user->mahasiswa
+            ?? Mahasiswa::where('user_id', $user->id)->first()
+            ?? Mahasiswa::where('nim', $user->username)->first();
     }
 }
