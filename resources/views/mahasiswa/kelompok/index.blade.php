@@ -415,21 +415,45 @@
                                 <select name="skema_kategori" id="skema_kategori" class="form-control @error('skema_kategori') is-invalid @enderror" required>
                                     <option value="">-- Pilih Salah Satu Skema Kategori --</option>
                                     <option value="Internal" {{ old('skema_kategori') === 'Internal' ? 'selected' : '' }}>
-                                        Internal (Proyek Riset / Kebutuhan Internal Kampus - Wajib Proposal)
+                                        Internal (Proyek Riset / Kebutuhan Internal Kampus - Wajib Proposal, Maks. 4 Orang)
                                     </option>
                                     <option value="External" {{ old('skema_kategori') === 'External' ? 'selected' : '' }}>
-                                        External (Mitra Industri / UMKM / Instansi Luar)
+                                        External (Mitra Industri / UMKM / Instansi Luar - Bisa > 4 Orang)
                                     </option>
                                     <option value="Hibah/Penelitian" {{ old('skema_kategori') === 'Hibah/Penelitian' ? 'selected' : '' }}>
-                                        Hibah / Penelitian (Riset Dosen & Pendanaan Hibah)
+                                        Hibah / Penelitian (Riset Dosen & Pendanaan Hibah - Bisa > 4 Orang)
                                     </option>
                                     <option value="Lomba" {{ old('skema_kategori') === 'Lomba' ? 'selected' : '' }}>
-                                        Lomba (Kompetisi / Gemastik / PKM / Hackathon)
+                                        Lomba (Kompetisi / Gemastik / PKM / Hackathon - Bisa > 4 Orang)
                                     </option>
                                 </select>
                                 @error('skema_kategori') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 <small class="text-muted d-block mt-1">
-                                    <i class="fas fa-info-circle mr-1"></i>Setiap kelompok wajib memilih 1 skema kategori. Khusus skema <strong>Internal</strong>, wajib mengunggah proposal sebelum memulai pengerjaan proyek.
+                                    <i class="fas fa-info-circle mr-1"></i>Khusus skema <strong>Internal</strong> dibatasi maksimal 4 orang anggota (wajib proposal). Untuk skema selain Internal (<strong>External, Hibah/Penelitian, Lomba</strong>), kelompok dapat memiliki lebih dari 4 orang anggota.
+                                </small>
+                            </div>
+
+                            {{-- Kapasitas Maksimal Anggota Tim --}}
+                            <div class="form-group mb-3" id="wrapper_max_members">
+                                <label for="max_members" class="font-weight-bold small text-dark d-flex align-items-center justify-content-between">
+                                    <span>Kapasitas Maksimal Anggota <span class="text-danger">*</span></span>
+                                    <span class="badge badge-warning px-2 py-1 shadow-sm font-weight-bold" id="badge_max_members">
+                                        Maks. 4 Orang (Internal)
+                                    </span>
+                                </label>
+                                <select name="max_members" id="max_members" class="form-control @error('max_members') is-invalid @enderror">
+                                    <option value="4" {{ old('max_members') == 4 ? 'selected' : '' }}>4 Orang (Standar Proyek Internal)</option>
+                                    <option value="5" {{ old('max_members') == 5 ? 'selected' : '' }}>5 Orang</option>
+                                    <option value="6" {{ old('max_members') == 6 ? 'selected' : '' }}>6 Orang</option>
+                                    <option value="7" {{ old('max_members') == 7 ? 'selected' : '' }}>7 Orang</option>
+                                    <option value="8" {{ old('max_members', 8) == 8 ? 'selected' : '' }}>8 Orang (Rekomendasi Non-Internal)</option>
+                                    <option value="9" {{ old('max_members') == 9 ? 'selected' : '' }}>9 Orang</option>
+                                    <option value="10" {{ old('max_members') == 10 ? 'selected' : '' }}>10 Orang</option>
+                                    <option value="12" {{ old('max_members') == 12 ? 'selected' : '' }}>12 Orang</option>
+                                </select>
+                                @error('max_members') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                <small class="text-muted d-block mt-1" id="help_max_members">
+                                    <i class="fas fa-info-circle mr-1"></i>Kapasitas anggota untuk kelompok proyek ini.
                                 </small>
                             </div>
 
@@ -518,6 +542,48 @@ $(document).ready(function() {
             $('#kelompokLivePreview').html('Pratinjau: <strong>Kelompok ' + nextKelompokNum + '</strong>');
         }
     });
+
+    // 4. Pengaturan Dinamis Kapasitas Anggota Berdasarkan Skema Proyek
+    function updateMaxMembersUI() {
+        var skema = $('#skema_kategori').val();
+        var isInternal = skema && skema.toLowerCase() === 'internal';
+
+        if (isInternal) {
+            $('#max_members').val('4');
+            $('#max_members option').each(function() {
+                if ($(this).val() !== '4') {
+                    $(this).prop('disabled', true);
+                } else {
+                    $(this).prop('disabled', false);
+                }
+            });
+            $('#badge_max_members')
+                .removeClass('badge-success badge-info text-white')
+                .addClass('badge-warning text-dark')
+                .html('<i class="fas fa-lock mr-1"></i>Maks. 4 Orang (Wajib Internal)');
+            $('#help_max_members').html('<i class="fas fa-info-circle text-warning mr-1"></i>Proyek <strong>Internal</strong> dibatasi maksimal 4 orang anggota tim.');
+        } else if (skema) {
+            $('#max_members option').prop('disabled', false);
+            if ($('#max_members').val() === '4') {
+                $('#max_members').val('8');
+            }
+            $('#badge_max_members')
+                .removeClass('badge-warning text-dark badge-info')
+                .addClass('badge-success text-white')
+                .html('<i class="fas fa-users mr-1"></i>Bisa > 4 Orang (Non-Internal)');
+            $('#help_max_members').html('<i class="fas fa-check-circle text-success mr-1"></i>Proyek <strong>' + skema + '</strong> diperbolehkan memiliki lebih dari 4 orang anggota.');
+        } else {
+            $('#max_members option').prop('disabled', false);
+            $('#badge_max_members')
+                .removeClass('badge-warning badge-success text-dark text-white')
+                .addClass('badge-info')
+                .text('Tergantung Skema');
+            $('#help_max_members').html('<i class="fas fa-info-circle mr-1"></i>Pilih skema kategori terlebih dahulu.');
+        }
+    }
+
+    $('#skema_kategori').on('change', updateMaxMembersUI);
+    updateMaxMembersUI();
 });
 </script>
 @endpush

@@ -53,13 +53,13 @@
                 <div class="form-group">
                     <label for="skema_kategori">Skema Kategori Proyek <span class="text-danger">*</span></label>
                     <select name="skema_kategori" id="skema_kategori" class="form-control @error('skema_kategori') is-invalid @enderror" required>
-                        <option value="Internal" {{ old('skema_kategori') === 'Internal' ? 'selected' : '' }}>Internal (Wajib Proposal)</option>
-                        <option value="External" {{ old('skema_kategori') === 'External' ? 'selected' : '' }}>External (Mitra Industri)</option>
-                        <option value="Hibah/Penelitian" {{ old('skema_kategori') === 'Hibah/Penelitian' ? 'selected' : '' }}>Hibah / Penelitian</option>
-                        <option value="Lomba" {{ old('skema_kategori') === 'Lomba' ? 'selected' : '' }}>Lomba</option>
+                        <option value="Internal" {{ old('skema_kategori') === 'Internal' ? 'selected' : '' }}>Internal (Wajib Proposal, Maks. 4 Orang)</option>
+                        <option value="External" {{ old('skema_kategori') === 'External' ? 'selected' : '' }}>External (Mitra Industri, Bisa > 4 Orang)</option>
+                        <option value="Hibah/Penelitian" {{ old('skema_kategori') === 'Hibah/Penelitian' ? 'selected' : '' }}>Hibah / Penelitian (Bisa > 4 Orang)</option>
+                        <option value="Lomba" {{ old('skema_kategori') === 'Lomba' ? 'selected' : '' }}>Lomba (Bisa > 4 Orang)</option>
                     </select>
                     @error('skema_kategori') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                    <small class="form-text text-muted">Setiap kelompok wajib memiliki 1 skema kategori proyek.</small>
+                    <small class="form-text text-muted">Proyek Internal dibatasi maksimal 4 orang anggota. Skema selain Internal dapat memiliki lebih dari 4 orang.</small>
                 </div>
 
                 {{-- Link Drive (opsional) --}}

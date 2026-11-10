@@ -132,6 +132,7 @@ class KelompokController extends Controller
             'skema_kategori' => 'required|string|in:Internal,External,Hibah/Penelitian,Lomba',
             'semester' => 'nullable|integer|min:1|max:8',
             'link_drive' => 'nullable|url|max:255',
+            'max_members' => 'nullable|integer|min:2|max:30',
         ], [
             'skema_kategori.required' => 'Setiap kelompok wajib memilih 1 skema kategori (Internal, External, Hibah/Penelitian, Lomba).',
             'skema_kategori.in' => 'Skema kategori harus salah satu dari: Internal, External, Hibah/Penelitian, Lomba.',
@@ -139,14 +140,18 @@ class KelompokController extends Controller
 
         $formattedNamaKelompok = Kelompok::formatNamaKelompok($activePeriode->id, $validated['nama_kelompok']);
 
-        DB::transaction(function () use ($validated, $formattedNamaKelompok, $activePeriode, $mahasiswa, $user) {
+        $isInternal = strtolower($validated['skema_kategori']) === 'internal';
+        $reqMax = (int) $request->input('max_members');
+        $maxMembers = $isInternal ? 4 : (($reqMax >= 4 && $reqMax <= 30) ? $reqMax : 8);
+
+        DB::transaction(function () use ($validated, $formattedNamaKelompok, $activePeriode, $mahasiswa, $user, $maxMembers) {
             $kelompok = Kelompok::create([
                 'nama_kelompok' => $formattedNamaKelompok,
                 'skema_kategori' => $validated['skema_kategori'],
                 'periode_id' => $activePeriode->id,
                 'semester' => $validated['semester'] ?? $mahasiswa->semester ?? 1,
                 'link_drive' => $validated['link_drive'] ?? null,
-                'max_members' => 4,
+                'max_members' => $maxMembers,
                 'status_bergabung' => 'terbuka',
             ]);
 

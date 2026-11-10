@@ -147,6 +147,14 @@ class DataKelompokAdminController extends Controller
             return back()->withErrors(['ketua_nim' => 'NIM Ketua harus salah satu dari daftar anggota.'])->withInput();
         }
 
+        $skema = $validated['skema_kategori'] ?? 'Internal';
+        $isInternal = strtolower($skema) === 'internal';
+        if ($isInternal && $nimList->count() > 4) {
+            Alert::toast('Kelompok dengan skema Internal dibatasi maksimal 4 orang anggota.', 'error');
+
+            return back()->withErrors(['entries' => 'Kelompok dengan skema Internal dibatasi maksimal 4 orang anggota. Untuk kelompok lebih dari 4 orang, silakan pilih skema selain Internal (External, Hibah/Penelitian, Lomba).'])->withInput();
+        }
+
         // Cegah yang sudah terdaftar di periode ini
         $sudah = [];
         foreach ($mahasiswa as $m) {
@@ -183,9 +191,10 @@ class DataKelompokAdminController extends Controller
         $namaKelompok = null;
 
         try {
-            DB::transaction(function () use ($validated, $periodeId, $attach, &$namaKelompok) {
+            DB::transaction(function () use ($validated, $periodeId, $attach, $isInternal, &$namaKelompok) {
                 $rawInput = ! empty($validated['nama_kelompok']) ? $validated['nama_kelompok'] : null;
                 $nama = Kelompok::formatNamaKelompok($periodeId, $rawInput);
+                $maxMembers = $isInternal ? 4 : max(8, count($attach));
 
                 $kelompok = Kelompok::create([
                     'uuid' => (string) Str::uuid(),
@@ -193,6 +202,7 @@ class DataKelompokAdminController extends Controller
                     'nama_kelompok' => $nama,
                     'skema_kategori' => $validated['skema_kategori'] ?? 'Internal',
                     'link_drive' => $validated['link_drive'] ?? null,
+                    'max_members' => $maxMembers,
                 ]);
                 $kelompok->mahasiswas()->attach($attach);
                 $namaKelompok = $nama;
@@ -304,6 +314,14 @@ class DataKelompokAdminController extends Controller
             return back()->withErrors(['ketua_nim' => 'NIM Ketua harus salah satu dari daftar anggota.'])->withInput();
         }
 
+        $skema = $validated['skema_kategori'] ?? $kelompok->skema_kategori ?? 'Internal';
+        $isInternal = strtolower($skema) === 'internal';
+        if ($isInternal && $nimList->count() > 4) {
+            Alert::toast('Kelompok dengan skema Internal dibatasi maksimal 4 orang anggota.', 'error');
+
+            return back()->withErrors(['entries' => 'Kelompok dengan skema Internal dibatasi maksimal 4 orang anggota. Untuk kelompok lebih dari 4 orang, silakan pilih skema selain Internal (External, Hibah/Penelitian, Lomba).'])->withInput();
+        }
+
         // Cek konflik: terdaftar di kelompok lain dalam periode yang sama
         $konflik = [];
         foreach ($mahasiswa as $m) {
@@ -321,12 +339,15 @@ class DataKelompokAdminController extends Controller
             return back()->withErrors(['entries' => 'NIM sudah terdaftar pada kelompok lain di periode ini: '.implode(', ', $konflik)])->withInput();
         }
 
-        DB::transaction(function () use ($kelompok, $validated, $mahasiswa, $rows, $periodeId) {
+        DB::transaction(function () use ($kelompok, $validated, $mahasiswa, $rows, $periodeId, $isInternal) {
+            $maxMembers = $isInternal ? 4 : max(8, $rows->count());
+
             $kelompok->update([
                 'periode_id' => $periodeId,
                 'nama_kelompok' => $validated['nama_kelompok'],
                 'skema_kategori' => $validated['skema_kategori'] ?? $kelompok->skema_kategori ?? 'Internal',
                 'link_drive' => $validated['link_drive'] ?? null,
+                'max_members' => $maxMembers,
             ]);
 
             $ketuaNim = $validated['ketua_nim'] ?? null;

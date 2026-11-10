@@ -195,6 +195,26 @@ class Kelompok extends Model
         return $this->hasMany(ProjectCard::class);
     }
 
+    public function isInternalScheme(): bool
+    {
+        return strtolower((string) ($this->skema_kategori ?? 'Internal')) === 'internal';
+    }
+
+    public function getMaxMembersAttribute($value): int
+    {
+        $val = (int) ($value ?: 4);
+        $skema = strtolower((string) ($this->attributes['skema_kategori'] ?? 'Internal'));
+
+        // Khusus proyek Internal, kapasitas maksimal dibatasi 4 orang
+        if ($skema === 'internal') {
+            return 4;
+        }
+
+        // Selain proyek internal, kelompok diperbolehkan memiliki lebih dari 4 orang.
+        // Jika nilai tersimpan di database masih default lama (<= 4), otomatis gunakan minimal 8 orang.
+        return $val > 4 ? $val : 8;
+    }
+
     public function isFull(): bool
     {
         return $this->mahasiswas()->count() >= $this->max_members;
