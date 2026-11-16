@@ -293,4 +293,93 @@ class PembentukanKelompokSkemaMemberLimitTest extends TestCase
         $this->assertCount(5, $kelompok->mahasiswas);
         $this->assertGreaterThanOrEqual(5, $kelompok->max_members);
     }
+
+    /**
+     * Mahasiswa membuat kelompok Teaching Factory: kapasitas anggota tidak terbatas.
+     */
+    public function test_student_creating_teaching_factory_group_has_unlimited_members(): void
+    {
+        [$ketuaUser, $ketuaMhs] = $this->createStudentUser('C030324060', 'Ketua TeFa');
+
+        $response = $this->actingAs($ketuaUser)->post(route('mahasiswa.kelompok.store'), [
+            'nama_kelompok' => 'Tim Produksi IoT TeFa',
+            'skema_kategori' => 'Teaching Factory',
+            'semester' => 3,
+        ]);
+
+        $response->assertRedirect(route('mahasiswa.kelompok.index'));
+
+        $kelompok = Kelompok::where('skema_kategori', 'Teaching Factory')->first();
+        $this->assertNotNull($kelompok);
+        $this->assertTrue($kelompok->isTeachingFactory());
+        $this->assertTrue($kelompok->isUnlimitedMembers());
+        $this->assertSame(0, $kelompok->max_members);
+        $this->assertFalse($kelompok->isFull());
+
+        // Tambahkan 9 anggota tambahan (total 10 mahasiswa bersama ketua)
+        for ($i = 61; $i <= 69; $i++) {
+            [, $mhs] = $this->createStudentUser('C0303240'.$i, 'Anggota TeFa '.$i);
+            $kelompok->mahasiswas()->attach($mhs->id, [
+                'role' => 'Anggota',
+                'periode_id' => $this->periode->id,
+            ]);
+        }
+
+        $this->assertCount(10, $kelompok->mahasiswas);
+        $this->assertFalse($kelompok->isFull());
+
+        // Undang anggota ke-11
+        [, $mhs11] = $this->createStudentUser('C030324070', 'Anggota 11 TeFa');
+        $inviteRes = $this->actingAs($ketuaUser)->post(route('mahasiswa.kelompok.invite'), [
+            'mahasiswa_id' => $mhs11->id,
+        ]);
+
+        $inviteRes->assertRedirect(route('mahasiswa.kelompok.index'));
+        $this->assertDatabaseHas('kelompok_join_requests', [
+            'kelompok_id' => $kelompok->id,
+            'mahasiswa_id' => $mhs11->id,
+            'status' => 'pending',
+        ]);
+
+        // Anggota ke-11 menerima undangan
+        $joinReq = KelompokJoinRequest::where('kelompok_id', $kelompok->id)
+            ->where('mahasiswa_id', $mhs11->id)
+            ->first();
+
+        $acceptRes = $this->actingAs($mhs11->user)->post(route('mahasiswa.kelompok.invite.accept', $joinReq));
+        $acceptRes->assertRedirect(route('mahasiswa.kelompok.index'));
+
+        $kelompok->refresh();
+        $this->assertCount(11, $kelompok->mahasiswas);
+        $this->assertFalse($kelompok->isFull());
+    }
+
+    /**
+     * Admin dapat membuat kelompok Teaching Factory dengan banyak anggota tanpa batasan.
+     */
+    public function test_admin_can_create_teaching_factory_group_with_many_members(): void
+    {
+        $nims = [];
+        for ($i = 81; $i <= 90; $i++) {
+            $nim = 'C0303240'.$i;
+            $this->createStudentUser($nim, 'Mhs TeFa Admin '.$i);
+            $nims[] = ['nim' => $nim];
+        }
+
+        $response = $this->actingAs($this->admin)->post(route('kelompok.store'), [
+            'periode_id' => $this->periode->id,
+            'nama_kelompok' => 'Divisi Manufaktur Perangkat Lunak',
+            'skema_kategori' => 'Teaching Factory',
+            'entries' => $nims, // 10 orang
+        ]);
+
+        $response->assertRedirect(route('kelompok.index'));
+
+        $kelompok = Kelompok::where('skema_kategori', 'Teaching Factory')->where('nama_kelompok', 'like', '%Divisi Manufaktur%')->first();
+        $this->assertNotNull($kelompok);
+        $this->assertCount(10, $kelompok->mahasiswas);
+        $this->assertTrue($kelompok->isTeachingFactory());
+        $this->assertSame(0, $kelompok->max_members);
+        $this->assertFalse($kelompok->isFull());
+    }
 }

@@ -1666,6 +1666,9 @@
                     <button class="pill-btn" data-skema="Lomba" onclick="window.setFilter('skema', 'Lomba', this)">
                         <i class="fas fa-trophy"></i> Lomba
                     </button>
+                    <button class="pill-btn" data-skema="Teaching Factory" onclick="window.setFilter('skema', 'Teaching Factory', this)">
+                        <i class="fas fa-industry"></i> Teaching Factory
+                    </button>
                 </div>
 
                 <!-- Dropdowns & View Toggles -->
