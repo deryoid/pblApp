@@ -297,7 +297,16 @@
   @php
     if (!function_exists('schemeBadgeClass')) {
       function schemeBadgeClass($skema) {
-        $map = ['Penelitian'=>'badge-primary','Pengabdian'=>'badge-info','Lomba'=>'badge-warning','PBL x TeFa'=>'badge-success'];
+        $map = [
+          'Internal' => 'badge-primary',
+          'External' => 'badge-success',
+          'Hibah/Penelitian' => 'badge-warning',
+          'Lomba' => 'badge-danger',
+          'Teaching Factory' => 'badge-info',
+          'Penelitian' => 'badge-primary',
+          'Pengabdian' => 'badge-info',
+          'PBL x TeFa' => 'badge-success',
+        ];
         return $map[$skema] ?? 'badge-secondary';
       }
     }
@@ -651,6 +660,7 @@
                 <option value="External" {{ $currentSkema === 'External' ? 'selected' : '' }}>External (Mitra Industri)</option>
                 <option value="Hibah/Penelitian" {{ $currentSkema === 'Hibah/Penelitian' ? 'selected' : '' }}>Hibah/Penelitian</option>
                 <option value="Lomba" {{ $currentSkema === 'Lomba' ? 'selected' : '' }}>Lomba</option>
+                <option value="Teaching Factory" {{ $currentSkema === 'Teaching Factory' ? 'selected' : '' }}>Teaching Factory</option>
               </select>
             </div>
             <div class="form-group col-md-6">
@@ -754,6 +764,7 @@
                 <option value="External">External (Mitra Industri)</option>
                 <option value="Hibah/Penelitian">Hibah/Penelitian</option>
                 <option value="Lomba">Lomba</option>
+                <option value="Teaching Factory">Teaching Factory</option>
               </select>
             </div>
             <div class="form-group col-md-6">

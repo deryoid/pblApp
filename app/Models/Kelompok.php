@@ -17,6 +17,7 @@ class Kelompok extends Model
         'External',
         'Hibah/Penelitian',
         'Lomba',
+        'Teaching Factory',
     ];
 
     /**
@@ -197,18 +198,34 @@ class Kelompok extends Model
 
     public function isInternalScheme(): bool
     {
-        return strtolower((string) ($this->skema_kategori ?? 'Internal')) === 'internal';
+        return strtolower(trim((string) ($this->skema_kategori ?? 'Internal'))) === 'internal';
+    }
+
+    public function isTeachingFactory(): bool
+    {
+        return strtolower(trim((string) ($this->skema_kategori ?? ''))) === 'teaching factory';
+    }
+
+    public function isUnlimitedMembers(): bool
+    {
+        return $this->isTeachingFactory();
     }
 
     public function getMaxMembersAttribute($value): int
     {
-        $val = (int) ($value ?: 4);
-        $skema = strtolower((string) ($this->attributes['skema_kategori'] ?? 'Internal'));
+        $skema = strtolower(trim((string) ($this->attributes['skema_kategori'] ?? 'Internal')));
+
+        // Khusus Teaching Factory, kapasitas anggota tak terbatas (0 menandakan tak terbatas)
+        if ($skema === 'teaching factory') {
+            return 0;
+        }
 
         // Khusus proyek Internal, kapasitas maksimal dibatasi 4 orang
         if ($skema === 'internal') {
             return 4;
         }
+
+        $val = (int) ($value ?: 4);
 
         // Selain proyek internal, kelompok diperbolehkan memiliki lebih dari 4 orang.
         // Jika nilai tersimpan di database masih default lama (<= 4), otomatis gunakan minimal 8 orang.
@@ -217,6 +234,11 @@ class Kelompok extends Model
 
     public function isFull(): bool
     {
+        // Kelompok dengan skema tak terbatas (Teaching Factory) tidak pernah penuh
+        if ($this->isUnlimitedMembers()) {
+            return false;
+        }
+
         return $this->mahasiswas()->count() >= $this->max_members;
     }
 

@@ -51,7 +51,7 @@ class ShowcaseController extends Controller
                     'total_matkul' => 0,
                 ],
                 'periodes' => collect(),
-                'skemas' => ['Internal', 'External', 'Hibah/Penelitian', 'Lomba'],
+                'skemas' => \App\Models\Kelompok::SKEMA_CATEGORIES,
                 'semesters' => range(1, 8),
             ];
         }
@@ -204,7 +204,7 @@ class ShowcaseController extends Controller
         $totalMatkul = MataKuliah::count();
 
         $periodes = Periode::orderByDesc('id')->get(['id', 'periode', 'status_periode']);
-        $skemas = ['Internal', 'External', 'Hibah/Penelitian', 'Lomba'];
+        $skemas = \App\Models\Kelompok::SKEMA_CATEGORIES;
         $semesters = range(1, 8);
 
         return [

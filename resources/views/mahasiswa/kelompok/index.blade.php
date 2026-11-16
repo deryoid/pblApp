@@ -50,6 +50,7 @@
                                 'External' => 'badge-success',
                                 'Hibah/Penelitian' => 'badge-warning',
                                 'Lomba' => 'badge-danger',
+                                'Teaching Factory' => 'badge-info',
                                 default => 'badge-info',
                             };
                         @endphp
@@ -77,9 +78,15 @@
                             </div>
                             <div class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
                                 <span class="text-muted"><i class="fas fa-user-friends mr-2 text-success"></i>Kapasitas Anggota:</span>
-                                <span class="badge {{ $kelompok->isFull() ? 'badge-danger' : 'badge-success' }} px-2 py-1">
-                                    {{ $kelompok->mahasiswas->count() }} / {{ $kelompok->max_members ?? 4 }} Mahasiswa
-                                </span>
+                                @if($kelompok->isTeachingFactory())
+                                    <span class="badge badge-success px-2 py-1">
+                                        {{ $kelompok->mahasiswas->count() }} / Tak Terbatas
+                                    </span>
+                                @else
+                                    <span class="badge {{ $kelompok->isFull() ? 'badge-danger' : 'badge-success' }} px-2 py-1">
+                                        {{ $kelompok->mahasiswas->count() }} / {{ $kelompok->max_members ?? 4 }} Mahasiswa
+                                    </span>
+                                @endif
                             </div>
                             <div class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
                                 <span class="text-muted"><i class="fas fa-lock-open mr-2 text-warning"></i>Status Bergabung:</span>
@@ -103,7 +110,7 @@
                 <div class="card shadow-sm border-0 rounded-xl h-100">
                     <div class="card-header bg-white border-bottom py-3 d-flex align-items-center justify-content-between">
                         <h6 class="m-0 font-weight-bold text-dark">
-                            <i class="fas fa-user-check text-success mr-2"></i>Daftar Anggota Tim ({{ $kelompok->mahasiswas->count() }}/{{ $kelompok->max_members ?? 4 }})
+                            <i class="fas fa-user-check text-success mr-2"></i>Daftar Anggota Tim ({{ $kelompok->mahasiswas->count() }}{{ $kelompok->isTeachingFactory() ? ' / Tak Terbatas' : '/'.($kelompok->max_members ?? 4) }})
                         </h6>
                     </div>
                     <div class="card-body p-4">
@@ -426,10 +433,13 @@
                                     <option value="Lomba" {{ old('skema_kategori') === 'Lomba' ? 'selected' : '' }}>
                                         Lomba (Kompetisi / Gemastik / PKM / Hackathon - Bisa > 4 Orang)
                                     </option>
+                                    <option value="Teaching Factory" {{ old('skema_kategori') === 'Teaching Factory' ? 'selected' : '' }}>
+                                        Teaching Factory (TeFa / Kemitraan Produksi - Anggota Tak Terbatas)
+                                    </option>
                                 </select>
                                 @error('skema_kategori') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 <small class="text-muted d-block mt-1">
-                                    <i class="fas fa-info-circle mr-1"></i>Khusus skema <strong>Internal</strong> dibatasi maksimal 4 orang anggota (wajib proposal). Untuk skema selain Internal (<strong>External, Hibah/Penelitian, Lomba</strong>), kelompok dapat memiliki lebih dari 4 orang anggota.
+                                    <i class="fas fa-info-circle mr-1"></i>Khusus skema <strong>Internal</strong> dibatasi maksimal 4 orang anggota (wajib proposal). Skema <strong>Teaching Factory</strong> memiliki kapasitas <strong>anggota tak terbatas</strong>. Skema lainnya (<strong>External, Hibah/Penelitian, Lomba</strong>) dapat memiliki lebih dari 4 orang anggota.
                                 </small>
                             </div>
 
@@ -442,6 +452,7 @@
                                     </span>
                                 </label>
                                 <select name="max_members" id="max_members" class="form-control @error('max_members') is-invalid @enderror">
+                                    <option value="0" {{ old('max_members') === '0' || old('max_members') === 0 ? 'selected' : '' }}>Tak Terbatas (Khusus Teaching Factory)</option>
                                     <option value="4" {{ old('max_members') == 4 ? 'selected' : '' }}>4 Orang (Standar Proyek Internal)</option>
                                     <option value="5" {{ old('max_members') == 5 ? 'selected' : '' }}>5 Orang</option>
                                     <option value="6" {{ old('max_members') == 6 ? 'selected' : '' }}>6 Orang</option>
@@ -547,6 +558,7 @@ $(document).ready(function() {
     function updateMaxMembersUI() {
         var skema = $('#skema_kategori').val();
         var isInternal = skema && skema.toLowerCase() === 'internal';
+        var isTefa = skema && skema.toLowerCase() === 'teaching factory';
 
         if (isInternal) {
             $('#max_members').val('4');
@@ -558,24 +570,44 @@ $(document).ready(function() {
                 }
             });
             $('#badge_max_members')
-                .removeClass('badge-success badge-info text-white')
+                .removeClass('badge-success badge-info badge-primary text-white')
                 .addClass('badge-warning text-dark')
                 .html('<i class="fas fa-lock mr-1"></i>Maks. 4 Orang (Wajib Internal)');
             $('#help_max_members').html('<i class="fas fa-info-circle text-warning mr-1"></i>Proyek <strong>Internal</strong> dibatasi maksimal 4 orang anggota tim.');
+        } else if (isTefa) {
+            $('#max_members').val('0');
+            $('#max_members option').each(function() {
+                if ($(this).val() !== '0') {
+                    $(this).prop('disabled', true);
+                } else {
+                    $(this).prop('disabled', false);
+                }
+            });
+            $('#badge_max_members')
+                .removeClass('badge-warning text-dark badge-success badge-info')
+                .addClass('badge-primary text-white')
+                .html('<i class="fas fa-infinity mr-1"></i>Tak Terbatas (Teaching Factory)');
+            $('#help_max_members').html('<i class="fas fa-infinity text-primary mr-1"></i>Proyek <strong>Teaching Factory</strong> memiliki kapasitas anggota <strong>tak terbatas</strong>.');
         } else if (skema) {
-            $('#max_members option').prop('disabled', false);
-            if ($('#max_members').val() === '4') {
+            $('#max_members option').each(function() {
+                if ($(this).val() === '0') {
+                    $(this).prop('disabled', true);
+                } else {
+                    $(this).prop('disabled', false);
+                }
+            });
+            if ($('#max_members').val() === '4' || $('#max_members').val() === '0') {
                 $('#max_members').val('8');
             }
             $('#badge_max_members')
-                .removeClass('badge-warning text-dark badge-info')
+                .removeClass('badge-warning text-dark badge-info badge-primary')
                 .addClass('badge-success text-white')
                 .html('<i class="fas fa-users mr-1"></i>Bisa > 4 Orang (Non-Internal)');
             $('#help_max_members').html('<i class="fas fa-check-circle text-success mr-1"></i>Proyek <strong>' + skema + '</strong> diperbolehkan memiliki lebih dari 4 orang anggota.');
         } else {
             $('#max_members option').prop('disabled', false);
             $('#badge_max_members')
-                .removeClass('badge-warning badge-success text-dark text-white')
+                .removeClass('badge-warning badge-success text-dark text-white badge-primary')
                 .addClass('badge-info')
                 .text('Tergantung Skema');
             $('#help_max_members').html('<i class="fas fa-info-circle mr-1"></i>Pilih skema kategori terlebih dahulu.');

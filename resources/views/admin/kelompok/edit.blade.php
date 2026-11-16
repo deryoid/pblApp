@@ -40,9 +40,10 @@
             <option value="External" {{ old('skema_kategori', $kelompok->skema_kategori) === 'External' ? 'selected' : '' }}>External (Mitra Industri, Bisa > 4 Orang)</option>
             <option value="Hibah/Penelitian" {{ old('skema_kategori', $kelompok->skema_kategori) === 'Hibah/Penelitian' ? 'selected' : '' }}>Hibah / Penelitian (Bisa > 4 Orang)</option>
             <option value="Lomba" {{ old('skema_kategori', $kelompok->skema_kategori) === 'Lomba' ? 'selected' : '' }}>Lomba (Bisa > 4 Orang)</option>
+            <option value="Teaching Factory" {{ old('skema_kategori', $kelompok->skema_kategori) === 'Teaching Factory' ? 'selected' : '' }}>Teaching Factory (TeFa - Anggota Tak Terbatas)</option>
           </select>
           @error('skema_kategori') <div class="invalid-feedback">{{ $message }}</div> @enderror
-          <small class="form-text text-muted">Proyek Internal dibatasi maksimal 4 orang anggota. Skema selain Internal dapat memiliki lebih dari 4 orang.</small>
+          <small class="form-text text-muted">Proyek Internal dibatasi maksimal 4 orang anggota. Skema Teaching Factory memiliki anggota tak terbatas. Skema lainnya dapat memiliki lebih dari 4 orang.</small>
         </div>
 
         {{-- Link Drive --}}

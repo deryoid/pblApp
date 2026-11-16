@@ -17,6 +17,7 @@ class ProjectCard extends Model
         'External',
         'Hibah/Penelitian',
         'Lomba',
+        'Teaching Factory',
     ];
 
     protected $guarded = ['id'];

@@ -129,20 +129,29 @@ class KelompokController extends Controller
 
         $validated = $request->validate([
             'nama_kelompok' => 'required|string|max:100',
-            'skema_kategori' => 'required|string|in:Internal,External,Hibah/Penelitian,Lomba',
+            'skema_kategori' => 'required|string|in:Internal,External,Hibah/Penelitian,Lomba,Teaching Factory',
             'semester' => 'nullable|integer|min:1|max:8',
             'link_drive' => 'nullable|url|max:255',
-            'max_members' => 'nullable|integer|min:2|max:30',
+            'max_members' => 'nullable|integer|min:0|max:30',
         ], [
-            'skema_kategori.required' => 'Setiap kelompok wajib memilih 1 skema kategori (Internal, External, Hibah/Penelitian, Lomba).',
-            'skema_kategori.in' => 'Skema kategori harus salah satu dari: Internal, External, Hibah/Penelitian, Lomba.',
+            'skema_kategori.required' => 'Setiap kelompok wajib memilih 1 skema kategori (Internal, External, Hibah/Penelitian, Lomba, Teaching Factory).',
+            'skema_kategori.in' => 'Skema kategori harus salah satu dari: Internal, External, Hibah/Penelitian, Lomba, Teaching Factory.',
         ]);
 
         $formattedNamaKelompok = Kelompok::formatNamaKelompok($activePeriode->id, $validated['nama_kelompok']);
 
-        $isInternal = strtolower($validated['skema_kategori']) === 'internal';
-        $reqMax = (int) $request->input('max_members');
-        $maxMembers = $isInternal ? 4 : (($reqMax >= 4 && $reqMax <= 30) ? $reqMax : 8);
+        $skema = $validated['skema_kategori'];
+        $isInternal = strtolower($skema) === 'internal';
+        $isTefa = strtolower($skema) === 'teaching factory';
+
+        if ($isInternal) {
+            $maxMembers = 4;
+        } elseif ($isTefa) {
+            $maxMembers = 0; // 0 menandakan kapasitas anggota tak terbatas (Teaching Factory)
+        } else {
+            $reqMax = (int) $request->input('max_members');
+            $maxMembers = ($reqMax >= 4 && $reqMax <= 30) ? $reqMax : 8;
+        }
 
         DB::transaction(function () use ($validated, $formattedNamaKelompok, $activePeriode, $mahasiswa, $user, $maxMembers) {
             $kelompok = Kelompok::create([
