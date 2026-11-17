@@ -95,10 +95,10 @@
 
                 <div class="form-group">
                     <div class="custom-control custom-checkbox">
-                        <input type="checkbox" class="custom-control-input" id="create_user" name="create_user" value="1" {{ old('create_user') ? 'checked' : '' }}>
+                        <input type="checkbox" class="custom-control-input" id="create_user" name="create_user" value="1" {{ old('create_user', '1') ? 'checked' : '' }}>
                         <label class="custom-control-label font-weight-bold" for="create_user">Buatkan akun login pengguna langsung (Role: Dosen)</label>
                     </div>
-                    <small class="form-text text-muted">Akun login akan dibuatkan dengan username & sandi awal berdasarkan NIP/Email.</small>
+                    <small class="form-text text-muted">Akun login dosen akan otomatis dibuatkan dengan peran Dosen dan kata sandi default: <code>123456</code>.</small>
                 </div>
 
                 <div class="d-flex align-items-center pt-2">

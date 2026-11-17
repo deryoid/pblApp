@@ -121,6 +121,8 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'profile.complete'])->group
     Route::get('dosen/template-excel', [DataDosenAdminController::class, 'templateExcel'])->name('dosen.template.excel');
     Route::get('dosen/template-csv', [DataDosenAdminController::class, 'templateCsv'])->name('dosen.template.csv');
     Route::post('dosen/sync', [DataDosenAdminController::class, 'sync'])->name('dosen.sync');
+    Route::post('dosen/generate-accounts', [DataDosenAdminController::class, 'generateAccounts'])->name('dosen.generate-accounts');
+    Route::post('dosen/{dosen}/generate-account', [DataDosenAdminController::class, 'generateAccount'])->name('dosen.generate-account');
     Route::resource('dosen', DataDosenAdminController::class);
 
     // Kelompok

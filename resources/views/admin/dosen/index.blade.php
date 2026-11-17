@@ -28,8 +28,31 @@
                     </a>
                 </div>
 
-                {{-- Kanan: Import + Sinkron --}}
+                {{-- Kanan: Import + Sinkron + Generate --}}
                 <div class="d-flex align-items-center flex-wrap" style="gap: 0.5rem;">
+                    {{-- Generate Akun Dosen Otomatis --}}
+                    @php
+                        $unlinkedCount = $data->whereNull('user_id')->count();
+                    @endphp
+                    @if($unlinkedCount > 0)
+                    <form action="{{ route('dosen.generate-accounts') }}" method="POST" class="m-0">
+                        @csrf
+                        <button type="button" class="btn btn-warning btn-sm font-weight-bold"
+                            onclick="var form = this.closest('form');
+                            Swal.fire({
+                                title: 'Generate Akun Dosen Otomatis?',
+                                html: 'Sistem akan membuatkan akun login pengguna (Role: <strong>Dosen</strong>, Password: <code>123456</code>) untuk <strong>{{ $unlinkedCount }}</strong> dosen yang belum memiliki akun.',
+                                icon: 'question',
+                                showCancelButton: true,
+                                confirmButtonText: 'Ya, Generate (Password: 123456)',
+                                cancelButtonText: 'Batal'
+                            }).then((result) => { if (result.isConfirmed) form.submit(); });"
+                            title="Generate akun login otomatis dengan password 123456 untuk semua dosen yang belum punya akun">
+                            <i class="fas fa-magic mr-1" aria-hidden="true"></i> Generate Akun ({{ $unlinkedCount }})
+                        </button>
+                    </form>
+                    @endif
+
                     {{-- Import Excel / CSV --}}
                     <a href="{{ route('dosen.import.form') }}" class="btn btn-success btn-sm">
                         <i class="fas fa-file-excel mr-1" aria-hidden="true"></i> Import Excel / CSV
@@ -109,9 +132,25 @@
                                         <i class="fas fa-check-circle mr-1" aria-hidden="true"></i> Terhubung
                                     </span>
                                 @else
-                                    <span class="badge-status-unlinked">
+                                    <span class="badge-status-unlinked d-block mb-1">
                                         <i class="fas fa-clock mr-1" aria-hidden="true"></i> Belum Mendaftar
                                     </span>
+                                    <form action="{{ route('dosen.generate-account', $d) }}" method="POST" class="m-0 p-0">
+                                        @csrf
+                                        <button type="button" class="btn btn-xs btn-outline-primary text-nowrap"
+                                            onclick="var form = this.closest('form');
+                                            Swal.fire({
+                                                title: 'Generate Akun Dosen?',
+                                                html: 'Buatkan akun login pengguna untuk dosen <strong>{{ $d->nama_dosen }}</strong> dengan kata sandi default <code>123456</code>?',
+                                                icon: 'question',
+                                                showCancelButton: true,
+                                                confirmButtonText: 'Ya, Buat Akun (123456)',
+                                                cancelButtonText: 'Batal'
+                                            }).then((result) => { if (result.isConfirmed) form.submit(); });"
+                                            title="Generate akun dengan password 123456">
+                                            <i class="fas fa-user-plus mr-1" aria-hidden="true"></i> Buat Akun
+                                        </button>
+                                    </form>
                                 @endif
                             </td>
 
@@ -124,14 +163,14 @@
                                         onclick="var form = this.closest('form');
                                         Swal.fire({
                                             title: 'Reset Kata Sandi Dosen?',
-                                            text: 'Kata sandi akun dosen {{ $d->nama_dosen }} akan diatur ulang menjadi default ({{ $u->username }}@pbl).',
+                                            text: 'Kata sandi akun dosen {{ $d->nama_dosen }} akan diatur ulang menjadi default (123456).',
                                             icon: 'warning',
                                             showCancelButton: true,
-                                            confirmButtonText: 'Ya, Reset',
+                                            confirmButtonText: 'Ya, Reset ke 123456',
                                             cancelButtonText: 'Batal'
                                         }).then((result) => { if (result.isConfirmed) form.submit(); });"
-                                        aria-label="Reset kata sandi akun dosen {{ $d->nama_dosen }}" title="Reset Password Akun">
-                                        <i class="fas fa-key mr-1" aria-hidden="true"></i> Reset
+                                        aria-label="Reset kata sandi akun dosen {{ $d->nama_dosen }}" title="Reset Password Akun ke 123456">
+                                        <i class="fas fa-key mr-1" aria-hidden="true"></i> Reset (123456)
                                     </button>
                                 </form>
                                 @else

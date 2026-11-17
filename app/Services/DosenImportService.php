@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\Dosen;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Reader\Csv as CsvReader;
 use Throwable;
@@ -64,6 +66,7 @@ class DosenImportService
         $createdDosen = 0;
         $updatedDosen = 0;
         $attached = 0;
+        $generatedUsers = 0;
         $skipped = 0;
         $errors = [];
 
@@ -97,11 +100,13 @@ class DosenImportService
             $namaRaw = $this->getValue($row, $headerMap, 'nama', 1);
             $noHpRaw = $this->getValue($row, $headerMap, 'no_hp', 2);
             $keahlianRaw = $this->getValue($row, $headerMap, 'keahlian', 3);
+            $emailRaw = $this->getValue($row, $headerMap, 'email', 4);
 
             $nip = $this->cleanNip($nipRaw);
             $nama = $this->cleanString($namaRaw, 255);
             $noHp = $this->cleanPhone($noHpRaw);
             $keahlian = $this->cleanString($keahlianRaw, 255);
+            $email = ! empty($emailRaw) ? strtolower(trim((string) $emailRaw)) : null;
 
             if (empty($nama)) {
                 $errors[] = "Baris {$rowNum}: Nama dosen wajib diisi.";
@@ -116,9 +121,11 @@ class DosenImportService
                     $nama,
                     $noHp,
                     $keahlian,
+                    $email,
                     &$createdDosen,
                     &$updatedDosen,
                     &$attached,
+                    &$generatedUsers,
                     &$skipped
                 ) {
                     // Match existing user (role dosen / evaluator / admin)
@@ -127,6 +134,9 @@ class DosenImportService
                         $user = User::whereIn('role', ['dosen', 'evaluator', 'admin'])
                             ->where('username', $nip)
                             ->first();
+                    }
+                    if (! $user && ! empty($email)) {
+                        $user = User::where('email', $email)->first();
                     }
                     if (! $user) {
                         $user = User::whereIn('role', ['dosen', 'evaluator', 'admin'])
@@ -141,6 +151,41 @@ class DosenImportService
                     }
                     if (! $dosen) {
                         $dosen = Dosen::whereRaw('LOWER(nama_dosen) = ?', [strtolower($nama)])->first();
+                    }
+
+                    if ($dosen && $dosen->user_id && ! $user) {
+                        $user = User::find($dosen->user_id);
+                    }
+
+                    // Auto-generate User account dengan password 123456 jika belum ada
+                    if (! $user) {
+                        $username = ! empty($nip)
+                            ? $nip
+                            : ('dosen_'.Str::slug(explode(' ', $nama)[0]).rand(100, 999));
+
+                        if (User::where('username', $username)->exists()) {
+                            $username = $username.'_'.rand(10, 99);
+                        }
+
+                        $userEmail = $email;
+                        if (empty($userEmail) || ! filter_var($userEmail, FILTER_VALIDATE_EMAIL)) {
+                            $userEmail = strtolower(($nip ?: $username).'@politala.ac.id');
+                            if (User::where('email', $userEmail)->exists()) {
+                                $userEmail = strtolower(($nip ?: $username).'+'.Str::random(4).'@politala.ac.id');
+                            }
+                        }
+
+                        $user = User::create([
+                            'nama_user' => $nama,
+                            'username' => $username,
+                            'email' => $userEmail,
+                            'email_verified_at' => now(),
+                            'no_hp' => $noHp ?: '-',
+                            'password' => Hash::make('123456'),
+                            'role' => 'dosen',
+                            'remember_token' => Str::random(10),
+                        ]);
+                        $generatedUsers++;
                     }
 
                     if ($dosen) {
@@ -205,6 +250,7 @@ class DosenImportService
                 'created_dosen' => $createdDosen,
                 'updated_dosen' => $updatedDosen,
                 'attached' => $attached,
+                'generated_users' => $generatedUsers,
                 'skipped' => $skipped,
             ],
             'errors' => $errors,
@@ -231,6 +277,8 @@ class DosenImportService
                 $map['no_hp'] = $idx;
             } elseif (str_contains($norm, 'ahli') || str_contains($norm, 'keahlian') || str_contains($norm, 'spesialisasi') || str_contains($norm, 'bidang')) {
                 $map['keahlian'] = $idx;
+            } elseif (str_contains($norm, 'email') || str_contains($norm, 'surel')) {
+                $map['email'] = $idx;
             }
         }
 

@@ -63,6 +63,9 @@
                         <tr><th style="width:260px">Dosen baru dibuat</th><td>{{ $s['created_dosen'] ?? 0 }}</td></tr>
                         <tr><th>Dosen diperbarui</th><td>{{ $s['updated_dosen'] ?? 0 }}</td></tr>
                         <tr><th>Ditautkan ke akun pengguna</th><td>{{ $s['attached'] ?? 0 }}</td></tr>
+                        @if(isset($s['generated_users']) && $s['generated_users'] > 0)
+                        <tr><th class="text-success"><i class="fas fa-key mr-1"></i>Akun baru dibuat otomatis (Password: 123456)</th><td class="text-success font-weight-bold">{{ $s['generated_users'] }}</td></tr>
+                        @endif
                         <tr><th>Dilewati (tidak ada perubahan)</th><td>{{ $s['skipped'] ?? 0 }}</td></tr>
                         </tbody>
                     </table>
@@ -137,6 +140,7 @@
                     <li>Kolom <strong>NIP</strong> dapat dikosongkan bila dosen belum memiliki NIP resmi.</li>
                     <li>Nomor telepon otomatis dinormalisasi jika awalan <code>0</code> terpotong oleh Excel.</li>
                     <li>Jika NIP atau nama cocok dengan akun pengguna yang memiliki role dosen/evaluator, data akan ditautkan secara otomatis.</li>
+                    <li>Setiap dosen yang belum memiliki akun pengguna akan <strong>dibuatkan akun login otomatis</strong> (Role: Dosen, Username: NIP/nama, Password: <code>123456</code>).</li>
                 </ul>
             </div>
         </div>

@@ -66,49 +66,19 @@ class DataDosenAdminController extends Controller
             $keahlian = $validated['keahlian'] ?? null;
             $email = $validated['email'] ?? null;
 
-            $user = null;
-
-            // Jika NIP diisi, periksa apakah akun user sudah ada
-            if ($nip) {
-                $user = User::where('username', $nip)->first();
-            }
-
-            // Jika user belum ada dan opsi buat akun dicentang
-            if (! $user && $request->boolean('create_user')) {
-                $username = $nip ?: ('dosen_'.Str::slug(explode(' ', $nama)[0]).rand(100, 999));
-
-                if (empty($email)) {
-                    $email = strtolower(($nip ?: $username).'@politala.ac.id');
-                    if (User::where('email', $email)->exists()) {
-                        $email = strtolower(($nip ?: $username).'+'.Str::random(4).'@politala.ac.id');
-                    }
-                }
-
-                $user = User::create([
-                    'nama_user' => $nama,
-                    'email' => $email,
-                    'email_verified_at' => now(),
-                    'no_hp' => $noHp ?: '-',
-                    'username' => $username,
-                    'password' => Hash::make($nip ?: 'dosen123'),
-                    'role' => 'dosen',
-                    'remember_token' => Str::random(10),
-                ]);
-            } elseif ($user && $user->nama_user !== $nama) {
-                $user->nama_user = $nama;
-                if ($noHp && (empty($user->no_hp) || $user->no_hp === '-')) {
-                    $user->no_hp = $noHp;
-                }
-                $user->save();
-            }
-
-            Dosen::create([
-                'user_id' => $user?->id,
+            $dosen = Dosen::create([
                 'nip' => $nip,
                 'nama_dosen' => $nama,
                 'no_hp' => $noHp,
                 'keahlian' => $keahlian,
             ]);
+
+            // Jika create_user bernilai true atau tidak ada parameter create_user (default auto-generate akun)
+            $shouldCreateUser = $request->has('create_user') ? $request->boolean('create_user') : true;
+
+            if ($shouldCreateUser) {
+                $this->createOrLinkUserForDosen($dosen, $email);
+            }
         });
 
         Alert::toast('Data dosen berhasil ditambahkan ke Bank Data.', 'success');
@@ -168,28 +138,8 @@ class DataDosenAdminController extends Controller
                 }
                 $user->save();
             } elseif ($request->boolean('create_user')) {
-                // Buat akun baru jika belum terhubung
-                $username = $newNip ?: ('dosen_'.Str::slug(explode(' ', $nama)[0]).rand(100, 999));
-                $email = $validated['email'] ?? null;
-                if (empty($email)) {
-                    $email = strtolower(($newNip ?: $username).'@politala.ac.id');
-                    if (User::where('email', $email)->exists()) {
-                        $email = strtolower(($newNip ?: $username).'+'.Str::random(4).'@politala.ac.id');
-                    }
-                }
-
-                $user = User::create([
-                    'nama_user' => $nama,
-                    'email' => $email,
-                    'email_verified_at' => now(),
-                    'no_hp' => $noHp ?: '-',
-                    'username' => $username,
-                    'password' => Hash::make($newNip ?: 'dosen123'),
-                    'role' => 'dosen',
-                    'remember_token' => Str::random(10),
-                ]);
-
-                $dosen->user_id = $user->id;
+                // Buat akun baru otomatis jika belum terhubung
+                $this->createOrLinkUserForDosen($dosen, $validated['email'] ?? null);
             }
 
             $dosen->update([
@@ -218,17 +168,19 @@ class DataDosenAdminController extends Controller
     }
 
     /**
-     * Sinkronkan akun user bertipe dosen ke Bank Data Dosen.
+     * Sinkronkan akun user bertipe dosen ke Bank Data Dosen sekaligus generate akun untuk dosen yang belum memiliki akun.
      */
     public function sync(): RedirectResponse
     {
         $created = 0;
         $attached = 0;
         $skipped = 0;
+        $generated = 0;
 
         $users = User::where('role', 'dosen')->get();
 
-        DB::transaction(function () use ($users, &$created, &$attached, &$skipped) {
+        DB::transaction(function () use ($users, &$created, &$attached, &$skipped, &$generated) {
+            // 1. Tautkan akun user dosen ke bank data dosen
             foreach ($users as $u) {
                 $d = Dosen::where('user_id', $u->id)->first();
 
@@ -269,11 +221,129 @@ class DataDosenAdminController extends Controller
                     $created++;
                 }
             }
+
+            // 2. Generate akun otomatis untuk dosen yang belum memiliki akun
+            $unlinkedDosens = Dosen::whereNull('user_id')->get();
+            foreach ($unlinkedDosens as $unlinked) {
+                $this->createOrLinkUserForDosen($unlinked);
+                $generated++;
+            }
         });
 
-        Alert::toast("Sinkronisasi Dosen selesai: dibuat: {$created}, ditautkan: {$attached}, dilewati: {$skipped}.", 'success');
+        $msg = "Sinkronisasi selesai: dibuat: {$created}, ditautkan: {$attached}, akun digenerate: {$generated}, dilewati: {$skipped}.";
+        Alert::toast($msg, 'success');
 
         return redirect()->route('dosen.index');
+    }
+
+    /**
+     * Generate akun login pengguna dengan password 123456 secara massal untuk semua dosen yang belum memiliki akun.
+     */
+    public function generateAccounts(): RedirectResponse
+    {
+        $generated = 0;
+        $dosenList = Dosen::whereNull('user_id')->get();
+
+        DB::transaction(function () use ($dosenList, &$generated) {
+            foreach ($dosenList as $dosen) {
+                $this->createOrLinkUserForDosen($dosen);
+                $generated++;
+            }
+        });
+
+        if ($generated > 0) {
+            Alert::toast("Berhasil membuat {$generated} akun dosen baru secara otomatis dengan password default: 123456", 'success');
+        } else {
+            Alert::toast('Semua dosen dalam Bank Data sudah memiliki akun pengguna aktif.', 'info');
+        }
+
+        return redirect()->route('dosen.index');
+    }
+
+    /**
+     * Generate akun login pengguna dengan password 123456 untuk satu data dosen tertentu.
+     */
+    public function generateAccount(Dosen $dosen): RedirectResponse
+    {
+        if ($dosen->user_id && $dosen->user) {
+            Alert::info('Akun Sudah Ada', "Dosen {$dosen->nama_dosen} sudah memiliki akun login ({$dosen->user->username}).");
+
+            return redirect()->route('dosen.index');
+        }
+
+        DB::transaction(function () use ($dosen) {
+            $this->createOrLinkUserForDosen($dosen);
+        });
+
+        Alert::toast("Akun dosen {$dosen->nama_dosen} berhasil dibuat dengan password default: 123456", 'success');
+
+        return redirect()->route('dosen.index');
+    }
+
+    /**
+     * Buat akun User baru dengan password default '123456' untuk model Dosen, atau tautkan jika akun sudah ada.
+     */
+    public function createOrLinkUserForDosen(Dosen $dosen, ?string $email = null): User
+    {
+        // 1. Coba cari user yang sudah ada berdasarkan NIP
+        $user = null;
+        if (! empty($dosen->nip)) {
+            $user = User::where('username', $dosen->nip)->first();
+        }
+
+        // 2. Jika belum ketemu, cari berdasarkan email (jika disediakan)
+        if (! $user && ! empty($email)) {
+            $user = User::where('email', $email)->first();
+        }
+
+        // 3. Jika belum ketemu, cari berdasarkan kesamaan nama dengan role dosen/evaluator
+        if (! $user) {
+            $user = User::whereIn('role', ['dosen', 'evaluator'])
+                ->whereRaw('LOWER(nama_user) = ?', [strtolower(trim($dosen->nama_dosen))])
+                ->whereDoesntHave('dosen')
+                ->first();
+        }
+
+        if ($user) {
+            if ($dosen->user_id !== $user->id) {
+                $dosen->user_id = $user->id;
+                $dosen->save();
+            }
+
+            return $user;
+        }
+
+        // Buat User baru otomatis dengan password default '123456'
+        $username = ! empty($dosen->nip)
+            ? $dosen->nip
+            : ('dosen_'.Str::slug(explode(' ', trim($dosen->nama_dosen))[0]).rand(100, 999));
+
+        if (User::where('username', $username)->exists()) {
+            $username = $username.'_'.rand(10, 99);
+        }
+
+        if (empty($email)) {
+            $email = strtolower(($dosen->nip ?: $username).'@politala.ac.id');
+            if (User::where('email', $email)->exists()) {
+                $email = strtolower(($dosen->nip ?: $username).'+'.Str::random(4).'@politala.ac.id');
+            }
+        }
+
+        $user = User::create([
+            'nama_user' => $dosen->nama_dosen,
+            'email' => $email,
+            'email_verified_at' => now(),
+            'no_hp' => $dosen->no_hp ?: '-',
+            'username' => $username,
+            'password' => Hash::make('123456'),
+            'role' => 'dosen',
+            'remember_token' => Str::random(10),
+        ]);
+
+        $dosen->user_id = $user->id;
+        $dosen->save();
+
+        return $user;
     }
 
     /**

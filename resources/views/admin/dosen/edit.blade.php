@@ -77,10 +77,11 @@
                             </div>
                             <div class="custom-control custom-checkbox mb-2">
                                 <input type="checkbox" class="custom-control-input" id="create_user" name="create_user" value="1" {{ old('create_user') ? 'checked' : '' }} onchange="document.getElementById('emailGroup').style.display = this.checked ? 'block' : 'none';">
-                                <label class="custom-control-label font-weight-bold small text-primary" for="create_user">Buatkan akun login pengguna sekarang (Role: Dosen)</label>
+                                <label class="custom-control-label font-weight-bold small text-primary" for="create_user">Buatkan akun login pengguna sekarang (Role: Dosen, Password: 123456)</label>
                             </div>
                             <div id="emailGroup" style="{{ old('create_user') ? 'display:block;' : 'display:none;' }}">
                                 <input type="email" name="email" class="form-control form-control-sm @error('email') is-invalid @enderror" placeholder="Email akun login (opsional)" value="{{ old('email') }}">
+                                <small class="form-text text-muted mb-2">Kata sandi default akun baru adalah: <code>123456</code>.</small>
                                 @error('email') <div class="invalid-feedback">{{ $message }}</div> @enderror
                             </div>
                         @endif

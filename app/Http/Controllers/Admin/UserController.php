@@ -295,7 +295,7 @@ class UserController extends Controller
 
     public function resetPassword(User $user)
     {
-        $newPassword = $user->username.'@pbl';
+        $newPassword = $user->role === 'dosen' ? '123456' : $user->username.'@pbl';
 
         $user->update(['password' => $newPassword]);
 
