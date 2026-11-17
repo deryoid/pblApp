@@ -379,13 +379,13 @@
                     @csrf
                     
                     <div class="input-group-custom">
-                        <label class="form-label-custom">Nama Pengguna (NIM / Username / Email)</label>
+                        <label class="form-label-custom">Nama Pengguna (NIP / NIM / Username / Email)</label>
                         <i class="fas fa-user input-icon" style="top: 38px;"></i>
                         <input 
                             type="text" 
                             name="username" 
                             class="form-control-modern" 
-                            placeholder="Masukkan NIM, username, atau email Anda" 
+                            placeholder="Masukkan NIP, NIM, username, atau email Anda" 
                             value="{{ old('username', request('login', request('username', session('prefill_username', '')))) }}" 
                             required 
                             autofocus
@@ -440,7 +440,10 @@
                 </form>
 
                 <div class="text-center mt-3 mb-2" style="font-size: 0.85rem; color: #64748b;">
-                    Belum punya akun mahasiswa? <a href="{{ route('register') }}" style="color: #2563eb; font-weight: 700; text-decoration: none;">Daftar Akun (Verifikasi NIM)</a>
+                    Belum punya akun?
+                    <a href="{{ route('register') }}" style="color: #2563eb; font-weight: 700; text-decoration: none;">Daftar Mahasiswa</a>
+                    <span class="mx-1 text-muted">&bull;</span>
+                    <a href="{{ route('register.dosen') }}" style="color: #059669; font-weight: 700; text-decoration: none;">Daftar Dosen</a>
                 </div>
 
                 <div class="quick-actions-box">

@@ -66,14 +66,24 @@
 
                     <div class="form-group col-md-6">
                         <label class="font-weight-bold small">Akun Pengguna Terhubung</label>
-                        <div class="form-control bg-light text-muted">
-                            @if($dosen->user)
+                        @if($dosen->user)
+                            <div class="form-control bg-light text-muted">
                                 <i class="fas fa-user-check text-success mr-1"></i>
                                 <strong>{{ $dosen->user->username }}</strong> ({{ $dosen->user->email }})
-                            @else
-                                <i class="fas fa-times-circle text-secondary mr-1"></i> Belum terhubung ke akun user
-                            @endif
-                        </div>
+                            </div>
+                        @else
+                            <div class="alert alert-warning py-2 px-3 small rounded mb-2">
+                                <i class="fas fa-exclamation-triangle mr-1"></i> Dosen ini belum memiliki akun login aktif.
+                            </div>
+                            <div class="custom-control custom-checkbox mb-2">
+                                <input type="checkbox" class="custom-control-input" id="create_user" name="create_user" value="1" {{ old('create_user') ? 'checked' : '' }} onchange="document.getElementById('emailGroup').style.display = this.checked ? 'block' : 'none';">
+                                <label class="custom-control-label font-weight-bold small text-primary" for="create_user">Buatkan akun login pengguna sekarang (Role: Dosen)</label>
+                            </div>
+                            <div id="emailGroup" style="{{ old('create_user') ? 'display:block;' : 'display:none;' }}">
+                                <input type="email" name="email" class="form-control form-control-sm @error('email') is-invalid @enderror" placeholder="Email akun login (opsional)" value="{{ old('email') }}">
+                                @error('email') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
+                        @endif
                     </div>
                 </div>
 

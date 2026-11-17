@@ -25,9 +25,11 @@ Route::get('/login-form', [LoginController::class, 'showLoginForm'])->name('logi
 Route::post('/login', [LoginController::class, 'login'])->middleware('throttle:30,1')->name('login.attempt');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
-// Pendaftaran Mahasiswa (Identifikasi NIM Bank Data)
+// Pendaftaran Mahasiswa & Dosen (Identifikasi Bank Data)
 Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
 Route::post('/register', [RegisterController::class, 'register'])->middleware('throttle:20,1')->name('register.attempt');
+Route::get('/register/dosen', [RegisterController::class, 'showDosenRegistrationForm'])->name('register.dosen');
+Route::post('/register/dosen', [RegisterController::class, 'registerDosen'])->middleware('throttle:20,1')->name('register.dosen.attempt');
 
 // Lupa & Reset Kata Sandi via Kode Email
 Route::get('/forgot-password', [ForgotPasswordController::class, 'showLinkRequestForm'])->name('password.request');

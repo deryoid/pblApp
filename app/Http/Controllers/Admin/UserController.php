@@ -78,6 +78,24 @@ class UserController extends Controller
             }
         }
 
+        // Pencegahan akun ganda: jika role dosen/evaluator, periksa apakah NIP sudah terhubung ke akun lain
+        if (in_array($validated['role'], ['dosen', 'evaluator'], true)) {
+            $nipCandidate = strtoupper($validated['username']);
+            $existingDosen = \App\Models\Dosen::where('nip', $nipCandidate)->first();
+
+            if ($existingDosen && $existingDosen->user_id) {
+                $linkedUser = User::find($existingDosen->user_id);
+                Alert::warning(
+                    'Akun Sudah Ada',
+                    "Dosen dengan NIP {$nipCandidate} sudah memiliki akun pengguna aktif (Username: {$linkedUser?->username}). Anda dapat mengedit akun yang sudah ada."
+                );
+
+                return back()->withInput()->withErrors([
+                    'username' => "Dosen dengan NIP {$nipCandidate} sudah memiliki akun pengguna aktif ({$linkedUser?->username}).",
+                ]);
+            }
+        }
+
         $payload = [
             'nama_user' => $validated['nama_user'],
             'email' => $validated['email'],
@@ -105,6 +123,37 @@ class UserController extends Controller
                     'nim' => $nim,
                     'nama_mahasiswa' => $validated['nama_user'],
                     'semester' => 1,
+                ]);
+            }
+        }
+
+        // Jika role dosen atau evaluator, sesuaikan dengan Bank Data Dosen
+        if (in_array($validated['role'], ['dosen', 'evaluator'], true)) {
+            $nipCandidate = preg_match('/^[A-Za-z0-9_-]{5,}$/', $validated['username']) ? strtoupper($validated['username']) : null;
+            $d = null;
+            if ($nipCandidate) {
+                $d = \App\Models\Dosen::where('nip', $nipCandidate)->first();
+            }
+            if (! $d) {
+                $d = \App\Models\Dosen::whereRaw('LOWER(nama_dosen) = ?', [strtolower($validated['nama_user'])])
+                    ->whereNull('user_id')
+                    ->first();
+            }
+
+            if ($d) {
+                $d->user_id = $user->id;
+                $d->nama_dosen = $validated['nama_user'];
+                if (empty($d->no_hp) && ! empty($validated['no_hp'])) {
+                    $d->no_hp = $validated['no_hp'];
+                }
+                $d->save();
+            } else {
+                \App\Models\Dosen::create([
+                    'user_id' => $user->id,
+                    'nip' => $nipCandidate,
+                    'nama_dosen' => $validated['nama_user'],
+                    'no_hp' => $validated['no_hp'],
+                    'keahlian' => null,
                 ]);
             }
         }
@@ -194,6 +243,36 @@ class UserController extends Controller
                 }
                 $m->nama_mahasiswa = $user->nama_user;
                 $m->save();
+            }
+        }
+
+        // Jika user adalah dosen/evaluator, sesuaikan nama dan kontak di Bank Data Dosen
+        if (in_array($user->role, ['dosen', 'evaluator'], true)) {
+            $d = $user->dosen;
+            if (! $d) {
+                $nipCandidate = preg_match('/^[A-Za-z0-9_-]{5,}$/', $user->username) ? strtoupper($user->username) : null;
+                $d = $nipCandidate ? \App\Models\Dosen::where('nip', $nipCandidate)->whereNull('user_id')->first() : null;
+                if ($d) {
+                    $d->user_id = $user->id;
+                } else {
+                    $d = \App\Models\Dosen::create([
+                        'user_id' => $user->id,
+                        'nip' => $nipCandidate,
+                        'nama_dosen' => $user->nama_user,
+                        'no_hp' => $user->no_hp,
+                    ]);
+                }
+            }
+
+            if ($d) {
+                $d->nama_dosen = $user->nama_user;
+                if (! empty($user->no_hp)) {
+                    $d->no_hp = $user->no_hp;
+                }
+                if (empty($d->nip) && preg_match('/^[A-Za-z0-9_-]{5,}$/', $user->username)) {
+                    $d->nip = strtoupper($user->username);
+                }
+                $d->save();
             }
         }
 

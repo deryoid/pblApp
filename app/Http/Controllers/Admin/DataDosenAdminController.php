@@ -148,23 +148,54 @@ class DataDosenAdminController extends Controller
             'nama_dosen' => ['required', 'string', 'max:255'],
             'no_hp' => ['nullable', 'string', 'max:50'],
             'keahlian' => ['nullable', 'string', 'max:1000'],
+            'email' => ['nullable', 'email', 'max:255', Rule::unique('users', 'email')->ignore($dosen->user_id)],
+            'create_user' => ['nullable', 'boolean'],
         ]);
 
-        DB::transaction(function () use ($dosen, $validated) {
+        DB::transaction(function () use ($dosen, $validated, $request) {
             $user = $dosen->user;
+            $newNip = $validated['nip'] ?? null;
+            $nama = $validated['nama_dosen'];
+            $noHp = $validated['no_hp'] ?? null;
 
             if ($user) {
-                $user->nama_user = $validated['nama_dosen'];
-                if (! empty($validated['no_hp'])) {
-                    $user->no_hp = $validated['no_hp'];
+                $user->nama_user = $nama;
+                if (! empty($noHp)) {
+                    $user->no_hp = $noHp;
+                }
+                if ($newNip && $dosen->nip && $user->username === $dosen->nip && ! User::where('username', $newNip)->where('id', '!=', $user->id)->exists()) {
+                    $user->username = $newNip;
                 }
                 $user->save();
+            } elseif ($request->boolean('create_user')) {
+                // Buat akun baru jika belum terhubung
+                $username = $newNip ?: ('dosen_'.Str::slug(explode(' ', $nama)[0]).rand(100, 999));
+                $email = $validated['email'] ?? null;
+                if (empty($email)) {
+                    $email = strtolower(($newNip ?: $username).'@politala.ac.id');
+                    if (User::where('email', $email)->exists()) {
+                        $email = strtolower(($newNip ?: $username).'+'.Str::random(4).'@politala.ac.id');
+                    }
+                }
+
+                $user = User::create([
+                    'nama_user' => $nama,
+                    'email' => $email,
+                    'email_verified_at' => now(),
+                    'no_hp' => $noHp ?: '-',
+                    'username' => $username,
+                    'password' => Hash::make($newNip ?: 'dosen123'),
+                    'role' => 'dosen',
+                    'remember_token' => Str::random(10),
+                ]);
+
+                $dosen->user_id = $user->id;
             }
 
             $dosen->update([
-                'nip' => $validated['nip'] ?? null,
-                'nama_dosen' => $validated['nama_dosen'],
-                'no_hp' => $validated['no_hp'] ?? null,
+                'nip' => $newNip,
+                'nama_dosen' => $nama,
+                'no_hp' => $noHp,
                 'keahlian' => $validated['keahlian'] ?? null,
             ]);
         });

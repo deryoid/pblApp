@@ -86,6 +86,10 @@ class ProfileController extends Controller
             $rules['alamat'] = ['nullable', 'string', 'max:1000'];
         }
 
+        if (in_array($user->role, ['dosen', 'evaluator'], true)) {
+            $rules['keahlian'] = ['nullable', 'string', 'max:1000'];
+        }
+
         $validated = $request->validate($rules);
 
         $user->nama_user = $validated['nama_user'];
@@ -218,6 +222,34 @@ class ProfileController extends Controller
 
                 $mhs->checkAndUpdateProfileCompletion();
                 $mhs->save();
+            }
+        }
+
+        // Update data dosen / evaluator di Bank Data Dosen
+        if (in_array($user->role, ['dosen', 'evaluator'], true)) {
+            $dosen = $user->dosen;
+            if (! $dosen) {
+                $nipCandidate = preg_match('/^[A-Za-z0-9_-]{5,}$/', $user->username) ? strtoupper($user->username) : null;
+                $dosen = $nipCandidate ? \App\Models\Dosen::where('nip', $nipCandidate)->whereNull('user_id')->first() : null;
+                if ($dosen) {
+                    $dosen->user_id = $user->id;
+                } else {
+                    $dosen = \App\Models\Dosen::create([
+                        'user_id' => $user->id,
+                        'nip' => $nipCandidate,
+                        'nama_dosen' => $user->nama_user,
+                        'no_hp' => $user->no_hp,
+                    ]);
+                }
+            }
+
+            if ($dosen) {
+                $dosen->nama_dosen = $user->nama_user;
+                $dosen->no_hp = $user->no_hp;
+                if ($request->has('keahlian')) {
+                    $dosen->keahlian = trim((string) $request->input('keahlian')) ?: null;
+                }
+                $dosen->save();
             }
         }
 

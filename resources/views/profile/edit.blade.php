@@ -91,6 +91,12 @@
                         <div class="small text-muted mb-1"><i class="fas fa-chalkboard-teacher text-warning mr-2"></i>Kelas: <strong>{{ $mahasiswa->kelas->kelas ?? 'Belum ditentukan' }}</strong></div>
                         <div class="small text-muted"><i class="fas fa-venus-mars text-primary mr-2"></i>JK: <strong>{{ $mahasiswa->jenis_kelamin_text }}</strong></div>
                     @endif
+                    @if(in_array($user->role, ['dosen', 'evaluator'], true) && $user->dosen)
+                        <div class="small text-muted mb-1"><i class="fas fa-id-badge text-info mr-2"></i>NIP: <strong>{{ $user->dosen->nip ?? $user->username }}</strong></div>
+                        @if($user->dosen->keahlian)
+                            <div class="small text-muted mb-1"><i class="fas fa-laptop-code text-secondary mr-2"></i>Keahlian: <strong>{{ \Illuminate\Support\Str::limit($user->dosen->keahlian, 25) }}</strong></div>
+                        @endif
+                    @endif
                 </div>
             </div>
         </div>
@@ -314,6 +320,42 @@
                             </label>
                             <textarea name="alamat" id="alamat" rows="2" class="form-control @error('alamat') is-invalid @enderror" placeholder="Jalan, RT/RW, Kelurahan, Kecamatan, Kota/Kabupaten">{{ old('alamat', $mahasiswa?->alamat) }}</textarea>
                             @error('alamat') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                        </div>
+                        @endif
+
+                        @if(in_array($user->role, ['dosen', 'evaluator'], true))
+                        <div class="border-top pt-3 mt-2 mb-3">
+                            <h3 class="h6 font-weight-bold text-success mb-3">
+                                <i class="fas fa-chalkboard-teacher mr-1" aria-hidden="true"></i> Informasi Akademik Dosen
+                            </h3>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group col-md-6 mb-3">
+                                <label class="font-weight-bold small text-dark">
+                                    NIP / NIDN
+                                </label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text bg-light border-right-0"><i class="fas fa-id-badge text-muted"></i></span>
+                                    </div>
+                                    <input type="text" class="form-control border-left-0 bg-light" value="{{ $user->dosen?->nip ?? $user->username }}" readonly>
+                                </div>
+                                <small class="text-muted">NIP/NIDN terdaftar pada Bank Data Dosen.</small>
+                            </div>
+
+                            <div class="form-group col-md-6 mb-3">
+                                <label for="keahlian" class="font-weight-bold small text-dark">
+                                    Bidang Keahlian / Spesialisasi
+                                </label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text bg-light border-right-0"><i class="fas fa-laptop-code text-muted"></i></span>
+                                    </div>
+                                    <input type="text" name="keahlian" id="keahlian" class="form-control border-left-0 @error('keahlian') is-invalid @enderror" value="{{ old('keahlian', $user->dosen?->keahlian) }}" placeholder="Contoh: Jaringan Komputer, RPL, IoT">
+                                </div>
+                                @error('keahlian') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                            </div>
                         </div>
                         @endif
 

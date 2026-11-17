@@ -4,10 +4,10 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <meta name="description" content="Pendaftaran Akun Mahasiswa - PBL TRKJ Politala">
+    <meta name="description" content="Pendaftaran Akun Pengguna (Mahasiswa & Dosen) - PBL TRKJ Politala">
     <meta name="author" content="Dery Yuswanto Jaya, M.Kom - TRKJ Politala">
     
-    <title>Pendaftaran Mahasiswa | PBL TRKJ Politala</title>
+    <title>Pendaftaran Akun | PBL TRKJ Politala</title>
     <link rel="icon" href="{{ asset('sbadmin2/img/logo-campus.png') }}" type="image/png">
     
     <!-- Preconnect & Fonts -->
@@ -73,7 +73,7 @@
 
         .register-container {
             width: 100%;
-            max-width: 540px;
+            max-width: 560px;
             position: relative;
             z-index: 10;
             margin: auto;
@@ -122,7 +122,7 @@
 
         .brand-header {
             text-align: center;
-            margin-bottom: 1.75rem;
+            margin-bottom: 1.25rem;
         }
 
         .brand-logo-img {
@@ -145,6 +145,45 @@
             font-size: 0.85rem;
             color: var(--text-muted);
             margin: 0;
+        }
+
+        /* Role Switcher Tabs */
+        .role-switcher-box {
+            background: #f1f5f9;
+            padding: 5px;
+            border-radius: 14px;
+            display: flex;
+            gap: 6px;
+            margin-bottom: 1.5rem;
+            border: 1px solid #e2e8f0;
+        }
+
+        .role-tab-btn {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.65rem 1rem;
+            border: none;
+            background: transparent;
+            color: #64748b;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-size: 0.875rem;
+            font-weight: 700;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .role-tab-btn:hover {
+            color: #1e293b;
+        }
+
+        .role-tab-btn.active {
+            background: #ffffff;
+            color: var(--primary);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.12), 0 2px 4px rgba(0, 0, 0, 0.04);
         }
 
         .info-pill {
@@ -315,14 +354,21 @@
                 <div class="brand-header">
                     <img src="{{ asset('sbadmin2/img/logo-campus.png') }}" alt="Logo PBL TRKJ Politala" class="brand-logo-img">
                     <h1>PBL TRKJ POLITALA</h1>
-                    <p>Pendaftaran Akun Mahasiswa</p>
+                    <p id="registerSubTitle">
+                        {{ ($activeRole ?? 'mahasiswa') === 'dosen' ? 'Pendaftaran Akun Dosen / Pengajar' : 'Pendaftaran Akun Mahasiswa' }}
+                    </p>
                 </div>
 
-                <div class="info-pill">
-                    <i class="fas fa-id-card fa-lg text-primary mt-1"></i>
-                    <div>
-                        <strong>Verifikasi Otomatis NIM:</strong> Masukkan NIM Anda. Sistem akan mencocokkan data secara otomatis dengan <strong>Bank Data Mahasiswa</strong> yang telah diinputkan oleh Admin Prodi.
-                    </div>
+                {{-- Role Switcher Tabs --}}
+                <div class="role-switcher-box">
+                    <button type="button" id="tabMahasiswaBtn" class="role-tab-btn {{ ($activeRole ?? 'mahasiswa') !== 'dosen' ? 'active' : '' }}" onclick="switchRole('mahasiswa')">
+                        <i class="fas fa-user-graduate"></i>
+                        <span>Mahasiswa</span>
+                    </button>
+                    <button type="button" id="tabDosenBtn" class="role-tab-btn {{ ($activeRole ?? 'mahasiswa') === 'dosen' ? 'active' : '' }}" onclick="switchRole('dosen')">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                        <span>Dosen / Pengajar</span>
+                    </button>
                 </div>
 
                 {{-- Solusi Terbaik Jika Akun Sudah Terdaftar / Duplikat Ditemukan --}}
@@ -365,96 +411,240 @@
                     </div>
                 @endif
 
-                <form method="POST" action="{{ route('register.attempt') }}">
-                    @csrf
-                    
-                    {{-- NIM (Identifikasi Bank Data) --}}
-                    <div class="input-group-custom">
-                        <label class="form-label-custom">NIM (Nomor Induk Mahasiswa) <span class="text-danger">*</span></label>
-                        <i class="fas fa-fingerprint input-icon"></i>
-                        <input 
-                            type="text" 
-                            name="nim" 
-                            class="form-control-modern @error('nim') is-invalid @enderror" 
-                            placeholder="Contoh: C030322001" 
-                            value="{{ old('nim') }}" 
-                            required 
-                            autofocus
-                        >
-                    </div>
-
-                    {{-- Email --}}
-                    <div class="input-group-custom">
-                        <label class="form-label-custom">Alamat Email Aktif <span class="text-danger">*</span></label>
-                        <i class="fas fa-envelope input-icon"></i>
-                        <input 
-                            type="email" 
-                            name="email" 
-                            class="form-control-modern @error('email') is-invalid @enderror" 
-                            placeholder="nama@politala.ac.id atau email aktif" 
-                            value="{{ old('email') }}" 
-                            required
-                        >
-                    </div>
-
-                    {{-- No HP / WhatsApp --}}
-                    <div class="input-group-custom">
-                        <label class="form-label-custom">Nomor WhatsApp / HP Aktif <span class="text-danger">*</span></label>
-                        <i class="fab fa-whatsapp input-icon"></i>
-                        <input 
-                            type="text" 
-                            name="no_hp" 
-                            class="form-control-modern @error('no_hp') is-invalid @enderror" 
-                            placeholder="Contoh: 081234567890" 
-                            value="{{ old('no_hp') }}" 
-                            required
-                        >
-                    </div>
-
-                    {{-- Password --}}
-                    <div class="form-row">
-                        <div class="col-md-6">
-                            <div class="input-group-custom">
-                                <label class="form-label-custom">Kata Sandi <span class="text-danger">*</span></label>
-                                <i class="fas fa-lock input-icon"></i>
-                                <input 
-                                    type="password" 
-                                    id="passwordInput"
-                                    name="password" 
-                                    class="form-control-modern @error('password') is-invalid @enderror" 
-                                    placeholder="Min. 6 karakter" 
-                                    required
-                                >
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="input-group-custom">
-                                <label class="form-label-custom">Ulangi Kata Sandi <span class="text-danger">*</span></label>
-                                <i class="fas fa-check-double input-icon"></i>
-                                <input 
-                                    type="password" 
-                                    id="passwordConfirmInput"
-                                    name="password_confirmation" 
-                                    class="form-control-modern" 
-                                    placeholder="Ulangi kata sandi" 
-                                    required
-                                >
-                            </div>
+                {{-- PANEL FORM MAHASISWA --}}
+                <div id="paneMahasiswa" style="{{ ($activeRole ?? 'mahasiswa') === 'dosen' ? 'display: none;' : 'display: block;' }}">
+                    <div class="info-pill">
+                        <i class="fas fa-id-card fa-lg text-primary mt-1"></i>
+                        <div>
+                            <strong>Verifikasi Otomatis NIM:</strong> Masukkan NIM Anda. Sistem akan mencocokkan data secara otomatis dengan <strong>Bank Data Mahasiswa</strong> yang telah diinputkan oleh Admin Prodi.
                         </div>
                     </div>
 
-                    <button type="submit" class="btn-submit-register">
-                        <span>Verifikasi NIM & Daftar Akun</span>
-                        <i class="fas fa-arrow-right"></i>
-                    </button>
-                </form>
+                    <form method="POST" action="{{ route('register.attempt') }}">
+                        @csrf
+                        <input type="hidden" name="role" value="mahasiswa">
+                        
+                        {{-- NIM (Identifikasi Bank Data) --}}
+                        <div class="input-group-custom">
+                            <label class="form-label-custom">NIM (Nomor Induk Mahasiswa) <span class="text-danger">*</span></label>
+                            <i class="fas fa-fingerprint input-icon"></i>
+                            <input 
+                                type="text" 
+                                name="nim" 
+                                class="form-control-modern @error('nim') is-invalid @enderror" 
+                                placeholder="Contoh: C030322001" 
+                                value="{{ old('nim') }}" 
+                                required 
+                                autofocus
+                            >
+                        </div>
+
+                        {{-- Email --}}
+                        <div class="input-group-custom">
+                            <label class="form-label-custom">Alamat Email Aktif <span class="text-danger">*</span></label>
+                            <i class="fas fa-envelope input-icon"></i>
+                            <input 
+                                type="email" 
+                                name="email" 
+                                class="form-control-modern @error('email') is-invalid @enderror" 
+                                placeholder="nama@politala.ac.id atau email aktif" 
+                                value="{{ old('email') }}" 
+                                required
+                            >
+                        </div>
+
+                        {{-- No HP / WhatsApp --}}
+                        <div class="input-group-custom">
+                            <label class="form-label-custom">Nomor WhatsApp / HP Aktif <span class="text-danger">*</span></label>
+                            <i class="fab fa-whatsapp input-icon"></i>
+                            <input 
+                                type="text" 
+                                name="no_hp" 
+                                class="form-control-modern @error('no_hp') is-invalid @enderror" 
+                                placeholder="Contoh: 081234567890" 
+                                value="{{ old('no_hp') }}" 
+                                required
+                            >
+                        </div>
+
+                        {{-- Password --}}
+                        <div class="form-row">
+                            <div class="col-md-6">
+                                <div class="input-group-custom">
+                                    <label class="form-label-custom">Kata Sandi <span class="text-danger">*</span></label>
+                                    <i class="fas fa-lock input-icon"></i>
+                                    <input 
+                                        type="password" 
+                                        id="mhsPasswordInput"
+                                        name="password" 
+                                        class="form-control-modern @error('password') is-invalid @enderror" 
+                                        placeholder="Min. 6 karakter" 
+                                        required
+                                    >
+                                    <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('mhsPasswordInput', 'mhsPasswordEye')">
+                                        <i id="mhsPasswordEye" class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="input-group-custom">
+                                    <label class="form-label-custom">Ulangi Kata Sandi <span class="text-danger">*</span></label>
+                                    <i class="fas fa-check-double input-icon"></i>
+                                    <input 
+                                        type="password" 
+                                        id="mhsPasswordConfirmInput"
+                                        name="password_confirmation" 
+                                        class="form-control-modern" 
+                                        placeholder="Ulangi kata sandi" 
+                                        required
+                                    >
+                                    <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('mhsPasswordConfirmInput', 'mhsConfirmEye')">
+                                        <i id="mhsConfirmEye" class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn-submit-register">
+                            <span>Verifikasi NIM & Daftar Akun</span>
+                            <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </form>
+                </div>
+
+                {{-- PANEL FORM DOSEN --}}
+                <div id="paneDosen" style="{{ ($activeRole ?? 'mahasiswa') === 'dosen' ? 'display: block;' : 'display: none;' }}">
+                    <div class="info-pill" style="background: #f0fdf4; border-color: #bbf7d0; color: #166534;">
+                        <i class="fas fa-chalkboard-teacher fa-lg text-success mt-1"></i>
+                        <div>
+                            <strong>Verifikasi & Sinkronisasi Dosen:</strong> Masukkan NIP atau NIDN Anda. Sistem akan menyinkronkan data profil Anda secara otomatis dengan <strong>Bank Data Dosen</strong> Prodi TRKJ.
+                        </div>
+                    </div>
+
+                    <form method="POST" action="{{ route('register.dosen.attempt') }}">
+                        @csrf
+                        <input type="hidden" name="role" value="dosen">
+                        
+                        {{-- NIP / NIDN --}}
+                        <div class="input-group-custom">
+                            <label class="form-label-custom">NIP (Nomor Induk Pegawai) / NIDN <span class="text-danger">*</span></label>
+                            <i class="fas fa-id-badge input-icon"></i>
+                            <input 
+                                type="text" 
+                                name="nip" 
+                                class="form-control-modern @error('nip') is-invalid @enderror" 
+                                placeholder="Contoh: 198501012010121001 atau NIDN" 
+                                value="{{ old('nip') }}" 
+                                required
+                            >
+                        </div>
+
+                        {{-- Nama Dosen & Gelar --}}
+                        <div class="input-group-custom">
+                            <label class="form-label-custom">Nama Lengkap & Gelar Dosen <span class="text-danger">*</span></label>
+                            <i class="fas fa-user-tie input-icon"></i>
+                            <input 
+                                type="text" 
+                                name="nama_user" 
+                                class="form-control-modern @error('nama_user') is-invalid @enderror" 
+                                placeholder="Contoh: Dr. Ahmad Fauzi, M.Kom." 
+                                value="{{ old('nama_user') }}" 
+                                required
+                            >
+                        </div>
+
+                        {{-- Email --}}
+                        <div class="input-group-custom">
+                            <label class="form-label-custom">Alamat Email Aktif (Kampus / Pribadi) <span class="text-danger">*</span></label>
+                            <i class="fas fa-envelope input-icon"></i>
+                            <input 
+                                type="email" 
+                                name="email" 
+                                class="form-control-modern @error('email') is-invalid @enderror" 
+                                placeholder="nama.dosen@politala.ac.id" 
+                                value="{{ old('email') }}" 
+                                required
+                            >
+                        </div>
+
+                        {{-- No HP / WhatsApp --}}
+                        <div class="input-group-custom">
+                            <label class="form-label-custom">Nomor WhatsApp / HP Aktif <span class="text-danger">*</span></label>
+                            <i class="fab fa-whatsapp input-icon"></i>
+                            <input 
+                                type="text" 
+                                name="no_hp" 
+                                class="form-control-modern @error('no_hp') is-invalid @enderror" 
+                                placeholder="Contoh: 081234567890" 
+                                value="{{ old('no_hp') }}" 
+                                required
+                            >
+                        </div>
+
+                        {{-- Bidang Keahlian (Opsional) --}}
+                        <div class="input-group-custom">
+                            <label class="form-label-custom">Bidang Keahlian / Kepakaran <span class="text-muted">(Opsional)</span></label>
+                            <i class="fas fa-laptop-code input-icon"></i>
+                            <input 
+                                type="text" 
+                                name="keahlian" 
+                                class="form-control-modern @error('keahlian') is-invalid @enderror" 
+                                placeholder="Contoh: Rekayasa Perangkat Lunak, Jaringan Komputer, IoT" 
+                                value="{{ old('keahlian') }}"
+                            >
+                        </div>
+
+                        {{-- Password --}}
+                        <div class="form-row">
+                            <div class="col-md-6">
+                                <div class="input-group-custom">
+                                    <label class="form-label-custom">Kata Sandi <span class="text-danger">*</span></label>
+                                    <i class="fas fa-lock input-icon"></i>
+                                    <input 
+                                        type="password" 
+                                        id="dosenPasswordInput"
+                                        name="password" 
+                                        class="form-control-modern @error('password') is-invalid @enderror" 
+                                        placeholder="Min. 6 karakter" 
+                                        required
+                                    >
+                                    <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('dosenPasswordInput', 'dosenPasswordEye')">
+                                        <i id="dosenPasswordEye" class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="input-group-custom">
+                                    <label class="form-label-custom">Ulangi Kata Sandi <span class="text-danger">*</span></label>
+                                    <i class="fas fa-check-double input-icon"></i>
+                                    <input 
+                                        type="password" 
+                                        id="dosenPasswordConfirmInput"
+                                        name="password_confirmation" 
+                                        class="form-control-modern" 
+                                        placeholder="Ulangi kata sandi" 
+                                        required
+                                    >
+                                    <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('dosenPasswordConfirmInput', 'dosenConfirmEye')">
+                                        <i id="dosenConfirmEye" class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn-submit-register" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);">
+                            <span>Daftar Akun Dosen</span>
+                            <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </form>
+                </div>
 
                 <div class="login-prompt">
                     Sudah memiliki akun terdaftar? <a href="{{ route('login') }}">Masuk di sini</a>
                 </div>
 
                 <div class="mt-3 pt-3 border-top text-center text-muted" style="font-size: 0.775rem;">
-                    <i class="fas fa-info-circle mr-1"></i> Catatan: Akun Dosen, Evaluator, dan Administrator didaftarkan langsung oleh Administrator Prodi TRKJ.
+                    <i class="fas fa-info-circle mr-1"></i> Catatan: Akun Administrator sistem didaftarkan langsung oleh Administrator Prodi TRKJ.
                 </div>
 
             </div>
@@ -470,6 +660,56 @@
     <script src="{{ asset('sbadmin2/vendor/jquery/jquery.min.js') }}"></script>
     <script src="{{ asset('sbadmin2/vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
     @include('sweetalert::alert')
+
+    <script>
+        function switchRole(role) {
+            const paneMhs = document.getElementById('paneMahasiswa');
+            const paneDosen = document.getElementById('paneDosen');
+            const tabMhsBtn = document.getElementById('tabMahasiswaBtn');
+            const tabDosenBtn = document.getElementById('tabDosenBtn');
+            const subTitle = document.getElementById('registerSubTitle');
+
+            if (role === 'dosen') {
+                paneMhs.style.display = 'none';
+                paneDosen.style.display = 'block';
+                tabMhsBtn.classList.remove('active');
+                tabDosenBtn.classList.add('active');
+                subTitle.textContent = 'Pendaftaran Akun Dosen / Pengajar';
+                if (window.history.replaceState) {
+                    const newUrl = new URL(window.location);
+                    newUrl.searchParams.set('role', 'dosen');
+                    window.history.replaceState({}, '', newUrl);
+                }
+            } else {
+                paneMhs.style.display = 'block';
+                paneDosen.style.display = 'none';
+                tabMhsBtn.classList.add('active');
+                tabDosenBtn.classList.remove('active');
+                subTitle.textContent = 'Pendaftaran Akun Mahasiswa';
+                if (window.history.replaceState) {
+                    const newUrl = new URL(window.location);
+                    newUrl.searchParams.delete('role');
+                    window.history.replaceState({}, '', newUrl);
+                }
+            }
+        }
+
+        function togglePasswordVisibility(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            if (!input || !icon) return;
+
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+    </script>
 
 </body>
 </html>

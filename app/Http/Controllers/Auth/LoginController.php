@@ -31,7 +31,7 @@ class LoginController extends Controller
     }
 
     /**
-     * Proses login (mendukung username, NIM, atau email).
+     * Proses login (mendukung username, NIM, NIP, atau email).
      */
     public function login(Request $request): RedirectResponse
     {
@@ -40,7 +40,7 @@ class LoginController extends Controller
             'username' => ['required', 'string'],
             'password' => ['required', 'string'],
         ], [
-            'username.required' => 'NIM, username, atau email wajib diisi.',
+            'username.required' => 'NIP, NIM, username, atau email wajib diisi.',
             'password.required' => 'Kata sandi wajib diisi.',
         ]);
 
@@ -72,7 +72,7 @@ class LoginController extends Controller
             };
         }
 
-        // 2. Jika input berupa teks (bukan email) dan huruf kecil, coba dengan huruf kapital (format standar NIM)
+        // 2. Jika input berupa teks (bukan email) dan huruf kecil, coba dengan huruf kapital (format standar NIM/NIP)
         if (! $isEmail) {
             $uppercaseNIM = strtoupper($loginInput);
             if ($uppercaseNIM !== $loginInput && Auth::attempt(['username' => $uppercaseNIM, 'password' => $password], $remember)) {
@@ -88,6 +88,31 @@ class LoginController extends Controller
                     'mahasiswa' => redirect()->to('/mahasiswa'),
                     default => redirect()->intended('/'),
                 };
+            }
+
+            // 3. Coba mencocokkan NIP pada Bank Data Dosen jika username berbeda
+            $cleanedNip = strtoupper(preg_replace('/\s+/', '', $loginInput));
+            $dosen = \App\Models\Dosen::where('nip', $cleanedNip)
+                ->orWhere('nip', $loginInput)
+                ->first();
+
+            if ($dosen && $dosen->user) {
+                if (Auth::attempt(['id' => $dosen->user->id, 'password' => $password], $remember) ||
+                    Auth::attempt(['username' => $dosen->user->username, 'password' => $password], $remember) ||
+                    Auth::attempt(['email' => $dosen->user->email, 'password' => $password], $remember)) {
+                    $request->session()->regenerate();
+
+                    Alert::toast('Anda berhasil masuk.', 'success');
+
+                    $user = Auth::user();
+
+                    return match ($user->role) {
+                        'admin' => redirect()->to('/admin'),
+                        'evaluator', 'dosen' => redirect()->to('/evaluator'),
+                        'mahasiswa' => redirect()->to('/mahasiswa'),
+                        default => redirect()->intended('/'),
+                    };
+                }
             }
         }
 

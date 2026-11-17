@@ -126,33 +126,14 @@ class GoogleAuthController extends Controller
                     $bankMhs->save();
                 }
             } else {
-                // Cek apakah email terdaftar sebagai Dosen
-                $dosen = Dosen::where('email', $email)->first();
-                if ($dosen) {
-                    if ($dosen->user_id) {
-                        $user = User::find($dosen->user_id);
-                        if ($user) {
-                            $user->update([
-                                'google_id' => $googleId,
-                                'avatar' => $user->avatar ?: $avatar,
-                            ]);
-                        }
-                    }
-
-                    if (! $user) {
-                        $user = User::create([
-                            'nama_user' => $dosen->nama_dosen,
-                            'email' => $email,
-                            'username' => $dosen->nip ?: ('dosen_'.Str::slug(explode('@', $email)[0], '_')),
-                            'google_id' => $googleId,
-                            'avatar' => $avatar,
-                            'role' => 'dosen',
-                            'email_verified_at' => now(),
-                        ]);
-
-                        $dosen->user_id = $user->id;
-                        $dosen->save();
-                    }
+                // Cek apakah email terdaftar sebagai Dosen atau Evaluator
+                $dosenUser = User::where('email', $email)->whereIn('role', ['dosen', 'evaluator'])->first();
+                if ($dosenUser) {
+                    $user = $dosenUser;
+                    $user->update([
+                        'google_id' => $googleId,
+                        'avatar' => $user->avatar ?: $avatar,
+                    ]);
                 }
             }
         }
