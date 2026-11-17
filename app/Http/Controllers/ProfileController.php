@@ -146,7 +146,19 @@ class ProfileController extends Controller
                         $mhs->tanggal_lahir = $mhs->tanggal_lahir ?: $duplicateBankMhs->tanggal_lahir;
                         $mhs->alamat = $mhs->alamat ?: $duplicateBankMhs->alamat;
 
-                        // Pindahkan relasi kelompok jika ada di record duplikat
+                        // Pindahkan relasi kelompok jika ada di record duplikat dengan aman
+                        $existingPeriodes = \Illuminate\Support\Facades\DB::table('kelompok_mahasiswa')
+                            ->where('mahasiswa_id', $mhs->id)
+                            ->pluck('periode_id')
+                            ->all();
+
+                        if (! empty($existingPeriodes)) {
+                            \Illuminate\Support\Facades\DB::table('kelompok_mahasiswa')
+                                ->where('mahasiswa_id', $duplicateBankMhs->id)
+                                ->whereIn('periode_id', $existingPeriodes)
+                                ->delete();
+                        }
+
                         \Illuminate\Support\Facades\DB::table('kelompok_mahasiswa')
                             ->where('mahasiswa_id', $duplicateBankMhs->id)
                             ->update(['mahasiswa_id' => $mhs->id]);

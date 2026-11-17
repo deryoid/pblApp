@@ -42,6 +42,31 @@ class ProyekController extends Controller
 
         // Muat list (kolom) dinamis dan kartu per list berdasarkan kelompok+periode
         $pid = $kelompok->periode_id ?? optional($periodeAktif)->id;
+
+        // Auto-heal: Jika ada kartu proyek pada kelompok ini yang belum memiliki kolom (list_id IS NULL), otomatis tautkan ke kolom
+        $unassignedCards = ProjectCard::where('kelompok_id', $kelompok->id)
+            ->whereNull('list_id')
+            ->get();
+
+        if ($unassignedCards->isNotEmpty()) {
+            $defaultList = ProjectList::where('kelompok_id', $kelompok->id)->orderBy('position')->first();
+            if (! $defaultList) {
+                $defaultList = ProjectList::create([
+                    'uuid' => (string) \Illuminate\Support\Str::uuid(),
+                    'kelompok_id' => $kelompok->id,
+                    'periode_id' => $pid,
+                    'name' => 'Perencanaan',
+                    'position' => 0,
+                ]);
+            }
+            foreach ($unassignedCards as $idx => $uc) {
+                $uc->update([
+                    'list_id' => $defaultList->id,
+                    'position' => $idx,
+                ]);
+            }
+        }
+
         $lists = ProjectList::where('kelompok_id', $kelompok->id)
             ->when($pid, fn ($q) => $q->where(fn ($sub) => $sub->where('periode_id', $pid)->orWhereNull('periode_id')))
             ->orderBy('position')

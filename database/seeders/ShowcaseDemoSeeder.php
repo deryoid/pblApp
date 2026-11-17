@@ -163,7 +163,19 @@ class ShowcaseDemoSeeder extends Seeder
                 }
             }
 
-            // Create Project Card
+            // Create Project List & Card
+            $list = \App\Models\ProjectList::firstOrCreate(
+                [
+                    'kelompok_id' => $kelompok->id,
+                    'name' => 'Selesai',
+                ],
+                [
+                    'uuid' => (string) Str::uuid(),
+                    'periode_id' => $periode->id,
+                    'position' => 0,
+                ]
+            );
+
             $card = ProjectCard::firstOrCreate(
                 [
                     'kelompok_id' => $kelompok->id,
@@ -172,6 +184,7 @@ class ShowcaseDemoSeeder extends Seeder
                 [
                     'uuid' => (string) Str::uuid(),
                     'periode_id' => $periode->id,
+                    'list_id' => $list->id,
                     'description' => $item['description'],
                     'jenis_proyek' => $item['jenis_proyek'],
                     'topik_proyek' => $item['topik_proyek'],

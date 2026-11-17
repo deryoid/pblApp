@@ -16,7 +16,7 @@ class AktivitasCardPolicy
 
     public function before(User $user, string $ability): ?bool
     {
-        if ($user->role === 'admin') {
+        if (in_array($user->role, ['admin', 'evaluator', 'dosen'], true)) {
             return true;
         }
 

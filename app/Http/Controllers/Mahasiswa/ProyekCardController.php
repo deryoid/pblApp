@@ -184,14 +184,8 @@ class ProyekCardController extends Controller
             $proposalPath = $request->file('proposal_file')->store('proposals', 'public');
         }
 
-        // Syarat wajib proposal jika proyek Internal
-        if (strtolower($skema) === 'internal' && empty($proposalPath)) {
-            Alert::error('Proposal Wajib', 'Sebelum memulai proyek internal, kelompok wajib mengunggah berkas proposal proyek (PDF/DOC/DOCX).');
-
-            return back()->withErrors([
-                'proposal_file' => 'Sebelum memulai proyek internal, kelompok wajib mengunggah berkas proposal proyek (PDF/DOC/DOCX).',
-            ])->withInput();
-        }
+        // Tentukan status proposal: disetujui jika berkas ada, atau pertahankan status lama
+        $statusProposal = $proposalPath ? 'disetujui' : ($card->status_proposal ?? 'pending');
 
         // Update kolom utama
         $card->update([
@@ -209,7 +203,7 @@ class ProyekCardController extends Controller
             'skema_pbl' => $skema,
             'jenis_proyek' => strtolower($skema) === 'external' ? 'external' : 'internal',
             'proposal_file_path' => $proposalPath,
-            'status_proposal' => $proposalPath ? 'disetujui' : ($card->status_proposal ?? 'pending'),
+            'status_proposal' => $statusProposal,
             'biaya_barang' => $data['biaya_barang'] ?? $card->biaya_barang,
             'biaya_jasa' => $data['biaya_jasa'] ?? $card->biaya_jasa,
             'status_proyek' => $data['status_proyek'] ?? $card->status_proyek,
@@ -223,7 +217,11 @@ class ProyekCardController extends Controller
         // Sync mata kuliah (jika form dikirim, update sesuai input, kosong jika tidak dicentang)
         $card->mataKuliahs()->sync($request->input('mata_kuliah_ids', []));
 
-        Alert::toast('Kartu diperbarui.', 'success');
+        $toastMsg = 'Kartu diperbarui.';
+        if (strtolower($skema) === 'internal' && empty($proposalPath)) {
+            $toastMsg .= ' Pengingat: Segera unggah berkas proposal proyek internal.';
+        }
+        Alert::toast($toastMsg, 'success');
 
         return back();
     }
@@ -243,11 +241,13 @@ class ProyekCardController extends Controller
             $kelompokId = $card->kelompok_id;
             $card->delete();
 
-            // Rapikan posisi setelah delete
-            ProjectCard::where('kelompok_id', $kelompokId)
-                ->where('list_id', $listId)
-                ->where('position', '>', $pos)
-                ->decrement('position');
+            // Rapikan posisi setelah delete jika list_id dan position valid
+            if ($listId !== null && $pos !== null) {
+                ProjectCard::where('kelompok_id', $kelompokId)
+                    ->where('list_id', $listId)
+                    ->where('position', '>', $pos)
+                    ->decrement('position');
+            }
         });
 
         Alert::toast('Kartu dihapus.', 'success');

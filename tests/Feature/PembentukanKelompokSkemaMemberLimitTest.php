@@ -219,6 +219,7 @@ class PembentukanKelompokSkemaMemberLimitTest extends TestCase
             'entries' => $nims, // 6 orang
         ]);
 
+        $response->assertSessionHasNoErrors();
         $response->assertRedirect(route('kelompok.index'));
 
         $kelompok = Kelompok::where('skema_kategori', 'Lomba')->first();
@@ -288,6 +289,7 @@ class PembentukanKelompokSkemaMemberLimitTest extends TestCase
             'entries' => $nims,
         ]);
 
+        $response->assertSessionHasNoErrors();
         $response->assertRedirect(route('kelompok.index'));
         $kelompok->refresh();
         $this->assertCount(5, $kelompok->mahasiswas);
@@ -373,6 +375,7 @@ class PembentukanKelompokSkemaMemberLimitTest extends TestCase
             'entries' => $nims, // 10 orang
         ]);
 
+        $response->assertSessionHasNoErrors();
         $response->assertRedirect(route('kelompok.index'));
 
         $kelompok = Kelompok::where('skema_kategori', 'Teaching Factory')->where('nama_kelompok', 'like', '%Divisi Manufaktur%')->first();
@@ -381,5 +384,77 @@ class PembentukanKelompokSkemaMemberLimitTest extends TestCase
         $this->assertTrue($kelompok->isTeachingFactory());
         $this->assertSame(0, $kelompok->max_members);
         $this->assertFalse($kelompok->isFull());
+    }
+
+    /**
+     * Admin dapat membuat kelompok dengan input NIM huruf kecil dan spasi tanpa error 'NIM tidak ditemukan'.
+     */
+    public function test_admin_can_create_group_with_lowercase_and_spaced_nim_without_error(): void
+    {
+        // Buat mahasiswa dengan NIM resmi huruf kapital
+        $this->createStudentUser('C030324101', 'Mhs Casing 1');
+        $this->createStudentUser('C030324102', 'Mhs Casing 2');
+
+        // Admin menginput NIM dengan huruf kecil dan spasi ekstra
+        $entries = [
+            ['nim' => ' c030324101 '],
+            ['nim' => 'c030324102'],
+        ];
+
+        $response = $this->actingAs($this->admin)->post(route('kelompok.store'), [
+            'periode_id' => $this->periode->id,
+            'nama_kelompok' => 'Kelompok Normalisasi Casing',
+            'skema_kategori' => 'Internal',
+            'ketua_nim' => 'c030324101',
+            'entries' => $entries,
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $response->assertRedirect(route('kelompok.index'));
+
+        $kelompok = Kelompok::where('nama_kelompok', 'like', '%Normalisasi Casing%')->first();
+        $this->assertNotNull($kelompok);
+        $this->assertCount(2, $kelompok->mahasiswas);
+        $ketua = $kelompok->mahasiswas->firstWhere('pivot.role', 'Ketua');
+        $this->assertNotNull($ketua);
+        $this->assertSame('C030324101', $ketua->nim);
+    }
+
+    /**
+     * Admin dapat mengupdate kelompok dengan input NIM huruf kecil dan spasi tanpa error 'NIM tidak ditemukan'.
+     */
+    public function test_admin_can_update_group_with_lowercase_and_spaced_nim_without_error(): void
+    {
+        $this->createStudentUser('C030324201', 'Mhs Update 1');
+        $this->createStudentUser('C030324202', 'Mhs Update 2');
+
+        $kelompok = Kelompok::create([
+            'nama_kelompok' => 'Kelompok 50 - Update Casing',
+            'skema_kategori' => 'Internal',
+            'periode_id' => $this->periode->id,
+            'max_members' => 4,
+        ]);
+
+        $entries = [
+            ['nim' => ' c030324201 '],
+            ['nim' => 'c030324202'],
+        ];
+
+        $response = $this->actingAs($this->admin)->put(route('kelompok.update', $kelompok->uuid), [
+            'periode_id' => $this->periode->id,
+            'nama_kelompok' => 'Kelompok 50 - Update Casing',
+            'skema_kategori' => 'Internal',
+            'ketua_nim' => 'c030324201',
+            'entries' => $entries,
+        ]);
+
+        $response->assertSessionHasNoErrors();
+        $response->assertRedirect(route('kelompok.index'));
+
+        $kelompok->refresh();
+        $this->assertCount(2, $kelompok->mahasiswas);
+        $ketua = $kelompok->mahasiswas->firstWhere('pivot.role', 'Ketua');
+        $this->assertNotNull($ketua);
+        $this->assertSame('C030324201', $ketua->nim);
     }
 }

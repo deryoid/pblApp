@@ -644,4 +644,117 @@ class ProyekMahasiswaTest extends TestCase
         $indexResponse->assertStatus(200);
         $indexResponse->assertSee('Belum ada kolom untuk kelompok ini.');
     }
+
+    public function test_student_can_edit_internal_project_even_if_no_proposal_was_initially_uploaded(): void
+    {
+        // Kartu internal yang belum punya file proposal (misal dibuat via seeder / draf)
+        $card = ProjectCard::create([
+            'uuid' => (string) \Illuminate\Support\Str::uuid(),
+            'kelompok_id' => $this->kelompok->id,
+            'list_id' => $this->list1->id,
+            'periode_id' => $this->periode->id,
+            'title' => 'Proyek Awal Tanpa Proposal',
+            'skema_pbl' => 'Internal',
+            'status_proyek' => 'Proses',
+            'proposal_file_path' => null,
+            'created_by' => $this->studentUser->id,
+        ]);
+
+        $response = $this->actingAs($this->studentUser)->put(route('proyek.cards.update', $card), [
+            'title' => 'Judul Proyek Diperbarui',
+            'description' => 'Deskripsi baru proyek',
+            'skema_pbl' => 'Internal',
+            'progress' => 50,
+            'status_proyek' => 'Proses',
+        ]);
+
+        $response->assertRedirect();
+        $card->refresh();
+        $this->assertSame('Judul Proyek Diperbarui', $card->title);
+        $this->assertSame(50, $card->progress);
+        $this->assertSame('Deskripsi baru proyek', $card->description);
+    }
+
+    public function test_card_with_numeric_prefix_uuid_can_be_edited_and_deleted_without_type_juggling_403(): void
+    {
+        // 1. Buat user dan Card 1 untuk kelompok lain
+        $otherUser = User::create([
+            'nama_user' => 'User Lain',
+            'username' => 'user_lain_99',
+            'email' => 'user.lain99@politala.ac.id',
+            'password' => bcrypt('password'),
+            'role' => 'mahasiswa',
+            'no_hp' => '089999999988',
+        ]);
+        $otherGroup = Kelompok::create([
+            'nama_kelompok' => 'Kelompok Lain 99',
+            'skema_kategori' => 'External',
+            'periode_id' => $this->periode->id,
+        ]);
+        $otherList = ProjectList::create([
+            'uuid' => (string) \Illuminate\Support\Str::uuid(),
+            'kelompok_id' => $otherGroup->id,
+            'periode_id' => $this->periode->id,
+            'name' => 'Backlog',
+            'position' => 0,
+        ]);
+        $card1 = ProjectCard::create([
+            'uuid' => '99999999-9999-9999-9999-999999999999',
+            'kelompok_id' => $otherGroup->id,
+            'list_id' => $otherList->id,
+            'periode_id' => $this->periode->id,
+            'title' => 'Kartu Milik Kelompok Lain (ID 1)',
+            'created_by' => $otherUser->id,
+        ]);
+
+        // 2. Buat Card milik kelompok user saat ini dengan UUID berawalan digit sama dengan ID card1 (misal awalan $card1->id)
+        $specialUuid = $card1->id.'abcdef12-3456-7890-abcd-ef1234567890';
+        $myCard = ProjectCard::create([
+            'uuid' => $specialUuid,
+            'kelompok_id' => $this->kelompok->id,
+            'list_id' => $this->list1->id,
+            'periode_id' => $this->periode->id,
+            'title' => 'Kartu Saya dengan UUID Berawalan Angka',
+            'created_by' => $this->studentUser->id,
+        ]);
+
+        // Update kartu saya: harus berhasil mengupdate myCard, bukan 403 karena tertukar ke card1
+        $updateRes = $this->actingAs($this->studentUser)->put(route('proyek.cards.update', $myCard), [
+            'title' => 'Judul Kartu Saya Berhasil Diubah',
+            'skema_pbl' => 'External',
+        ]);
+        $updateRes->assertRedirect();
+        $myCard->refresh();
+        $this->assertSame('Judul Kartu Saya Berhasil Diubah', $myCard->title);
+        $card1->refresh();
+        $this->assertSame('Kartu Milik Kelompok Lain (ID 1)', $card1->title);
+
+        // Hapus kartu saya: harus menghapus myCard, bukan card1
+        $delRes = $this->actingAs($this->studentUser)->delete(route('proyek.cards.destroy', $myCard));
+        $delRes->assertRedirect();
+        $this->assertDatabaseMissing('project_cards', ['uuid' => $specialUuid]);
+        $this->assertDatabaseHas('project_cards', ['id' => $card1->id]);
+    }
+
+    public function test_unassigned_cards_auto_heal_and_display_on_kanban_board(): void
+    {
+        // Buat card tanpa list (misal hasil seeder)
+        $orphanCard = ProjectCard::create([
+            'uuid' => (string) \Illuminate\Support\Str::uuid(),
+            'kelompok_id' => $this->kelompok->id,
+            'list_id' => null, // Belum punya list
+            'periode_id' => $this->periode->id,
+            'title' => 'Kartu Tanpa List Awal',
+            'status_proyek' => 'Proses',
+            'created_by' => $this->studentUser->id,
+        ]);
+
+        $response = $this->actingAs($this->studentUser)->get(route('proyek.index'));
+        $response->assertStatus(200);
+        $response->assertSee('Kartu Tanpa List Awal');
+
+        // Pastikan card sekarang sudah ditautkan ke list
+        $orphanCard->refresh();
+        $this->assertNotNull($orphanCard->list_id);
+    }
 }

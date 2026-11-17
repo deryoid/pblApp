@@ -121,7 +121,7 @@ class DataKelompokAdminController extends Controller
         $periodeId = (int) $validated['periode_id'];
 
         $rows = collect($validated['entries'])
-            ->map(fn ($e) => ['nim' => trim((string) ($e['nim'] ?? ''))])
+            ->map(fn ($e) => ['nim' => strtoupper(preg_replace('/\s+/', '', (string) ($e['nim'] ?? '')))])
             ->filter(fn ($r) => $r['nim'])
             ->values();
 
@@ -132,16 +132,24 @@ class DataKelompokAdminController extends Controller
         }
 
         $nimList = $rows->pluck('nim')->unique()->values();
-        $mahasiswa = Mahasiswa::whereIn('nim', $nimList)->get(['id', 'nim']);
+        $mahasiswa = Mahasiswa::whereIn('nim', $nimList)
+            ->orWhere(function ($q) use ($nimList) {
+                foreach ($nimList as $n) {
+                    $q->orWhereRaw('UPPER(TRIM(nim)) = ?', [$n]);
+                }
+            })
+            ->get(['id', 'nim']);
 
-        $missing = $nimList->diff($mahasiswa->pluck('nim'))->values();
+        $foundNims = $mahasiswa->map(fn ($m) => strtoupper(preg_replace('/\s+/', '', (string) $m->nim)))->all();
+        $missing = $nimList->reject(fn ($n) => in_array($n, $foundNims, true))->values();
         if ($missing->isNotEmpty()) {
             Alert::toast('NIM tidak ditemukan: '.implode(', ', $missing->all()), 'error');
 
             return back()->withErrors(['entries' => 'NIM tidak ditemukan: '.implode(', ', $missing->all())])->withInput();
         }
 
-        if (! empty($validated['ketua_nim']) && ! $nimList->contains($validated['ketua_nim'])) {
+        $ketuaNim = ! empty($validated['ketua_nim']) ? strtoupper(preg_replace('/\s+/', '', (string) $validated['ketua_nim'])) : null;
+        if ($ketuaNim && ! $nimList->contains($ketuaNim)) {
             Alert::toast('NIM Ketua harus salah satu dari daftar anggota.', 'error');
 
             return back()->withErrors(['ketua_nim' => 'NIM Ketua harus salah satu dari daftar anggota.'])->withInput();
@@ -170,20 +178,25 @@ class DataKelompokAdminController extends Controller
         }
 
         // siapkan pivot
-        $ketuaNim = $validated['ketua_nim'] ?? null;
-        $nimToId = $mahasiswa->pluck('id', 'nim');
+        $nimToId = [];
+        foreach ($mahasiswa as $m) {
+            $nimToId[strtoupper(preg_replace('/\s+/', '', (string) $m->nim))] = $m->id;
+        }
+
         $attach = [];
         foreach ($rows as $r) {
-            $mid = $nimToId[$r['nim']];
-            $attach[$mid] = [
-                'periode_id' => $periodeId,
-                'role' => ($ketuaNim && $r['nim'] === $ketuaNim) ? 'Ketua' : 'Anggota',
-            ];
+            $mid = $nimToId[$r['nim']] ?? null;
+            if ($mid) {
+                $attach[$mid] = [
+                    'periode_id' => $periodeId,
+                    'role' => ($ketuaNim && $r['nim'] === $ketuaNim) ? 'Ketua' : 'Anggota',
+                ];
+            }
         }
         if (! $ketuaNim && $rows->count()) {
             $firstNim = $rows->first()['nim'];
-            $firstId = $nimToId[$firstNim];
-            if (isset($attach[$firstId])) {
+            $firstId = $nimToId[$firstNim] ?? null;
+            if ($firstId && isset($attach[$firstId])) {
                 $attach[$firstId]['role'] = 'Ketua';
             }
         }
@@ -289,7 +302,7 @@ class DataKelompokAdminController extends Controller
         $periodeId = (int) $validated['periode_id'];
 
         $rows = collect($validated['entries'])
-            ->map(fn ($e) => ['nim' => trim((string) ($e['nim'] ?? ''))])
+            ->map(fn ($e) => ['nim' => strtoupper(preg_replace('/\s+/', '', (string) ($e['nim'] ?? '')))])
             ->filter(fn ($r) => $r['nim'])
             ->values();
 
@@ -300,16 +313,24 @@ class DataKelompokAdminController extends Controller
         }
 
         $nimList = $rows->pluck('nim')->unique()->values();
-        $mahasiswa = Mahasiswa::whereIn('nim', $nimList)->get(['id', 'nim']);
+        $mahasiswa = Mahasiswa::whereIn('nim', $nimList)
+            ->orWhere(function ($q) use ($nimList) {
+                foreach ($nimList as $n) {
+                    $q->orWhereRaw('UPPER(TRIM(nim)) = ?', [$n]);
+                }
+            })
+            ->get(['id', 'nim']);
 
-        $missing = $nimList->diff($mahasiswa->pluck('nim'))->values();
+        $foundNims = $mahasiswa->map(fn ($m) => strtoupper(preg_replace('/\s+/', '', (string) $m->nim)))->all();
+        $missing = $nimList->reject(fn ($n) => in_array($n, $foundNims, true))->values();
         if ($missing->isNotEmpty()) {
             Alert::toast('NIM tidak ditemukan: '.implode(', ', $missing->all()), 'error');
 
             return back()->withErrors(['entries' => 'NIM tidak ditemukan: '.implode(', ', $missing->all())])->withInput();
         }
 
-        if (! empty($validated['ketua_nim']) && ! $nimList->contains($validated['ketua_nim'])) {
+        $ketuaNim = ! empty($validated['ketua_nim']) ? strtoupper(preg_replace('/\s+/', '', (string) $validated['ketua_nim'])) : null;
+        if ($ketuaNim && ! $nimList->contains($ketuaNim)) {
             Alert::toast('NIM Ketua harus salah satu dari daftar anggota.', 'error');
 
             return back()->withErrors(['ketua_nim' => 'NIM Ketua harus salah satu dari daftar anggota.'])->withInput();
@@ -341,7 +362,7 @@ class DataKelompokAdminController extends Controller
             return back()->withErrors(['entries' => 'NIM sudah terdaftar pada kelompok lain di periode ini: '.implode(', ', $konflik)])->withInput();
         }
 
-        DB::transaction(function () use ($kelompok, $validated, $mahasiswa, $rows, $periodeId, $isInternal, $isTefa) {
+        DB::transaction(function () use ($kelompok, $validated, $mahasiswa, $rows, $periodeId, $isInternal, $isTefa, $ketuaNim) {
             $maxMembers = $isInternal ? 4 : ($isTefa ? 0 : max(8, $rows->count()));
 
             $kelompok->update([
@@ -352,21 +373,25 @@ class DataKelompokAdminController extends Controller
                 'max_members' => $maxMembers,
             ]);
 
-            $ketuaNim = $validated['ketua_nim'] ?? null;
-            $nimToId = $mahasiswa->pluck('id', 'nim');
+            $nimToId = [];
+            foreach ($mahasiswa as $m) {
+                $nimToId[strtoupper(preg_replace('/\s+/', '', (string) $m->nim))] = $m->id;
+            }
 
             $attach = [];
             foreach ($rows as $r) {
-                $mid = $nimToId[$r['nim']];
-                $attach[$mid] = [
-                    'periode_id' => $periodeId,
-                    'role' => ($ketuaNim && $r['nim'] === $ketuaNim) ? 'Ketua' : 'Anggota',
-                ];
+                $mid = $nimToId[$r['nim']] ?? null;
+                if ($mid) {
+                    $attach[$mid] = [
+                        'periode_id' => $periodeId,
+                        'role' => ($ketuaNim && $r['nim'] === $ketuaNim) ? 'Ketua' : 'Anggota',
+                    ];
+                }
             }
             if (! $ketuaNim && $rows->count()) {
                 $firstNim = $rows->first()['nim'];
-                $firstId = $nimToId[$firstNim];
-                if (isset($attach[$firstId])) {
+                $firstId = $nimToId[$firstNim] ?? null;
+                if ($firstId && isset($attach[$firstId])) {
                     $attach[$firstId]['role'] = 'Ketua';
                 }
             }

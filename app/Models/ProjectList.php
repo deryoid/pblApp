@@ -42,9 +42,19 @@ class ProjectList extends Model
 
     public function resolveRouteBinding($value, $field = null)
     {
-        return $this->where($field ?? 'uuid', $value)
-            ->orWhere('id', $value)
-            ->first() ?? abort(404);
+        if ($field) {
+            return $this->where($field, $value)->first() ?? abort(404);
+        }
+
+        // Jika string berupa angka murni, cari berdasarkan primary key id (atau uuid jika cocok)
+        if (is_numeric($value) && ctype_digit((string) $value)) {
+            return $this->where('id', (int) $value)->first()
+                ?? $this->where('uuid', (string) $value)->first()
+                ?? abort(404);
+        }
+
+        // Jika bukan angka murni (UUID string), cari HANYA pada kolom uuid untuk mencegah MySQL type juggling ke kolom id
+        return $this->where('uuid', (string) $value)->first() ?? abort(404);
     }
 
     public function cards()

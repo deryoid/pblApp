@@ -20,7 +20,7 @@ class KelompokController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
-        $mahasiswa = $user->mahasiswa;
+        $mahasiswa = Mahasiswa::resolveForUser($user);
 
         $activePeriode = Periode::getLatestActive();
         $periodeId = $activePeriode?->id;
@@ -104,7 +104,7 @@ class KelompokController extends Controller
     public function store(Request $request)
     {
         $user = Auth::user();
-        $mahasiswa = $user->mahasiswa;
+        $mahasiswa = Mahasiswa::resolveForUser($user);
 
         if (! $mahasiswa) {
             Alert::toast('Data profil mahasiswa tidak ditemukan.', 'error');
@@ -184,7 +184,7 @@ class KelompokController extends Controller
     public function invite(Request $request)
     {
         $user = Auth::user();
-        $mahasiswa = $user->mahasiswa;
+        $mahasiswa = Mahasiswa::resolveForUser($user);
 
         $activePeriode = Periode::getLatestActive();
         if (! $activePeriode) {
@@ -253,7 +253,7 @@ class KelompokController extends Controller
     public function acceptInvite(KelompokJoinRequest $request)
     {
         $user = Auth::user();
-        $mahasiswa = $user->mahasiswa;
+        $mahasiswa = Mahasiswa::resolveForUser($user);
 
         if (! $mahasiswa || $request->mahasiswa_id !== $mahasiswa->id) {
             Alert::toast('Akses tidak valid.', 'error');
@@ -333,7 +333,7 @@ class KelompokController extends Controller
     public function rejectInvite(KelompokJoinRequest $request)
     {
         $user = Auth::user();
-        $mahasiswa = $user->mahasiswa;
+        $mahasiswa = Mahasiswa::resolveForUser($user);
 
         if (! $mahasiswa || $request->mahasiswa_id !== $mahasiswa->id) {
             Alert::toast('Akses tidak valid.', 'error');
@@ -358,7 +358,7 @@ class KelompokController extends Controller
     public function cancelInvite(KelompokJoinRequest $request)
     {
         $user = Auth::user();
-        $mahasiswa = $user->mahasiswa;
+        $mahasiswa = Mahasiswa::resolveForUser($user);
 
         $kelompok = $request->kelompok;
         if (! $kelompok || ! $kelompok->isMember($mahasiswa?->id)) {

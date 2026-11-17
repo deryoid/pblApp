@@ -42,6 +42,21 @@ class AktivitasCard extends Model
         return 'uuid';
     }
 
+    public function resolveRouteBinding($value, $field = null)
+    {
+        if ($field) {
+            return $this->where($field, $value)->first() ?? abort(404);
+        }
+
+        if (is_numeric($value) && ctype_digit((string) $value)) {
+            return $this->where('id', (int) $value)->first()
+                ?? $this->where('uuid', (string) $value)->first()
+                ?? abort(404);
+        }
+
+        return $this->where('uuid', (string) $value)->first() ?? abort(404);
+    }
+
     public function listAktivitas()
     {
         return $this->belongsTo(AktivitasList::class, 'list_aktivitas_id');

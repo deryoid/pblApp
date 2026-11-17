@@ -223,9 +223,34 @@ class DataMahasiswaAdminController extends Controller
                     ->first();
 
                 if ($duplicateUnlinked) {
-                    \Illuminate\Support\Facades\DB::table('kelompok_mahasiswa')
+                    // Hindari pelanggaran unique key kelompok_mahasiswa (periode_id, mahasiswa_id)
+                    $existingPeriodes = DB::table('kelompok_mahasiswa')
+                        ->where('mahasiswa_id', $mahasiswa->id)
+                        ->pluck('periode_id')
+                        ->all();
+
+                    if (! empty($existingPeriodes)) {
+                        DB::table('kelompok_mahasiswa')
+                            ->where('mahasiswa_id', $duplicateUnlinked->id)
+                            ->whereIn('periode_id', $existingPeriodes)
+                            ->delete();
+                    }
+
+                    DB::table('kelompok_mahasiswa')
                         ->where('mahasiswa_id', $duplicateUnlinked->id)
                         ->update(['mahasiswa_id' => $mahasiswa->id]);
+
+                    foreach (['evaluasi_dosen', 'evaluasi_mitra', 'evaluasi_nilai_ap', 'evaluasi_nilai_detail', 'evaluasi_absensi', 'kelompok_join_requests'] as $tbl) {
+                        if (\Illuminate\Support\Facades\Schema::hasTable($tbl) && \Illuminate\Support\Facades\Schema::hasColumn($tbl, 'mahasiswa_id')) {
+                            try {
+                                DB::table($tbl)
+                                    ->where('mahasiswa_id', $duplicateUnlinked->id)
+                                    ->update(['mahasiswa_id' => $mahasiswa->id]);
+                            } catch (\Throwable $ignored) {
+                                // Ignore duplicate child conflicts
+                            }
+                        }
+                    }
 
                     $duplicateUnlinked->delete();
                 }

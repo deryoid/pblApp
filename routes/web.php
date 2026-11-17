@@ -324,14 +324,14 @@ Route::prefix('mahasiswa')->middleware(['auth', 'mahasiswa', 'profile.complete']
     // List Proyek
     Route::post('proyek/lists/quick-setup', [\App\Http\Controllers\Mahasiswa\ProyekListController::class, 'quickSetup'])->name('proyek.lists.quick-setup');
     Route::post('proyek/lists', [\App\Http\Controllers\Mahasiswa\ProyekListController::class, 'store'])->name('proyek.lists.store');
-    Route::put('proyek/lists/{list:uuid}', [\App\Http\Controllers\Mahasiswa\ProyekListController::class, 'update'])->name('proyek.lists.update');
-    Route::delete('proyek/lists/{list:uuid}', [\App\Http\Controllers\Mahasiswa\ProyekListController::class, 'destroy'])->name('proyek.lists.destroy');
+    Route::put('proyek/lists/{list}', [\App\Http\Controllers\Mahasiswa\ProyekListController::class, 'update'])->name('proyek.lists.update');
+    Route::delete('proyek/lists/{list}', [\App\Http\Controllers\Mahasiswa\ProyekListController::class, 'destroy'])->name('proyek.lists.destroy');
     Route::post('proyek/lists/reorder', [\App\Http\Controllers\Mahasiswa\ProyekListController::class, 'reorder'])->name('proyek.lists.reorder');
 
     // Card Proyek
     Route::post('proyek/cards', [\App\Http\Controllers\Mahasiswa\ProyekCardController::class, 'store'])->name('proyek.cards.store');
-    Route::put('proyek/cards/{card:uuid}', [\App\Http\Controllers\Mahasiswa\ProyekCardController::class, 'update'])->name('proyek.cards.update');
-    Route::delete('proyek/cards/{card:uuid}', [\App\Http\Controllers\Mahasiswa\ProyekCardController::class, 'destroy'])->name('proyek.cards.destroy');
+    Route::put('proyek/cards/{card}', [\App\Http\Controllers\Mahasiswa\ProyekCardController::class, 'update'])->name('proyek.cards.update');
+    Route::delete('proyek/cards/{card}', [\App\Http\Controllers\Mahasiswa\ProyekCardController::class, 'destroy'])->name('proyek.cards.destroy');
 
     // Board Aktivitas
     Route::get('aktivitas', [\App\Http\Controllers\Mahasiswa\AktivitasController::class, 'index'])->name('aktivitas.index');
@@ -340,14 +340,14 @@ Route::prefix('mahasiswa')->middleware(['auth', 'mahasiswa', 'profile.complete']
     // List Aktivitas
     Route::post('aktivitas/lists/quick-setup', [\App\Http\Controllers\Mahasiswa\AktivitasListController::class, 'quickSetup'])->name('aktivitas.lists.quick-setup');
     Route::post('aktivitas/lists', [\App\Http\Controllers\Mahasiswa\AktivitasListController::class, 'store'])->name('aktivitas.lists.store');
-    Route::put('aktivitas/lists/{list:uuid}', [\App\Http\Controllers\Mahasiswa\AktivitasListController::class, 'update'])->name('aktivitas.lists.update');
-    Route::delete('aktivitas/lists/{list:uuid}', [\App\Http\Controllers\Mahasiswa\AktivitasListController::class, 'destroy'])->name('aktivitas.lists.destroy');
+    Route::put('aktivitas/lists/{list}', [\App\Http\Controllers\Mahasiswa\AktivitasListController::class, 'update'])->name('aktivitas.lists.update');
+    Route::delete('aktivitas/lists/{list}', [\App\Http\Controllers\Mahasiswa\AktivitasListController::class, 'destroy'])->name('aktivitas.lists.destroy');
     Route::post('aktivitas/lists/reorder', [\App\Http\Controllers\Mahasiswa\AktivitasListController::class, 'reorder'])->name('aktivitas.lists.reorder');
 
     // Card Aktivitas
     Route::post('aktivitas/cards', [\App\Http\Controllers\Mahasiswa\AktivitasCardController::class, 'store'])->name('aktivitas.cards.store');
-    Route::put('aktivitas/cards/{card:uuid}', [\App\Http\Controllers\Mahasiswa\AktivitasCardController::class, 'update'])->name('aktivitas.cards.update');
-    Route::delete('aktivitas/cards/{card:uuid}', [\App\Http\Controllers\Mahasiswa\AktivitasCardController::class, 'destroy'])->name('aktivitas.cards.destroy');
+    Route::put('aktivitas/cards/{card}', [\App\Http\Controllers\Mahasiswa\AktivitasCardController::class, 'update'])->name('aktivitas.cards.update');
+    Route::delete('aktivitas/cards/{card}', [\App\Http\Controllers\Mahasiswa\AktivitasCardController::class, 'destroy'])->name('aktivitas.cards.destroy');
 
     // Nilai
     Route::prefix('nilai')->name('mahasiswa.nilai.')->group(function () {
