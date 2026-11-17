@@ -80,22 +80,23 @@
         border-radius: 10px;
       }
 
-      /* Board Cards */
+      /* Board Cards (Modern & Clear) */
       .board-card {
         background: #ffffff;
-        border-radius: 10px;
-        border: 1px solid rgba(9, 30, 66, 0.08);
-        border-left: 4px solid #4e73df;
-        box-shadow: 0 1px 3px rgba(9, 30, 66, 0.08);
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        border-left: 4px solid #3b82f6; /* default blue */
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
         cursor: grab;
-        transition: transform 0.18s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.18s cubic-bezier(0.2, 0, 0, 1);
+        transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
         position: relative;
         overflow: hidden;
         user-select: none;
+        margin-bottom: 0.85rem !important;
       }
       .board-card:hover {
         transform: translateY(-2px);
-        box-shadow: 0 6px 14px rgba(9, 30, 66, 0.12);
+        box-shadow: 0 10px 20px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -2px rgba(15, 23, 42, 0.04);
         border-color: #cbd5e1;
       }
       .board-card:active {
@@ -114,7 +115,7 @@
         opacity: 0.35 !important;
         background: rgba(78, 115, 223, 0.08) !important;
         border: 2px dashed #4e73df !important;
-        border-radius: 10px !important;
+        border-radius: 12px !important;
         box-shadow: none !important;
         transform: scale(0.98);
       }
@@ -125,108 +126,432 @@
         transform: rotate(2deg) scale(1.03) !important;
         box-shadow: 0 16px 30px rgba(78, 115, 223, 0.3) !important;
         border-left: 4px solid #4e73df !important;
-        border-radius: 10px !important;
+        border-radius: 12px !important;
         z-index: 99999 !important;
       }
 
-      /* Card Completed */
-      .card-completed {
-        background: linear-gradient(135deg, #ffffff 0%, #f8fbf9 100%) !important;
-        border-left: 4px solid #22a06b !important;
+      /* Dynamic Skema Left Borders */
+      .board-card.skema-border-eksternal {
+        border-left-color: #10b981 !important;
       }
-      .card-completed::after {
-        content: '✓';
-        position: absolute;
-        top: 4px;
-        right: 8px;
-        color: #22a06b;
-        font-size: 16px;
-        font-weight: bold;
-        opacity: 0.6;
-        pointer-events: none;
+      .board-card.skema-border-tefa {
+        border-left-color: #8b5cf6 !important;
       }
-
-      /* Card Content Elements */
-      .card-title-full {
-        font-size: 0.92rem;
-        font-weight: 600;
-        line-height: 1.4;
-        color: #172b4d;
-        white-space: normal;
-        word-break: break-word;
-        margin-bottom: 0.5rem;
+      .board-card.skema-border-internal {
+        border-left-color: #3b82f6 !important;
+      }
+      .board-card.skema-border-lomba {
+        border-left-color: #ef4444 !important;
+      }
+      .board-card.skema-border-penelitian {
+        border-left-color: #f59e0b !important;
       }
 
-      /* Date Chips */
-      .date-chip {
+      /* Card Completed State */
+      .board-card.card-completed {
+        background: linear-gradient(180deg, #ffffff 0%, #f0fdf4 100%) !important;
+        border-left: 4px solid #10b981 !important;
+        border-color: #bbf7d0;
+      }
+
+      /* Card Top Row */
+      .card-top-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+        margin-bottom: 0.55rem;
+      }
+
+      .card-top-badges {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+      }
+
+      /* Skema Pill Badges */
+      .card-skema-pill {
         display: inline-flex;
         align-items: center;
-        font-size: 0.72rem;
-        font-weight: 600;
-        line-height: 1;
-        padding: 0.35rem 0.6rem;
+        gap: 0.3rem;
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 0.25rem 0.55rem;
         border-radius: 6px;
-        background: #e9f2ff;
-        color: #0c66e4;
-        border: 1px solid transparent;
-        white-space: nowrap;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+        line-height: 1;
       }
-      .date-chip-danger {
-        background: #ffebe6;
-        color: #c9372c;
+      .card-skema-pill.pill-eksternal {
+        background: #ecfdf5;
+        color: #065f46;
+        border: 1px solid #a7f3d0;
+      }
+      .card-skema-pill.pill-tefa {
+        background: #f5f3ff;
+        color: #5b21b6;
+        border: 1px solid #ddd6fe;
+      }
+      .card-skema-pill.pill-internal {
+        background: #eff6ff;
+        color: #1e40af;
+        border: 1px solid #bfdbfe;
+      }
+      .card-skema-pill.pill-lomba {
+        background: #fef2f2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
+      }
+      .card-skema-pill.pill-other {
+        background: #f8fafc;
+        color: #475569;
+        border: 1px solid #e2e8f0;
       }
 
-      /* Enhancing Badges & Buttons */
-      .badge-soft {
-        background-color: #ebecf0;
-        color: #42526e;
-        font-weight: 600;
-      }
-      .badge-success { background-color: #22a06b; color: white; border: none; }
-      .badge-info { background-color: #0c66e4; color: white; border: none; }
-      .badge-primary { background-color: #6554c0; color: white; border: none; }
-      .badge-warning { background-color: #f5cd47; color: #172b4d; border: none; }
-      
-      .badge-pill {
-        padding: 0.3em 0.7em;
-        font-weight: 500;
-        border-radius: 4px;
+      /* Card Status Selesai Ribbon */
+      .card-done-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        font-size: 0.68rem;
+        font-weight: 700;
+        padding: 0.22rem 0.5rem;
+        border-radius: 6px;
+        background: #10b981;
+        color: #ffffff;
       }
 
-      /* Action Buttons inside Card Header */
-      .btn-icon-only {
-        width: 28px;
-        height: 28px;
+      /* Card Header Actions */
+      .card-actions-toolbar {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+      }
+      .btn-card-action {
+        width: 26px;
+        height: 26px;
         padding: 0;
         display: inline-flex;
         align-items: center;
         justify-content: center;
         border-radius: 6px;
-        background: transparent;
-        color: #6b778c;
-        border: 1px solid rgba(9, 30, 66, 0.08);
-        box-shadow: none;
+        background: #f8fafc;
+        color: #64748b;
+        border: 1px solid #e2e8f0;
+        font-size: 0.75rem;
         transition: all 0.15s ease;
+        cursor: pointer;
       }
-      .btn-icon-only:hover {
-        background: #ebecf0;
-        color: #172b4d;
+      .btn-card-action:hover {
+        background: #ffffff;
+        color: #0f172a;
+        border-color: #cbd5e1;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
       }
-      .btn-icon-only.btn-danger:hover { background: #ffebe6; color: #c9372c; }
-      .btn-icon-only.btn-info:hover { background: #e9f2ff; color: #0c66e4; }
-      .btn-icon-only.btn-primary:hover { background: #e9f2ff; color: #0c66e4; }
+      .btn-card-action.btn-action-edit:hover {
+        background: #eff6ff;
+        color: #2563eb;
+        border-color: #bfdbfe;
+      }
+      .btn-card-action.btn-action-share:hover {
+        background: #ecfeff;
+        color: #0891b2;
+        border-color: #a5f3fc;
+      }
+      .btn-card-action.btn-action-delete:hover {
+        background: #fef2f2;
+        color: #dc2626;
+        border-color: #fecaca;
+      }
 
-      /* Progress Bar */
-      .progress {
-        height: 8px;
-        border-radius: 10px;
-        background-color: #ebecf0;
-        margin-top: 10px;
-        box-shadow: none;
+      /* Card Project Title */
+      .card-title-hero {
+        font-size: 0.95rem;
+        font-weight: 700;
+        line-height: 1.4;
+        color: #0f172a;
+        margin-bottom: 0.45rem;
+        word-break: break-word;
+        transition: color 0.15s ease;
+        cursor: pointer;
       }
-      .progress-bar {
+      .card-title-hero:hover {
+        color: #2563eb;
+      }
+
+      /* Timeline Date Badge */
+      .card-timeline-row {
+        margin-bottom: 0.55rem;
+      }
+      .card-timeline-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        font-size: 0.72rem;
+        font-weight: 600;
+        padding: 0.28rem 0.6rem;
+        border-radius: 6px;
+        background: #f1f5f9;
+        color: #475569;
+        border: 1px solid #e2e8f0;
+      }
+      .card-timeline-chip.timeline-overdue {
+        background: #fef2f2;
+        color: #b91c1c;
+        border-color: #fecaca;
+      }
+      .overdue-pill {
+        background: #ef4444;
+        color: #ffffff;
+        padding: 0.1rem 0.35rem;
+        border-radius: 4px;
+        font-size: 0.65rem;
+        font-weight: 700;
+        margin-left: 0.25rem;
+      }
+
+      /* Mitra Industri Box */
+      .card-mitra-box {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 0.35rem 0.6rem;
+        margin-bottom: 0.55rem;
+        font-size: 0.75rem;
+        color: #334155;
+      }
+      .card-mitra-box i {
+        color: #0284c7;
+        font-size: 0.85rem;
+        flex-shrink: 0;
+      }
+      .mitra-name {
+        font-weight: 700;
+        color: #0f172a;
+      }
+      .mitra-contact {
+        color: #64748b;
+        margin-left: 0.35rem;
+        font-size: 0.7rem;
+      }
+
+      /* Mata Kuliah Section */
+      .card-matkul-section {
+        background: #fafafa;
+        border: 1px solid #f0f0f0;
+        border-radius: 8px;
+        padding: 0.45rem 0.6rem;
+        margin-bottom: 0.55rem;
+      }
+      .card-matkul-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        margin-bottom: 0.35rem;
+      }
+      .card-matkul-item {
+        font-size: 0.73rem;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        padding: 0.25rem 0.5rem;
+        margin-bottom: 0.25rem;
+        line-height: 1.35;
+      }
+      .card-matkul-item:last-child {
+        margin-bottom: 0;
+      }
+      .matkul-name {
+        font-weight: 600;
+        color: #1e40af;
+      }
+      .matkul-dosen {
+        font-size: 0.68rem;
+        color: #64748b;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        margin-top: 1px;
+      }
+      .btn-toggle-matkul {
+        border: none;
+        background: none;
+        color: #2563eb;
+        font-size: 0.68rem;
+        font-weight: 600;
+        cursor: pointer;
+        padding: 0;
+        margin-top: 0.2rem;
+        display: inline-block;
+      }
+      .btn-toggle-matkul:hover {
+        text-decoration: underline;
+      }
+
+      /* Card Description */
+      .card-desc-snippet {
+        font-size: 0.8rem;
+        line-height: 1.45;
+        color: #475569;
+        margin-bottom: 0.55rem;
+      }
+
+      /* Modern Progress Bar */
+      .card-progress-box {
+        margin-bottom: 0.6rem;
+      }
+      .progress-label-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: #64748b;
+        margin-bottom: 0.25rem;
+      }
+      .progress-bar-track {
+        height: 6px;
+        background: #e2e8f0;
         border-radius: 10px;
-        background: #0c66e4;
+        overflow: hidden;
+      }
+      .progress-bar-fill {
+        height: 100%;
+        border-radius: 10px;
+        transition: width 0.3s ease;
+      }
+      .fill-green { background: #10b981; }
+      .fill-blue { background: #3b82f6; }
+      .fill-amber { background: #f59e0b; }
+      .fill-gray { background: #94a3b8; }
+      .text-green { color: #059669 !important; }
+      .text-blue { color: #2563eb !important; }
+      .text-amber { color: #d97706 !important; }
+      .text-gray { color: #64748b !important; }
+
+      /* Card Footer Row */
+      .card-footer-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.4rem;
+        padding-top: 0.5rem;
+        border-top: 1px solid #f1f5f9;
+        font-size: 0.75rem;
+        flex-wrap: wrap;
+      }
+      .card-footer-left {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        min-width: 0;
+      }
+      .card-footer-right {
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+        margin-left: auto;
+      }
+
+      /* Status Badges */
+      .card-status-pill {
+        display: inline-flex;
+        align-items: center;
+        font-size: 0.68rem;
+        font-weight: 700;
+        padding: 0.2rem 0.5rem;
+        border-radius: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+        line-height: 1;
+      }
+      .card-status-pill.status-selesai {
+        background: #ecfdf5;
+        color: #065f46;
+        border: 1px solid #a7f3d0;
+      }
+      .card-status-pill.status-proses {
+        background: #eff6ff;
+        color: #1d4ed8;
+        border: 1px solid #bfdbfe;
+      }
+      .card-status-pill.status-dibatalkan {
+        background: #fef2f2;
+        color: #991b1b;
+        border: 1px solid #fecaca;
+      }
+
+      /* Creator Mini Chip */
+      .creator-mini-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        font-size: 0.7rem;
+        color: #64748b;
+        max-width: 120px;
+      }
+      .avatar-nano {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        object-fit: cover;
+        flex-shrink: 0;
+      }
+      .creator-mini-name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      /* File Link Buttons */
+      .btn-card-link-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.2rem 0.45rem;
+        border-radius: 5px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-decoration: none !important;
+        transition: all 0.15s ease;
+        line-height: 1;
+      }
+      .btn-card-link-badge.link-pdf {
+        background: #fff1f2;
+        color: #e11d48;
+        border: 1px solid #fecdd3;
+      }
+      .btn-card-link-badge.link-pdf:hover {
+        background: #ffe4e6;
+        color: #be123c;
+      }
+      .btn-card-link-badge.link-drive {
+        background: #f0fdf4;
+        color: #16a34a;
+        border: 1px solid #bbf7d0;
+      }
+      .btn-card-link-badge.link-drive:hover {
+        background: #dcfce7;
+        color: #15803d;
+      }
+
+      /* Comment Count */
+      .card-comment-count {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.2rem;
+        color: #94a3b8;
+        font-size: 0.72rem;
+        font-weight: 600;
       }
       
       /* Global Additions */
@@ -300,9 +625,11 @@
         $map = [
           'Internal' => 'badge-primary',
           'External' => 'badge-success',
+          'Eksternal' => 'badge-success',
           'Hibah/Penelitian' => 'badge-warning',
           'Lomba' => 'badge-danger',
           'Teaching Factory' => 'badge-info',
+          'TeFa' => 'badge-info',
           'Penelitian' => 'badge-primary',
           'Pengabdian' => 'badge-info',
           'PBL x TeFa' => 'badge-success',
@@ -414,161 +741,221 @@
                                 .' – '.
                                 ( $tglSelesai ? \Carbon\Carbon::parse($tglSelesai)->format('d M Y') : '?' )
                               );
+                
+                $skemaName = $card['skema_pbl'] ?? 'Internal';
+                $skemaLower = strtolower($skemaName);
+                if (str_contains($skemaLower, 'tefa') || str_contains($skemaLower, 'factory')) {
+                    $skemaBorder = 'skema-border-tefa';
+                    $skemaPill = 'pill-tefa';
+                    $skemaIcon = 'fa-industry';
+                } elseif (str_contains($skemaLower, 'eksternal') || str_contains($skemaLower, 'external')) {
+                    $skemaBorder = 'skema-border-eksternal';
+                    $skemaPill = 'pill-eksternal';
+                    $skemaIcon = 'fa-handshake';
+                } elseif (str_contains($skemaLower, 'lomba')) {
+                    $skemaBorder = 'skema-border-lomba';
+                    $skemaPill = 'pill-lomba';
+                    $skemaIcon = 'fa-trophy';
+                } elseif (str_contains($skemaLower, 'hibah') || str_contains($skemaLower, 'penelitian')) {
+                    $skemaBorder = 'skema-border-penelitian';
+                    $skemaPill = 'pill-other';
+                    $skemaIcon = 'fa-microscope';
+                } else {
+                    $skemaBorder = 'skema-border-internal';
+                    $skemaPill = 'pill-internal';
+                    $skemaIcon = 'fa-laptop-code';
+                }
+
+                $progress = (int)($card['progress'] ?? 0);
+                if ($progress >= 100 || ($card['status_proyek'] ?? '') === 'Selesai') {
+                    $progressColor = 'green';
+                } elseif ($progress >= 50) {
+                    $progressColor = 'blue';
+                } elseif ($progress > 0) {
+                    $progressColor = 'amber';
+                } else {
+                    $progressColor = 'gray';
+                }
+                $isSelesai = ($card['status_proyek'] ?? '') === 'Selesai';
               @endphp
 
               <div
-                class="card board-card shadow-xs mb-2 hover-raise {{ ($card['status_proyek'] ?? '') === 'Selesai' ? 'card-completed' : '' }}"
+                class="card board-card {{ $skemaBorder }} {{ $isSelesai ? 'card-completed' : '' }}"
                 data-card-id="{{ $card['id'] }}"
                 data-title="{{ e($card['title']) }}"
                 data-title-search="{{ strtolower($card['title']) }}"
+                data-desc="{{ strtolower($card['description'] ?? '') }}"
                 data-card='@json($card, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP)'
               >
-                <div class="card-body p-2 d-flex flex-column">
+                <div class="card-body p-3 d-flex flex-column">
 
-                 {{-- HEADER: Status Lock → Aksi (kanan atas) → Judul penuh → Tanggal --}}
-                  <div class="d-flex align-items-center mb-1">
-                    @if(($card['status_proyek'] ?? '') === 'Selesai')
-                      <span class="badge badge-success mr-2" title="Proyek Selesai">
-                        <i class="fas fa-check-circle mr-1"></i>Selesai
+                  {{-- 1. ROW ATAS: Skema Badge + Status Selesai + Actions Toolbar --}}
+                  <div class="card-top-row">
+                    <div class="card-top-badges">
+                      <span class="card-skema-pill {{ $skemaPill }}" title="Skema Proyek: {{ $skemaName }}">
+                        <i class="fas {{ $skemaIcon }}"></i> {{ $skemaName }}
                       </span>
-                    @endif
-                    <div class="ml-auto d-flex align-items-center">
+                      @if($isSelesai)
+                        <span class="card-done-badge" title="Proyek Telah Selesai">
+                          <i class="fas fa-check"></i> Selesai
+                        </span>
+                      @endif
+                    </div>
+
+                    {{-- Quick Action Buttons --}}
+                    <div class="card-actions-toolbar">
                       <button type="button"
-                              class="btn btn-primary btn-icon-only btn-sm btn-circle btn-edit-card mr-1"
-                              title="Ubah proyek" aria-label="Ubah proyek">
-                        <i class="fas fa-edit"></i>
+                              class="btn-card-action btn-action-edit btn-edit-card"
+                              title="Ubah & Lengkapi Data Proyek" aria-label="Ubah proyek">
+                        <i class="fas fa-pen"></i>
                       </button>
-                      {{-- Share Link Penilaian Mitra --}}
                       <button type="button"
-                              class="btn btn-info btn-icon-only btn-sm btn-circle mr-1 btn-share-mitra"
-                              title="Share Link Penilaian Mitra"
+                              class="btn-card-action btn-action-share btn-share-mitra"
+                              title="Bagikan Link Penilaian Mitra"
                               data-card-id="{{ $card['id'] }}"
                               data-card-title="{{ e($card['title']) }}"
                               aria-label="Share link penilaian mitra">
-                        <i class="fas fa-share-alt" aria-hidden="true"></i>
+                        <i class="fas fa-share-alt"></i>
                       </button>
                       <form method="POST"
                             action="{{ route('proyek.cards.destroy', ['card' => $card['id']]) }}"
                             class="m-0 d-inline">
                         @csrf @method('DELETE')
                         <button type="button"
-                                class="btn btn-danger btn-icon-only btn-circle btn-sm btn-delete-card"
-                                title="Hapus proyek" aria-label="Hapus proyek">
-                          <i class="fas fa-trash"></i>
+                                class="btn-card-action btn-action-delete btn-delete-card"
+                                title="Hapus Proyek Ini" aria-label="Hapus proyek">
+                          <i class="fas fa-trash-alt"></i>
                         </button>
                       </form>
                     </div>
                   </div>
-                  {{-- LABELS & SKEMA --}}
-                  @if (!empty($card['labels']) || !empty($card['skema_pbl']))
-                    <div class="d-flex align-items-center mb-1">
-                      <div class="labels-wrap">
-                        @foreach (($card['labels'] ?? []) as $label)
-                          <span class="badge badge-pill badge-info mr-1 mb-1">{{ $label }}</span>
-                        @endforeach
-                      </div>
-                      <span class="badge ml-auto {{ schemeBadgeClass($card['skema_pbl'] ?? '') }}">
-                        {{ $card['skema_pbl'] ?? '-' }}
-                      </span>
-                    </div>
-                  @endif
 
-                  {{-- KETERKAITAN MATA KULIAH & DOSEN PENGAMPU --}}
-                  @if (!empty($card['mata_kuliahs']))
-                    <div class="mb-2">
-                      @foreach ($card['mata_kuliahs'] as $mk)
-                        <div class="badge badge-light border text-primary text-truncate d-block text-left mb-1 py-1 px-2" style="font-size: 0.73rem; white-space: normal;" title="{{ $mk['nama_matkul'] }} (Semester {{ $mk['semester'] }}) - Pengampu: {{ $mk['dosen_pengampu'] ?? 'Dosen Belum Ditentukan' }}">
-                          <i class="fas fa-book text-primary mr-1"></i>
-                          <strong>{{ $mk['nama_matkul'] }}</strong>
-                          @if(!empty($mk['dosen_pengampu']))
-                            <div class="text-muted mt-0 small" style="font-size: 0.68rem;">
-                              <i class="fas fa-chalkboard-teacher mr-1 text-secondary"></i>{{ $mk['dosen_pengampu'] }} (Sem {{ $mk['semester'] }})
-                            </div>
-                          @endif
-                        </div>
-                      @endforeach
-                    </div>
-                  @endif
-                  {{-- Judul penuh (wrap) --}}
-                  <div class="card-title-full font-weight-bold mb-1">
+                  {{-- 2. JUDUL PROYEK (Hero Element) --}}
+                  <div class="card-title-hero btn-edit-card" title="Klik untuk melihat atau mengedit proyek">
                     {{ $card['title'] }}
                   </div>
 
-                  {{-- Tanggal (chip) --}}
+                  {{-- 3. JADWAL / TIMELINE PELAKSANAAN --}}
                   @if($tglMulai || $tglSelesai)
-                    <div class="mb-2">
-                      <span class="date-chip {{ $isOverdue ? 'date-chip-danger' : '' }}">
-                        <i class="far fa-calendar-alt mr-1"></i>{{ $rentang }}
+                    <div class="card-timeline-row">
+                      <span class="card-timeline-chip {{ $isOverdue ? 'timeline-overdue' : '' }}" title="Periode Pelaksanaan: {{ $rentang }}">
+                        <i class="far fa-calendar-alt"></i>
+                        <span>{{ $rentang }}</span>
+                        @if($isOverdue)
+                          <span class="overdue-pill">Terlewat</span>
+                        @endif
                       </span>
                     </div>
                   @endif
 
-
-                
-
-                  {{-- MITRA + KONTAK --}}
+                  {{-- 4. MITRA INDUSTRI (Jika ada) --}}
                   @if (!empty($card['nama_mitra']))
-                    <div class="text-muted x-small mb-1">
-                      <i class="fas fa-building mr-1"></i> {{ $card['nama_mitra'] }}
-                      @if (!empty($card['kontak_mitra']))
-                        <span class="ml-1"><i class="fas fa-phone-alt mr-1"></i>{{ $card['kontak_mitra'] }}</span>
+                    <div class="card-mitra-box" title="Mitra Industri / Partner">
+                      <i class="fas fa-building"></i>
+                      <div class="text-truncate">
+                        <span class="mitra-name">{{ $card['nama_mitra'] }}</span>
+                        @if (!empty($card['kontak_mitra']))
+                          <span class="mitra-contact">&bull; <i class="fas fa-phone-alt"></i> {{ $card['kontak_mitra'] }}</span>
+                        @endif
+                      </div>
+                    </div>
+                  @endif
+
+                  {{-- 5. KETERKAITAN MATA KULIAH & DOSEN PENGAMPU --}}
+                  @if (!empty($card['mata_kuliahs']))
+                    <div class="card-matkul-section">
+                      <div class="card-matkul-header">
+                        <span><i class="fas fa-book-reader mr-1 text-primary"></i> Mata Kuliah Terkait ({{ count($card['mata_kuliahs']) }})</span>
+                      </div>
+                      <div class="card-matkul-list">
+                        @foreach ($card['mata_kuliahs'] as $index => $mk)
+                          <div class="card-matkul-item {{ $index >= 2 ? 'matkul-item-extra' : '' }}" style="{{ $index >= 2 ? 'display:none;' : '' }}" title="{{ $mk['nama_matkul'] }} (Semester {{ $mk['semester'] }}) - Pengampu: {{ $mk['dosen_pengampu'] ?? 'Belum Ditentukan' }}">
+                            <div class="matkul-name text-truncate">
+                              <i class="fas fa-book mr-1 text-primary"></i>
+                              <strong>{{ $mk['nama_matkul'] }}</strong>
+                              <span class="text-muted small">(Sem {{ $mk['semester'] }})</span>
+                            </div>
+                            @if(!empty($mk['dosen_pengampu']))
+                              <div class="matkul-dosen text-truncate">
+                                <i class="fas fa-chalkboard-teacher text-secondary"></i>
+                                <span>{{ $mk['dosen_pengampu'] }}</span>
+                              </div>
+                            @endif
+                          </div>
+                        @endforeach
+                        @if(count($card['mata_kuliahs']) > 2)
+                          <button type="button" class="btn-toggle-matkul" onclick="const p = $(this).closest('.card-matkul-section'); p.find('.matkul-item-extra').slideToggle(120); const s = $(this).find('span'); s.text(s.text().includes('+') ? 'Tampilkan lebih ringkas' : '+{{ count($card['mata_kuliahs']) - 2 }} matkul lainnya');">
+                            <span>+{{ count($card['mata_kuliahs']) - 2 }} matkul lainnya</span>
+                          </button>
+                        @endif
+                      </div>
+                    </div>
+                  @endif
+
+                  {{-- 6. DESKRIPSI SINGKAT (Jika ada) --}}
+                  @if(!empty($card['description']))
+                    <div class="card-desc-snippet clamp-2" title="{{ $card['description'] }}">
+                      {{ \Illuminate\Support\Str::limit($card['description'], 140) }}
+                    </div>
+                  @endif
+
+                  {{-- 7. PROGRESS BAR --}}
+                  <div class="card-progress-box">
+                    <div class="progress-label-row">
+                      <span><i class="fas fa-chart-line mr-1"></i> Progres</span>
+                      <span class="font-weight-700 text-{{ $progressColor }}">{{ $progress }}%</span>
+                    </div>
+                    <div class="progress-bar-track">
+                      <div class="progress-bar-fill fill-{{ $progressColor }}" style="width: {{ $progress }}%"></div>
+                    </div>
+                  </div>
+
+                  {{-- 8. LABELS / TOPIK TAGS (Jika ada) --}}
+                  @if(!empty($card['labels']))
+                    <div class="d-flex flex-wrap gap-1 mb-2">
+                      @foreach ($card['labels'] as $label)
+                        <span class="badge badge-light border text-secondary" style="font-size: 0.68rem; padding: 0.2rem 0.45rem;">
+                          #{{ $label }}
+                        </span>
+                      @endforeach
+                    </div>
+                  @endif
+
+                  {{-- 9. FOOTER: Status + Creator + Berkas Links + Komentar --}}
+                  <div class="card-footer-row mt-auto">
+                    <div class="card-footer-left">
+                      <span class="card-status-pill status-{{ strtolower($card['status_proyek'] ?? 'proses') }}">
+                        {{ $card['status_proyek'] ?? 'Proses' }}
+                      </span>
+                      @if(!empty($card['created_by_name']))
+                        <div class="creator-mini-chip" title="Dibuat oleh {{ $card['created_by_name'] }} {{ $card['created_at_human'] ? '('.$card['created_at_human'].')' : '' }}">
+                          <img class="avatar-nano" src="{{ ($card['created_by_avatar'] ?? '') ?: avatarUrl($card['created_by_name']) }}" alt="Avatar" loading="lazy">
+                          <span class="creator-mini-name">{{ \Illuminate\Support\Str::limit($card['created_by_name'], 12) }}</span>
+                        </div>
                       @endif
                     </div>
-                  @endif
 
-                  {{-- DESKRIPSI --}}
-                  @if(!empty($card['description']))
-                    <div class="text-muted text-body-2 mb-2 clamp-2">{{ \Illuminate\Support\Str::limit($card['description'], 160) }}</div>
-                  @endif
-
-                  {{-- CREATOR / UPDATER --}}
-                  <div class="text-muted x-small mb-2">
-                    <div class="d-flex align-items-center mb-1">
-                      <span class="user-chip" title="{{ $card['created_by_name'] ?? '-' }}">
-                        <img class="user-avatar" src="{{ ($card['created_by_avatar'] ?? '') ?: avatarUrl($card['created_by_name'] ?? '-') }}" alt="creator" loading="lazy">
-                        <span class="user-name">{{ $card['created_by_name'] ?? '-' }}</span>
-                      </span>
-                      @if(!empty($card['created_at_human']))<span class="ml-2">{{ $card['created_at_human'] }}</span>@endif
-                    </div>
-                    @if(!empty($card['has_update']))
-                      <div class="d-flex align-items-center">
-                        <span class="user-chip" title="{{ $card['updated_by_name'] ?? '-' }}">
-                          <img class="user-avatar" src="{{ ($card['updated_by_avatar'] ?? '') ?: avatarUrl($card['updated_by_name'] ?? '-') }}" alt="updator" loading="lazy">
-                          <span class="user-name">{{ $card['updated_by_name'] ?? '-' }}</span>
+                    <div class="card-footer-right">
+                      @if(!empty($card['proposal_url']))
+                        <a href="{{ $card['proposal_url'] }}" target="_blank" rel="noopener"
+                           class="btn-card-link-badge link-pdf" title="Lihat Berkas Proposal PDF">
+                          <i class="fas fa-file-pdf"></i> Proposal
+                        </a>
+                      @endif
+                      @if(!empty($card['link_drive_proyek']))
+                        <a href="{{ $card['link_drive_proyek'] }}" target="_blank" rel="noopener"
+                           class="btn-card-link-badge link-drive" title="Buka Berkas Luaran di Google Drive">
+                          <i class="fab fa-google-drive"></i> Drive
+                        </a>
+                      @endif
+                      @if(!empty($card['comments']) && $card['comments'] > 0)
+                        <span class="card-comment-count" title="{{ $card['comments'] }} Komentar">
+                          <i class="far fa-comment-dots"></i> {{ $card['comments'] }}
                         </span>
-                        @if(!empty($card['updated_at_human']))<span class="ml-2">{{ $card['updated_at_human'] }}</span>@endif
-                      </div>
-                    @endif
-                  </div>
-
-                  {{-- PROGRESS --}}
-                  <div class="d-flex align-items-center mb-2">
-                    <div class="progress progress-sm flex-grow-1 mr-2">
-                      <div class="progress-bar" role="progressbar"
-                           style="width: {{ (int)($card['progress'] ?? 0) }}%"
-                           aria-valuenow="{{ (int)($card['progress'] ?? 0) }}"
-                           aria-valuemin="0" aria-valuemax="100"></div>
+                      @endif
                     </div>
-                    <span class="small text-muted">{{ (int)($card['progress'] ?? 0) }}%</span>
                   </div>
 
-                  {{-- FOOTER --}}
-                  <div class="d-flex align-items-center x-small mt-auto pt-1 border-top-light flex-wrap">
-                    <span class="badge {{ statusBadgeClass($card['status_proyek'] ?? '') }}">{{ $card['status_proyek'] ?? 'Proses' }}</span>
-                    @if(!empty($card['proposal_url']))
-                      <a href="{{ $card['proposal_url'] }}" target="_blank" rel="noopener"
-                         class="ml-2 btn btn-outline-danger btn-sm py-0 px-2 font-weight-bold" title="Lihat Berkas Proposal">
-                        <i class="fas fa-file-pdf mr-1"></i> Proposal
-                      </a>
-                    @endif
-                    <span class="ml-2 text-muted"><i class="far fa-comment mr-1"></i>{{ $card['comments'] ?? 0 }}</span>
-                    @if(!empty($card['link_drive_proyek']))
-                      <a href="{{ $card['link_drive_proyek'] }}" target="_blank" rel="noopener"
-                         class="ml-auto btn btn-outline-dark btn-sm border btn-drive">
-                        <i class="fab fa-google-drive mr-1"></i> Drive
-                      </a>
-                    @endif
-                  </div>
                 </div>
               </div>
             @empty

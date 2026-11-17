@@ -650,11 +650,21 @@
             justify-content: space-between;
         }
 
+        .banner-scheme-eksternal,
+        .banner-scheme-external,
         .banner-scheme-industri {
             background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
             border-color: #a7f3d0;
         }
 
+        .banner-scheme-teaching-factory,
+        .banner-scheme-tefa,
+        .banner-scheme-pbl-x-tefa {
+            background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 100%);
+            border-color: #ddd6fe;
+        }
+
+        .banner-scheme-internal,
         .banner-scheme-pengabdian {
             background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
             border-color: #bfdbfe;
@@ -665,6 +675,8 @@
             border-color: #fde68a;
         }
 
+        .banner-scheme-hibah-penelitian,
+        .banner-scheme-penelitian,
         .banner-scheme-mandiri {
             background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%);
             border-color: #e9d5ff;
@@ -691,10 +703,22 @@
             white-space: nowrap;
         }
 
+        .badge-scheme-eksternal,
+        .badge-scheme-external,
         .badge-scheme-industri { background: #10b981; color: #ffffff; }
+
+        .badge-scheme-teaching-factory,
+        .badge-scheme-tefa,
+        .badge-scheme-pbl-x-tefa { background: #8b5cf6; color: #ffffff; }
+
+        .badge-scheme-internal,
         .badge-scheme-pengabdian { background: #2563eb; color: #ffffff; }
+
         .badge-scheme-lomba { background: #f59e0b; color: #ffffff; }
-        .badge-scheme-mandiri { background: #8b5cf6; color: #ffffff; }
+
+        .badge-scheme-hibah-penelitian,
+        .badge-scheme-penelitian,
+        .badge-scheme-mandiri { background: #64748b; color: #ffffff; }
 
         .badge-status-done {
             background: rgba(16, 185, 129, 0.15);
@@ -2113,7 +2137,7 @@
 
             // Build Cards HTML
             container.innerHTML = filtered.map((p, idx) => {
-                const skemaSlug = (p.skema_pbl || 'mandiri').toLowerCase();
+                const skemaSlug = (p.skema_pbl || 'internal').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
                 const bannerClass = `banner-scheme-${skemaSlug}`;
                 const badgeClass = `badge-scheme-${skemaSlug}`;
 

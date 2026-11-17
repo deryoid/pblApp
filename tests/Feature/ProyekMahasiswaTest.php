@@ -757,4 +757,36 @@ class ProyekMahasiswaTest extends TestCase
         $orphanCard->refresh();
         $this->assertNotNull($orphanCard->list_id);
     }
+
+    public function test_project_card_renders_clear_visual_hierarchy_and_elements(): void
+    {
+        $card = ProjectCard::create([
+            'uuid' => (string) \Illuminate\Support\Str::uuid(),
+            'kelompok_id' => $this->kelompok->id,
+            'list_id' => $this->list1->id,
+            'periode_id' => $this->periode->id,
+            'title' => 'Sistem Presensi RFID Kampus',
+            'skema_pbl' => 'Teaching Factory',
+            'nama_mitra' => 'PT Solusi Teknologi Bersama',
+            'kontak_mitra' => '081234567890',
+            'tanggal_mulai' => now()->toDateString(),
+            'tanggal_selesai' => now()->addMonths(2)->toDateString(),
+            'progress' => 65,
+            'status_proyek' => 'Proses',
+            'created_by' => $this->studentUser->id,
+        ]);
+
+        $response = $this->actingAs($this->studentUser)->get(route('proyek.index'));
+        $response->assertStatus(200);
+
+        // Verifikasi elemen hierarki baru kartu proyek
+        $response->assertSee('card-title-hero');
+        $response->assertSee('Sistem Presensi RFID Kampus');
+        $response->assertSee('card-skema-pill');
+        $response->assertSee('Teaching Factory');
+        $response->assertSee('PT Solusi Teknologi Bersama');
+        $response->assertSee('card-progress-box');
+        $response->assertSee('65%');
+        $response->assertSee('card-actions-toolbar');
+    }
 }
