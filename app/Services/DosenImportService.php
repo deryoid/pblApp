@@ -167,19 +167,19 @@ class DosenImportService
                             $username = $username.'_'.rand(10, 99);
                         }
 
-                        $userEmail = $email;
-                        if (empty($userEmail) || ! filter_var($userEmail, FILTER_VALIDATE_EMAIL)) {
-                            $userEmail = strtolower(($nip ?: $username).'@politala.ac.id');
-                            if (User::where('email', $userEmail)->exists()) {
-                                $userEmail = strtolower(($nip ?: $username).'+'.Str::random(4).'@politala.ac.id');
-                            }
+                        $userEmail = ! empty($email) && filter_var($email, FILTER_VALIDATE_EMAIL)
+                            ? strtolower(trim($email))
+                            : null;
+
+                        if ($userEmail && User::where('email', $userEmail)->exists()) {
+                            $userEmail = null;
                         }
 
                         $user = User::create([
                             'nama_user' => $nama,
                             'username' => $username,
                             'email' => $userEmail,
-                            'email_verified_at' => now(),
+                            'email_verified_at' => $userEmail ? now() : null,
                             'no_hp' => $noHp ?: '-',
                             'password' => Hash::make('123456'),
                             'role' => 'dosen',

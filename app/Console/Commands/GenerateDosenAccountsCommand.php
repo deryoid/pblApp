@@ -72,15 +72,10 @@ class GenerateDosenAccountsCommand extends Command
                         $username = $username.'_'.rand(10, 99);
                     }
 
-                    $email = strtolower(($nip ?: $username).'@politala.ac.id');
-                    if (User::where('email', $email)->exists()) {
-                        $email = strtolower(($nip ?: $username).'+'.Str::random(4).'@politala.ac.id');
-                    }
-
                     $user = User::create([
                         'nama_user' => $dosen->nama_dosen,
-                        'email' => $email,
-                        'email_verified_at' => now(),
+                        'email' => null,
+                        'email_verified_at' => null,
                         'no_hp' => $dosen->no_hp ?: '-',
                         'username' => $username,
                         'password' => Hash::make($password),
@@ -93,7 +88,7 @@ class GenerateDosenAccountsCommand extends Command
                 $dosen->save();
 
                 $generated++;
-                $rows[] = [$dosen->nama_dosen, $dosen->nip ?? '-', $user->username, $user->email, $password];
+                $rows[] = [$dosen->nama_dosen, $dosen->nip ?? '-', $user->username, $user->email ?? '-', $password];
             }
         });
 

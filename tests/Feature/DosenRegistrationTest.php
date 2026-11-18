@@ -248,6 +248,37 @@ class DosenRegistrationTest extends TestCase
     }
 
     /**
+     * Test dosen without email can login directly using only NIP.
+     */
+    public function test_dosen_without_email_can_login_using_only_nip(): void
+    {
+        $dosenUser = User::create([
+            'nama_user' => 'Dr. Hendra Tanpa Email',
+            'username' => '197501012000011001',
+            'email' => null,
+            'password' => Hash::make('123456'),
+            'role' => 'dosen',
+            'no_hp' => '081234567800',
+        ]);
+
+        Dosen::create([
+            'user_id' => $dosenUser->id,
+            'nip' => '197501012000011001',
+            'nama_dosen' => 'Dr. Hendra Tanpa Email',
+            'no_hp' => '081234567800',
+        ]);
+
+        $response = $this->post(route('login.attempt'), [
+            'username' => '197501012000011001',
+            'password' => '123456',
+        ]);
+
+        $response->assertRedirect('/evaluator');
+        $this->assertEquals($dosenUser->id, Auth::id());
+        $this->assertNull(Auth::user()->email);
+    }
+
+    /**
      * Test admin creating user with role dosen automatically syncs to Bank Data Dosen.
      */
     public function test_admin_creating_user_with_role_dosen_auto_syncs_to_bank_data(): void

@@ -119,7 +119,11 @@
                             <td class="align-middle">
                                 @if($u)
                                     <div class="font-weight-bold text-dark" style="font-size: 0.85rem;">{{ $u->username }}</div>
-                                    <div class="text-secondary font-weight-500" style="font-size: 0.775rem;">{{ $u->email }}</div>
+                                    @if($u->email)
+                                        <div class="text-secondary font-weight-500" style="font-size: 0.775rem;">{{ $u->email }}</div>
+                                    @else
+                                        <div class="text-muted" style="font-size: 0.725rem;"><i class="fas fa-id-card-alt mr-1 text-primary"></i>Login via NIP</div>
+                                    @endif
                                 @else
                                     <span class="text-muted small"><em>Belum terhubung</em></span>
                                 @endif

@@ -97,9 +97,8 @@ class LoginController extends Controller
                 ->first();
 
             if ($dosen && $dosen->user) {
-                if (Auth::attempt(['id' => $dosen->user->id, 'password' => $password], $remember) ||
-                    Auth::attempt(['username' => $dosen->user->username, 'password' => $password], $remember) ||
-                    Auth::attempt(['email' => $dosen->user->email, 'password' => $password], $remember)) {
+                if (\Illuminate\Support\Facades\Hash::check($password, $dosen->user->password)) {
+                    Auth::login($dosen->user, $remember);
                     $request->session()->regenerate();
 
                     Alert::toast('Anda berhasil masuk.', 'success');

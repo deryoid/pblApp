@@ -322,17 +322,14 @@ class DataDosenAdminController extends Controller
             $username = $username.'_'.rand(10, 99);
         }
 
-        if (empty($email)) {
-            $email = strtolower(($dosen->nip ?: $username).'@politala.ac.id');
-            if (User::where('email', $email)->exists()) {
-                $email = strtolower(($dosen->nip ?: $username).'+'.Str::random(4).'@politala.ac.id');
-            }
-        }
+        $userEmail = ! empty($email) && filter_var($email, FILTER_VALIDATE_EMAIL)
+            ? strtolower(trim($email))
+            : null;
 
         $user = User::create([
             'nama_user' => $dosen->nama_dosen,
-            'email' => $email,
-            'email_verified_at' => now(),
+            'email' => $userEmail,
+            'email_verified_at' => $userEmail ? now() : null,
             'no_hp' => $dosen->no_hp ?: '-',
             'username' => $username,
             'password' => Hash::make('123456'),

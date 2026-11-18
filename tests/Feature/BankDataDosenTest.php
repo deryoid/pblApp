@@ -332,13 +332,23 @@ class BankDataDosenTest extends TestCase
 
         $user1 = $dosen1->user;
         $this->assertEquals('198501012011011001', $user1->username);
+        $this->assertNull($user1->email);
         $this->assertEquals('dosen', $user1->role);
         $this->assertTrue(Hash::check('123456', $user1->password));
 
         $user2 = $dosen2->user;
         $this->assertEquals('198902022014022002', $user2->username);
+        $this->assertNull($user2->email);
         $this->assertEquals('dosen', $user2->role);
         $this->assertTrue(Hash::check('123456', $user2->password));
+
+        // Dosen dapat login langsung hanya dengan NIP (tanpa email)
+        $loginRes = $this->post(route('login.attempt'), [
+            'username' => '198501012011011001',
+            'password' => '123456',
+        ]);
+        $loginRes->assertRedirect(url('/evaluator'));
+        $this->assertAuthenticatedAs($user1);
     }
 
     /**
@@ -362,8 +372,17 @@ class BankDataDosenTest extends TestCase
 
         $user = $dosen->user;
         $this->assertEquals('199303032019031003', $user->username);
+        $this->assertNull($user->email);
         $this->assertEquals('dosen', $user->role);
         $this->assertTrue(Hash::check('123456', $user->password));
+
+        // Dosen tunggal dapat login langsung dengan NIP saja
+        $loginRes = $this->post(route('login.attempt'), [
+            'username' => '199303032019031003',
+            'password' => '123456',
+        ]);
+        $loginRes->assertRedirect(url('/evaluator'));
+        $this->assertAuthenticatedAs($user);
     }
 
     /**
@@ -407,6 +426,15 @@ class BankDataDosenTest extends TestCase
 
         $user = $dosen->user;
         $this->assertEquals('199505052021051005', $user->username);
+        $this->assertNull($user->email);
         $this->assertTrue(Hash::check('123456', $user->password));
+
+        // Verifikasi login hanya dengan NIP
+        $loginRes = $this->post(route('login.attempt'), [
+            'username' => '199505052021051005',
+            'password' => '123456',
+        ]);
+        $loginRes->assertRedirect(url('/evaluator'));
+        $this->assertAuthenticatedAs($user);
     }
 }
