@@ -892,35 +892,27 @@
                     </div>
                   @endif
 
-                  {{-- 5.5 STATUS VERIFIKASI / ACC PROPOSAL DOSEN --}}
+                  {{-- 5.5 STATUS VERIFIKASI / ACC PROPOSAL DOSEN (Clean & Minimalist) --}}
                   @if(!empty($card['proposal_url']) || !empty($card['verifikasi_dosen']))
                     @php
                       $stats = $card['verifikasi_stats'] ?? ['total' => 0, 'acc' => 0, 'revisi' => 0, 'pending' => 0, 'percent' => 0, 'is_all_acc' => false];
                       $statusProp = $card['status_proposal'] ?? 'pending';
-                      $badgeClass = $stats['is_all_acc'] ? 'success' : ($stats['revisi'] > 0 || $statusProp === 'revisi' ? 'danger' : 'warning');
-                      $badgeText = $stats['is_all_acc'] ? 'Disetujui' : ($stats['revisi'] > 0 || $statusProp === 'revisi' ? 'Perlu Revisi' : 'Menunggu ACC');
+                      $isAll = $stats['is_all_acc'] || $statusProp === 'disetujui';
+                      $isRev = $stats['revisi'] > 0 || $statusProp === 'revisi';
                     @endphp
-                    <div class="card-verifikasi-box mb-2 p-2 rounded border" style="background: #f8fafc; font-size: 0.72rem;">
-                      <div class="d-flex justify-content-between align-items-center mb-1">
-                        <span class="font-weight-bold text-dark"><i class="fas fa-stamp mr-1 text-primary"></i> ACC Dosen:</span>
-                        <span class="badge badge-{{ $badgeClass }} px-2 py-0.5" style="font-size: 0.65rem;">
-                          {{ $badgeText }} ({{ $stats['acc'] }}/{{ $stats['total'] }})
+                    <div class="card-verifikasi-meta mb-2">
+                      @if($isAll)
+                        <span class="badge border border-success text-success bg-white px-2 py-0.5" style="font-size: 0.68rem;" title="Proposal disetujui (ACC lengkap) oleh {{ $stats['total'] }} dosen">
+                          <i class="fas fa-check-circle mr-1"></i> Proposal Disetujui ({{ $stats['acc'] }}/{{ $stats['total'] }} ACC)
                         </span>
-                      </div>
-                      <div class="progress mb-1" style="height: 4px; border-radius: 2px;">
-                        <div class="progress-bar bg-{{ $stats['is_all_acc'] ? 'success' : ($stats['revisi'] > 0 ? 'danger' : 'warning') }}" style="width: {{ $stats['percent'] }}%"></div>
-                      </div>
-                      @if(!empty($card['verifikasi_dosen']))
-                        <div class="d-flex flex-wrap gap-1 mt-1">
-                          @foreach($card['verifikasi_dosen'] as $vd)
-                            <span class="badge {{ $vd['status'] === 'acc' ? 'badge-success text-white' : ($vd['status'] === 'revisi' ? 'badge-danger text-white' : 'badge-light border text-muted') }}" 
-                                  style="font-size: 0.62rem; padding: 0.2rem 0.4rem;" 
-                                  title="{{ $vd['nama_dosen'] }} ({{ $vd['peran'] }}) - Status: {{ strtoupper($vd['status']) }}{{ $vd['catatan'] ? ' | Catatan: '.$vd['catatan'] : '' }}">
-                              <i class="fas {{ $vd['status'] === 'acc' ? 'fa-check' : ($vd['status'] === 'revisi' ? 'fa-exclamation' : 'fa-clock') }} fa-xs mr-0.5"></i>
-                              {{ \Illuminate\Support\Str::limit($vd['nama_dosen'], 14) }}
-                            </span>
-                          @endforeach
-                        </div>
+                      @elseif($isRev)
+                        <span class="badge border border-danger text-danger bg-white px-2 py-0.5" style="font-size: 0.68rem;" title="{{ $stats['revisi'] }} dosen meminta revisi. Klik kartu untuk melihat catatan revisi.">
+                          <i class="fas fa-exclamation-circle mr-1"></i> Proposal Perlu Revisi
+                        </span>
+                      @else
+                        <span class="badge border border-secondary text-secondary bg-white px-2 py-0.5" style="font-size: 0.68rem;" title="Menunggu persetujuan proposal dari dosen terkait">
+                          <i class="far fa-clock mr-1"></i> Menunggu ACC Proposal ({{ $stats['acc'] }}/{{ $stats['total'] }})
+                        </span>
                       @endif
                     </div>
                   @endif
@@ -1536,25 +1528,25 @@
     if (proposalUrl || verifDosen.length > 0) {
       let statusBadge = '';
       if (verifStats.revisi > 0 || card.status_proposal === 'revisi') {
-        statusBadge = '<span class="badge badge-danger px-2.5 py-1 font-weight-bold"><i class="fas fa-exclamation-triangle mr-1"></i> Perlu Revisi</span>';
+        statusBadge = '<span class="badge border border-danger text-danger bg-white px-2.5 py-1 font-weight-bold" style="font-size: 0.78rem;"><i class="fas fa-exclamation-circle mr-1"></i> Perlu Revisi</span>';
       } else if (verifStats.is_all_acc) {
-        statusBadge = '<span class="badge badge-success px-2.5 py-1 font-weight-bold"><i class="fas fa-check-double mr-1"></i> Disetujui (ACC Lengkap)</span>';
+        statusBadge = '<span class="badge border border-success text-success bg-white px-2.5 py-1 font-weight-bold" style="font-size: 0.78rem;"><i class="fas fa-check-circle mr-1"></i> Disetujui (ACC Lengkap)</span>';
       } else {
-        statusBadge = `<span class="badge badge-warning text-dark px-2.5 py-1 font-weight-bold"><i class="fas fa-hourglass-half mr-1"></i> Menunggu ACC (${verifStats.acc}/${verifStats.total})</span>`;
+        statusBadge = `<span class="badge border border-secondary text-secondary bg-white px-2.5 py-1 font-weight-bold" style="font-size: 0.78rem;"><i class="far fa-clock mr-1"></i> Menunggu ACC (${verifStats.acc}/${verifStats.total})</span>`;
       }
 
       let dosenHtml = verifDosen.map(d => {
         let badge = '';
         if (d.status === 'acc') {
-          badge = `<span class="badge badge-success px-2 py-0.5"><i class="fas fa-check-circle mr-1"></i> ACC</span>`;
+          badge = `<span class="text-success font-weight-bold small"><i class="fas fa-check-circle mr-1"></i> Disetujui</span>`;
         } else if (d.status === 'revisi') {
-          badge = `<span class="badge badge-danger px-2 py-0.5"><i class="fas fa-times-circle mr-1"></i> Minta Revisi</span>`;
+          badge = `<span class="text-danger font-weight-bold small"><i class="fas fa-times-circle mr-1"></i> Minta Revisi</span>`;
         } else {
-          badge = `<span class="badge badge-warning text-dark px-2 py-0.5"><i class="far fa-clock mr-1"></i> Menunggu</span>`;
+          badge = `<span class="text-muted small"><i class="far fa-clock mr-1"></i> Menunggu</span>`;
         }
 
         return `
-          <div class="d-flex flex-column p-2 rounded mb-1.5 border" style="background:#f8fafc; font-size:0.8rem;">
+          <div class="p-2.5 rounded mb-2 border" style="background:#ffffff; border-color: #e2e8f0; font-size:0.82rem;">
             <div class="d-flex justify-content-between align-items-center">
               <div>
                 <strong class="text-dark">${d.nama_dosen}</strong>
@@ -1562,12 +1554,12 @@
               </div>
               <div class="text-right">
                 ${badge}
-                ${d.verified_at ? `<div class="text-muted small mt-0.5" style="font-size:0.68rem;">${d.verified_at}</div>` : ''}
+                ${d.verified_at ? `<div class="text-muted small mt-0.5" style="font-size:0.7rem;">${d.verified_at}</div>` : ''}
               </div>
             </div>
             ${d.catatan ? `
-              <div class="alert alert-danger py-1 px-2 mt-1 mb-0 small" style="font-size:0.75rem;">
-                <i class="fas fa-comment-dots mr-1"></i> <strong>Catatan Dosen:</strong> <em>"${d.catatan}"</em>
+              <div class="text-danger small mt-1.5 p-1.5 rounded bg-light border-left border-danger" style="border-left-width: 3px !important; font-size:0.75rem;">
+                <i class="fas fa-comment-dots mr-1"></i> <strong>Catatan Revisi:</strong> <em>"${d.catatan}"</em>
               </div>
             ` : ''}
           </div>
@@ -1575,21 +1567,23 @@
       }).join('');
 
       verifContainer.html(`
-        <div class="d-flex justify-content-between align-items-center mb-2">
-          <label class="font-weight-bold mb-0 text-dark" style="font-size:0.9rem;">
-            <i class="fas fa-stamp mr-1 text-primary"></i> Status Verifikasi Proposal Dosen
-          </label>
-          <div>${statusBadge}</div>
-        </div>
-        <div class="progress mb-2" style="height: 6px;">
-          <div class="progress-bar ${verifStats.is_all_acc ? 'bg-success' : (verifStats.revisi > 0 ? 'bg-danger' : 'bg-primary')}"
-               style="width: ${verifStats.percent}%;"></div>
-        </div>
-        <div class="small text-muted mb-2">
-          Total ACC: <strong>${verifStats.acc} dari ${verifStats.total} Dosen</strong> (${verifStats.percent}%).
-        </div>
-        <div class="dosen-verif-list mt-2">
-          ${dosenHtml || '<div class="text-muted font-italic small">Belum ada dosen yang terkait dengan proyek ini.</div>'}
+        <div class="p-3 rounded mb-3" style="background: #f8fafc; border: 1px solid #e2e8f0;">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <div>
+              <span class="font-weight-bold text-dark small">
+                <i class="fas fa-clipboard-check mr-1 text-secondary"></i> Status Verifikasi Proposal Dosen
+              </span>
+              <div class="text-muted small" style="font-size: 0.75rem;">Status persetujuan: ${verifStats.acc} dari ${verifStats.total} Dosen (${verifStats.percent}%)</div>
+            </div>
+            <div>${statusBadge}</div>
+          </div>
+          <div class="progress mb-2.5" style="height: 5px; border-radius: 3px; background: #e2e8f0;">
+            <div class="progress-bar ${verifStats.is_all_acc ? 'bg-success' : (verifStats.revisi > 0 ? 'bg-danger' : 'bg-primary')}"
+                 style="width: ${verifStats.percent}%;"></div>
+          </div>
+          <div class="dosen-verif-list mt-2">
+            ${dosenHtml || '<div class="text-muted font-italic small">Belum ada dosen yang terkait dengan proyek ini.</div>'}
+          </div>
         </div>
       `).show();
     } else {

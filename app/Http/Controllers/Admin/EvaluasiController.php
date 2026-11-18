@@ -1117,6 +1117,7 @@ class EvaluasiController extends Controller
             'kendala' => 'nullable|string',
             'catatan' => 'nullable|string',
             'status' => 'nullable|in:Proses,Selesai,Dibatalkan',
+            'dosen_penentu_id' => 'nullable|exists:users,id',
         ]);
 
         $labels = null;
@@ -1159,8 +1160,16 @@ class EvaluasiController extends Controller
         if (array_key_exists('catatan', $data)) {
             $card->catatan = $data['catatan'];
         }
+        if (array_key_exists('dosen_penentu_id', $data)) {
+            $card->dosen_penentu_id = ! empty($data['dosen_penentu_id']) ? (int) $data['dosen_penentu_id'] : null;
+        }
         $card->updated_by = Auth::id();
         $card->save();
+
+        if (array_key_exists('dosen_penentu_id', $data)) {
+            $card->syncVerifikasiDosen();
+            $card->updateStatusProposalAcc();
+        }
 
         return response()->json(['success' => true]);
     }

@@ -131,6 +131,120 @@ class ProjectVerifikasiController extends Controller
     }
 
     /**
+     * Admin menambahkan dosen ke dalam proyek (sebagai Penilai atau Pembimbing/Penentu).
+     */
+    public function assignDosen(Request $request, ProjectCard $card): JsonResponse
+    {
+        $user = Auth::user();
+        if (! $user->isAdmin()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Hanya Administrator yang dapat menambahkan Dosen ke dalam proyek.',
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'dosen_id' => 'required|exists:users,id',
+            'peran' => 'required|string|in:penilai,pembimbing,penentu',
+            'mata_kuliah_id' => 'nullable|exists:mata_kuliah,id',
+        ]);
+
+        $dosen = User::findOrFail($validated['dosen_id']);
+
+        if (in_array($validated['peran'], ['pembimbing', 'penentu'])) {
+            $card->dosen_penentu_id = $dosen->id;
+            $card->save();
+            $message = "Dosen {$dosen->nama_user} berhasil ditugaskan sebagai Pembimbing Proyek.";
+        } else {
+            ProjectDosenPenilai::firstOrCreate(
+                [
+                    'project_card_id' => $card->id,
+                    'dosen_id' => $dosen->id,
+                    'mata_kuliah_id' => $validated['mata_kuliah_id'] ?? null,
+                ],
+                [
+                    'status_penilaian' => 'belum',
+                    'assigned_by' => $user->id,
+                ]
+            );
+            $message = "Dosen {$dosen->nama_user} berhasil ditugaskan sebagai Dosen Penilai Proyek.";
+        }
+
+        $card->syncVerifikasiDosen();
+        $card->updateStatusProposalAcc();
+
+        return response()->json([
+            'success' => true,
+            'message' => $message,
+            'involved_dosen' => $card->getInvolvedDosen(),
+        ]);
+    }
+
+    /**
+     * Admin menghapus penugasan dosen dari proyek (sebagai Penilai atau Pembimbing).
+     */
+    public function removeDosen(Request $request, ProjectCard $card): JsonResponse
+    {
+        $user = Auth::user();
+        if (! $user->isAdmin()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Hanya Administrator yang dapat menghapus Dosen dari proyek.',
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'dosen_id' => 'required|exists:users,id',
+            'peran_tipe' => 'nullable|string|in:penilai,penentu,pembimbing',
+            'penilai_id' => 'nullable|integer',
+        ]);
+
+        $dosenId = (int) $validated['dosen_id'];
+        $peranTipe = $validated['peran_tipe'] ?? null;
+
+        if ($peranTipe === 'pembimbing' || $peranTipe === 'penentu') {
+            if ($card->dosen_penentu_id == $dosenId) {
+                $card->dosen_penentu_id = null;
+                $card->save();
+            }
+        } elseif (! empty($validated['penilai_id'])) {
+            ProjectDosenPenilai::where('id', $validated['penilai_id'])
+                ->where('project_card_id', $card->id)
+                ->delete();
+        } else {
+            // Hapus dari dosen penilai jika ada
+            ProjectDosenPenilai::where('project_card_id', $card->id)
+                ->where('dosen_id', $dosenId)
+                ->delete();
+
+            if ($card->dosen_penentu_id == $dosenId && ($peranTipe === null || $peranTipe === 'penentu')) {
+                $card->dosen_penentu_id = null;
+                $card->save();
+            }
+        }
+
+        // Cek apakah dosen ini masih memiliki keterlibatan lain pada proyek
+        $card->load('mataKuliahs.dosenPengampu', 'dosenPenilai', 'dosenPenentu');
+        $stillInvolved = $card->mataKuliahs->flatMap(fn ($mk) => $mk->dosenPengampu)->contains('id', $dosenId)
+            || $card->dosenPenilai->contains('dosen_id', $dosenId)
+            || ($card->dosen_penentu_id == $dosenId);
+
+        if (! $stillInvolved) {
+            ProjectVerifikasiDosen::where('project_card_id', $card->id)
+                ->where('dosen_id', $dosenId)
+                ->delete();
+        }
+
+        $card->updateStatusProposalAcc();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Penugasan dosen pada proyek berhasil dihapus.',
+            'involved_dosen' => $card->getInvolvedDosen(),
+        ]);
+    }
+
+    /**
      * Admin menambahkan dosen penilai ke dalam proyek.
      */
     public function assignDosenPenilai(Request $request, ProjectCard $card): JsonResponse

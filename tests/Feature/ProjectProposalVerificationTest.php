@@ -516,6 +516,137 @@ class ProjectProposalVerificationTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Proyek Smart Water Quality');
-        $response->assertSee('ACC Dosen:');
+        $response->assertSee('Menunggu ACC Proposal');
+    }
+
+    public function test_admin_can_assign_dosen_as_pembimbing(): void
+    {
+        $card = ProjectCard::create([
+            'kelompok_id' => $this->kelompok->id,
+            'periode_id' => $this->periode->id,
+            'list_id' => $this->list->id,
+            'title' => 'Proyek Autonomous Drone',
+            'status_proposal' => 'pending',
+            'created_by' => $this->studentUser->id,
+        ]);
+
+        $response = $this->actingAs($this->admin)
+            ->postJson(route('project.dosen.assign', ['card' => $card->id]), [
+                'dosen_id' => $this->dosenLain->id,
+                'peran' => 'pembimbing',
+            ]);
+
+        $response->assertOk();
+        $response->assertJson(['success' => true]);
+
+        $card->refresh();
+        $this->assertEquals($this->dosenLain->id, $card->dosen_penentu_id);
+
+        $this->assertDatabaseHas('project_verifikasi_dosen', [
+            'project_card_id' => $card->id,
+            'dosen_id' => $this->dosenLain->id,
+        ]);
+    }
+
+    public function test_admin_can_remove_dosen_from_pembimbing(): void
+    {
+        $card = ProjectCard::create([
+            'kelompok_id' => $this->kelompok->id,
+            'periode_id' => $this->periode->id,
+            'list_id' => $this->list->id,
+            'title' => 'Proyek Smart Greenhouse',
+            'dosen_penentu_id' => $this->dosenLain->id,
+            'status_proposal' => 'pending',
+            'created_by' => $this->studentUser->id,
+        ]);
+        $card->syncVerifikasiDosen();
+
+        $response = $this->actingAs($this->admin)
+            ->postJson(route('project.dosen.remove', ['card' => $card->id]), [
+                'dosen_id' => $this->dosenLain->id,
+                'peran_tipe' => 'pembimbing',
+            ]);
+
+        $response->assertOk();
+        $response->assertJson(['success' => true]);
+
+        $card->refresh();
+        $this->assertNull($card->dosen_penentu_id);
+        $this->assertDatabaseMissing('project_verifikasi_dosen', [
+            'project_card_id' => $card->id,
+            'dosen_id' => $this->dosenLain->id,
+        ]);
+    }
+
+    public function test_admin_can_assign_and_remove_penilai_via_unified_endpoints(): void
+    {
+        $card = ProjectCard::create([
+            'kelompok_id' => $this->kelompok->id,
+            'periode_id' => $this->periode->id,
+            'list_id' => $this->list->id,
+            'title' => 'Proyek Smart Aquaculture',
+            'status_proposal' => 'pending',
+            'created_by' => $this->studentUser->id,
+        ]);
+
+        // Assign
+        $assignRes = $this->actingAs($this->admin)
+            ->postJson(route('project.dosen.assign', ['card' => $card->id]), [
+                'dosen_id' => $this->dosenPenilai->id,
+                'peran' => 'penilai',
+                'mata_kuliah_id' => $this->mataKuliah->id,
+            ]);
+
+        $assignRes->assertOk();
+        $assignRes->assertJson(['success' => true]);
+
+        $this->assertDatabaseHas('project_dosen_penilai', [
+            'project_card_id' => $card->id,
+            'dosen_id' => $this->dosenPenilai->id,
+            'mata_kuliah_id' => $this->mataKuliah->id,
+        ]);
+
+        // Remove
+        $removeRes = $this->actingAs($this->admin)
+            ->postJson(route('project.dosen.remove', ['card' => $card->id]), [
+                'dosen_id' => $this->dosenPenilai->id,
+                'peran_tipe' => 'penilai',
+            ]);
+
+        $removeRes->assertOk();
+        $removeRes->assertJson(['success' => true]);
+
+        $this->assertDatabaseMissing('project_dosen_penilai', [
+            'project_card_id' => $card->id,
+            'dosen_id' => $this->dosenPenilai->id,
+        ]);
+    }
+
+    public function test_admin_can_update_dosen_penentu_via_update_project(): void
+    {
+        $card = ProjectCard::create([
+            'kelompok_id' => $this->kelompok->id,
+            'periode_id' => $this->periode->id,
+            'list_id' => $this->list->id,
+            'title' => 'Proyek IoT Smart Bin',
+            'status_proposal' => 'pending',
+            'created_by' => $this->studentUser->id,
+        ]);
+
+        $response = $this->actingAs($this->admin)
+            ->postJson(route('admin.evaluasi.project.update', ['card' => $card->id]), [
+                'title' => 'Proyek IoT Smart Bin Updated',
+                'dosen_penentu_id' => $this->dosenPengampu->id,
+            ]);
+
+        $response->assertOk();
+        $response->assertJson(['success' => true]);
+
+        $card->refresh();
+        $this->assertEquals($this->dosenPengampu->id, $card->dosen_penentu_id);
+        $this->assertDatabaseHas('project_verifikasi_dosen', [
+            'project_card_id' => $card->id,
+            'dosen_id' => $this->dosenPengampu->id,
+        ]);
     }
 }

@@ -371,10 +371,12 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
 });
 
-// Verifikasi Proposal Proyek & Penugasan Dosen Penilai
+// Verifikasi Proposal Proyek & Penugasan Dosen Penilai / Pembimbing
 Route::middleware(['auth', 'profile.complete'])->group(function () {
     Route::get('/project/{card}/verifikasi-status', [\App\Http\Controllers\ProjectVerifikasiController::class, 'getStatus'])->name('project.verifikasi.status');
     Route::post('/project/{card}/verifikasi-acc', [\App\Http\Controllers\ProjectVerifikasiController::class, 'verifikasiAcc'])->name('project.verifikasi.acc');
+    Route::post('/project/{card}/assign-dosen', [\App\Http\Controllers\ProjectVerifikasiController::class, 'assignDosen'])->name('project.dosen.assign');
+    Route::post('/project/{card}/remove-dosen', [\App\Http\Controllers\ProjectVerifikasiController::class, 'removeDosen'])->name('project.dosen.remove');
     Route::post('/project/{card}/dosen-penilai', [\App\Http\Controllers\ProjectVerifikasiController::class, 'assignDosenPenilai'])->name('project.dosen-penilai.store');
     Route::delete('/project/{card}/dosen-penilai/{penilai}', [\App\Http\Controllers\ProjectVerifikasiController::class, 'removeDosenPenilai'])->name('project.dosen-penilai.destroy');
 });

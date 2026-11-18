@@ -1042,6 +1042,12 @@ class EvaluasiController extends Controller
         $userVerifikasi = $user ? $involved->firstWhere('dosen_id', $user->id) : null;
         $isAdmin = $user ? $user->isAdmin() : false;
 
+        $availableDosen = ($isAdmin || $user?->isEvaluator())
+            ? \App\Models\User::whereIn('role', ['dosen', 'evaluator', 'admin'])
+                ->orderBy('nama_user')
+                ->get(['id', 'nama_user', 'username', 'email'])
+            : [];
+
         return response()->json([
             'success' => true,
             'project' => $card,
@@ -1049,6 +1055,7 @@ class EvaluasiController extends Controller
             'can_acc' => $isAdmin || $isUserInvolved,
             'user_verifikasi' => $userVerifikasi,
             'is_admin' => $isAdmin,
+            'available_dosen' => $availableDosen,
         ]);
     }
 
