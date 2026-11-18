@@ -47,10 +47,10 @@ return new class extends Migration
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
-            $table->index(['list_id','position']);
-            $table->index(['kelompok_id','periode_id'],'pc_kelompok_periode_idx');
-            $table->index('status_proyek','pc_status_idx');
-            $table->index('tanggal_selesai','pc_tselesai_idx');
+            $table->index(['list_id', 'position']);
+            $table->index(['kelompok_id', 'periode_id'], 'pc_kelompok_periode_idx');
+            $table->index('status_proyek', 'pc_status_idx');
+            $table->index('tanggal_selesai', 'pc_tselesai_idx');
         });
     }
 

@@ -149,7 +149,7 @@ class ProyekMahasiswaTest extends TestCase
             'kelompok_id' => $this->kelompok->id,
             'list_id' => $this->list1->id,
             'skema_pbl' => 'Internal',
-            'status_proposal' => 'disetujui',
+            'status_proposal' => 'pending',
         ]);
 
         $card = ProjectCard::where('title', 'Sistem Informasi Manajemen Aset')->first();

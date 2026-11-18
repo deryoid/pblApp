@@ -17,14 +17,16 @@ class Mahasiswa
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             // Gagal login
             Alert::toast('Anda Belum Login.', 'error');
+
             return redirect()->route('login');
         }
         if (Auth::user()->role != 'mahasiswa') {
             // Gagal login
             Alert::toast('Kamu Tidak Memiliki Akses Mahasiswa', 'error');
+
             return redirect()->back();
         }
 

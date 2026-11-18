@@ -201,6 +201,26 @@ class User extends Authenticatable
         return ! empty($this->no_hp);
     }
 
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    public function isEvaluator(): bool
+    {
+        return $this->role === 'evaluator';
+    }
+
+    public function isDosen(): bool
+    {
+        return in_array($this->role, ['dosen', 'evaluator']);
+    }
+
+    public function isMahasiswa(): bool
+    {
+        return $this->role === 'mahasiswa';
+    }
+
     public function scopeDosen($query): void
     {
         $query->where('role', 'dosen');

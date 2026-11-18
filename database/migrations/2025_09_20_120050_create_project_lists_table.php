@@ -16,8 +16,8 @@ return new class extends Migration
             $table->string('name');
             $table->unsignedInteger('position')->default(0);
             $table->timestamps();
-            $table->unique(['kelompok_id','periode_id','position']);
-            $table->index(['kelompok_id','periode_id']);
+            $table->unique(['kelompok_id', 'periode_id', 'position']);
+            $table->index(['kelompok_id', 'periode_id']);
         });
     }
 

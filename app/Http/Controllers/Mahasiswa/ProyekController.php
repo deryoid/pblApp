@@ -88,6 +88,12 @@ class ProyekController extends Controller
                         $updatedByAvatar = optional($c->updatedBy)->profile_photo_data_url
                             ?: optional($c->updatedBy)->profile_photo_url;
 
+                        $involved = $c->getInvolvedDosen();
+                        $totalInvolved = $involved->count();
+                        $accCount = $involved->where('status', 'acc')->count();
+                        $revisiCount = $involved->where('status', 'revisi')->count();
+                        $pendingCount = $involved->where('status', 'pending')->count();
+
                         return [
                             'id' => $c->uuid,
                             'title' => $c->title,
@@ -106,6 +112,24 @@ class ProyekController extends Controller
                             'proposal_file_path' => $c->proposal_file_path,
                             'proposal_url' => $c->proposal_url,
                             'status_proposal' => $c->status_proposal,
+                            'verifikasi_dosen' => $involved->map(fn ($item) => [
+                                'dosen_id' => $item->dosen_id,
+                                'nama_dosen' => $item->dosen?->nama_user ?: ($item->dosen?->name ?? 'Dosen'),
+                                'email_dosen' => $item->dosen?->email,
+                                'peran' => $item->peran,
+                                'peran_tipe' => $item->peran_tipe,
+                                'status' => $item->status,
+                                'catatan' => $item->catatan,
+                                'verified_at' => $item->verified_at ? $item->verified_at->locale('id')->isoFormat('D MMM Y, HH:mm') : null,
+                            ])->values()->toArray(),
+                            'verifikasi_stats' => [
+                                'total' => $totalInvolved,
+                                'acc' => $accCount,
+                                'revisi' => $revisiCount,
+                                'pending' => $pendingCount,
+                                'percent' => $totalInvolved > 0 ? (int) round(($accCount / $totalInvolved) * 100) : 0,
+                                'is_all_acc' => $totalInvolved > 0 && $accCount === $totalInvolved,
+                            ],
                             'created_by_name' => $createdByName,
                             'updated_by_name' => $updatedByName,
                             'created_at_human' => ($c->created_at ? $c->created_at->locale('id')->diffForHumans() : null),

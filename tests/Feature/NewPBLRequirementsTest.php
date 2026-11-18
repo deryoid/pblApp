@@ -312,7 +312,7 @@ class NewPBLRequirementsTest extends TestCase
             'title' => 'Sistem Informasi Manajemen Riset Kampus',
             'skema_pbl' => 'Internal',
             'jenis_proyek' => 'internal',
-            'status_proposal' => 'disetujui',
+            'status_proposal' => 'pending',
         ]);
 
         $card = ProjectCard::where('title', 'Sistem Informasi Manajemen Riset Kampus')->first();

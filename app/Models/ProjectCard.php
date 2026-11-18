@@ -140,4 +140,145 @@ class ProjectCard extends Model
     {
         return $this->hasMany(\App\Models\PenilaianProyekDosen::class, 'project_card_id');
     }
+
+    public function verifikasiDosen(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\ProjectVerifikasiDosen::class, 'project_card_id');
+    }
+
+    /**
+     * Dapatkan daftar seluruh dosen yang terlibat pada proyek ini beserta status ACC / verifikasinya.
+     */
+    public function getInvolvedDosen(): \Illuminate\Support\Collection
+    {
+        $this->loadMissing([
+            'mataKuliahs.dosenPengampu',
+            'dosenPenilai.dosen',
+            'dosenPenilai.mataKuliah',
+            'dosenPenentu',
+        ]);
+
+        $this->load('verifikasiDosen.dosen');
+
+        $involvedMap = collect();
+
+        // 1. Dosen Pengampu dari Mata Kuliah Terkait
+        foreach ($this->mataKuliahs as $mk) {
+            foreach ($mk->dosenPengampu as $dp) {
+                if (! $involvedMap->has($dp->id)) {
+                    $involvedMap->put($dp->id, [
+                        'dosen' => $dp,
+                        'peran' => 'Dosen Pengampu MK: '.$mk->nama_matkul,
+                        'peran_tipe' => 'pengampu',
+                        'mata_kuliah' => $mk->nama_matkul,
+                    ]);
+                }
+            }
+        }
+
+        // 2. Dosen Penilai Khusus
+        foreach ($this->dosenPenilai as $dPenilai) {
+            if ($dPenilai->dosen) {
+                $mkNama = $dPenilai->mataKuliah?->nama_matkul ?: 'Semua MK';
+                $existing = $involvedMap->get($dPenilai->dosen_id);
+                $peran = $existing ? ($existing['peran'].' & Penilai Proyek') : 'Dosen Penilai Proyek ('.$mkNama.')';
+                $involvedMap->put($dPenilai->dosen_id, [
+                    'dosen' => $dPenilai->dosen,
+                    'peran' => $peran,
+                    'peran_tipe' => 'penilai',
+                    'mata_kuliah' => $mkNama,
+                    'penilai_record' => $dPenilai,
+                ]);
+            }
+        }
+
+        // 3. Dosen Penentu Proyek
+        if ($this->dosenPenentu) {
+            $existing = $involvedMap->get($this->dosen_penentu_id);
+            $peran = $existing ? ($existing['peran'].' & Pembimbing Proyek') : 'Dosen Penentu / Pembimbing Proyek';
+            $involvedMap->put($this->dosen_penentu_id, [
+                'dosen' => $this->dosenPenentu,
+                'peran' => $peran,
+                'peran_tipe' => 'penentu',
+                'mata_kuliah' => null,
+            ]);
+        }
+
+        // Gabungkan dengan data verifikasi / ACC dari tabel project_verifikasi_dosen
+        $verifGrouped = $this->verifikasiDosen->keyBy('dosen_id');
+
+        return $involvedMap->map(function ($item, $dosenId) use ($verifGrouped) {
+            $verif = $verifGrouped->get($dosenId);
+            $status = $verif ? $verif->status : 'pending';
+
+            return (object) [
+                'dosen_id' => $dosenId,
+                'dosen' => $item['dosen'],
+                'peran' => $verif && ! empty($verif->peran) ? $verif->peran : $item['peran'],
+                'peran_tipe' => $item['peran_tipe'] ?? 'pengampu',
+                'mata_kuliah' => $item['mata_kuliah'] ?? null,
+                'status' => $status,
+                'is_acc' => $status === 'acc',
+                'is_revisi' => $status === 'revisi',
+                'is_pending' => $status === 'pending',
+                'catatan' => $verif?->catatan,
+                'verified_at' => $verif?->verified_at,
+                'penilai_record' => $item['penilai_record'] ?? null,
+            ];
+        })->values();
+    }
+
+    /**
+     * Pastikan semua dosen yang terlibat memiliki record verifikasi di tabel project_verifikasi_dosen.
+     */
+    public function syncVerifikasiDosen(): \Illuminate\Support\Collection
+    {
+        $involved = $this->getInvolvedDosen();
+
+        foreach ($involved as $item) {
+            \App\Models\ProjectVerifikasiDosen::firstOrCreate(
+                [
+                    'project_card_id' => $this->id,
+                    'dosen_id' => $item->dosen_id,
+                ],
+                [
+                    'peran' => $item->peran,
+                    'status' => 'pending',
+                ]
+            );
+        }
+
+        $this->load('verifikasiDosen');
+
+        return $this->getInvolvedDosen();
+    }
+
+    /**
+     * Hitung ringkasan status ACC dan perbarui status_proposal project_cards.
+     */
+    public function updateStatusProposalAcc(): string
+    {
+        $involved = $this->getInvolvedDosen();
+
+        if ($involved->isEmpty()) {
+            return $this->status_proposal ?? 'pending';
+        }
+
+        $hasRevisi = $involved->contains(fn ($i) => $i->status === 'revisi');
+        $allAcc = $involved->every(fn ($i) => $i->status === 'acc');
+
+        $newStatus = 'pending';
+        if ($hasRevisi) {
+            $newStatus = 'revisi';
+        } elseif ($allAcc) {
+            $newStatus = 'disetujui';
+        }
+
+        if ($this->status_proposal !== $newStatus) {
+            $this->status_proposal = $newStatus;
+            $this->save();
+        }
+
+        return $newStatus;
+    }
 }

@@ -30,8 +30,8 @@ return new class extends Migration
             $t->timestamps();
 
             // Index bantu
-            $t->index(['list_aktivitas_id','position','id'], 'akc_list_pos_id_idx');
-            $t->index(['kelompok_id','periode_id'], 'akc_kelompok_periode_idx');
+            $t->index(['list_aktivitas_id', 'position', 'id'], 'akc_list_pos_id_idx');
+            $t->index(['kelompok_id', 'periode_id'], 'akc_kelompok_periode_idx');
             $t->index('tanggal_aktivitas', 'akc_tanggal_idx');
         });
     }

@@ -1545,6 +1545,19 @@
       }
 
       const card = detailData.project;
+      const involvedDosen = detailData.involved_dosen || [];
+      const canAcc = detailData.can_acc || false;
+      const userVerifikasi = detailData.user_verifikasi || null;
+      const isAdmin = detailData.is_admin || false;
+      const availableDosen = detailData.available_dosen || [];
+
+      // Statistik verifikasi dosen
+      const totalDosen = involvedDosen.length;
+      const accDosen = involvedDosen.filter(d => d.status === 'acc').length;
+      const revisiDosen = involvedDosen.filter(d => d.status === 'revisi').length;
+      const percentAcc = totalDosen > 0 ? Math.round((accDosen / totalDosen) * 100) : 0;
+      const isAllAcc = totalDosen > 0 && accDosen === totalDosen;
+      const hasRevisi = revisiDosen > 0;
 
       // Build detail HTML
       let html = `
@@ -1626,6 +1639,201 @@
                 </div>
               </div>
             ` : ''}
+
+            <!-- Verifikasi & ACC Proposal Proyek (Desain Menarik) -->
+            <div class="mb-4 card shadow-sm" style="border-radius: 12px; border: 1px solid #cbd5e1; overflow: hidden;">
+              <div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center py-3" style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);">
+                <div class="d-flex align-items-center mb-2 mb-md-0">
+                  <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mr-3 shadow-sm" style="width: 40px; height: 40px; min-width: 40px;">
+                    <i class="fas fa-stamp fa-lg"></i>
+                  </div>
+                  <div>
+                    <h6 class="font-weight-bold mb-0 text-dark">Verifikasi & ACC Proposal Proyek</h6>
+                    <small class="text-muted">Status persetujuan kolektif dari seluruh dosen terkait</small>
+                  </div>
+                </div>
+                <div>
+                  ${hasRevisi
+                    ? `<span class="badge badge-danger px-3 py-2 font-weight-bold shadow-sm" style="font-size: 0.85rem;"><i class="fas fa-exclamation-triangle mr-1"></i> Perlu Revisi (${revisiDosen} Dosen)</span>`
+                    : (isAllAcc
+                      ? `<span class="badge badge-success px-3 py-2 font-weight-bold shadow-sm" style="font-size: 0.85rem;"><i class="fas fa-check-double mr-1"></i> Proposal Disetujui (Lengkap)</span>`
+                      : `<span class="badge badge-warning text-dark px-3 py-2 font-weight-bold shadow-sm" style="font-size: 0.85rem;"><i class="fas fa-hourglass-half mr-1"></i> Menunggu ACC (${accDosen}/${totalDosen})</span>`
+                    )
+                  }
+                </div>
+              </div>
+
+              <div class="card-body p-3 bg-white">
+                <!-- Proposal File Link -->
+                ${(card.proposal_url || card.proposal_file_path) ? `
+                  <div class="d-flex flex-column flex-sm-row align-items-start align-items-sm-center justify-content-between p-3 rounded mb-3 border" style="background: #f8fafc;">
+                    <div class="d-flex align-items-center mb-2 mb-sm-0">
+                      <div class="rounded p-2 mr-3 text-center bg-danger text-white shadow-sm" style="width: 38px; height: 38px;">
+                        <i class="fas fa-file-pdf fa-lg"></i>
+                      </div>
+                      <div>
+                        <div class="font-weight-bold text-dark">Berkas Proposal Mahasiswa</div>
+                        <div class="small text-muted">Format PDF/Dokumen terunggah</div>
+                      </div>
+                    </div>
+                    <a href="${card.proposal_url || ('/storage/' + card.proposal_file_path)}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary px-3 rounded-pill font-weight-bold shadow-sm">
+                      <i class="fas fa-external-link-alt mr-1"></i> Buka / Unduh Proposal
+                    </a>
+                  </div>
+                ` : `
+                  <div class="alert alert-warning py-2 px-3 small mb-3 border-warning">
+                    <i class="fas fa-exclamation-circle mr-1"></i> Berkas proposal belum diunggah oleh mahasiswa untuk kartu proyek ini.
+                  </div>
+                `}
+
+                <!-- Progress Bar ACC Dosen -->
+                <div class="mb-3 p-3 rounded border" style="background: #ffffff;">
+                  <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="small font-weight-bold text-dark"><i class="fas fa-tasks mr-1 text-primary"></i> Progress ACC Dosen Terkait:</span>
+                    <span class="small font-weight-bold ${isAllAcc ? 'text-success' : (hasRevisi ? 'text-danger' : 'text-primary')}">${accDosen} dari ${totalDosen} Dosen (${percentAcc}%)</span>
+                  </div>
+                  <div class="progress" style="height: 10px; border-radius: 6px;">
+                    <div class="progress-bar ${isAllAcc ? 'bg-success' : (hasRevisi ? 'bg-danger' : 'bg-primary')}"
+                         style="width: ${percentAcc}%; transition: width 0.6s ease;"></div>
+                  </div>
+                </div>
+
+                <!-- Action Box untuk Dosen yang Terlibat / Admin -->
+                ${canAcc ? `
+                  <div class="p-3 rounded border mb-3 shadow-sm" style="background: linear-gradient(135deg, #f0fdf4 0%, #e0f2fe 100%); border-color: #86efac !important;">
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center">
+                      <div class="mb-2 mb-md-0">
+                        <div class="font-weight-bold text-dark">
+                          <i class="fas fa-user-check text-success mr-1"></i> Aksi Verifikasi Anda Sebagai Dosen / Tim Penilai
+                        </div>
+                        <div class="small text-muted">
+                          Status Anda saat ini:
+                          <span class="badge ${userVerifikasi?.status === 'acc' ? 'badge-success' : (userVerifikasi?.status === 'revisi' ? 'badge-danger' : 'badge-warning text-dark')} px-2 py-0.5">
+                            ${userVerifikasi ? userVerifikasi.status.toUpperCase() : 'PENDING'}
+                          </span>
+                          ${userVerifikasi?.verified_at ? `<span class="ml-1 text-muted">(${formatDateTime(userVerifikasi.verified_at)})</span>` : ''}
+                        </div>
+                      </div>
+                      <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-success btn-sm px-3 font-weight-bold shadow-sm" onclick="submitVerifikasiAcc(${card.id}, 'acc')">
+                          <i class="fas fa-check-circle mr-1"></i> ACC Proposal
+                        </button>
+                        <button type="button" class="btn btn-outline-danger btn-sm px-3 font-weight-bold shadow-sm" onclick="promptRevisiProposal(${card.id})">
+                          <i class="fas fa-edit mr-1"></i> Minta Revisi
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ` : ''}
+
+                <!-- Daftar Rincian Dosen yang Terlibat -->
+                <div class="mb-2">
+                  <h6 class="font-weight-bold text-dark mb-2" style="font-size: 0.9rem;">
+                    <i class="fas fa-users-cog mr-1 text-secondary"></i> Daftar Dosen yang Terlibat & Status ACC (${totalDosen}):
+                  </h6>
+                  <div class="involved-dosen-grid">
+                    ${involvedDosen.length > 0 ? involvedDosen.map(d => {
+                      let statusBadge = '';
+                      let borderStyle = 'border: 1px solid #e2e8f0;';
+                      if (d.status === 'acc') {
+                        borderStyle = 'border: 1px solid #86efac; background: #f0fdf4;';
+                        statusBadge = `
+                          <span class="badge badge-success px-2 py-1"><i class="fas fa-check-circle mr-1"></i> Disetujui (ACC)</span>
+                          ${d.verified_at ? `<div class="text-muted small mt-1" style="font-size:0.7rem;"><i class="far fa-calendar-check mr-1"></i>${formatDateTime(d.verified_at)}</div>` : ''}
+                        `;
+                      } else if (d.status === 'revisi') {
+                        borderStyle = 'border: 1px solid #fca5a5; background: #fef2f2;';
+                        statusBadge = `<span class="badge badge-danger px-2 py-1"><i class="fas fa-times-circle mr-1"></i> Minta Revisi</span>`;
+                      } else {
+                        borderStyle = 'border: 1px solid #fde68a; background: #fffbeb;';
+                        statusBadge = `<span class="badge badge-warning text-dark px-2 py-1"><i class="far fa-clock mr-1"></i> Menunggu ACC</span>`;
+                      }
+
+                      let deleteBtn = '';
+                      if (isAdmin && d.penilai_record) {
+                        deleteBtn = `
+                          <button type="button" class="btn btn-xs btn-outline-danger mt-1 py-0 px-2 rounded"
+                                  onclick="hapusDosenPenilai(${card.id}, ${d.penilai_record.id})"
+                                  title="Hapus penugasan dosen penilai">
+                            <i class="fas fa-trash-alt fa-xs mr-1"></i> Hapus Penilai
+                          </button>
+                        `;
+                      }
+
+                      let roleBadge = 'badge-primary';
+                      if (d.peran_tipe === 'penilai') roleBadge = 'badge-info';
+                      if (d.peran_tipe === 'penentu') roleBadge = 'badge-secondary';
+
+                      const dosenName = d.dosen ? (d.dosen.nama_user || d.dosen.name) : 'Dosen Terkait';
+                      const initials = (dosenName || 'D').substring(0, 2).toUpperCase();
+
+                      return `
+                        <div class="card mb-2 shadow-none" style="${borderStyle} border-radius: 8px;">
+                          <div class="card-body p-2.5 d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center">
+                            <div class="d-flex align-items-center mb-2 mb-sm-0">
+                              <div class="rounded-circle bg-white border text-primary font-weight-bold d-flex align-items-center justify-content-center mr-2.5 shadow-xs" style="width: 36px; height: 36px; min-width: 36px; font-size: 0.85rem;">
+                                ${initials}
+                              </div>
+                              <div>
+                                <div class="font-weight-bold text-dark" style="font-size: 0.88rem;">${dosenName}</div>
+                                <div class="small">
+                                  <span class="badge ${roleBadge} font-weight-normal mr-1">${d.peran}</span>
+                                  ${d.dosen?.email ? `<span class="text-muted small">(${d.dosen.email})</span>` : ''}
+                                </div>
+                              </div>
+                            </div>
+                            <div class="text-sm-right w-100 w-sm-auto">
+                              ${statusBadge}
+                              ${deleteBtn}
+                            </div>
+                          </div>
+                          ${d.catatan ? `
+                            <div class="card-footer py-1.5 px-3 bg-white border-top small">
+                              <strong class="text-danger"><i class="fas fa-comment-dots mr-1"></i> Catatan Revisi:</strong>
+                              <span class="text-muted font-italic">"${d.catatan}"</span>
+                            </div>
+                          ` : ''}
+                        </div>
+                      `;
+                    }).join('') : `
+                      <div class="text-muted font-italic small p-2 text-center bg-light rounded">
+                        Belum ada dosen yang terkait pada proyek ini. Kaitkan mata kuliah atau tambahkan dosen penilai di bawah.
+                      </div>
+                    `}
+                  </div>
+                </div>
+
+                <!-- Admin Action: Tambah Dosen Penilai -->
+                ${isAdmin && availableDosen.length > 0 ? `
+                  <div class="p-3 rounded bg-light border mt-3">
+                    <h6 class="font-weight-bold text-dark mb-2" style="font-size: 0.85rem;">
+                      <i class="fas fa-user-plus text-primary mr-1"></i> Tambah Dosen Penilai Proyek (Admin)
+                    </h6>
+                    <div class="form-row align-items-end">
+                      <div class="col-md-5 mb-2 mb-md-0">
+                        <label class="small text-muted mb-1 font-weight-bold">Pilih Dosen:</label>
+                        <select id="assign_dosen_id" class="form-control form-control-sm">
+                          <option value="">-- Pilih Dosen Penilai --</option>
+                          ${availableDosen.map(d => `<option value="${d.id}">${d.nama_user || d.name} (${d.username || d.email})</option>`).join('')}
+                        </select>
+                      </div>
+                      <div class="col-md-5 mb-2 mb-md-0">
+                        <label class="small text-muted mb-1 font-weight-bold">Mata Kuliah Khusus (Opsional):</label>
+                        <select id="assign_mata_kuliah_id" class="form-control form-control-sm">
+                          <option value="">Semua MK / Sidang PBL</option>
+                          ${(card.mata_kuliahs || []).map(mk => `<option value="${mk.id}">${mk.nama_matkul}</option>`).join('')}
+                        </select>
+                      </div>
+                      <div class="col-md-2">
+                        <button type="button" class="btn btn-primary btn-sm btn-block font-weight-bold" onclick="tambahDosenPenilai(${card.id})">
+                          <i class="fas fa-plus mr-1"></i> Tugaskan
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ` : ''}
+              </div>
+            </div>
 
             <!-- Mata Kuliah Terkait Proyek -->
             ${card.mata_kuliahs && card.mata_kuliahs.length > 0 ? `
@@ -1813,6 +2021,191 @@
       day: 'numeric'
     });
   }
+
+  function formatDateTime(dateStr) {
+    if (!dateStr) return null;
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('id-ID', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
+  window.submitVerifikasiAcc = async function(cardId, status, catatan = '') {
+    try {
+      Swal.fire({
+        title: 'Menyimpan Verifikasi...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
+
+      const response = await fetch("{{ route('project.verifikasi.acc', ['card' => '__ID__']) }}".replace('__ID__', cardId), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': '{{ csrf_token() }}',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          status: status,
+          catatan: catatan
+        })
+      });
+
+      const res = await response.json();
+      if (!res.success) {
+        throw new Error(res.message || 'Gagal memverifikasi proposal');
+      }
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Berhasil',
+        text: res.message,
+        timer: 1800,
+        showConfirmButton: false
+      });
+
+      if (typeof window.showProjectCardDetail === 'function') {
+        window.showProjectCardDetail(cardId, null, null);
+      }
+    } catch (err) {
+      console.error(err);
+      Swal.fire('Gagal', err.message || 'Terjadi kesalahan saat verifikasi', 'error');
+    }
+  };
+
+  window.promptRevisiProposal = function(cardId) {
+    Swal.fire({
+      title: 'Minta Revisi Proposal',
+      text: 'Masukkan catatan perbaikan untuk kelompok mahasiswa:',
+      input: 'textarea',
+      inputPlaceholder: 'Contoh: Mohon perbaiki metodologi dan lampirkan rancangan sistem...',
+      showCancelButton: true,
+      confirmButtonText: '<i class="fas fa-paper-plane mr-1"></i> Kirim Catatan Revisi',
+      cancelButtonText: 'Batal',
+      confirmButtonColor: '#dc3545',
+      preConfirm: (catatan) => {
+        if (!catatan || !catatan.trim()) {
+          Swal.showValidationMessage('Catatan revisi tidak boleh kosong');
+          return false;
+        }
+        return catatan;
+      }
+    }).then((result) => {
+      if (result.isConfirmed) {
+        submitVerifikasiAcc(cardId, 'revisi', result.value);
+      }
+    });
+  };
+
+  window.tambahDosenPenilai = async function(cardId) {
+    const dosenId = $('#assign_dosen_id').val();
+    const matkulId = $('#assign_mata_kuliah_id').val();
+
+    if (!dosenId) {
+      Swal.fire('Perhatian', 'Silakan pilih dosen penilai terlebih dahulu.', 'warning');
+      return;
+    }
+
+    try {
+      Swal.fire({
+        title: 'Menugaskan Penilai...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
+
+      const response = await fetch("{{ route('project.dosen-penilai.store', ['card' => '__ID__']) }}".replace('__ID__', cardId), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': '{{ csrf_token() }}',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          dosen_id: dosenId,
+          mata_kuliah_id: matkulId || null
+        })
+      });
+
+      const res = await response.json();
+      if (!res.success) {
+        throw new Error(res.message || 'Gagal menambahkan dosen penilai');
+      }
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Berhasil',
+        text: res.message,
+        timer: 1800,
+        showConfirmButton: false
+      });
+
+      if (typeof window.showProjectCardDetail === 'function') {
+        window.showProjectCardDetail(cardId, null, null);
+      }
+    } catch (err) {
+      console.error(err);
+      Swal.fire('Gagal', err.message || 'Gagal menugaskan dosen penilai', 'error');
+    }
+  };
+
+  window.hapusDosenPenilai = function(cardId, penilaiId) {
+    Swal.fire({
+      title: 'Hapus Dosen Penilai?',
+      text: 'Penugasan dosen penilai ini akan dihapus dari proyek.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Ya, Hapus',
+      cancelButtonText: 'Batal'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          Swal.fire({
+            title: 'Menghapus Penilai...',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+          });
+
+          const url = "{{ route('project.dosen-penilai.destroy', ['card' => '__CARD__', 'penilai' => '__PENILAI__']) }}"
+            .replace('__CARD__', cardId)
+            .replace('__PENILAI__', penilaiId);
+
+          const response = await fetch(url, {
+            method: 'DELETE',
+            headers: {
+              'X-CSRF-TOKEN': '{{ csrf_token() }}',
+              'Accept': 'application/json'
+            }
+          });
+
+          const res = await response.json();
+          if (!res.success) {
+            throw new Error(res.message || 'Gagal menghapus dosen penilai');
+          }
+
+          Swal.fire({
+            icon: 'success',
+            title: 'Terhapus',
+            text: res.message,
+            timer: 1800,
+            showConfirmButton: false
+          });
+
+          if (typeof window.showProjectCardDetail === 'function') {
+            window.showProjectCardDetail(cardId, null, null);
+          }
+        } catch (err) {
+          console.error(err);
+          Swal.fire('Gagal', err.message || 'Gagal menghapus dosen penilai', 'error');
+        }
+      }
+    });
+  };
 
   function formatNumber(num) {
     return parseInt(num).toLocaleString('id-ID');

@@ -17,14 +17,16 @@ class Admin
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!Auth::check()) {
+        if (! Auth::check()) {
             // Gagal login
             Alert::toast('Anda Belum Login.', 'error');
+
             return redirect()->route('login');
         }
         if (Auth::user()->role != 'admin') {
             // Gagal login
             Alert::toast('Kamu Tidak Memiliki Akses Admin', 'error');
+
             return redirect()->back();
         }
 

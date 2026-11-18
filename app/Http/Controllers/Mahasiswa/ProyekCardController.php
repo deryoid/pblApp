@@ -118,7 +118,7 @@ class ProyekCardController extends Controller
             'skema_pbl' => $skema,
             'jenis_proyek' => strtolower($skema) === 'external' ? 'external' : 'internal',
             'proposal_file_path' => $proposalPath,
-            'status_proposal' => $proposalPath ? 'disetujui' : 'pending',
+            'status_proposal' => 'pending',
             'biaya_barang' => $data['biaya_barang'] ?? 0,
             'biaya_jasa' => $data['biaya_jasa'] ?? 0,
             'status_proyek' => $data['status_proyek'] ?? 'Proses',
@@ -134,6 +134,9 @@ class ProyekCardController extends Controller
         if (! empty($data['mata_kuliah_ids'])) {
             $createdCard->mataKuliahs()->sync($data['mata_kuliah_ids']);
         }
+
+        $createdCard->syncVerifikasiDosen();
+        $createdCard->updateStatusProposalAcc();
 
         Alert::toast('Kartu ditambahkan.', 'success');
 
@@ -176,16 +179,24 @@ class ProyekCardController extends Controller
 
         $skema = ! empty($data['skema_pbl']) ? $data['skema_pbl'] : ($card->skema_pbl ?: ($kelompok?->skema_kategori ?: 'Internal'));
         $proposalPath = $card->proposal_file_path;
+        $isNewProposalUploaded = false;
 
         if ($request->hasFile('proposal_file')) {
             if ($card->proposal_file_path) {
                 \Illuminate\Support\Facades\Storage::disk('public')->delete($card->proposal_file_path);
             }
             $proposalPath = $request->file('proposal_file')->store('proposals', 'public');
+            $isNewProposalUploaded = true;
         }
 
-        // Tentukan status proposal: disetujui jika berkas ada, atau pertahankan status lama
-        $statusProposal = $proposalPath ? 'disetujui' : ($card->status_proposal ?? 'pending');
+        // Jika ada unggahan berkas baru, reset status proposal ke pending untuk verifikasi ulang dosen
+        $statusProposal = $isNewProposalUploaded ? 'pending' : ($card->status_proposal ?? 'pending');
+        if ($isNewProposalUploaded) {
+            \App\Models\ProjectVerifikasiDosen::where('project_card_id', $card->id)->update([
+                'status' => 'pending',
+                'verified_at' => null,
+            ]);
+        }
 
         // Update kolom utama
         $card->update([
@@ -216,6 +227,9 @@ class ProyekCardController extends Controller
 
         // Sync mata kuliah (jika form dikirim, update sesuai input, kosong jika tidak dicentang)
         $card->mataKuliahs()->sync($request->input('mata_kuliah_ids', []));
+
+        $card->syncVerifikasiDosen();
+        $card->updateStatusProposalAcc();
 
         $toastMsg = 'Kartu diperbarui.';
         if (strtolower($skema) === 'internal' && empty($proposalPath)) {

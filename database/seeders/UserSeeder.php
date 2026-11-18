@@ -53,7 +53,7 @@ class UserSeeder extends Seeder
                 'remember_token' => Str::random(10),
                 'created_at' => now(),
                 'updated_at' => now(),
-            ],[
+            ], [
                 'uuid' => (string) Str::uuid(),
                 'nama_user' => 'Arwin Wahyu Saputra',
                 'email' => 'arwinwahyu@politala.ac.id',
@@ -65,7 +65,7 @@ class UserSeeder extends Seeder
                 'remember_token' => Str::random(10),
                 'created_at' => now(),
                 'updated_at' => now(),
-            ],[
+            ], [
                 'uuid' => (string) Str::uuid(),
                 'nama_user' => 'Liny M',
                 'email' => 'liny@politala.ac.id',
@@ -90,7 +90,7 @@ class UserSeeder extends Seeder
                 'remember_token' => Str::random(10),
                 'created_at' => now(),
                 'updated_at' => now(),
-            ]
+            ],
         ]);
     }
 }

@@ -7,7 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 class EvaluationRubricGroup extends Model
 {
     protected $table = 'evaluation_rubric_groups';
-    protected $fillable = ['code','name','weight','parent_code'];
+
+    protected $fillable = ['code', 'name', 'weight', 'parent_code'];
 
     public function parent()
     {

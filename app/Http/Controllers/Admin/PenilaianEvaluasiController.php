@@ -3,15 +3,14 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-
-use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
-use App\Models\EvaluationSetting;
 use App\Models\EvaluationRubricGroup;
 use App\Models\EvaluationRubricIndicator;
 use App\Models\EvaluationScore;
-// Optional: ganti sesuai model mahasiswa/relasi kelompok Anda
+use App\Models\EvaluationSetting;
 use App\Models\Mahasiswa;
+use Illuminate\Http\Request;
+// Optional: ganti sesuai model mahasiswa/relasi kelompok Anda
+use Illuminate\Support\Collection;
 
 class PenilaianEvaluasiController extends Controller
 {
@@ -20,7 +19,7 @@ class PenilaianEvaluasiController extends Controller
      */
     public function rekap(int $sesiId)
     {
-        $members = Mahasiswa::select('id','nim','nama_mahasiswa')->orderBy('nim')->get();
+        $members = Mahasiswa::select('id', 'nim', 'nama_mahasiswa')->orderBy('nim')->get();
 
         // untuk header & urutan kolom
         // fallback: jika kolom 'position' belum ada, urutkan berdasarkan 'code' / 'id'
@@ -43,14 +42,13 @@ class PenilaianEvaluasiController extends Controller
         $rekap = $this->compute($sesiId, $members->pluck('id'));
 
         return view('admin.evaluasi.rekap', [
-            'sesiId'      => $sesiId,
-            'members'     => $members,
-            'rekap'       => $rekap,
-            'groups'      => $groups,
+            'sesiId' => $sesiId,
+            'members' => $members,
+            'rekap' => $rekap,
+            'groups' => $groups,
             'indsByGroup' => $indsByGroup,
         ]);
     }
-
 
     /**
      * Simpan/ubah skor 1 indikator (ajax) dan kembalikan rekap terbaru utk mhs tsb.
@@ -59,31 +57,32 @@ class PenilaianEvaluasiController extends Controller
     public function saveScore(Request $r)
     {
         $data = $r->validate([
-            'sesi_id'        => ['required','integer'],
-            'mahasiswa_id'   => ['required','integer'],
-            'indicator_code' => ['required','string','exists:evaluation_rubric_indicators,code'],
-            'score'          => ['required','integer','min:0','max:100'],
-            'notes'          => ['nullable','string'],
+            'sesi_id' => ['required', 'integer'],
+            'mahasiswa_id' => ['required', 'integer'],
+            'indicator_code' => ['required', 'string', 'exists:evaluation_rubric_indicators,code'],
+            'score' => ['required', 'integer', 'min:0', 'max:100'],
+            'notes' => ['nullable', 'string'],
         ]);
 
         EvaluationScore::updateOrCreate(
             [
-                'sesi_id'        => $data['sesi_id'],
-                'mahasiswa_id'   => $data['mahasiswa_id'],
+                'sesi_id' => $data['sesi_id'],
+                'mahasiswa_id' => $data['mahasiswa_id'],
                 'indicator_code' => $data['indicator_code'],
             ],
             [
-                'score'        => $data['score'],
+                'score' => $data['score'],
                 'evaluated_by' => optional($r->user())->id,
-                'notes'        => $data['notes'] ?? null,
+                'notes' => $data['notes'] ?? null,
             ]
         );
 
         // Hitung ulang untuk 1 mahasiswa
         $rekap = $this->compute($data['sesi_id'], [$data['mahasiswa_id']]);
+
         return response()->json([
             'success' => true,
-            'rekap'   => $rekap[$data['mahasiswa_id']] ?? null,
+            'rekap' => $rekap[$data['mahasiswa_id']] ?? null,
         ]);
     }
 
@@ -107,18 +106,18 @@ class PenilaianEvaluasiController extends Controller
         /** @var Collection<string,\App\Models\EvaluationRubricIndicator> $inds */
         $inds = EvaluationRubricIndicator::with('group')->get()->keyBy('code');
 
-        $gDosen = EvaluationRubricGroup::where('code','project_dosen')->first();
-        $gMitra = EvaluationRubricGroup::where('code','project_mitra')->first();
+        $gDosen = EvaluationRubricGroup::where('code', 'project_dosen')->first();
+        $gMitra = EvaluationRubricGroup::where('code', 'project_mitra')->first();
 
         $wKelompok = (int) EvaluationSetting::get('w_kelompok', 70); // Proyek
-        $wAP       = (int) EvaluationSetting::get('w_ap', 30);       // AP
+        $wAP = (int) EvaluationSetting::get('w_ap', 30);       // AP
 
         // Ambil semua skor terkait sesi & mahasiswa yang diminta
         $scores = EvaluationScore::query()
             ->where('sesi_id', $sesiId)
             ->whereIn('mahasiswa_id', $mahasiswaIds)
             ->get()
-            ->groupBy(['mahasiswa_id','indicator_code']); // [mhs][code] => collect(rows)
+            ->groupBy(['mahasiswa_id', 'indicator_code']); // [mhs][code] => collect(rows)
 
         $out = [];
 
@@ -128,55 +127,61 @@ class PenilaianEvaluasiController extends Controller
             // ====== NA AP
             [$apWeighted, $apTotal] = [0, 0];
             foreach ($inds as $ind) {
-                if ($ind->group_code !== 'ap') continue;
-                $w = (int)$ind->weight;
+                if ($ind->group_code !== 'ap') {
+                    continue;
+                }
+                $w = (int) $ind->weight;
                 $v = (int) optional($byInd->get($ind->code))->first()->score ?? 0;
                 $apWeighted += $v * $w;
-                $apTotal    += $w;
+                $apTotal += $w;
             }
             $naAP = $apTotal ? (int) round($apWeighted / $apTotal) : 0;
 
             // ====== NA Proyek - Dosen
             [$dWeighted, $dTotal] = [0, 0];
             foreach ($inds as $ind) {
-                if ($ind->group_code !== 'project_dosen') continue;
-                $w = (int)$ind->weight;
+                if ($ind->group_code !== 'project_dosen') {
+                    continue;
+                }
+                $w = (int) $ind->weight;
                 $v = (int) optional($byInd->get($ind->code))->first()->score ?? 0;
                 $dWeighted += $v * $w;
-                $dTotal    += $w;
+                $dTotal += $w;
             }
             $naDosen = $dTotal ? (int) round($dWeighted / $dTotal) : 0;
 
             // ====== NA Proyek - Mitra
             [$mWeighted, $mTotal] = [0, 0];
             foreach ($inds as $ind) {
-                if ($ind->group_code !== 'project_mitra') continue;
-                $w = (int)$ind->weight;
+                if ($ind->group_code !== 'project_mitra') {
+                    continue;
+                }
+                $w = (int) $ind->weight;
                 $v = (int) optional($byInd->get($ind->code))->first()->score ?? 0;
                 $mWeighted += $v * $w;
-                $mTotal    += $w;
+                $mTotal += $w;
             }
             $naMitra = $mTotal ? (int) round($mWeighted / $mTotal) : 0;
 
             // ====== NA Hasil Proyek (gabungan Dosen x 80%, Mitra x 20% – dinamis dari tabel group)
-            $wDosen = $gDosen ? (int)$gDosen->weight : 80;
-            $wMitra = $gMitra ? (int)$gMitra->weight : 20;
-            $naProyek = (int) round($naDosen * $wDosen/100 + $naMitra * $wMitra/100);
+            $wDosen = $gDosen ? (int) $gDosen->weight : 80;
+            $wMitra = $gMitra ? (int) $gMitra->weight : 20;
+            $naProyek = (int) round($naDosen * $wDosen / 100 + $naMitra * $wMitra / 100);
 
             // ====== Nilai Akhir (Proyek vs AP)
-            $nilaiAkhir = (int) round($naProyek * $wKelompok/100 + $naAP * $wAP/100);
+            $nilaiAkhir = (int) round($naProyek * $wKelompok / 100 + $naAP * $wAP / 100);
 
             $out[$mhsId] = [
-                'ap'      => $naAP,
-                'dosen'   => $naDosen,
-                'mitra'   => $naMitra,
-                'proyek'  => $naProyek,
-                'akhir'   => $nilaiAkhir,
+                'ap' => $naAP,
+                'dosen' => $naDosen,
+                'mitra' => $naMitra,
+                'proyek' => $naProyek,
+                'akhir' => $nilaiAkhir,
                 'weights' => [
-                    'dosen'    => $wDosen,
-                    'mitra'    => $wMitra,
+                    'dosen' => $wDosen,
+                    'mitra' => $wMitra,
                     'kelompok' => $wKelompok,
-                    'ap'       => $wAP,
+                    'ap' => $wAP,
                 ],
             ];
         }

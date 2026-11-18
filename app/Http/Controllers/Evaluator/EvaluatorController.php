@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Evaluator;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 
 class EvaluatorController extends Controller
@@ -14,5 +13,4 @@ class EvaluatorController extends Controller
     {
         return view('evaluator.index');
     }
-
 }

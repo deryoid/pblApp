@@ -3,20 +3,20 @@
 namespace App\Exports;
 
 use App\Models\Kelompok;
-use App\Models\ProjectList;
-use App\Models\AktivitasList;
 use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
-use Maatwebsite\Excel\Concerns\WithTitle;
-use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithStyles;
+use Maatwebsite\Excel\Concerns\WithTitle;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class ProjectExport implements FromCollection, WithHeadings, WithMapping, WithTitle, ShouldAutoSize, WithStyles
+class ProjectExport implements FromCollection, ShouldAutoSize, WithHeadings, WithMapping, WithStyles, WithTitle
 {
     protected $kelompok;
+
     protected $proyekLists;
+
     protected $aktivitasLists;
 
     public function __construct(Kelompok $kelompok, $proyekLists, $aktivitasLists)
@@ -29,14 +29,14 @@ class ProjectExport implements FromCollection, WithHeadings, WithMapping, WithTi
     public function collection()
     {
         $data = collect();
-        
+
         // Add projects
         foreach ($this->proyekLists as $list) {
             foreach ($list->cards as $card) {
                 $data->push([
                     'type' => 'Proyek',
                     'list' => $list->name,
-                    'card' => $card
+                    'card' => $card,
                 ]);
             }
         }
@@ -47,7 +47,7 @@ class ProjectExport implements FromCollection, WithHeadings, WithMapping, WithTi
                 $data->push([
                     'type' => 'Aktivitas',
                     'list' => $list->name,
-                    'card' => $card
+                    'card' => $card,
                 ]);
             }
         }
@@ -74,7 +74,7 @@ class ProjectExport implements FromCollection, WithHeadings, WithMapping, WithTi
     public function map($row): array
     {
         $card = $row['card'];
-        
+
         return [
             $row['type'],
             $row['list'],
@@ -82,7 +82,7 @@ class ProjectExport implements FromCollection, WithHeadings, WithMapping, WithTi
             $card->description,
             optional($card->tanggal_mulai)->format('d/m/Y'),
             optional($card->due_date)->format('d/m/Y'),
-            $card->progress . '%',
+            $card->progress.'%',
             $this->getStatus($card->progress),
             optional($card->createdBy)->nama_user ?? '-',
             optional($card->updatedBy)->nama_user ?? '-',
@@ -91,7 +91,7 @@ class ProjectExport implements FromCollection, WithHeadings, WithMapping, WithTi
 
     public function title(): string
     {
-        return 'Proyek ' . $this->kelompok->nama_kelompok;
+        return 'Proyek '.$this->kelompok->nama_kelompok;
     }
 
     public function styles(Worksheet $sheet)
@@ -103,8 +103,13 @@ class ProjectExport implements FromCollection, WithHeadings, WithMapping, WithTi
 
     private function getStatus($progress)
     {
-        if ($progress == 100) return 'Selesai';
-        if ($progress > 0) return 'In Progress';
+        if ($progress == 100) {
+            return 'Selesai';
+        }
+        if ($progress > 0) {
+            return 'In Progress';
+        }
+
         return 'Belum Dimulai';
     }
 }

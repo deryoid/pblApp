@@ -7,7 +7,8 @@ use Illuminate\Database\Eloquent\Model;
 class EvaluationRubricIndicator extends Model
 {
     protected $table = 'evaluation_rubric_indicators';
-    protected $fillable = ['group_code','code','name','weight'];
+
+    protected $fillable = ['group_code', 'code', 'name', 'weight'];
 
     public function group()
     {

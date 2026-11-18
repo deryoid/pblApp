@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Mahasiswa;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 
 class MahasiswaController extends Controller
@@ -14,5 +13,4 @@ class MahasiswaController extends Controller
     {
         return view('mahasiswa.index');
     }
-
 }

@@ -1017,8 +1017,11 @@ class EvaluasiController extends Controller
     }
 
     /** ===== Show project details ===== */
-    public function showProject(ProjectCard $card)
+    public function showProject(ProjectCard $project)
     {
+        $card = $project;
+        $card->syncVerifikasiDosen();
+
         $card->load([
             'projectList',
             'createdBy',
@@ -1030,11 +1033,22 @@ class EvaluasiController extends Controller
             'penilaianDosen.dosen',
             'penilaianDosen.mataKuliah',
             'evaluasiMitra',
+            'verifikasiDosen.dosen',
         ]);
+
+        $involved = $card->getInvolvedDosen();
+        $user = Auth::user();
+        $isUserInvolved = $user ? $involved->contains(fn ($i) => $i->dosen_id == $user->id) : false;
+        $userVerifikasi = $user ? $involved->firstWhere('dosen_id', $user->id) : null;
+        $isAdmin = $user ? $user->isAdmin() : false;
 
         return response()->json([
             'success' => true,
             'project' => $card,
+            'involved_dosen' => $involved,
+            'can_acc' => $isAdmin || $isUserInvolved,
+            'user_verifikasi' => $userVerifikasi,
+            'is_admin' => $isAdmin,
         ]);
     }
 

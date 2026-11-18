@@ -2,8 +2,8 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
 use App\Models\KunjunganMitra;
+use Illuminate\Console\Command;
 
 class AutoTandaiTidakAdaTanggapan extends Command
 {
@@ -22,6 +22,7 @@ class AutoTandaiTidakAdaTanggapan extends Command
 
         if ($this->option('dry-run')) {
             $this->info("Dry run: {$total} baris akan diupdate.");
+
             return self::SUCCESS;
         }
 
@@ -31,6 +32,7 @@ class AutoTandaiTidakAdaTanggapan extends Command
         ]);
 
         $this->info("Selesai. {$updated} baris diperbarui.");
+
         return self::SUCCESS;
     }
 }

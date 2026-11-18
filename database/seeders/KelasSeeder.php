@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\Kelas;
+use Illuminate\Database\Seeder;
 
 class KelasSeeder extends Seeder
 {

@@ -11,14 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-         Schema::create('kelompok_mahasiswa', function (Blueprint $table) {
+        Schema::create('kelompok_mahasiswa', function (Blueprint $table) {
             $table->id();
             $table->foreignId('kelompok_id')->constrained('kelompok')->cascadeOnDelete();
             $table->foreignId('mahasiswa_id')->constrained('mahasiswa')->cascadeOnDelete();
             $table->foreignId('periode_id')->constrained('periode')->cascadeOnDelete();
-            $table->enum('role', ['Ketua','Anggota'])->default('Anggota');
-            $table->unique(['kelompok_id','mahasiswa_id']);
-            $table->unique(['periode_id','mahasiswa_id']); // 1 mhs 1 kelompok / periode
+            $table->enum('role', ['Ketua', 'Anggota'])->default('Anggota');
+            $table->unique(['kelompok_id', 'mahasiswa_id']);
+            $table->unique(['periode_id', 'mahasiswa_id']); // 1 mhs 1 kelompok / periode
             $table->timestamps();
         });
     }
