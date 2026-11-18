@@ -126,12 +126,14 @@
   // Tanpa AP: nilai akhir = nilai proyek
   $avgNilai = (int) round(collect($nilaiProyekPerMhs)->avg() ?? 0);
 
-  function kategoriLabel($n){
-    if ($n>=81) return 'Sangat Baik';
-    if ($n>=61) return 'Baik';
-    if ($n>=41) return 'Cukup';
-    if ($n>=21) return 'Kurang';
-    return 'Sangat Kurang';
+  if (!function_exists('kategoriLabel')) {
+    function kategoriLabel($n){
+      if ($n>=81) return 'Sangat Baik';
+      if ($n>=61) return 'Baik';
+      if ($n>=41) return 'Cukup';
+      if ($n>=21) return 'Kurang';
+      return 'Sangat Kurang';
+    }
   }
 
   // Progress keseluruhan (hanya dari proyek yang punya progress)
@@ -168,6 +170,104 @@
     }
   }
   $avgProgress = $cardCount ? round($totalProgress / $cardCount) : 0;
+
+  // Fallback data mata kuliah terkait jika belum disuplai controller
+  if (!isset($mataKuliahTerkait)) {
+    $allCardsTmp = collect($proyekLists ?? [])->flatMap(fn($l) => $l->cards ?? []);
+    $mataKuliahTerkait = $allCardsTmp->flatMap(fn($c) => $c->mataKuliahs ?? [])->unique('id')->values();
+    if ($mataKuliahTerkait->isEmpty() && !empty($kelompok->semester)) {
+      $mataKuliahTerkait = \App\Models\MataKuliah::with('dosenPengampu')->where('semester', $kelompok->semester)->where('is_active', true)->get();
+    }
+  }
+
+  // Fallback evaluatorList jika belum disuplai controller
+  if (!isset($evaluatorList)) {
+    $evaluatorList = collect();
+    foreach ($mataKuliahTerkait as $mk) {
+      foreach (($mk->dosenPengampu ?? []) as $dp) {
+        $evaluatorList->push([
+          'type' => 'dosen_pengampu',
+          'role_label' => 'Dosen Pengampu MK',
+          'nama' => $dp->nama_user ?: ($dp->name ?? 'Dosen'),
+          'identitas' => $dp->username ?: ($dp->email ?: '-'),
+          'email' => $dp->email ?? '-',
+          'no_hp' => $dp->no_hp ?? '-',
+          'matkul' => $mk->nama_matkul,
+          'kode_matkul' => $mk->kode_matkul,
+          'komponen' => 'Rubrik 4 Pilar Proyek (Relevansi, Kualitas, Kreativitas, Estetika)',
+          'status' => 'Berwenang Menilai',
+          'user_id' => $dp->id,
+        ]);
+      }
+    }
+    $allCardsTmp = collect($proyekLists ?? [])->flatMap(fn($l) => $l->cards ?? []);
+    foreach ($allCardsTmp as $c) {
+      foreach (($c->dosenPenilai ?? []) as $dp) {
+        if ($dp->dosen) {
+          $evaluatorList->push([
+            'type' => 'dosen_penilai',
+            'role_label' => 'Dosen Penilai / Penguji PBL',
+            'nama' => $dp->dosen->nama_user ?: $dp->dosen->name,
+            'identitas' => $dp->dosen->username ?: '-',
+            'email' => $dp->dosen->email ?? '-',
+            'no_hp' => $dp->dosen->no_hp ?? '-',
+            'matkul' => $dp->mataKuliah?->nama_matkul ?: 'Sidang PBL',
+            'kode_matkul' => $dp->mataKuliah?->kode_matkul ?: '-',
+            'komponen' => 'Sidang & Pengujian Proyek',
+            'status' => $dp->status_penilaian ?: 'Ditugaskan',
+            'user_id' => $dp->dosen_id,
+          ]);
+        }
+      }
+      if ($c->dosenPenentu) {
+        $evaluatorList->push([
+          'type' => 'dosen_penentu',
+          'role_label' => 'Dosen Penentu / Pembimbing',
+          'nama' => $c->dosenPenentu->nama_user ?: $c->dosenPenentu->name,
+          'identitas' => $c->dosenPenentu->username ?: '-',
+          'email' => $c->dosenPenentu->email ?? '-',
+          'no_hp' => $c->dosenPenentu->no_hp ?? '-',
+          'matkul' => 'Pembimbing Proyek',
+          'kode_matkul' => '-',
+          'komponen' => 'Validasi Progress & Rekomendasi Luaran',
+          'status' => 'Pembimbing',
+          'user_id' => $c->dosen_penentu_id,
+        ]);
+      }
+      if (!empty($c->nama_mitra)) {
+        $evaluatorList->push([
+          'type' => 'mitra_industri',
+          'role_label' => 'Mitra Industri / Pengguna Eksternal',
+          'nama' => $c->nama_mitra,
+          'identitas' => $c->kontak_mitra ?: 'Perwakilan Mitra',
+          'email' => '-',
+          'no_hp' => $c->kontak_mitra ?: '-',
+          'matkul' => 'Evaluasi Kebutuhan Industri',
+          'kode_matkul' => 'MITRA',
+          'komponen' => 'Etika Profesional, Soft Skills, Kesesuaian Kebutuhan Lapangan',
+          'status' => 'Mitra Industri',
+          'user_id' => null,
+          'card_uuid' => $c->uuid,
+        ]);
+      }
+    }
+    if ($sesi && $sesi->evaluator) {
+      $evaluatorList->push([
+        'type' => 'evaluator_sesi',
+        'role_label' => 'Evaluator Sesi PBL',
+        'nama' => $sesi->evaluator->nama_user ?: $sesi->evaluator->name,
+        'identitas' => $sesi->evaluator->username ?: 'Evaluator',
+        'email' => $sesi->evaluator->email ?? '-',
+        'no_hp' => $sesi->evaluator->no_hp ?? '-',
+        'matkul' => 'Koordinator Evaluasi',
+        'kode_matkul' => 'SESI',
+        'komponen' => 'Nilai Sikap/AP, Kehadiran/Absensi, & Finalisasi Nilai',
+        'status' => 'Penilai Sesi Aktif',
+        'user_id' => $sesi->evaluator_id,
+      ]);
+    }
+    $evaluatorList = $evaluatorList->unique(fn($i) => $i['type'].'_'.$i['nama'].'_'.$i['matkul'])->values();
+  }
 @endphp
 
 <div class="container-fluid">
@@ -302,6 +402,228 @@
     </div>
   </div>
 
+  {{-- SECTION: INFORMASI MATA KULIAH TERKAIT & TIM EVALUATOR --}}
+  <div class="card card-section mb-4 shadow-sm border">
+    <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center flex-wrap" style="gap: 0.5rem;">
+      <div class="d-flex align-items-center">
+        <div class="icon-wrap bg-primary text-white mr-2" style="width:34px;height:34px;">
+          <i class="fas fa-graduation-cap"></i>
+        </div>
+        <div>
+          <h6 class="font-weight-bold text-dark mb-0">Informasi Mata Kuliah Terkait & Tim Evaluator</h6>
+          <small class="text-muted">Kurikulum capaian pembelajaran proyek dan pemetaan pihak yang berwenang mengevaluasi.</small>
+        </div>
+      </div>
+      <div class="d-flex align-items-center" style="gap: 0.5rem;">
+        <span class="badge badge-light border text-primary font-weight-bold px-2 py-1">
+          <i class="fas fa-book mr-1"></i> {{ $mataKuliahTerkait->count() }} Mata Kuliah
+        </span>
+        <span class="badge badge-light border text-success font-weight-bold px-2 py-1">
+          <i class="fas fa-user-check mr-1"></i> {{ $evaluatorList->count() }} Pihak Penilai
+        </span>
+        <button class="btn btn-sm btn-outline-secondary" type="button"
+                data-toggle="collapse" data-target="#sectionMatkulEvaluator"
+                aria-expanded="true" aria-controls="sectionMatkulEvaluator">
+          <i class="fas fa-chevron-down fa-sm"></i>
+        </button>
+      </div>
+    </div>
+
+    <div id="sectionMatkulEvaluator" class="collapse show">
+      <div class="card-body p-3">
+        {{-- Nav Tabs --}}
+        <ul class="nav nav-pills mb-3" id="pills-matkul-tab" role="tablist" style="gap: 0.5rem;">
+          <li class="nav-item">
+            <a class="nav-link active font-weight-bold py-2 px-3 small" id="pills-matkul-list-tab" data-toggle="pill" href="#pills-matkul-list" role="tab" aria-controls="pills-matkul-list" aria-selected="true">
+              <i class="fas fa-book-open mr-1"></i> 1. Mata Kuliah Terkait Proyek ({{ $mataKuliahTerkait->count() }})
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link font-weight-bold py-2 px-3 small" id="pills-evaluator-list-tab" data-toggle="pill" href="#pills-evaluator-list" role="tab" aria-controls="pills-evaluator-list" aria-selected="false">
+              <i class="fas fa-user-shield mr-1"></i> 2. Siapa Saja yang Bisa Mengevaluasi ({{ $evaluatorList->count() }})
+            </a>
+          </li>
+        </ul>
+
+        <div class="tab-content" id="pills-matkul-tabContent">
+          {{-- TAB 1: MATA KULIAH TERKAIT --}}
+          <div class="tab-pane fade show active" id="pills-matkul-list" role="tabpanel" aria-labelledby="pills-matkul-list-tab">
+            @if($mataKuliahTerkait->isEmpty())
+              <div class="alert alert-light border text-center py-4 mb-0">
+                <i class="fas fa-info-circle fa-2x text-muted mb-2"></i>
+                <h6 class="font-weight-bold text-dark mb-1">Belum Ada Mata Kuliah yang Ditautkan</h6>
+                <p class="small text-muted mb-0">Kelompok ini belum menautkan mata kuliah spesifik pada kartu proyeknya. Mata kuliah dapat ditautkan melalui form edit kartu proyek.</p>
+              </div>
+            @else
+              <div class="table-responsive">
+                <table class="table table-bordered table-hover table-sm small mb-0">
+                  <thead class="bg-light text-dark font-weight-bold">
+                    <tr>
+                      <th style="width: 40px;" class="text-center">No</th>
+                      <th style="width: 110px;">Kode MK</th>
+                      <th>Nama Mata Kuliah</th>
+                      <th style="width: 90px;" class="text-center">Semester</th>
+                      <th style="width: 80px;" class="text-center">Bobot</th>
+                      <th>Dosen Pengampu</th>
+                      <th>Proyek yang Mengintegrasikan</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @foreach($mataKuliahTerkait as $mkIndex => $mk)
+                      @php
+                        $linkedCards = collect($proyekLists ?? [])
+                          ->flatMap(fn($l) => $l->cards ?? [])
+                          ->filter(fn($c) => ($c->mataKuliahs ?? collect())->contains('id', $mk->id));
+                      @endphp
+                      <tr>
+                        <td class="text-center align-middle font-weight-bold">{{ $loop->iteration }}</td>
+                        <td class="align-middle font-weight-bold text-primary">{{ $mk->kode_matkul ?: '-' }}</td>
+                        <td class="align-middle">
+                          <span class="font-weight-bold text-dark">{{ $mk->nama_matkul }}</span>
+                          @if(!empty($mk->deskripsi))
+                            <div class="text-muted text-truncate" style="max-width: 280px; font-size: 0.75rem;">{{ $mk->deskripsi }}</div>
+                          @endif
+                        </td>
+                        <td class="text-center align-middle">
+                          <span class="badge badge-light border font-weight-bold">Sem. {{ $mk->semester ?: ($kelompok->semester ?: '-') }}</span>
+                        </td>
+                        <td class="text-center align-middle">
+                          <span class="badge badge-primary font-weight-bold">{{ $mk->sks ?: 3 }} SKS</span>
+                        </td>
+                        <td class="align-middle">
+                          @if($mk->dosenPengampu && $mk->dosenPengampu->count() > 0)
+                            <div class="d-flex flex-column" style="gap: 0.2rem;">
+                              @foreach($mk->dosenPengampu as $dp)
+                                <div class="d-flex align-items-center">
+                                  <i class="fas fa-chalkboard-teacher fa-xs text-primary mr-1"></i>
+                                  <span class="font-weight-bold text-dark">{{ $dp->nama_user }}</span>
+                                  @if(!empty($dp->username))
+                                    <span class="text-muted ml-1" style="font-size: 0.725rem;">({{ $dp->username }})</span>
+                                  @endif
+                                </div>
+                              @endforeach
+                            </div>
+                          @else
+                            <span class="text-muted font-italic">Belum ada pengampu</span>
+                          @endif
+                        </td>
+                        <td class="align-middle">
+                          @if($linkedCards->count() > 0)
+                            <div class="d-flex flex-wrap" style="gap: 0.25rem;">
+                              @foreach($linkedCards as $lc)
+                                <span class="badge badge-light border text-dark font-weight-500" title="{{ $lc->title }}">
+                                  <i class="fas fa-tasks fa-xs text-info mr-1"></i>{{ \Illuminate\Support\Str::limit($lc->title, 25) }}
+                                </span>
+                              @endforeach
+                            </div>
+                          @else
+                            <span class="badge badge-light border text-muted">Seluruh Proyek Kelompok</span>
+                          @endif
+                        </td>
+                      </tr>
+                    @endforeach
+                  </tbody>
+                </table>
+              </div>
+            @endif
+          </div>
+
+          {{-- TAB 2: SIAPA SAJA YANG BISA MENGEVALUASI --}}
+          <div class="tab-pane fade" id="pills-evaluator-list" role="tabpanel" aria-labelledby="pills-evaluator-list-tab">
+            <div class="alert alert-primary py-2 px-3 small rounded mb-3">
+              <i class="fas fa-info-circle mr-1"></i>
+              <strong>Matriks Wewenang Penilaian:</strong> Tabel di bawah ini merinci seluruh dosen, mitra, dan evaluator yang memiliki hak dan wewenang untuk mengevaluasi kelompok ini beserta cakupan komponen penilaiannya.
+            </div>
+
+            <div class="table-responsive">
+              <table class="table table-bordered table-hover table-sm small mb-0">
+                <thead class="bg-light text-dark font-weight-bold">
+                  <tr>
+                    <th style="width: 40px;" class="text-center">No</th>
+                    <th style="width: 170px;">Peran Evaluator</th>
+                    <th>Nama Penilai & Identitas</th>
+                    <th>Konteks / Mata Kuliah</th>
+                    <th>Komponen yang Dinilai</th>
+                    <th style="width: 140px;" class="text-center">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @forelse($evaluatorList as $evIndex => $ev)
+                    <tr>
+                      <td class="text-center align-middle font-weight-bold">{{ $loop->iteration }}</td>
+                      <td class="align-middle">
+                        @if($ev['type'] === 'dosen_pengampu')
+                          <span class="badge badge-primary font-weight-bold px-2 py-1">
+                            <i class="fas fa-chalkboard-teacher mr-1"></i> Dosen Pengampu
+                          </span>
+                        @elseif($ev['type'] === 'dosen_penilai')
+                          <span class="badge badge-info font-weight-bold px-2 py-1">
+                            <i class="fas fa-user-check mr-1"></i> Penguji Sidang
+                          </span>
+                        @elseif($ev['type'] === 'dosen_penentu')
+                          <span class="badge badge-secondary font-weight-bold px-2 py-1">
+                            <i class="fas fa-user-tie mr-1"></i> Pembimbing
+                          </span>
+                        @elseif($ev['type'] === 'mitra_industri')
+                          <span class="badge badge-success font-weight-bold px-2 py-1">
+                            <i class="fas fa-building mr-1"></i> Mitra Industri
+                          </span>
+                        @else
+                          <span class="badge badge-warning text-dark font-weight-bold px-2 py-1">
+                            <i class="fas fa-shield-alt mr-1"></i> Evaluator Sesi
+                          </span>
+                        @endif
+                      </td>
+                      <td class="align-middle">
+                        <div class="font-weight-bold text-dark">{{ $ev['nama'] }}</div>
+                        <div class="text-muted" style="font-size: 0.725rem;">
+                          @if(!empty($ev['identitas']) && $ev['identitas'] !== '-')
+                            <span class="mr-2"><i class="fas fa-id-badge mr-1"></i>{{ $ev['identitas'] }}</span>
+                          @endif
+                          @if(!empty($ev['no_hp']) && $ev['no_hp'] !== '-')
+                            <span><i class="fas fa-phone fa-xs mr-1"></i>{{ $ev['no_hp'] }}</span>
+                          @endif
+                        </div>
+                      </td>
+                      <td class="align-middle">
+                        <span class="font-weight-500 text-dark">{{ $ev['matkul'] }}</span>
+                        @if(!empty($ev['kode_matkul']) && $ev['kode_matkul'] !== '-')
+                          <div class="text-muted" style="font-size: 0.725rem;">Kode: {{ $ev['kode_matkul'] }}</div>
+                        @endif
+                      </td>
+                      <td class="align-middle">
+                        <span class="text-dark">{{ $ev['komponen'] }}</span>
+                      </td>
+                      <td class="text-center align-middle">
+                        @if(str_contains(strtolower($ev['status']), 'sudah') || str_contains(strtolower($ev['status']), 'aktif'))
+                          <span class="badge badge-success px-2 py-1 font-weight-bold">
+                            <i class="fas fa-check-circle mr-1"></i> {{ $ev['status'] }}
+                          </span>
+                        @elseif(str_contains(strtolower($ev['status']), 'menunggu'))
+                          <span class="badge badge-warning px-2 py-1 font-weight-bold text-dark">
+                            <i class="fas fa-clock mr-1"></i> {{ $ev['status'] }}
+                          </span>
+                        @else
+                          <span class="badge badge-light border text-dark font-weight-500 px-2 py-1">
+                            {{ $ev['status'] }}
+                          </span>
+                        @endif
+                      </td>
+                    </tr>
+                  @empty
+                    <tr>
+                      <td colspan="6" class="text-center py-3 text-muted">Belum ada tim penilai yang terdaftar.</td>
+                    </tr>
+                  @endforelse
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   {{-- Daftar Proyek  --}}
   <div class="card card-section mb-4">
     <div class="card-header d-flex justify-content-between align-items-center">
@@ -397,6 +719,32 @@
                       {{-- Deskripsi singkat --}}
                       @if(!empty($card->description))
                         <div class="text-muted text-body-2 mb-2 clamp-2">{{ \Illuminate\Support\Str::limit($card->description, 160) }}</div>
+                      @endif
+
+                      {{-- Mata Kuliah Terkait Kartu --}}
+                      @if($card->mataKuliahs && $card->mataKuliahs->count() > 0)
+                        <div class="mb-2 p-1 px-2 rounded bg-light border small">
+                          <div class="text-muted font-weight-bold" style="font-size: 0.675rem; text-transform: uppercase;">
+                            <i class="fas fa-book mr-1 text-primary"></i> MK Terkait:
+                          </div>
+                          <div class="d-flex flex-wrap" style="gap: 0.2rem; margin-top: 2px;">
+                            @foreach($card->mataKuliahs as $cardMk)
+                              <span class="badge badge-white border text-dark font-weight-bold" style="font-size: 0.7rem;" title="Pengampu: {{ $cardMk->dosen_pengampu_names ?: 'Belum ada dosen' }}">
+                                {{ $cardMk->kode_matkul ?: 'MK' }} - {{ \Illuminate\Support\Str::limit($cardMk->nama_matkul, 20) }}
+                              </span>
+                            @endforeach
+                          </div>
+                        </div>
+                      @endif
+
+                      {{-- Mitra Industri Kartu --}}
+                      @if(!empty($card->nama_mitra))
+                        <div class="mb-2 p-1 px-2 rounded bg-light border small d-flex align-items-center justify-content-between">
+                          <span class="text-truncate font-weight-bold text-success" style="font-size: 0.725rem;">
+                            <i class="fas fa-building mr-1"></i> {{ $card->nama_mitra }}
+                          </span>
+                          <span class="badge badge-light border text-muted" style="font-size: 0.65rem;">Mitra</span>
+                        </div>
                       @endif
 
                       {{-- Progress --}}
@@ -1367,6 +1715,98 @@
                 </div>
               </div>
             ` : ''}
+
+            <!-- Mata Kuliah Terkait Proyek -->
+            ${card.mata_kuliahs && card.mata_kuliahs.length > 0 ? `
+              <div class="mb-3 p-3 rounded bg-light border">
+                <h6 class="font-weight-bold mb-2 text-primary">
+                  <i class="fas fa-book-reader mr-1"></i> Mata Kuliah Terkait Proyek
+                </h6>
+                <div class="table-responsive">
+                  <table class="table table-sm table-bordered bg-white small mb-0">
+                    <thead class="thead-light">
+                      <tr>
+                        <th>Kode</th>
+                        <th>Nama Mata Kuliah</th>
+                        <th class="text-center">SKS</th>
+                        <th>Dosen Pengampu</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${card.mata_kuliahs.map(mk => `
+                        <tr>
+                          <td class="font-weight-bold text-primary">${mk.kode_matkul || '-'}</td>
+                          <td class="font-weight-bold">${mk.nama_matkul}</td>
+                          <td class="text-center">${mk.sks || 3} SKS</td>
+                          <td>
+                            ${mk.dosen_pengampu && mk.dosen_pengampu.length > 0
+                              ? mk.dosen_pengampu.map(dp => `<span class="badge badge-light border mr-1"><i class="fas fa-user-tie fa-xs text-secondary mr-1"></i>${dp.nama_user || dp.name}</span>`).join('')
+                              : '<span class="text-muted font-italic">Belum ada dosen</span>'}
+                          </td>
+                        </tr>
+                      `).join('')}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ` : ''}
+
+            <!-- Tim Evaluator & Pihak yang Berwenang Menilai -->
+            <div class="mb-3 p-3 rounded bg-light border">
+              <h6 class="font-weight-bold mb-2 text-dark">
+                <i class="fas fa-user-shield mr-1 text-success"></i> Tim Evaluator & Hak Penilaian Proyek
+              </h6>
+              <div class="small text-muted mb-2">Pihak yang berhak mengevaluasi proyek ini meliputi:</div>
+              <ul class="list-group list-group-flush rounded border bg-white small mb-0">
+                ${card.mata_kuliahs && card.mata_kuliahs.some(mk => mk.dosen_pengampu && mk.dosen_pengampu.length > 0) ? `
+                  <li class="list-group-item d-flex justify-content-between align-items-center py-2">
+                    <div>
+                      <strong><i class="fas fa-chalkboard-teacher text-primary mr-1"></i> Dosen Pengampu MK Terkait</strong>
+                      <div class="text-muted" style="font-size:0.75rem;">
+                        ${card.mata_kuliahs.flatMap(mk => (mk.dosen_pengampu || []).map(dp => dp.nama_user || dp.name)).filter((v,i,a)=>a.indexOf(v)===i).join(', ')}
+                      </div>
+                    </div>
+                    <span class="badge badge-primary">Rubrik Akademik 4 Pilar</span>
+                  </li>
+                ` : ''}
+                ${card.dosen_penilai && card.dosen_penilai.length > 0 ? `
+                  <li class="list-group-item d-flex justify-content-between align-items-center py-2">
+                    <div>
+                      <strong><i class="fas fa-user-check text-info mr-1"></i> Dosen Penilai / Penguji</strong>
+                      <div class="text-muted" style="font-size:0.75rem;">
+                        ${card.dosen_penilai.map(dp => dp.dosen ? (dp.dosen.nama_user || dp.dosen.name) : '-').join(', ')}
+                      </div>
+                    </div>
+                    <span class="badge badge-info">Penguji Sidang PBL</span>
+                  </li>
+                ` : ''}
+                ${card.dosen_penentu ? `
+                  <li class="list-group-item d-flex justify-content-between align-items-center py-2">
+                    <div>
+                      <strong><i class="fas fa-user-tie text-secondary mr-1"></i> Dosen Penentu / Pembimbing</strong>
+                      <div class="text-muted" style="font-size:0.75rem;">${card.dosen_penentu.nama_user || card.dosen_penentu.name}</div>
+                    </div>
+                    <span class="badge badge-secondary">Validasi & Pembimbing</span>
+                  </li>
+                ` : ''}
+                ${card.nama_mitra ? `
+                  <li class="list-group-item d-flex justify-content-between align-items-center py-2">
+                    <div>
+                      <strong><i class="fas fa-building text-success mr-1"></i> Mitra Industri (${card.nama_mitra})</strong>
+                      <div class="text-muted" style="font-size:0.75rem;">${card.kontak_mitra ? 'Kontak: ' + card.kontak_mitra : 'Penilai Eksternal'}</div>
+                    </div>
+                    <span class="badge badge-success">Evaluasi Kebutuhan Industri</span>
+                  </li>
+                ` : ''}
+                <li class="list-group-item d-flex justify-content-between align-items-center py-2">
+                  <div>
+                    <strong><i class="fas fa-shield-alt text-warning mr-1"></i> Evaluator Sesi & Admin PBL</strong>
+                    <div class="text-muted" style="font-size:0.75rem;">Koordinator Evaluasi Program Studi</div>
+                  </div>
+                  <span class="badge badge-warning text-dark">Sikap (AP), Absensi, Rekap</span>
+                </li>
+              </ul>
+            </div>
 
             <!-- Labels -->
             ${card.labels && card.labels.length > 0 ? `

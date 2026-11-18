@@ -547,6 +547,16 @@ class EvaluasiController extends Controller
         $proyekLists = ProjectList::with(['cards' => function ($q) use ($kelompok, $activePeriode) {
             $q->where('kelompok_id', $kelompok->id)
                 ->where('periode_id', $activePeriode->id)
+                ->with([
+                    'mataKuliahs.dosenPengampu',
+                    'dosenPenilai.dosen',
+                    'dosenPenilai.mataKuliah',
+                    'dosenPenentu',
+                    'penilaianDosen.dosen',
+                    'evaluasiMitra',
+                    'createdBy',
+                    'updatedBy',
+                ])
                 ->orderBy('position');
         }])->where('kelompok_id', $kelompok->id)
             ->where('periode_id', $activePeriode->id)
@@ -688,6 +698,124 @@ class EvaluasiController extends Controller
 
         $nilaiProyekByCard = (int) round($nilaiDosenByCard * ($settings['w_dosen'] ?? 80) / 100 + $nilaiMitraByCard * ($settings['w_mitra'] ?? 20) / 100);
 
+        // Ambil seluruh kartu proyek kelompok ini
+        $allCards = $proyekLists->flatMap(fn ($l) => $l->cards);
+
+        // Kumpulkan mata kuliah terkait unik
+        $mataKuliahTerkait = $allCards->flatMap(fn ($c) => $c->mataKuliahs)
+            ->unique('id')
+            ->values();
+
+        if ($mataKuliahTerkait->isEmpty() && ! empty($kelompok->semester)) {
+            $mataKuliahTerkait = \App\Models\MataKuliah::with('dosenPengampu')
+                ->where('semester', $kelompok->semester)
+                ->where('is_active', true)
+                ->get();
+        }
+
+        // Kumpulkan tim evaluator & pihak yang berwenang mengevaluasi
+        $evaluatorList = collect();
+
+        // 1. Dosen Pengampu MK
+        foreach ($mataKuliahTerkait as $mk) {
+            foreach ($mk->dosenPengampu as $dosen) {
+                $evaluatorList->push([
+                    'type' => 'dosen_pengampu',
+                    'role_label' => 'Dosen Pengampu MK',
+                    'nama' => $dosen->nama_user ?: $dosen->name,
+                    'identitas' => $dosen->username ?: ($dosen->email ?: '-'),
+                    'email' => $dosen->email,
+                    'no_hp' => $dosen->no_hp,
+                    'matkul' => $mk->nama_matkul,
+                    'kode_matkul' => $mk->kode_matkul,
+                    'komponen' => 'Rubrik 4 Pilar Proyek (Relevansi, Kualitas, Kreativitas, Estetika)',
+                    'status' => 'Berwenang Menilai',
+                    'user_id' => $dosen->id,
+                ]);
+            }
+        }
+
+        // 2. Dosen Penilai Khusus
+        foreach ($allCards as $card) {
+            foreach ($card->dosenPenilai as $dp) {
+                if ($dp->dosen) {
+                    $evaluatorList->push([
+                        'type' => 'dosen_penilai',
+                        'role_label' => 'Dosen Penilai / Penguji PBL',
+                        'nama' => $dp->dosen->nama_user ?: $dp->dosen->name,
+                        'identitas' => $dp->dosen->username ?: '-',
+                        'email' => $dp->dosen->email,
+                        'no_hp' => $dp->dosen->no_hp,
+                        'matkul' => $dp->mataKuliah?->nama_matkul ?: 'Sidang PBL',
+                        'kode_matkul' => $dp->mataKuliah?->kode_matkul ?: '-',
+                        'komponen' => 'Sidang & Pengujian Proyek',
+                        'status' => $dp->status_penilaian ?: 'Ditugaskan',
+                        'user_id' => $dp->dosen_id,
+                    ]);
+                }
+            }
+        }
+
+        // 3. Dosen Penentu Proyek
+        foreach ($allCards as $card) {
+            if ($card->dosenPenentu) {
+                $evaluatorList->push([
+                    'type' => 'dosen_penentu',
+                    'role_label' => 'Dosen Penentu / Pembimbing',
+                    'nama' => $card->dosenPenentu->nama_user ?: $card->dosenPenentu->name,
+                    'identitas' => $card->dosenPenentu->username ?: '-',
+                    'email' => $card->dosenPenentu->email,
+                    'no_hp' => $card->dosenPenentu->no_hp,
+                    'matkul' => 'Pembimbing Proyek',
+                    'kode_matkul' => '-',
+                    'komponen' => 'Validasi Progress & Rekomendasi Luaran',
+                    'status' => 'Pembimbing',
+                    'user_id' => $card->dosen_penentu_id,
+                ]);
+            }
+        }
+
+        // 4. Mitra Industri
+        $partners = $allCards->filter(fn ($c) => ! empty($c->nama_mitra))->unique('nama_mitra');
+        foreach ($partners as $card) {
+            $evalCount = $card->evaluasiMitra->count();
+            $evaluatorList->push([
+                'type' => 'mitra_industri',
+                'role_label' => 'Mitra Industri / Pengguna Eksternal',
+                'nama' => $card->nama_mitra,
+                'identitas' => $card->kontak_mitra ?: 'Perwakilan Mitra',
+                'email' => '-',
+                'no_hp' => $card->kontak_mitra ?: '-',
+                'matkul' => 'Evaluasi Kebutuhan Industri',
+                'kode_matkul' => 'MITRA',
+                'komponen' => 'Etika Profesional, Soft Skills, Kesesuaian Kebutuhan Lapangan',
+                'status' => $evalCount > 0 ? "Sudah Dinilai ({$evalCount} data)" : 'Menunggu Penilaian Mitra',
+                'user_id' => null,
+                'card_uuid' => $card->uuid,
+            ]);
+        }
+
+        // 5. Evaluator Sesi / Admin
+        if ($sesi && $sesi->evaluator) {
+            $evaluatorList->push([
+                'type' => 'evaluator_sesi',
+                'role_label' => 'Evaluator Sesi PBL',
+                'nama' => $sesi->evaluator->nama_user ?: $sesi->evaluator->name,
+                'identitas' => $sesi->evaluator->username ?: 'Evaluator',
+                'email' => $sesi->evaluator->email,
+                'no_hp' => $sesi->evaluator->no_hp,
+                'matkul' => 'Koordinator Evaluasi',
+                'kode_matkul' => 'SESI',
+                'komponen' => 'Nilai Sikap/AP, Kehadiran/Absensi, & Finalisasi Nilai',
+                'status' => 'Penilai Sesi Aktif',
+                'user_id' => $sesi->evaluator_id,
+            ]);
+        }
+
+        $evaluatorList = $evaluatorList->unique(function ($item) {
+            return $item['type'].'_'.$item['nama'].'_'.$item['matkul'];
+        })->values();
+
         return view('evaluator.evaluasi.show', [
             'kelompok' => $kelompok,
             'periode' => $activePeriode,
@@ -708,6 +836,8 @@ class EvaluasiController extends Controller
             'cardGrades' => $cardGradesMap,
             'studentEvaluations' => $studentEvaluations,
             'studentEvalStats' => $studentEvalStats,
+            'mataKuliahTerkait' => $mataKuliahTerkait,
+            'evaluatorList' => $evaluatorList,
         ]);
     }
 
@@ -889,7 +1019,18 @@ class EvaluasiController extends Controller
     /** ===== Show project details ===== */
     public function showProject(ProjectCard $card)
     {
-        $card->load(['projectList', 'createdBy', 'updatedBy']);
+        $card->load([
+            'projectList',
+            'createdBy',
+            'updatedBy',
+            'mataKuliahs.dosenPengampu',
+            'dosenPenilai.dosen',
+            'dosenPenilai.mataKuliah',
+            'dosenPenentu',
+            'penilaianDosen.dosen',
+            'penilaianDosen.mataKuliah',
+            'evaluasiMitra',
+        ]);
 
         return response()->json([
             'success' => true,

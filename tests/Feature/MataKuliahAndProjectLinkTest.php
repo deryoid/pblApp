@@ -342,4 +342,112 @@ class MataKuliahAndProjectLinkTest extends TestCase
         $this->assertTrue($card->mataKuliahs->contains($mk1->id));
         $this->assertTrue($card->mataKuliahs->contains($mk2->id));
     }
+
+    public function test_evaluasi_detail_renders_all_related_mata_kuliah_and_evaluators_matrix(): void
+    {
+        $mk = MataKuliah::create([
+            'kode_matkul' => 'MK405',
+            'nama_matkul' => 'Rekayasa Perangkat Lunak Lanjut',
+            'semester' => 4,
+            'sks' => 4,
+            'is_active' => true,
+        ]);
+        $mk->dosenPengampu()->attach([$this->dosen->id]);
+
+        $card = ProjectCard::create([
+            'kelompok_id' => $this->kelompok->id,
+            'periode_id' => $this->periode->id,
+            'list_id' => $this->list->id,
+            'title' => 'Sistem Rekam Medis Digital',
+            'skema_pbl' => 'External',
+            'nama_mitra' => 'RSUD Daerah',
+            'kontak_mitra' => '081299887766',
+            'status_proyek' => 'Proses',
+            'created_by' => $this->studentUser->id,
+        ]);
+        $card->mataKuliahs()->attach([$mk->id]);
+
+        $response = $this->actingAs($this->admin)->get(route('admin.evaluasi.kelompok.show', $this->kelompok));
+        $response->assertStatus(200);
+
+        // Verifikasi section informasi mata kuliah terkait & tim evaluator
+        $response->assertSee('Informasi Mata Kuliah Terkait');
+        $response->assertSee('Tim Evaluator');
+        $response->assertSee('MK405');
+        $response->assertSee('Rekayasa Perangkat Lunak Lanjut');
+        $response->assertSee('4 SKS');
+        $response->assertSee($this->dosen->nama_user);
+        $response->assertSee('Dosen Pengampu');
+
+        // Verifikasi wewenang evaluator
+        $response->assertSee('Siapa Saja yang Bisa Mengevaluasi');
+        $response->assertSee('Mitra Industri');
+        $response->assertSee('RSUD Daerah');
+    }
+
+    public function test_evaluasi_project_show_api_returns_mata_kuliah_and_evaluator_details(): void
+    {
+        $mk = MataKuliah::create([
+            'kode_matkul' => 'MK406',
+            'nama_matkul' => 'Pengujian Perangkat Lunak',
+            'semester' => 4,
+            'sks' => 3,
+            'is_active' => true,
+        ]);
+        $mk->dosenPengampu()->attach([$this->dosen->id]);
+
+        $card = ProjectCard::create([
+            'kelompok_id' => $this->kelompok->id,
+            'periode_id' => $this->periode->id,
+            'list_id' => $this->list->id,
+            'title' => 'Automated QA Pipeline',
+            'status_proyek' => 'Proses',
+            'created_by' => $this->studentUser->id,
+        ]);
+        $card->mataKuliahs()->attach([$mk->id]);
+
+        $response = $this->actingAs($this->admin)->getJson(route('admin.evaluasi.project.show', $card));
+        $response->assertStatus(200);
+        $response->assertJsonPath('success', true);
+        $response->assertJsonPath('project.mata_kuliahs.0.kode_matkul', 'MK406');
+        $response->assertJsonPath('project.mata_kuliahs.0.dosen_pengampu.0.nama_user', $this->dosen->nama_user);
+    }
+
+    public function test_evaluator_can_view_evaluasi_detail_with_mata_kuliah_and_evaluators(): void
+    {
+        $evaluatorUser = User::create([
+            'nama_user' => 'Dosen Evaluator PBL',
+            'username' => 'evaluator_test',
+            'email' => 'evaluator@politala.ac.id',
+            'password' => bcrypt('password'),
+            'role' => 'evaluator',
+            'no_hp' => '0812999999',
+        ]);
+
+        $mk = MataKuliah::create([
+            'kode_matkul' => 'MK407',
+            'nama_matkul' => 'Desain Antarmuka Pengguna',
+            'semester' => 4,
+            'sks' => 3,
+            'is_active' => true,
+        ]);
+        $mk->dosenPengampu()->attach([$this->dosen->id]);
+
+        $card = ProjectCard::create([
+            'kelompok_id' => $this->kelompok->id,
+            'periode_id' => $this->periode->id,
+            'list_id' => $this->list->id,
+            'title' => 'UI Redesign Portal Kampus',
+            'status_proyek' => 'Proses',
+            'created_by' => $this->studentUser->id,
+        ]);
+        $card->mataKuliahs()->attach([$mk->id]);
+
+        $response = $this->actingAs($evaluatorUser)->get(route('evaluator.evaluasi.showKelompok', $this->kelompok));
+        $response->assertStatus(200);
+        $response->assertSee('Informasi Mata Kuliah Terkait');
+        $response->assertSee('MK407');
+        $response->assertSee('Desain Antarmuka Pengguna');
+        $response->assertSee('Siapa Saja yang Bisa Mengevaluasi');
+    }
 }
