@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Evaluator;
+namespace App\Http\Controllers\Dosen;
 
 use App\Http\Controllers\Controller;
 use App\Models\EvaluasiDosen;
@@ -155,7 +155,7 @@ class NilaiController extends Controller
             ]);
         }
 
-        return view('evaluator.nilai.index', compact(
+        return view('dosen.nilai.index', compact(
             'mahasiswaNilai',
             'periodes',
             'kelases',

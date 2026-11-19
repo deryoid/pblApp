@@ -420,7 +420,7 @@ class MataKuliahAndProjectLinkTest extends TestCase
             'username' => 'evaluator_test',
             'email' => 'evaluator@politala.ac.id',
             'password' => bcrypt('password'),
-            'role' => 'evaluator',
+            'role' => 'dosen',
             'no_hp' => '0812999999',
         ]);
 
@@ -443,7 +443,7 @@ class MataKuliahAndProjectLinkTest extends TestCase
         ]);
         $card->mataKuliahs()->attach([$mk->id]);
 
-        $response = $this->actingAs($evaluatorUser)->get(route('evaluator.evaluasi.showKelompok', $this->kelompok));
+        $response = $this->actingAs($evaluatorUser)->get(route('dosen.evaluasi.showKelompok', $this->kelompok));
         $response->assertStatus(200);
         $response->assertSee('Informasi Mata Kuliah Terkait');
         $response->assertSee('MK407');

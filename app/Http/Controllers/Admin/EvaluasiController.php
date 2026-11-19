@@ -539,6 +539,12 @@ class EvaluasiController extends Controller
 
         $proyek_total_cards = $proyekLists->sum(fn ($list) => $list->cards->count());
 
+        foreach ($proyekLists as $list) {
+            foreach ($list->cards as $card) {
+                $card->can_assess = true;
+            }
+        }
+
         // Aktivitas lists
         $aktivitasLists = AktivitasList::with(['cards' => function ($q) use ($kelompok, $activePeriode) {
             $q->where('kelompok_id', $kelompok->id)
@@ -1049,9 +1055,15 @@ class EvaluasiController extends Controller
         $isAdmin = $user ? $user->isAdmin() : false;
 
         $availableDosen = $isAdmin
-            ? \App\Models\User::whereIn('role', ['dosen', 'evaluator', 'admin'])
+            ? \App\Models\User::whereIn('role', ['dosen', 'admin'])
                 ->orderBy('nama_user')
                 ->get(['id', 'nama_user', 'username', 'email'])
+            : [];
+
+        $availableMatkul = $isAdmin
+            ? \App\Models\MataKuliah::where('is_active', true)
+                ->orderBy('nama_matkul')
+                ->get(['id', 'kode_matkul', 'nama_matkul', 'sks', 'semester'])
             : [];
 
         return response()->json([
@@ -1059,9 +1071,11 @@ class EvaluasiController extends Controller
             'project' => $card,
             'involved_dosen' => $involved,
             'can_acc' => $isAdmin || $isUserInvolved,
+            'can_assess' => true,
             'user_verifikasi' => $userVerifikasi,
             'is_admin' => $isAdmin,
             'available_dosen' => $availableDosen,
+            'available_matkul' => $availableMatkul,
         ]);
     }
 
@@ -1185,9 +1199,11 @@ class EvaluasiController extends Controller
     }
 
     /** ===== PENILAIAN PROYEK: Dosen ===== */
-    public function saveProjectGradeDosen(Request $request, ProjectCard $card)
+    public function saveProjectGradeDosen(Request $request, $card)
     {
         try {
+            $card = $card instanceof ProjectCard ? $card : ProjectCard::where('uuid', $card)->orWhere('id', $card)->firstOrFail();
+
             // Check if user is authenticated
             if (! Auth::check()) {
                 return response()->json([
@@ -1216,6 +1232,20 @@ class EvaluasiController extends Controller
                     'success' => false,
                     'message' => 'Project card tidak memiliki kelompok atau periode. Silakan pilih project yang valid.',
                 ]);
+            }
+
+            if (! $evaluasiMasterId) {
+                $evalMaster = \App\Models\EvaluasiMaster::firstOrCreate(
+                    [
+                        'kelompok_id' => $kelompokId,
+                        'periode_id' => $periodeId,
+                    ],
+                    [
+                        'uuid' => (string) \Illuminate\Support\Str::uuid(),
+                        'created_by' => Auth::id(),
+                    ]
+                );
+                $evaluasiMasterId = $evalMaster->id;
             }
 
             if (empty($items)) {

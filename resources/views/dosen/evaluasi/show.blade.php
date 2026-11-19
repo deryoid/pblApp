@@ -911,12 +911,35 @@
                           {{-- Drive --}}
                           @php $drive = $card->link_drive_proyek ?? $card->drive_link ?? null; @endphp
                           @if(!empty($drive))
-                            <a href="{{ $drive }}" class="btn btn-dark" target="_blank" rel="noopener" title="Drive">
+                            <a href="{{ $drive }}" class="btn btn-circle btn-dark" target="_blank" rel="noopener" title="Drive">
                               <i class="fab fa-google-drive" aria-hidden="true"></i>
                             </a>
                           @endif
 
-                          
+                          {{-- Detail Kartu --}}
+                          <button type="button"
+                                  class="btn btn-circle btn-info"
+                                  title="Detail Proyek"
+                                  onclick="showProjectCardDetail({{ $card->id }}, '{{ addslashes($card->title) }}', {{ $list->id }})">
+                            <i class="fas fa-info-circle" aria-hidden="true"></i>
+                          </button>
+
+                          {{-- Nilai Dosen --}}
+                          @if($card->can_assess ?? false)
+                            <button type="button"
+                                    class="btn btn-circle btn-primary"
+                                    title="Beri Nilai Dosen"
+                                    onclick="showProjectDetail('{{ $card->uuid }}','{{ addslashes($card->title) }}')">
+                              <i class="fas fa-chalkboard-teacher" aria-hidden="true"></i>
+                            </button>
+                          @else
+                            <button type="button"
+                                    class="btn btn-circle btn-secondary"
+                                    title="Hanya Melihat (Bukan Dosen MK Terkait / Pembimbing)"
+                                    onclick="Swal.fire('Akses Penilaian Terbatas', 'Anda hanya berhak melihat proyek ini. Penilaian hanya dapat diberikan oleh dosen yang mengampu mata kuliah terkait atau ditugaskan sebagai pembimbing/penilai.', 'info')">
+                              <i class="fas fa-lock" aria-hidden="true"></i>
+                            </button>
+                          @endif
                         </div>
                       </div>
                     </div>
@@ -1236,8 +1259,8 @@
   })(jQuery);
 
   /* ====== PROJECTS ====== */
-  const reorderUrl      = "{{ route('admin.evaluasi.project.reorder') }}";
-  const reorderListsUrl = "{{ route('admin.evaluasi.lists.reorder') }}";
+  const reorderUrl      = "{{ route('dosen.evaluasi.project.reorder') }}";
+  const reorderListsUrl = "{{ route('dosen.evaluasi.lists.reorder') }}";
 
   // Map numeric id to uuid (optional)
   window.__cardIdToUuid = {};
@@ -1348,7 +1371,7 @@
   });
 
   /* ====== Update status aktivitas ====== */
-  const statusUrlTemplate = "{{ route('admin.evaluasi.aktivitas.status', ['list' => '__UUID__']) }}";
+  const statusUrlTemplate = "{{ route('dosen.evaluasi.aktivitas.status', ['list' => '__UUID__']) }}";
   const statusStyles = {
     'Belum Evaluasi': 'badge-secondary',
     'Sudah Evaluasi': 'badge-success',
@@ -1464,7 +1487,7 @@
     ev.preventDefault();
     const uuid = $('#ep_id').val();
     const domid = $('#ep_domid').val();
-    const url = "{{ route('admin.evaluasi.project.update', ['card'=>'__ID__']) }}".replace('__ID__', uuid);
+    const url = "{{ route('dosen.evaluasi.project.update', ['card'=>'__ID__']) }}".replace('__ID__', uuid);
     const payload = $(this).serialize();
 
     $.ajax({
@@ -1503,7 +1526,7 @@
 
   // Hapus proyek
   window.confirmDeleteProject = function(uuid, title){
-    const url = "{{ route('admin.evaluasi.project.destroy', ['card'=>'__ID__']) }}".replace('__ID__', uuid);
+    const url = "{{ route('dosen.evaluasi.project.destroy', ['card'=>'__ID__']) }}".replace('__ID__', uuid);
     Swal.fire({
       title:'Hapus proyek?', text:title, icon:'warning', showCancelButton:true,
       confirmButtonText:'Ya, hapus', cancelButtonText:'Batal'
@@ -1536,7 +1559,7 @@
 
     try {
       // Fetch project card details
-      const detailUrl = "{{ route('admin.evaluasi.project.show', ['card' => '__ID__']) }}".replace('__ID__', cardId);
+      const detailUrl = "{{ route('dosen.evaluasi.project.show', ['card' => '__ID__']) }}".replace('__ID__', cardId);
       const detailRes = await fetch(detailUrl);
       const detailData = await detailRes.json();
 
@@ -2335,8 +2358,8 @@
       return acc;
     }, {});
 
-    const fetchUrl = "{{ route('admin.evaluasi.penilaian-mitra.show-by-project', ['project' => '__ID__']) }}".replace('__ID__', cardId);
-    const gradeUrl = "{{ route('admin.evaluasi.project.grade.mitra', ['card'=>'__ID__']) }}".replace('__ID__', cardId);
+    const fetchUrl = "{{ route('dosen.evaluasi.penilaian-mitra.show-by-project', ['project' => '__ID__']) }}".replace('__ID__', cardId);
+    const gradeUrl = "{{ route('dosen.evaluasi.project.grade.mitra', ['card'=>'__ID__']) }}".replace('__ID__', cardId);
     const styleId = 'grade-mitra-modal-styles';
 
     const syncCardEvaluations = (evaluations) => {
@@ -2749,8 +2772,8 @@
       @endforeach
     ];
 
-    const fetchUrl = "{{ route('admin.evaluasi.nilai-ap.show-by-aktivitas-list', ['aktivitasList' => '__ID__']) }}".replace('__ID__', aktivitasListId);
-    const storeUrl = "{{ route('admin.evaluasi.nilai-ap.store-per-aktivitas-list') }}";
+    const fetchUrl = "{{ route('dosen.evaluasi.nilai-ap.show-by-aktivitas-list', ['aktivitasList' => '__ID__']) }}".replace('__ID__', aktivitasListId);
+    const storeUrl = "{{ route('dosen.evaluasi.nilai-ap.store-per-aktivitas-list') }}";
     const styleId = 'grade-ap-modal-styles';
 
     // Get AP weights from config
@@ -3213,8 +3236,8 @@
     }, {});
 
     const totalBobot = dosenItems.reduce((sum, item) => sum + item.bobot, 0);
-    const fetchUrl = "{{ route('admin.evaluasi.penilaian-dosen.show-by-project', ['project' => '__ID__']) }}".replace('__ID__', cardId);
-    const gradeUrl = "{{ route('admin.evaluasi.project.grade.dosen', ['card' => '__ID__']) }}".replace('__ID__', cardId);
+    const fetchUrl = "{{ route('dosen.evaluasi.penilaian-dosen.show-by-project', ['project' => '__ID__']) }}".replace('__ID__', cardId);
+    const gradeUrl = "{{ route('dosen.evaluasi.project.grade.dosen', ['card' => '__ID__']) }}".replace('__ID__', cardId);
 
     const syncCardEvaluations = (evaluations) => {
       const cardEl = document.querySelector(`.board-card[data-card-uuid="${cardId}"]`);
@@ -3397,7 +3420,7 @@
           <div class="mb-3">
             <span class="badge badge-success">Evaluasi 4 Pilar Proyek</span>
             <span class="badge badge-info ml-2">Total Bobot: ${totalBobot}%</span>
-            <a href="{{ route('evaluator.evaluasi.rubrik.index') }}" target="_blank" class="badge badge-light border ml-2 text-primary" style="text-decoration:none;">
+            <a href="{{ route('dosen.evaluasi.rubrik.index') }}" target="_blank" class="badge badge-light border ml-2 text-primary" style="text-decoration:none;">
               <i class="fas fa-external-link-alt mr-1"></i>Rubrik Acuan
             </a>
           </div>

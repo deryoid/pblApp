@@ -347,7 +347,7 @@ class BankDataDosenTest extends TestCase
             'username' => '198501012011011001',
             'password' => '123456',
         ]);
-        $loginRes->assertRedirect(url('/evaluator'));
+        $loginRes->assertRedirect(url('/dosen'));
         $this->assertAuthenticatedAs($user1);
     }
 
@@ -381,7 +381,7 @@ class BankDataDosenTest extends TestCase
             'username' => '199303032019031003',
             'password' => '123456',
         ]);
-        $loginRes->assertRedirect(url('/evaluator'));
+        $loginRes->assertRedirect(url('/dosen'));
         $this->assertAuthenticatedAs($user);
     }
 
@@ -434,7 +434,7 @@ class BankDataDosenTest extends TestCase
             'username' => '199505052021051005',
             'password' => '123456',
         ]);
-        $loginRes->assertRedirect(url('/evaluator'));
+        $loginRes->assertRedirect(url('/dosen'));
         $this->assertAuthenticatedAs($user);
     }
 }

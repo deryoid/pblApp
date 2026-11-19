@@ -48,7 +48,7 @@ class RubrikPenilaianTest extends TestCase
             'username' => 'evaluator_rubrik',
             'email' => 'evaluator@politala.ac.id',
             'password' => bcrypt('password'),
-            'role' => 'evaluator',
+            'role' => 'dosen',
             'no_hp' => '081234567891',
         ]);
 

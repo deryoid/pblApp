@@ -83,14 +83,9 @@
                                         @break
 
                                     @case('dosen')
+                                    @case('evaluator')
                                         <span class="badge badge-success">
                                             <i class="fas fa-chalkboard-teacher fa-xs mr-1"></i> Dosen
-                                        </span>
-                                        @break
-
-                                    @case('evaluator')
-                                        <span class="badge badge-info">
-                                            <i class="fas fa-clipboard-check fa-xs mr-1"></i> Evaluator
                                         </span>
                                         @break
 

@@ -1562,7 +1562,7 @@
                         $user = Auth::user();
                         $dashUrl = match($user->role) {
                             'admin' => url('/admin'),
-                            'evaluator' => url('/evaluator'),
+                            'dosen', 'evaluator' => url('/dosen'),
                             'mahasiswa' => url('/mahasiswa'),
                             default => url('/'),
                         };

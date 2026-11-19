@@ -483,9 +483,9 @@ class ProjectProposalVerificationTest extends TestCase
         $this->assertTrue($resAdmin->json('is_admin'));
         $this->assertTrue($resAdmin->json('can_acc'));
 
-        // Evaluator show project
+        // Dosen show project
         $resEval = $this->actingAs($this->dosenPengampu)
-            ->getJson(route('evaluator.evaluasi.project.show', ['project' => $card->id]));
+            ->getJson(route('dosen.evaluasi.project.show', ['card' => $card->id]));
 
         $resEval->assertOk();
         $resEval->assertJsonStructure([

@@ -268,20 +268,20 @@ class BankDataMahasiswaAndRegistrationTest extends TestCase
             'role' => 'dosen',
         ]);
 
-        // 2. Buat role evaluator
+        // 2. Buat role dosen kedua (evaluator / penilai)
         $resEvaluator = $this->actingAs($this->admin)->post('/admin/user', [
             'nama_user' => 'Ibu Penilai Evaluator, M.T',
             'username' => 'evaluator_proyek_1',
             'email' => 'evaluator1@politala.ac.id',
             'password' => 'password123',
             'password_confirmation' => 'password123',
-            'role' => 'evaluator',
+            'role' => 'dosen',
             'no_hp' => '081234000002',
         ]);
         $resEvaluator->assertRedirect('/admin/user');
         $this->assertDatabaseHas('users', [
             'username' => 'evaluator_proyek_1',
-            'role' => 'evaluator',
+            'role' => 'dosen',
         ]);
 
         // 3. Buat role admin

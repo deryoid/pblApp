@@ -1677,6 +1677,7 @@
       const userVerifikasi = detailData.user_verifikasi || null;
       const isAdmin = detailData.is_admin || false;
       const availableDosen = detailData.available_dosen || [];
+      const availableMatkul = detailData.available_matkul || [];
 
       // Statistik verifikasi dosen
       const totalDosen = involvedDosen.length;
@@ -1975,40 +1976,77 @@
               </div>
             </div>
 
-            <!-- Mata Kuliah Terkait Proyek -->
-            ${card.mata_kuliahs && card.mata_kuliahs.length > 0 ? `
-              <div class="mb-3 p-3 rounded bg-light border">
-                <h6 class="font-weight-bold mb-2 text-primary">
-                  <i class="fas fa-book-reader mr-1"></i> Mata Kuliah Terkait Proyek
-                </h6>
-                <div class="table-responsive">
-                  <table class="table table-sm table-bordered bg-white small mb-0">
-                    <thead class="thead-light">
-                      <tr>
-                        <th>Kode</th>
-                        <th>Nama Mata Kuliah</th>
-                        <th class="text-center">SKS</th>
-                        <th>Dosen Pengampu</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      ${card.mata_kuliahs.map(mk => `
-                        <tr>
-                          <td class="font-weight-bold text-primary">${mk.kode_matkul || '-'}</td>
-                          <td class="font-weight-bold">${mk.nama_matkul}</td>
-                          <td class="text-center">${mk.sks || 3} SKS</td>
-                          <td>
-                            ${mk.dosen_pengampu && mk.dosen_pengampu.length > 0
-                              ? mk.dosen_pengampu.map(dp => `<span class="badge badge-light border mr-1"><i class="fas fa-user-tie fa-xs text-secondary mr-1"></i>${dp.nama_user || dp.name}</span>`).join('')
-                              : '<span class="text-muted font-italic">Belum ada dosen</span>'}
-                          </td>
-                        </tr>
-                      `).join('')}
-                    </tbody>
-                  </table>
-                </div>
+            <!-- Mata Kuliah Terkait Proyek (Admin dapat menghubungkan / melepas MK) -->
+            <div class="mb-3 p-3 rounded bg-white border" style="border: 1px solid #e2e8f0; border-radius: 8px;">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="font-weight-bold text-dark small">
+                  <i class="fas fa-book-reader mr-1 text-primary"></i> Mata Kuliah Terkait Proyek (${card.mata_kuliahs ? card.mata_kuliahs.length : 0})
+                </span>
+                <span class="text-muted small">Kurikulum yang diintegrasikan dalam proyek PBL</span>
               </div>
-            ` : ''}
+
+              <div class="table-responsive" style="border: 1px solid #e2e8f0; border-radius: 6px;">
+                <table class="table table-sm table-hover mb-0" style="font-size: 0.84rem;">
+                  <thead style="background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                    <tr>
+                      <th style="font-weight: 600; color: #475569;">Kode</th>
+                      <th style="font-weight: 600; color: #475569;">Nama Mata Kuliah</th>
+                      <th class="text-center" style="font-weight: 600; color: #475569;">SKS</th>
+                      <th style="font-weight: 600; color: #475569;">Dosen Pengampu</th>
+                      ${isAdmin ? `<th style="width: 60px; text-align: center; font-weight: 600; color: #475569;">Aksi</th>` : ''}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${card.mata_kuliahs && card.mata_kuliahs.length > 0 ? card.mata_kuliahs.map(mk => `
+                      <tr>
+                        <td class="font-weight-bold text-primary align-middle">${mk.kode_matkul || '-'}</td>
+                        <td class="font-weight-bold align-middle">${mk.nama_matkul}</td>
+                        <td class="text-center align-middle">${mk.sks || 3} SKS</td>
+                        <td class="align-middle">
+                          ${mk.dosen_pengampu && mk.dosen_pengampu.length > 0
+                            ? mk.dosen_pengampu.map(dp => `<span class="badge badge-light border mr-1"><i class="fas fa-user-tie fa-xs text-secondary mr-1"></i>${dp.nama_user || dp.name}</span>`).join('')
+                            : '<span class="text-muted font-italic small">Belum ada dosen pengampu</span>'}
+                        </td>
+                        ${isAdmin ? `
+                          <td class="text-center align-middle">
+                            <button type="button" class="btn btn-xs btn-outline-danger py-0 px-2"
+                                    onclick="detachMataKuliahProyek(${card.id}, ${mk.id})"
+                                    title="Lepas mata kuliah ini dari proyek">
+                              <i class="fas fa-times fa-xs"></i>
+                            </button>
+                          </td>
+                        ` : ''}
+                      </tr>
+                    `).join('') : `
+                      <tr>
+                        <td colspan="${isAdmin ? 5 : 4}" class="text-center py-3 text-muted font-italic">
+                          Belum ada mata kuliah yang terhubung ke proyek ini.
+                        </td>
+                      </tr>
+                    `}
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Admin Action: Hubungkan Mata Kuliah -->
+              ${isAdmin && availableMatkul && availableMatkul.length > 0 ? `
+                <div class="p-2.5 px-3 rounded mt-2.5 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center" style="background: #f8fafc; border: 1px solid #e2e8f0;">
+                  <div class="d-flex align-items-center mb-2 mb-sm-0 w-100 mr-sm-2">
+                    <span class="small font-weight-bold text-muted mr-2 text-nowrap"><i class="fas fa-plus-circle text-primary mr-1"></i> Hubungkan MK:</span>
+                    <select id="attach_mk_select" class="form-control form-control-sm">
+                      <option value="">-- Pilih Mata Kuliah --</option>
+                      ${availableMatkul
+                        .filter(am => !(card.mata_kuliahs || []).some(cm => cm.id === am.id))
+                        .map(am => `<option value="${am.id}">${am.kode_matkul ? '[' + am.kode_matkul + '] ' : ''}${am.nama_matkul} (${am.sks} SKS - Sem ${am.semester || '-'})</option>`)
+                        .join('')}
+                    </select>
+                  </div>
+                  <button type="button" class="btn btn-primary btn-sm text-nowrap px-3 font-weight-500" onclick="attachMataKuliahProyek(${card.id})">
+                    <i class="fas fa-link mr-1"></i> Hubungkan MK
+                  </button>
+                </div>
+              ` : ''}
+            </div>
 
             <!-- Tim Evaluator & Pihak yang Berwenang Menilai -->
             <div class="mb-3 p-3 rounded bg-light border">
@@ -2366,9 +2404,106 @@
   window.hapusDosenPenilai = function(cardId, penilaiId) {
     return window.hapusDosenProyek(cardId, null, 'penilai', penilaiId);
   };
+
+  window.attachMataKuliahProyek = async function(cardId) {
+    const matkulId = $('#attach_mk_select').val();
+    if (!matkulId) {
+      Swal.fire('Perhatian', 'Pilih mata kuliah yang akan dihubungkan terlebih dahulu.', 'warning');
+      return;
+    }
+
+    try {
+      Swal.fire({
+        title: 'Menghubungkan Mata Kuliah...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
+
+      const response = await fetch("{{ route('project.mata-kuliah.attach', ['card' => '__ID__']) }}".replace('__ID__', cardId), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': '{{ csrf_token() }}',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          mata_kuliah_id: matkulId
+        })
+      });
+
+      const res = await response.json();
+      if (!res.success) {
+        throw new Error(res.message || 'Gagal menghubungkan mata kuliah ke proyek');
+      }
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Berhasil',
+        text: res.message,
+        timer: 1600,
+        showConfirmButton: false
+      });
+
+      if (typeof window.showProjectCardDetail === 'function') {
+        window.showProjectCardDetail(cardId, null, null);
+      }
+    } catch (err) {
+      console.error(err);
+      Swal.fire('Gagal', err.message || 'Terjadi kesalahan saat menghubungkan mata kuliah', 'error');
+    }
+  };
+
+  window.detachMataKuliahProyek = function(cardId, matkulId) {
+    Swal.fire({
+      title: 'Lepas Mata Kuliah?',
+      text: 'Mata kuliah ini akan dilepas dari proyek mahasiswa.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#dc3545',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Ya, Lepas',
+      cancelButtonText: 'Batal'
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          Swal.fire({
+            title: 'Melepas Mata Kuliah...',
+            allowOutsideClick: false,
+            didOpen: () => Swal.showLoading()
+          });
+
+          const url = "{{ route('project.mata-kuliah.detach', ['card' => '__CARD__', 'mataKuliah' => '__MK__']) }}"
+            .replace('__CARD__', cardId)
+            .replace('__MK__', matkulId);
+
+          const response = await fetch(url, {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRF-TOKEN': '{{ csrf_token() }}',
+              'Accept': 'application/json'
+            }
+          });
+
+          const res = await response.json();
+          if (!res.success) {
+            throw new Error(res.message || 'Gagal melepas mata kuliah');
+          }
+
+          Swal.fire({
+            icon: 'success',
+            title: 'Berhasil',
+            text: res.message,
+            timer: 1600,
+            showConfirmButton: false
+          });
+
+          if (typeof window.showProjectCardDetail === 'function') {
+            window.showProjectCardDetail(cardId, null, null);
+          }
         } catch (err) {
           console.error(err);
-          Swal.fire('Gagal', err.message || 'Gagal menghapus dosen penilai', 'error');
+          Swal.fire('Gagal', err.message || 'Terjadi kesalahan', 'error');
         }
       }
     });

@@ -7,11 +7,12 @@
 
         $roleBadgeMap = [
             'admin' => ['label' => 'Administrator', 'bg' => 'rgba(99, 102, 241, 0.15)', 'border' => 'rgba(129, 140, 248, 0.35)', 'text' => '#a5b4fc', 'icon' => 'fa-shield-alt'],
-            'evaluator' => ['label' => 'Dosen Evaluator', 'bg' => 'rgba(245, 158, 11, 0.15)', 'border' => 'rgba(251, 191, 36, 0.35)', 'text' => '#fcd34d', 'icon' => 'fa-chalkboard-teacher'],
+            'dosen' => ['label' => 'Dosen / Penilai', 'bg' => 'rgba(245, 158, 11, 0.15)', 'border' => 'rgba(251, 191, 36, 0.35)', 'text' => '#fcd34d', 'icon' => 'fa-chalkboard-teacher'],
+            'evaluator' => ['label' => 'Dosen / Penilai', 'bg' => 'rgba(245, 158, 11, 0.15)', 'border' => 'rgba(251, 191, 36, 0.35)', 'text' => '#fcd34d', 'icon' => 'fa-chalkboard-teacher'],
             'mahasiswa' => ['label' => 'Mahasiswa', 'bg' => 'rgba(16, 185, 129, 0.15)', 'border' => 'rgba(52, 211, 153, 0.35)', 'text' => '#6ee7b7', 'icon' => 'fa-user-graduate'],
         ];
         $badge = $roleBadgeMap[$role] ?? $roleBadgeMap['mahasiswa'];
-        $dashboardUrl = $role === 'admin' ? url('admin/') : ($role === 'evaluator' ? url('evaluator/') : url('mahasiswa/'));
+        $dashboardUrl = $role === 'admin' ? url('admin/') : (in_array($role, ['dosen', 'evaluator'], true) ? url('dosen/') : url('mahasiswa/'));
     @endphp
 
     {{-- Sidebar - Brand Header --}}
@@ -191,13 +192,13 @@
             </a>
         </li>
 
-    {{-- =================== EVALUATOR =================== --}}
-    @elseif ($role === 'evaluator')
+    {{-- =================== DOSEN / PENILAI =================== --}}
+    @elseif ($role === 'dosen' || $role === 'evaluator')
         <div class="sidebar-heading">Data Kelompok</div>
 
         {{-- Kelompok PBL --}}
-        <li class="nav-item {{ request()->routeIs('evaluator.kelompok.*') ? 'active' : '' }}">
-            <a class="nav-link" href="{{ route('evaluator.kelompok.index') }}">
+        <li class="nav-item {{ request()->routeIs('dosen.kelompok.*', 'evaluator.kelompok.*') ? 'active' : '' }}">
+            <a class="nav-link" href="{{ route('dosen.kelompok.index') }}">
                 <span class="nav-icon-box"><i class="fas fa-fw fa-users"></i></span>
                 <span class="nav-link-text">Kelompok PBL</span>
             </a>
@@ -206,32 +207,32 @@
         <div class="sidebar-heading">Penilaian & Evaluasi</div>
 
         {{-- Evaluasi Proyek --}}
-        <li class="nav-item {{ request()->routeIs('evaluator.evaluasi.index','evaluator.evaluasi.kelompok.show','evaluator.evaluasi.nilai-final') ? 'active' : '' }}">
-            <a class="nav-link" href="{{ route('evaluator.evaluasi.index') }}">
+        <li class="nav-item {{ request()->routeIs('dosen.evaluasi.index','dosen.evaluasi.kelompok.show','dosen.evaluasi.nilai-final', 'evaluator.evaluasi.*') ? 'active' : '' }}">
+            <a class="nav-link" href="{{ route('dosen.evaluasi.index') }}">
                 <span class="nav-icon-box"><i class="fas fa-fw fa-project-diagram"></i></span>
                 <span class="nav-link-text">Evaluasi Proyek</span>
             </a>
         </li>
 
         {{-- Rubrik Penilaian --}}
-        <li class="nav-item {{ request()->routeIs('evaluator.evaluasi.rubrik.*') ? 'active' : '' }}">
-            <a class="nav-link" href="{{ route('evaluator.evaluasi.rubrik.index') }}">
+        <li class="nav-item {{ request()->routeIs('dosen.evaluasi.rubrik.*', 'evaluator.evaluasi.rubrik.*') ? 'active' : '' }}">
+            <a class="nav-link" href="{{ route('dosen.evaluasi.rubrik.index') }}">
                 <span class="nav-icon-box"><i class="fas fa-fw fa-clipboard-check"></i></span>
                 <span class="nav-link-text">Rubrik Penilaian</span>
             </a>
         </li>
 
         {{-- Nilai Akhir --}}
-        <li class="nav-item {{ request()->routeIs('evaluator.nilai.*') ? 'active' : '' }}">
-            <a class="nav-link" href="{{ route('evaluator.nilai.index') }}">
+        <li class="nav-item {{ request()->routeIs('dosen.nilai.*', 'evaluator.nilai.*') ? 'active' : '' }}">
+            <a class="nav-link" href="{{ route('dosen.nilai.index') }}">
                 <span class="nav-icon-box"><i class="fas fa-fw fa-chart-bar"></i></span>
                 <span class="nav-link-text">Nilai Akhir</span>
             </a>
         </li>
 
         {{-- Riwayat PBL Mahasiswa --}}
-        <li class="nav-item {{ request()->routeIs('evaluator.riwayat.*') ? 'active' : '' }}">
-            <a class="nav-link" href="{{ route('evaluator.riwayat.index') }}">
+        <li class="nav-item {{ request()->routeIs('dosen.riwayat.*', 'evaluator.riwayat.*') ? 'active' : '' }}">
+            <a class="nav-link" href="{{ route('dosen.riwayat.index') }}">
                 <span class="nav-icon-box"><i class="fas fa-fw fa-history"></i></span>
                 <span class="nav-link-text">Riwayat PBL Mahasiswa</span>
             </a>

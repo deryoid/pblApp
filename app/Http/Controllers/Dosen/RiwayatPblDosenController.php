@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Evaluator;
+namespace App\Http\Controllers\Dosen;
 
 use App\Http\Controllers\Controller;
 use App\Models\Kelas;
@@ -10,14 +10,14 @@ use App\Services\RiwayatPblService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
-class RiwayatPblEvaluatorController extends Controller
+class RiwayatPblDosenController extends Controller
 {
     public function __construct(
         protected RiwayatPblService $riwayatService
     ) {}
 
     /**
-     * Tampilkan direktori riwayat PBL mahasiswa untuk Dosen & Evaluator.
+     * Tampilkan direktori riwayat PBL mahasiswa untuk Dosen.
      */
     public function index(Request $request): View
     {
@@ -53,7 +53,7 @@ class RiwayatPblEvaluatorController extends Controller
         $kelasList = Kelas::orderBy('kelas')->get();
         $periodes = Periode::orderByDesc('id')->get();
 
-        return view('evaluator.riwayat.index', compact(
+        return view('dosen.riwayat.index', compact(
             'mahasiswas',
             'kelasList',
             'periodes',
@@ -71,9 +71,9 @@ class RiwayatPblEvaluatorController extends Controller
     {
         $data = $this->riwayatService->getRiwayatMahasiswa($mahasiswa);
 
-        return view('evaluator.riwayat.show', array_merge($data, [
-            'role' => 'evaluator',
-            'backRoute' => route('evaluator.riwayat.index'),
+        return view('dosen.riwayat.show', array_merge($data, [
+            'role' => 'dosen',
+            'backRoute' => route('dosen.riwayat.index'),
         ]));
     }
 
@@ -85,7 +85,7 @@ class RiwayatPblEvaluatorController extends Controller
         $data = $this->riwayatService->getRiwayatMahasiswa($mahasiswa);
 
         return view('riwayat.cetak', array_merge($data, [
-            'backRoute' => route('evaluator.riwayat.show', $mahasiswa->uuid),
+            'backRoute' => route('dosen.riwayat.show', $mahasiswa->uuid),
         ]));
     }
 }

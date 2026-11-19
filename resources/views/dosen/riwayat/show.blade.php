@@ -16,10 +16,10 @@
             </p>
         </div>
         <div class="mt-3 mt-sm-0 d-flex gap-2">
-            <a href="{{ route('evaluator.riwayat.cetak', $mahasiswa) }}" target="_blank" class="btn btn-primary btn-sm shadow-sm font-weight-bold">
+            <a href="{{ route('dosen.riwayat.cetak', $mahasiswa) }}" target="_blank" class="btn btn-primary btn-sm shadow-sm font-weight-bold">
                 <i class="fas fa-print mr-1"></i> Cetak Dokumen Resmi
             </a>
-            <a href="{{ $backRoute ?? route('evaluator.riwayat.index') }}" class="btn btn-outline-secondary btn-sm shadow-sm">
+            <a href="{{ $backRoute ?? route('dosen.riwayat.index') }}" class="btn btn-outline-secondary btn-sm shadow-sm">
                 <i class="fas fa-arrow-left mr-1"></i> Kembali ke Daftar
             </a>
         </div>

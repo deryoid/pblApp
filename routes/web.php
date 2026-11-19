@@ -227,73 +227,110 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'profile.complete'])->group
 
 });
 
-// Evaluator
-Route::prefix('evaluator')->middleware(['auth', 'evaluator', 'profile.complete'])->group(function () {
-    Route::get('/', [App\Http\Controllers\Evaluator\DashboardController::class, 'index']);
+// Dosen / Penilai
+Route::prefix('dosen')->middleware(['auth', 'dosen', 'profile.complete'])->name('dosen.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Dosen\DashboardController::class, 'index'])->name('dashboard');
 
     // Kelompok
-    Route::prefix('kelompok')->name('evaluator.kelompok.')->group(function () {
-        Route::get('/', [App\Http\Controllers\Evaluator\KelompokController::class, 'index'])->name('index');
-        Route::get('{kelompok}', [App\Http\Controllers\Evaluator\KelompokController::class, 'show'])->name('show');
+    Route::prefix('kelompok')->name('kelompok.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Dosen\KelompokController::class, 'index'])->name('index');
+        Route::get('{kelompok}', [\App\Http\Controllers\Dosen\KelompokController::class, 'show'])->name('show');
     });
 
     // Evaluasi
-    Route::prefix('evaluasi')->name('evaluator.evaluasi.')->group(function () {
-        Route::get('/', [App\Http\Controllers\Evaluator\EvaluasiController::class, 'index'])->name('index');
-        Route::get('nilai-final', [App\Http\Controllers\Evaluator\EvaluasiController::class, 'nilaiFinal'])->name('nilai-final');
+    Route::prefix('evaluasi')->name('evaluasi.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'index'])->name('index');
+        Route::get('nilai-final', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'nilaiFinal'])->name('nilai-final');
         Route::get('rubrik', [RubrikPenilaianController::class, 'index'])->name('rubrik.index');
         Route::get('rubrik/data', [RubrikPenilaianController::class, 'apiData'])->name('rubrik.data');
-        Route::get('settings', [App\Http\Controllers\Evaluator\EvaluasiController::class, 'settings'])->name('settings');
-        Route::post('settings/save', [App\Http\Controllers\Evaluator\EvaluasiController::class, 'saveSettings'])->name('settings.save');
+        Route::get('settings', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'settings'])->name('settings');
+        Route::post('settings/save', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'saveSettings'])->name('settings.save');
 
-        Route::get('kelompok/{kelompok}', [App\Http\Controllers\Evaluator\EvaluasiController::class, 'showKelompok'])->name('showKelompok');
-        Route::get('kelompok/{kelompok}/export', [App\Http\Controllers\Evaluator\EvaluasiController::class, 'projectExport'])->name('projectExport');
+        Route::get('kelompok/{kelompok}', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'showKelompok'])->name('showKelompok');
+        Route::get('kelompok/{kelompok}/export', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'projectExport'])->name('projectExport');
 
         // Project management
-        Route::post('project/reorder-card', [App\Http\Controllers\Evaluator\EvaluasiController::class, 'reorderProjectCard'])->name('reorderProjectCard');
-        Route::post('project/reorder-lists', [App\Http\Controllers\Evaluator\EvaluasiController::class, 'reorderProjectLists'])->name('reorderProjectLists');
-        Route::get('project/{project}', [App\Http\Controllers\Evaluator\EvaluasiController::class, 'showProject'])->name('project.show');
-        Route::post('project/{project}/progress', [App\Http\Controllers\Evaluator\EvaluasiController::class, 'updateProjectProgress'])->name('project.updateProgress');
-        Route::post('project/{project}/status', [App\Http\Controllers\Evaluator\EvaluasiController::class, 'updateProjectStatus'])->name('project.updateStatus');
-        Route::put('project/{project}', [App\Http\Controllers\Evaluator\EvaluasiController::class, 'updateProject'])->name('project.update');
-        Route::delete('project/{project}', [App\Http\Controllers\Evaluator\EvaluasiController::class, 'destroyProject'])->name('project.destroy');
+        Route::post('project/reorder-card', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'reorderProjectCard'])->name('reorderProjectCard');
+        Route::post('project/reorder-lists', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'reorderProjectLists'])->name('reorderProjectLists');
+        Route::get('project/{card}', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'showProject'])->name('project.show');
+        Route::post('project/{card}/progress', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'updateProjectProgress'])->name('project.updateProgress');
+        Route::post('project/{card}/status', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'updateProjectStatus'])->name('project.updateStatus');
+        Route::put('project/{card}', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'updateProject'])->name('project.update');
+        Route::delete('project/{card}', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'destroyProject'])->name('project.destroy');
 
         // Penilaian Dosen
-        Route::post('penilaian/dosen/{project}', [App\Http\Controllers\Evaluator\EvaluasiController::class, 'saveProjectGradeDosen'])->name('penilaian.dosen.save');
-        Route::get('penilaian/dosen/project/{project}', [App\Http\Controllers\Evaluator\EvaluasiController::class, 'getPenilaianDosenByProject'])->name('penilaian.dosen.project');
-        Route::post('penilaian/dosen', [App\Http\Controllers\Evaluator\EvaluasiController::class, 'storePenilaianDosen'])->name('penilaian.dosen.store');
-        Route::post('penilaian/dosen/batch', [App\Http\Controllers\Evaluator\EvaluasiController::class, 'batchStorePenilaianDosen'])->name('penilaian.dosen.batch');
-        Route::put('penilaian/dosen/{penilaian}', [App\Http\Controllers\Evaluator\EvaluasiController::class, 'updatePenilaianDosen'])->name('penilaian.dosen.update');
-        Route::delete('penilaian/dosen/{penilaian}', [App\Http\Controllers\Evaluator\EvaluasiController::class, 'destroyPenilaianDosen'])->name('penilaian.dosen.destroy');
+        Route::post('penilaian/dosen/{project}', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'saveProjectGradeDosen'])->name('penilaian.dosen.save');
+        Route::post('project/{card}/grade/dosen', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'saveProjectGradeDosen'])->name('project.grade.dosen');
+        Route::get('penilaian/dosen/project/{project}', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'getPenilaianDosenByProject'])->name('penilaian.dosen.project');
+        Route::get('penilaian-dosen/show-by-project/{project}', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'getPenilaianDosenByProject'])->name('penilaian-dosen.show-by-project');
+        Route::post('penilaian/dosen', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'storePenilaianDosen'])->name('penilaian.dosen.store');
+        Route::post('penilaian/dosen/batch', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'batchStorePenilaianDosen'])->name('penilaian.dosen.batch');
+        Route::put('penilaian/dosen/{penilaian}', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'updatePenilaianDosen'])->name('penilaian.dosen.update');
+        Route::delete('penilaian/dosen/{penilaian}', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'destroyPenilaianDosen'])->name('penilaian.dosen.destroy');
 
         // Penilaian Mitra
-        Route::post('penilaian/mitra/{project}', [App\Http\Controllers\Evaluator\EvaluasiController::class, 'saveProjectGradeMitra'])->name('penilaian.mitra.save');
-        Route::get('penilaian/mitra/project/{project}', [App\Http\Controllers\Evaluator\EvaluasiController::class, 'getPenilaianMitraByProject'])->name('penilaian.mitra.project');
+        Route::post('penilaian/mitra/{project}', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'saveProjectGradeMitra'])->name('penilaian.mitra.save');
+        Route::post('project/{card}/grade/mitra', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'saveProjectGradeMitra'])->name('project.grade.mitra');
+        Route::get('penilaian/mitra/project/{project}', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'getPenilaianMitraByProject'])->name('penilaian.mitra.project');
+        Route::get('penilaian-mitra/show-by-project/{project}', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'getPenilaianMitraByProject'])->name('penilaian-mitra.show-by-project');
 
         // Penilaian AP
-        Route::post('penilaian/ap', [App\Http\Controllers\Evaluator\EvaluasiController::class, 'storeNilaiAP'])->name('penilaian.ap.store');
-        Route::post('penilaian/ap/batch', [App\Http\Controllers\Evaluator\EvaluasiController::class, 'batchStoreNilaiAP'])->name('penilaian.ap.batch');
-        Route::get('penilaian/ap/evaluasi-master/{evaluasiMaster}', [App\Http\Controllers\Evaluator\EvaluasiController::class, 'getNilaiAPByEvaluasiMaster'])->name('penilaian.ap.evaluasiMaster');
-        Route::get('penilaian/ap/aktivitas-list/{aktivitasList}', [App\Http\Controllers\Evaluator\EvaluasiController::class, 'getNilaiAPByAktivitasList'])->name('penilaian.ap.aktivitasList');
-        Route::post('penilaian/ap/aktivitas-list', [App\Http\Controllers\Evaluator\EvaluasiController::class, 'storeNilaiAPPerAktivitasList'])->name('penilaian.ap.storePerAktivitasList');
-        Route::put('penilaian/ap/{nilaiAP}', [App\Http\Controllers\Evaluator\EvaluasiController::class, 'updateNilaiAP'])->name('penilaian.ap.update');
-        Route::delete('penilaian/ap/{nilaiAP}', [App\Http\Controllers\Evaluator\EvaluasiController::class, 'destroyNilaiAP'])->name('penilaian.ap.destroy');
+        Route::post('penilaian/ap', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'storeNilaiAP'])->name('penilaian.ap.store');
+        Route::post('penilaian/ap/batch', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'batchStoreNilaiAP'])->name('penilaian.ap.batch');
+        Route::get('penilaian/ap/evaluasi-master/{evaluasiMaster}', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'getNilaiAPByEvaluasiMaster'])->name('penilaian.ap.evaluasiMaster');
+        Route::get('penilaian/ap/aktivitas-list/{aktivitasList}', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'getNilaiAPByAktivitasList'])->name('penilaian.ap.aktivitasList');
+        Route::get('nilai-ap/show-by-aktivitas-list/{aktivitasList}', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'getNilaiAPByAktivitasList'])->name('nilai-ap.show-by-aktivitas-list');
+        Route::post('penilaian/ap/aktivitas-list', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'storeNilaiAPPerAktivitasList'])->name('penilaian.ap.storePerAktivitasList');
+        Route::post('nilai-ap/per-aktivitas-list', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'storeNilaiAPPerAktivitasList'])->name('nilai-ap.store-per-aktivitas-list');
+        Route::put('penilaian/ap/{nilaiAP}', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'updateNilaiAP'])->name('penilaian.ap.update');
+        Route::delete('penilaian/ap/{nilaiAP}', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'destroyNilaiAP'])->name('penilaian.ap.destroy');
 
         // Aktivitas
-        Route::post('aktivitas/{list}/status', [App\Http\Controllers\Evaluator\EvaluasiController::class, 'updateAktivitasStatus'])->name('aktivitas.updateStatus');
+        Route::post('aktivitas/{list}/status', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'updateAktivitasStatus'])->name('aktivitas.updateStatus');
+        Route::post('aktivitas/{list}/status-alt', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'updateAktivitasStatus'])->name('aktivitas.status');
+        Route::post('project/reorder', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'reorderProjectCard'])->name('project.reorder');
+        Route::post('lists/reorder', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'reorderProjectLists'])->name('lists.reorder');
     });
 
     // Nilai
-    Route::prefix('nilai')->name('evaluator.nilai.')->group(function () {
-        Route::get('/', [App\Http\Controllers\Evaluator\NilaiController::class, 'index'])->name('index');
+    Route::prefix('nilai')->name('nilai.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Dosen\NilaiController::class, 'index'])->name('index');
     });
 
     // Riwayat PBL Mahasiswa
-    Route::prefix('riwayat')->name('evaluator.riwayat.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\Evaluator\RiwayatPblEvaluatorController::class, 'index'])->name('index');
-        Route::get('/{mahasiswa:uuid}', [\App\Http\Controllers\Evaluator\RiwayatPblEvaluatorController::class, 'show'])->name('show');
-        Route::get('/{mahasiswa:uuid}/cetak', [\App\Http\Controllers\Evaluator\RiwayatPblEvaluatorController::class, 'cetak'])->name('cetak');
+    Route::prefix('riwayat')->name('riwayat.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Dosen\RiwayatPblDosenController::class, 'index'])->name('index');
+        Route::get('/{mahasiswa:uuid}', [\App\Http\Controllers\Dosen\RiwayatPblDosenController::class, 'show'])->name('show');
+        Route::get('/{mahasiswa:uuid}/cetak', [\App\Http\Controllers\Dosen\RiwayatPblDosenController::class, 'cetak'])->name('cetak');
     });
+});
+
+// Legacy Evaluator Redirects & Aliases (for backward compatibility)
+Route::prefix('evaluator')->middleware(['auth', 'dosen', 'profile.complete'])->group(function () {
+    Route::get('/', fn () => redirect()->route('dosen.dashboard'));
+    Route::get('kelompok', fn () => redirect()->route('dosen.kelompok.index'))->name('evaluator.kelompok.index');
+    Route::get('kelompok/{kelompok}', fn ($kelompok) => redirect()->route('dosen.kelompok.show', $kelompok))->name('evaluator.kelompok.show');
+    Route::get('evaluasi', fn () => redirect()->route('dosen.evaluasi.index'))->name('evaluator.evaluasi.index');
+    Route::get('evaluasi/nilai-final', fn () => redirect()->route('dosen.evaluasi.nilai-final'))->name('evaluator.evaluasi.nilai-final');
+    Route::get('evaluasi/rubrik', fn () => redirect()->route('dosen.evaluasi.rubrik.index'))->name('evaluator.evaluasi.rubrik.index');
+    Route::get('evaluasi/rubrik/data', [RubrikPenilaianController::class, 'apiData'])->name('evaluator.evaluasi.rubrik.data');
+    Route::get('evaluasi/settings', fn () => redirect()->route('dosen.evaluasi.settings'))->name('evaluator.evaluasi.settings');
+    Route::post('evaluasi/settings/save', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'saveSettings'])->name('evaluator.evaluasi.settings.save');
+    Route::get('evaluasi/kelompok/{kelompok}', fn ($kelompok) => redirect()->route('dosen.evaluasi.showKelompok', $kelompok))->name('evaluator.evaluasi.showKelompok');
+    Route::get('evaluasi/kelompok/{kelompok}/export', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'projectExport'])->name('evaluator.evaluasi.projectExport');
+    Route::get('evaluasi/project/{card}', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'showProject'])->name('evaluator.evaluasi.project.show');
+
+    Route::post('evaluasi/penilaian/dosen/{project}', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'saveProjectGradeDosen'])->name('evaluator.evaluasi.penilaian.dosen.save');
+    Route::get('evaluasi/penilaian/dosen/project/{project}', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'getPenilaianDosenByProject'])->name('evaluator.evaluasi.penilaian.dosen.project');
+    Route::post('evaluasi/penilaian/dosen', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'storePenilaianDosen'])->name('evaluator.evaluasi.penilaian.dosen.store');
+    Route::post('evaluasi/penilaian/dosen/batch', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'batchStorePenilaianDosen'])->name('evaluator.evaluasi.penilaian.dosen.batch');
+    Route::put('evaluasi/penilaian/dosen/{penilaian}', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'updatePenilaianDosen'])->name('evaluator.evaluasi.penilaian.dosen.update');
+    Route::delete('evaluasi/penilaian/dosen/{penilaian}', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'destroyPenilaianDosen'])->name('evaluator.evaluasi.penilaian.dosen.destroy');
+
+    Route::get('nilai', fn () => redirect()->route('dosen.nilai.index'))->name('evaluator.nilai.index');
+    Route::get('riwayat', fn () => redirect()->route('dosen.riwayat.index'))->name('evaluator.riwayat.index');
+    Route::get('riwayat/{mahasiswa:uuid}', fn ($m) => redirect()->route('dosen.riwayat.show', $m))->name('evaluator.riwayat.show');
+    Route::get('riwayat/{mahasiswa:uuid}/cetak', [\App\Http\Controllers\Dosen\RiwayatPblDosenController::class, 'cetak'])->name('evaluator.riwayat.cetak');
 });
 
 // Mahasiswa
@@ -379,4 +416,6 @@ Route::middleware(['auth', 'profile.complete'])->group(function () {
     Route::post('/project/{card}/remove-dosen', [\App\Http\Controllers\ProjectVerifikasiController::class, 'removeDosen'])->name('project.dosen.remove');
     Route::post('/project/{card}/dosen-penilai', [\App\Http\Controllers\ProjectVerifikasiController::class, 'assignDosenPenilai'])->name('project.dosen-penilai.store');
     Route::delete('/project/{card}/dosen-penilai/{penilai}', [\App\Http\Controllers\ProjectVerifikasiController::class, 'removeDosenPenilai'])->name('project.dosen-penilai.destroy');
+    Route::post('/project/{card}/attach-mata-kuliah', [\App\Http\Controllers\ProjectVerifikasiController::class, 'attachMataKuliah'])->name('project.mata-kuliah.attach');
+    Route::delete('/project/{card}/detach-mata-kuliah/{mataKuliah}', [\App\Http\Controllers\ProjectVerifikasiController::class, 'detachMataKuliah'])->name('project.mata-kuliah.detach');
 });

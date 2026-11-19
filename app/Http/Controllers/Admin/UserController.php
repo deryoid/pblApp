@@ -54,7 +54,7 @@ class UserController extends Controller
             'no_hp' => 'required|string|max:30',
             'username' => 'required|string|max:50|alpha_dash|unique:users,username', // <- unique
             'password' => 'nullable|string|min:5|confirmed', // kosong = pakai default
-            'role' => 'required|in:admin,dosen,evaluator,mahasiswa',
+            'role' => 'required|in:admin,dosen,mahasiswa',
         ], [
             'email.unique' => 'Email ini sudah terdaftar pada akun lain. Silakan periksa daftar pengguna untuk mengedit akun yang sudah ada.',
             'username.unique' => 'Username ini sudah terdaftar pada akun lain. Silakan periksa daftar pengguna untuk mengedit akun yang sudah ada.',
@@ -78,8 +78,8 @@ class UserController extends Controller
             }
         }
 
-        // Pencegahan akun ganda: jika role dosen/evaluator, periksa apakah NIP sudah terhubung ke akun lain
-        if (in_array($validated['role'], ['dosen', 'evaluator'], true)) {
+        // Pencegahan akun ganda: jika role dosen, periksa apakah NIP sudah terhubung ke akun lain
+        if ($validated['role'] === 'dosen') {
             $nipCandidate = strtoupper($validated['username']);
             $existingDosen = \App\Models\Dosen::where('nip', $nipCandidate)->first();
 
@@ -127,8 +127,8 @@ class UserController extends Controller
             }
         }
 
-        // Jika role dosen atau evaluator, sesuaikan dengan Bank Data Dosen
-        if (in_array($validated['role'], ['dosen', 'evaluator'], true)) {
+        // Jika role dosen, sesuaikan dengan Bank Data Dosen
+        if ($validated['role'] === 'dosen') {
             $nipCandidate = preg_match('/^[A-Za-z0-9_-]{5,}$/', $validated['username']) ? strtoupper($validated['username']) : null;
             $d = null;
             if ($nipCandidate) {
@@ -206,7 +206,7 @@ class UserController extends Controller
             'no_hp' => 'required|string|max:30',
             'username' => ['required', 'string', 'max:50', 'alpha_dash', Rule::unique('users', 'username')->ignore($user->id)], // <- unique
             'password' => 'nullable|string|min:5|confirmed',
-            'role' => 'required|in:admin,dosen,evaluator,mahasiswa',
+            'role' => 'required|in:admin,dosen,mahasiswa',
         ]);
 
         $updateData = [
@@ -247,7 +247,7 @@ class UserController extends Controller
         }
 
         // Jika user adalah dosen/evaluator, sesuaikan nama dan kontak di Bank Data Dosen
-        if (in_array($user->role, ['dosen', 'evaluator'], true)) {
+        if ($user->role === 'dosen') {
             $d = $user->dosen;
             if (! $d) {
                 $nipCandidate = preg_match('/^[A-Za-z0-9_-]{5,}$/', $user->username) ? strtoupper($user->username) : null;

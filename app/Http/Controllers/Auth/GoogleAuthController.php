@@ -126,14 +126,34 @@ class GoogleAuthController extends Controller
                     $bankMhs->save();
                 }
             } else {
-                // Cek apakah email terdaftar sebagai Dosen atau Evaluator
-                $dosenUser = User::where('email', $email)->whereIn('role', ['dosen', 'evaluator'])->first();
+                // Cek apakah email terdaftar sebagai Dosen
+                $dosenUser = User::where('email', $email)->where('role', 'dosen')->first();
                 if ($dosenUser) {
                     $user = $dosenUser;
                     $user->update([
                         'google_id' => $googleId,
                         'avatar' => $user->avatar ?: $avatar,
                     ]);
+                } else {
+                    // Cek apakah ada di Bank Data Dosen
+                    $bankDosen = \App\Models\Dosen::where('nip', $emailPrefix)
+                        ->orWhere('nama_dosen', 'LIKE', '%'.$googleName.'%')
+                        ->first();
+
+                    if ($bankDosen) {
+                        $user = User::create([
+                            'nama_user' => $bankDosen->nama_dosen ?: ($googleName ?: $emailPrefix),
+                            'email' => $email,
+                            'username' => ! empty($bankDosen->nip) ? $bankDosen->nip : $emailPrefix,
+                            'google_id' => $googleId,
+                            'avatar' => $avatar,
+                            'role' => 'dosen',
+                            'email_verified_at' => now(),
+                        ]);
+
+                        $bankDosen->user_id = $user->id;
+                        $bankDosen->save();
+                    }
                 }
             }
         }
@@ -165,6 +185,8 @@ class GoogleAuthController extends Controller
                 'is_profile_complete' => false,
             ]);
         } else {
+            $user->syncAndFixRole();
+
             // Pastikan relasi mahasiswa sinkron jika role mahasiswa
             if ($user->role === 'mahasiswa' && ! $user->mahasiswa()->exists()) {
                 // Cek apakah ada record di Bank Data sebelum membuat record baru
@@ -194,7 +216,7 @@ class GoogleAuthController extends Controller
 
         return match ($user->role) {
             'admin' => redirect()->to('/admin'),
-            'evaluator', 'dosen' => redirect()->to('/evaluator'),
+            'dosen', 'evaluator' => redirect()->to('/dosen'),
             'mahasiswa' => redirect()->to('/mahasiswa'),
             default => redirect()->intended('/'),
         };

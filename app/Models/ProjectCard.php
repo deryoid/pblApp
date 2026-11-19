@@ -281,4 +281,40 @@ class ProjectCard extends Model
 
         return $newStatus;
     }
+
+    /**
+     * Memeriksa apakah seorang pengguna (Admin atau Dosen) berwenang menilai proyek ini.
+     * Admin berwenang menilai seluruh proyek.
+     * Dosen hanya berwenang menilai jika proyek terhubung dengan mata kuliah yang dia ampu
+     * atau proyek yang menugaskan dirinya (sebagai pembimbing atau penilai).
+     */
+    public function canBeAssessedBy(?User $user): bool
+    {
+        if (! $user) {
+            return false;
+        }
+
+        if ($user->isAdmin()) {
+            return true;
+        }
+
+        if (! $user->isDosen()) {
+            return false;
+        }
+
+        // 1. Dosen Penentu / Pembimbing pada proyek ini
+        if ($this->dosen_penentu_id == $user->id) {
+            return true;
+        }
+
+        // 2. Dosen Penilai / Penguji khusus pada proyek ini
+        if ($this->dosenPenilai()->where('dosen_id', $user->id)->exists()) {
+            return true;
+        }
+
+        // 3. Dosen Pengampu dari salah satu mata kuliah yang terhubung dengan proyek ini
+        return $this->mataKuliahs()->whereHas('dosenPengampu', function ($q) use ($user) {
+            $q->where('users.id', $user->id);
+        })->exists();
+    }
 }

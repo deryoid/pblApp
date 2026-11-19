@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Evaluator;
+namespace App\Http\Controllers\Dosen;
 
 use App\Http\Controllers\Controller;
 
@@ -87,7 +87,7 @@ class DashboardController extends Controller
             }
         }
 
-        return view('evaluator.index', compact(
+        return view('dosen.index', compact(
             'periodes', 'selectedPeriode', 'activePeriode',
             'totalPeriodes', 'totalKelas', 'totalKelompoks', 'activeKelompoks',
             'totalMahasiswas', 'activeMahasiswas',

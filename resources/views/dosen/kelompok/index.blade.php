@@ -18,7 +18,7 @@
     <div class="card shadow-sm border border-gray-200 mb-4">
         <div class="card-header py-3 bg-white border-bottom d-flex justify-content-between align-items-center flex-wrap" style="gap: 0.75rem;">
             <div class="d-flex align-items-center flex-wrap" style="gap: 0.5rem;">
-                <form class="form-inline" method="GET" action="{{ route('evaluator.kelompok.index') }}">
+                <form class="form-inline" method="GET" action="{{ route('dosen.kelompok.index') }}">
                     <label class="mr-2 small font-weight-bold text-muted">Periode:</label>
                     <select name="periode_id" class="form-control form-control-sm mr-2" onchange="this.form.submit()" style="border-radius: 8px;">
                         <option value="">Semua Periode</option>
@@ -105,7 +105,7 @@
                             </td>
                             <td class="text-center align-middle text-nowrap">
                                 <div class="table-action-group">
-                                    <a href="{{ route('evaluator.kelompok.show', $k->uuid) }}" class="btn btn-sm btn-outline-info btn-action-icon" title="Detail Kelompok">
+                                    <a href="{{ route('dosen.kelompok.show', $k->uuid) }}" class="btn btn-sm btn-outline-info btn-action-icon" title="Detail Kelompok">
                                         <i class="fas fa-eye fa-sm"></i>
                                     </a>
                                 </div>

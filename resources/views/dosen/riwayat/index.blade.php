@@ -16,7 +16,7 @@
             </p>
         </div>
         <div class="mt-3 mt-sm-0">
-            <a href="{{ route('evaluator.evaluasi.index') }}" class="btn btn-outline-primary btn-sm">
+            <a href="{{ route('dosen.evaluasi.index') }}" class="btn btn-outline-primary btn-sm">
                 <i class="fas fa-project-diagram mr-1"></i> Evaluasi Proyek
             </a>
         </div>
@@ -25,7 +25,7 @@
     <!-- Filter Card -->
     <div class="card shadow-sm border border-gray-200 mb-4">
         <div class="card-body p-3">
-            <form method="GET" action="{{ route('evaluator.riwayat.index') }}">
+            <form method="GET" action="{{ route('dosen.riwayat.index') }}">
                 <div class="row align-items-end">
                     <div class="col-md-3 mb-2 mb-md-0">
                         <label for="riwayatSearch" class="small font-weight-bold text-gray-700">Pencarian NIM / Nama</label>
@@ -72,7 +72,7 @@
                             <i class="fas fa-filter mr-1" aria-hidden="true"></i> Saring
                         </button>
                         @if($search || $kelasId || $periodeId || $perPage != 15)
-                            <a href="{{ route('evaluator.riwayat.index') }}" class="btn btn-outline-secondary btn-sm" title="Reset Saringan">
+                            <a href="{{ route('dosen.riwayat.index') }}" class="btn btn-outline-secondary btn-sm" title="Reset Saringan">
                                 <i class="fas fa-undo" aria-hidden="true"></i>
                             </a>
                         @endif
@@ -134,7 +134,7 @@
                                     @endif
                                 </td>
                                 <td class="align-middle text-center">
-                                    <a href="{{ route('evaluator.riwayat.show', $m) }}" class="btn btn-sm btn-primary font-weight-bold shadow-sm">
+                                    <a href="{{ route('dosen.riwayat.show', $m) }}" class="btn btn-sm btn-primary font-weight-bold shadow-sm">
                                         <i class="fas fa-eye mr-1"></i> Riwayat PBL
                                     </a>
                                 </td>

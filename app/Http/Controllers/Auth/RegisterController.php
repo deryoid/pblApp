@@ -27,7 +27,7 @@ class RegisterController extends Controller
 
             return match ($user->role) {
                 'admin' => redirect()->to('/admin'),
-                'evaluator', 'dosen' => redirect()->to('/evaluator'),
+                'dosen', 'evaluator' => redirect()->to('/dosen'),
                 'mahasiswa' => redirect()->to('/mahasiswa'),
                 default => redirect()->to('/'),
             };
@@ -51,7 +51,7 @@ class RegisterController extends Controller
 
             return match ($user->role) {
                 'admin' => redirect()->to('/admin'),
-                'evaluator', 'dosen' => redirect()->to('/evaluator'),
+                'dosen', 'evaluator' => redirect()->to('/dosen'),
                 'mahasiswa' => redirect()->to('/mahasiswa'),
                 default => redirect()->to('/'),
             };
@@ -364,7 +364,7 @@ class RegisterController extends Controller
                     'Akun Anda dengan email '.$email.' berhasil ditautkan dengan Bank Data Dosen (NIP '.$nip.'). Selamat datang, '.$namaUser.'!'
                 )->autoClose(7000);
 
-                return redirect()->to('/evaluator');
+                return redirect()->to('/dosen');
             }
 
             // Skenario B: Email sudah terdaftar pada akun lain
@@ -449,6 +449,6 @@ class RegisterController extends Controller
             'Selamat datang, '.$user->nama_user.'! Akun Dosen Anda berhasil didaftarkan dan disinkronkan ke dalam sistem PBL.'
         )->autoClose(6000);
 
-        return redirect()->to('/evaluator');
+        return redirect()->to('/dosen');
     }
 }

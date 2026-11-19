@@ -45,7 +45,7 @@ class TableViewsAndIndexTest extends TestCase
             'username' => 'evaluator_tester',
             'email' => 'evaluator@politala.ac.id',
             'password' => Hash::make('password123'),
-            'role' => 'evaluator',
+            'role' => 'dosen',
             'no_hp' => '081234567891',
         ]);
     }
@@ -125,8 +125,8 @@ class TableViewsAndIndexTest extends TestCase
         $respAdmin->assertSee('Kelompok PBL');
         $respAdmin->assertSee('Kelompok 1 - Smart Campus');
 
-        // Evaluator
-        $respEval = $this->actingAs($this->evaluator)->get('/evaluator/kelompok');
+        // Evaluator / Dosen
+        $respEval = $this->actingAs($this->evaluator)->get('/dosen/kelompok');
         $respEval->assertStatus(200);
         $respEval->assertSee('Kelompok PBL');
         $respEval->assertSee('Kelompok 1 - Smart Campus');
@@ -163,8 +163,8 @@ class TableViewsAndIndexTest extends TestCase
         $respAdmin->assertStatus(200);
         $respAdmin->assertSee('Nilai Mahasiswa');
 
-        // Evaluator
-        $respEval = $this->actingAs($this->evaluator)->get('/evaluator/nilai');
+        // Evaluator / Dosen
+        $respEval = $this->actingAs($this->evaluator)->get('/dosen/nilai');
         $respEval->assertStatus(200);
         $respEval->assertSee('Nilai Mahasiswa');
     }
@@ -180,8 +180,8 @@ class TableViewsAndIndexTest extends TestCase
         $respAdmin->assertSee('tbl-evaluasi');
         $respAdmin->assertSee('Progress Evaluasi');
 
-        // Evaluator
-        $respEval = $this->actingAs($this->evaluator)->get('/evaluator/evaluasi');
+        // Evaluator / Dosen
+        $respEval = $this->actingAs($this->evaluator)->get('/dosen/evaluasi');
         $respEval->assertStatus(200);
         $respEval->assertSee('tbl-evaluasi');
         $respEval->assertSee('Progress Evaluasi');

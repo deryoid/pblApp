@@ -61,23 +61,23 @@ class SidebarComponentTest extends TestCase
         $response->assertSee('2026/2027 Ganjil');
     }
 
-    public function test_evaluator_sidebar_renders_expected_sections_and_links(): void
+    public function test_dosen_sidebar_renders_expected_sections_and_links(): void
     {
-        $evaluator = User::create([
+        $dosen = User::create([
             'nama_user' => 'Dosen Penilai PBL',
             'username' => 'dosen_eval',
             'email' => 'evaluator@politala.ac.id',
             'password' => Hash::make('password123'),
-            'role' => 'evaluator',
+            'role' => 'dosen',
             'no_hp' => '081234567891',
         ]);
 
-        $response = $this->actingAs($evaluator)->get('/evaluator');
+        $response = $this->actingAs($dosen)->get('/dosen');
 
         $response->assertStatus(200);
         $response->assertSee('PBL TRKJ');
         $response->assertSee('Dosen Penilai PBL');
-        $response->assertSee('Dosen Evaluator');
+        $response->assertSee('Dosen / Penilai');
         $response->assertSee('Data Kelompok');
         $response->assertSee('Kelompok PBL');
         $response->assertSee('Penilaian & Evaluasi', false);

@@ -30,7 +30,8 @@ class DashboardController extends Controller
         // Data Pengguna Global
         $totalUsers = \App\Models\User::count();
         $totalAdmins = \App\Models\User::where('role', 'admin')->count();
-        $totalEvaluators = \App\Models\User::where('role', 'evaluator')->count();
+        $totalDosens = \App\Models\User::where('role', 'dosen')->count();
+        $totalEvaluators = $totalDosens;
         $totalMahasiswas = \App\Models\Mahasiswa::count();
 
         // Data Khusus Periode yang Dipilih
@@ -115,7 +116,7 @@ class DashboardController extends Controller
         return view('admin.index', compact(
             'periodes', 'selectedPeriode', 'activePeriode',
             'totalPeriodes', 'activePeriodeCount', 'totalKelas', 'totalKelompoks', 'activeKelompoks',
-            'totalUsers', 'totalAdmins', 'totalEvaluators', 'totalMahasiswas', 'activeMahasiswas',
+            'totalUsers', 'totalAdmins', 'totalDosens', 'totalEvaluators', 'totalMahasiswas', 'activeMahasiswas',
             'totalSesiEvaluasi', 'activeSesiEvaluasi',
             'totalKunjungan', 'kunjunganPerPeriode', 'statusKunjungan',
             'totalProyekLists', 'totalProyekCards', 'proyekPerPeriode', 'statusProyek',

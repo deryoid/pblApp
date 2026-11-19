@@ -38,10 +38,10 @@
     </div>
 
     <div class="ml-auto d-flex align-items-center">
-      <a href="{{ route('evaluator.evaluasi.nilai-final', ['periode_id' => $periodeId]) }}" class="btn btn-sm btn-primary">
+      <a href="{{ route('dosen.evaluasi.nilai-final', ['periode_id' => $periodeId]) }}" class="btn btn-sm btn-primary">
         <i class="fas fa-chart-bar"></i> Nilai Final
       </a>
-      <a href="{{ route('evaluator.evaluasi.settings') }}" class="btn btn-sm btn-secondary ml-2">
+      <a href="{{ route('dosen.evaluasi.settings') }}" class="btn btn-sm btn-secondary ml-2">
         <i class="fas fa-cog"></i> Pengaturan
       </a>
     </div>
@@ -117,7 +117,7 @@
                 </td>
                 <td class="text-center align-middle text-nowrap">
                   <div class="table-action-group">
-                    <a href="{{ route('evaluator.evaluasi.showKelompok', $k->uuid) }}"
+                    <a href="{{ route('dosen.evaluasi.showKelompok', $k->uuid) }}"
                        class="btn btn-sm btn-outline-primary btn-action-icon" title="Detail Evaluasi"><i class="fas fa-user-check fa-sm"></i>
                     </a>
                   </div>

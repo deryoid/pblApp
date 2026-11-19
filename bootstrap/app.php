@@ -2,7 +2,7 @@
 
 use App\Console\Commands\AutoTandaiTidakAdaTanggapan;
 use App\Http\Middleware\Admin;
-use App\Http\Middleware\Evaluator;
+use App\Http\Middleware\Dosen;
 use App\Http\Middleware\Mahasiswa;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -30,7 +30,8 @@ return Application::configure(basePath: dirname(__DIR__))
         // daftar alias (kayak $routeMiddleware lama)
         $middleware->alias([
             'admin' => Admin::class,
-            'evaluator' => Evaluator::class,
+            'dosen' => Dosen::class,
+            'evaluator' => Dosen::class,
             'mahasiswa' => Mahasiswa::class,
             'profile.complete' => \App\Http\Middleware\EnsureProfileIsCompleted::class,
         ]);

@@ -254,7 +254,10 @@ class SecurityHardeningTest extends TestCase
             'role' => 'dosen',
         ]);
 
-        $response = $this->actingAs($dosen)->get('/evaluator');
+        $response = $this->actingAs($dosen)->get('/dosen');
         $response->assertOk();
+
+        $legacyResponse = $this->actingAs($dosen)->get('/evaluator');
+        $legacyResponse->assertRedirect(route('dosen.dashboard'));
     }
 }

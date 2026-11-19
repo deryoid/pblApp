@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Evaluator;
+namespace App\Http\Controllers\Dosen;
 
 use App\Http\Controllers\Controller;
 use App\Models\Kelompok;
@@ -48,13 +48,13 @@ class KelompokController extends Controller
             })
             ->values();
 
-        return view('evaluator.kelompok.index', compact('kelompoks', 'periodeAktif', 'periodes', 'qPeriode'));
+        return view('dosen.kelompok.index', compact('kelompoks', 'periodeAktif', 'periodes', 'qPeriode'));
     }
 
     public function show(Kelompok $kelompok)
     {
         $kelompok->load(['periode', 'mahasiswas.kelas', 'aktivitasLists']);
 
-        return view('evaluator.kelompok.show', compact('kelompok'));
+        return view('dosen.kelompok.show', compact('kelompok'));
     }
 }

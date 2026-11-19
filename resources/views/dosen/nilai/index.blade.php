@@ -10,7 +10,7 @@
             <i class="fas fa-chart-bar"></i> Nilai Mahasiswa
         </h1>
         <div>
-            <a href="{{ url('/evaluator') }}" class="btn btn-secondary btn-sm">
+            <a href="{{ url('/dosen') }}" class="btn btn-secondary btn-sm">
                 <i class="fas fa-arrow-left"></i> Kembali
             </a>
         </div>
@@ -121,7 +121,7 @@
 @push('scripts')
 <script>
 function resetFilters() {
-    window.location.href = '{{ route("evaluator.nilai.index") }}';
+    window.location.href = '{{ route("dosen.nilai.index") }}';
 }
 
 // Auto-submit search on Enter key

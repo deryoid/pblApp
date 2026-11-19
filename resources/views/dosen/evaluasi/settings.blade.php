@@ -36,7 +36,7 @@
           <hr>
           <div class="d-flex align-items-center justify-content-between mb-3">
             <h6 class="text-muted mb-0">Indikator 4 Pilar Dosen (jumlah = 100%)</h6>
-            <a href="{{ route('evaluator.evaluasi.rubrik.index') }}" target="_blank" class="small text-primary"><i class="fas fa-clipboard-check mr-1"></i>Lihat Matriks Rubrik</a>
+            <a href="{{ route('dosen.evaluasi.rubrik.index') }}" target="_blank" class="small text-primary"><i class="fas fa-clipboard-check mr-1"></i>Lihat Matriks Rubrik</a>
           </div>
           <div class="form-row">
             <div class="form-group col-sm-6">

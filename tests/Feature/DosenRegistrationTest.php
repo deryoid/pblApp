@@ -82,7 +82,7 @@ class DosenRegistrationTest extends TestCase
             'password_confirmation' => 'secret123',
         ]);
 
-        $response->assertRedirect('/evaluator');
+        $response->assertRedirect('/dosen');
 
         // Check user created with role dosen
         $this->assertDatabaseHas('users', [
@@ -120,7 +120,7 @@ class DosenRegistrationTest extends TestCase
             'password_confirmation' => 'dosenpassword',
         ]);
 
-        $response->assertRedirect('/evaluator');
+        $response->assertRedirect('/dosen');
 
         // User must be created
         $this->assertDatabaseHas('users', [
@@ -233,7 +233,7 @@ class DosenRegistrationTest extends TestCase
             'username' => '198003032005011002',
             'password' => 'dosenpassword',
         ]);
-        $responseNip->assertRedirect('/evaluator');
+        $responseNip->assertRedirect('/dosen');
         $this->assertEquals($dosenUser->id, Auth::id());
 
         Auth::logout();
@@ -243,7 +243,7 @@ class DosenRegistrationTest extends TestCase
             'username' => 'agus.pratama@politala.ac.id',
             'password' => 'dosenpassword',
         ]);
-        $responseEmail->assertRedirect('/evaluator');
+        $responseEmail->assertRedirect('/dosen');
         $this->assertEquals($dosenUser->id, Auth::id());
     }
 
@@ -273,7 +273,7 @@ class DosenRegistrationTest extends TestCase
             'password' => '123456',
         ]);
 
-        $response->assertRedirect('/evaluator');
+        $response->assertRedirect('/dosen');
         $this->assertEquals($dosenUser->id, Auth::id());
         $this->assertNull(Auth::user()->email);
     }

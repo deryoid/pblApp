@@ -224,8 +224,9 @@
                     if (Auth::check()) {
                         $dashboardUrl = match(Auth::user()->role) {
                             'admin' => url('/admin'),
-                            'evaluator' => url('/evaluator'),
-                            default => url('/mahasiswa'),
+                            'dosen', 'evaluator' => url('/dosen'),
+                            'mahasiswa' => url('/mahasiswa'),
+                            default => url('/'),
                         };
                     }
                 @endphp

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Evaluator;
+namespace App\Http\Controllers\Dosen;
 
 use App\Exports\ProjectExport;
 use App\Http\Controllers\Controller;
@@ -182,7 +182,7 @@ class EvaluasiController extends Controller
             }
         }
 
-        return view('evaluator.evaluasi.index', [
+        return view('dosen.evaluasi.index', [
             'periodes' => $periodes,
             'kelompoks' => $kelompoks,
             'sesiMap' => $sesiMap,
@@ -411,7 +411,7 @@ class EvaluasiController extends Controller
         $kelompoks = Kelompok::when($periodeId, fn ($q) => $q->where('periode_id', $periodeId))
             ->orderBy('nama_kelompok')->get(['id', 'nama_kelompok']);
 
-        return view('evaluator.evaluasi.nilai-final', compact('mahasiswaNilai', 'periodes', 'kelompoks', 'periodeId', 'kelompokId'));
+        return view('dosen.evaluasi.nilai-final', compact('mahasiswaNilai', 'periodes', 'kelompoks', 'periodeId', 'kelompokId'));
     }
 
     /**
@@ -564,6 +564,12 @@ class EvaluasiController extends Controller
             ->get();
 
         $proyek_total_cards = $proyekLists->sum(fn ($list) => $list->cards->count());
+
+        foreach ($proyekLists as $list) {
+            foreach ($list->cards as $card) {
+                $card->can_assess = $card->canBeAssessedBy(Auth::user());
+            }
+        }
 
         // Aktivitas lists
         $aktivitasLists = AktivitasList::with(['cards' => function ($q) use ($kelompok, $activePeriode) {
@@ -816,7 +822,7 @@ class EvaluasiController extends Controller
             return $item['type'].'_'.$item['nama'].'_'.$item['matkul'];
         })->values();
 
-        return view('evaluator.evaluasi.show', [
+        return view('dosen.evaluasi.show', [
             'kelompok' => $kelompok,
             'periode' => $activePeriode,
             'sesi' => $sesi,
@@ -866,7 +872,7 @@ class EvaluasiController extends Controller
             $settings = $defaults;
         }
 
-        return view('evaluator.evaluasi.settings', compact('settings'));
+        return view('dosen.evaluasi.settings', compact('settings'));
     }
 
     public function saveSettings(Request $req)
@@ -1017,9 +1023,8 @@ class EvaluasiController extends Controller
     }
 
     /** ===== Show project details ===== */
-    public function showProject(ProjectCard $project)
+    public function showProject(ProjectCard $card)
     {
-        $card = $project;
         $card->syncVerifikasiDosen();
 
         $card->load([
@@ -1042,10 +1047,16 @@ class EvaluasiController extends Controller
         $userVerifikasi = $user ? $involved->firstWhere('dosen_id', $user->id) : null;
         $isAdmin = $user ? $user->isAdmin() : false;
 
-        $availableDosen = ($isAdmin || $user?->isEvaluator())
-            ? \App\Models\User::whereIn('role', ['dosen', 'evaluator', 'admin'])
+        $availableDosen = ($isAdmin || $user?->isDosen())
+            ? \App\Models\User::whereIn('role', ['dosen', 'admin'])
                 ->orderBy('nama_user')
                 ->get(['id', 'nama_user', 'username', 'email'])
+            : [];
+
+        $availableMatkul = $isAdmin
+            ? \App\Models\MataKuliah::where('is_active', true)
+                ->orderBy('nama_matkul')
+                ->get(['id', 'kode_matkul', 'nama_matkul', 'sks', 'semester'])
             : [];
 
         return response()->json([
@@ -1053,9 +1064,11 @@ class EvaluasiController extends Controller
             'project' => $card,
             'involved_dosen' => $involved,
             'can_acc' => $isAdmin || $isUserInvolved,
+            'can_assess' => $card->canBeAssessedBy($user),
             'user_verifikasi' => $userVerifikasi,
             'is_admin' => $isAdmin,
             'available_dosen' => $availableDosen,
+            'available_matkul' => $availableMatkul,
         ]);
     }
 
@@ -1170,15 +1183,24 @@ class EvaluasiController extends Controller
     }
 
     /** ===== PENILAIAN PROYEK: Dosen ===== */
-    public function saveProjectGradeDosen(Request $request, ProjectCard $card)
+    public function saveProjectGradeDosen(Request $request, $card)
     {
         try {
+            $card = $card instanceof ProjectCard ? $card : ProjectCard::where('uuid', $card)->orWhere('id', $card)->firstOrFail();
+
             // Check if user is authenticated
             if (! Auth::check()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'User tidak terautentikasi. Silakan login ulang.',
                 ], 401);
+            }
+
+            if (! $card->canBeAssessedBy(Auth::user())) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki wewenang untuk menilai proyek ini karena proyek tidak terhubung dengan mata kuliah yang Anda ampu atau penugasan Anda.',
+                ], 403);
             }
 
             $evaluasiMasterId = (int) $request->input('evaluasi_master_id', $request->input('sesi_id'));
@@ -1201,6 +1223,20 @@ class EvaluasiController extends Controller
                     'success' => false,
                     'message' => 'Project card tidak memiliki kelompok atau periode. Silakan pilih project yang valid.',
                 ]);
+            }
+
+            if (! $evaluasiMasterId) {
+                $evalMaster = \App\Models\EvaluasiMaster::firstOrCreate(
+                    [
+                        'kelompok_id' => $kelompokId,
+                        'periode_id' => $periodeId,
+                    ],
+                    [
+                        'uuid' => (string) \Illuminate\Support\Str::uuid(),
+                        'created_by' => Auth::id(),
+                    ]
+                );
+                $evaluasiMasterId = $evalMaster->id;
             }
 
             if (empty($items)) {
@@ -1724,6 +1760,14 @@ class EvaluasiController extends Controller
             if (empty($validated['evaluator_id']) && Auth::check()) {
                 $validated['evaluator_id'] = Auth::id();
             }
+
+            $targetCard = ProjectCard::find($validated['project_card_id']);
+            if ($targetCard && ! $targetCard->canBeAssessedBy(Auth::user())) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki wewenang untuk menilai proyek ini karena proyek tidak terhubung dengan mata kuliah yang Anda ampu atau penugasan Anda.',
+                ], 403);
+            }
             $validated['evaluasi_master_id'] = $validated['evaluasi_master_id'] ?? null;
             $validated['progress_percentage'] = $validated['progress_percentage'] ?? 0;
             $validated['evaluation_type'] = $validated['evaluation_type'] ?? 'regular';
@@ -1805,6 +1849,15 @@ class EvaluasiController extends Controller
 
             foreach ($validated['evaluations'] as $evaluationData) {
                 try {
+                    if (! empty($evaluationData['project_card_id'])) {
+                        $targetCard = ProjectCard::find($evaluationData['project_card_id']);
+                        if ($targetCard && ! $targetCard->canBeAssessedBy(Auth::user())) {
+                            $errorCount++;
+
+                            continue;
+                        }
+                    }
+
                     // Add default values
                     if (empty($evaluationData['evaluator_id']) && Auth::check()) {
                         $evaluationData['evaluator_id'] = Auth::id();
@@ -1862,6 +1915,14 @@ class EvaluasiController extends Controller
     {
         $evaluation = EvaluasiDosen::where('uuid', $penilaian)->orWhere('id', $penilaian)->firstOrFail();
 
+        $projectCard = $evaluation->projectCard;
+        if ($projectCard && ! $projectCard->canBeAssessedBy(Auth::user())) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki wewenang untuk memperbarui nilai proyek ini.',
+            ], 403);
+        }
+
         $validated = $request->validate([
             'd_relevansi' => 'nullable|integer|min:0|max:100',
             'd_kualitas' => 'nullable|integer|min:0|max:100',
@@ -1901,6 +1962,14 @@ class EvaluasiController extends Controller
     {
         try {
             $evaluation = EvaluasiDosen::where('uuid', $penilaian)->orWhere('id', $penilaian)->firstOrFail();
+
+            $projectCard = $evaluation->projectCard;
+            if ($projectCard && ! $projectCard->canBeAssessedBy(Auth::user())) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak memiliki wewenang untuk menghapus nilai proyek ini.',
+                ], 403);
+            }
             $evaluation->delete();
 
             return response()->json([

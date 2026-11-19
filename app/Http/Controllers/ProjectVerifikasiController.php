@@ -245,6 +245,71 @@ class ProjectVerifikasiController extends Controller
     }
 
     /**
+     * Admin menghubungkan mata kuliah ke dalam proyek mahasiswa.
+     */
+    public function attachMataKuliah(Request $request, ProjectCard $card): JsonResponse
+    {
+        $user = Auth::user();
+        if (! $user->isAdmin()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Hanya Administrator yang dapat menghubungkan mata kuliah ke dalam proyek.',
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'mata_kuliah_id' => 'required|exists:mata_kuliah,id',
+        ]);
+
+        $mk = \App\Models\MataKuliah::with('dosenPengampu')->findOrFail($validated['mata_kuliah_id']);
+
+        if (! $card->mataKuliahs()->where('mata_kuliah.id', $mk->id)->exists()) {
+            $card->mataKuliahs()->attach($mk->id);
+        }
+
+        $card->syncVerifikasiDosen();
+        $card->updateStatusProposalAcc();
+
+        return response()->json([
+            'success' => true,
+            'message' => "Mata kuliah {$mk->nama_matkul} berhasil dihubungkan ke proyek.",
+            'mata_kuliahs' => $card->fresh('mataKuliahs.dosenPengampu')->mataKuliahs,
+            'involved_dosen' => $card->getInvolvedDosen(),
+        ]);
+    }
+
+    /**
+     * Admin melepaskan mata kuliah dari proyek mahasiswa.
+     */
+    public function detachMataKuliah(ProjectCard $card, $mataKuliah): JsonResponse
+    {
+        $user = Auth::user();
+        if (! $user->isAdmin()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Hanya Administrator yang dapat melepaskan mata kuliah dari proyek.',
+            ], 403);
+        }
+
+        $mk = $mataKuliah instanceof \App\Models\MataKuliah
+            ? $mataKuliah
+            : \App\Models\MataKuliah::where('uuid', $mataKuliah)->orWhere('id', $mataKuliah)->firstOrFail();
+
+        $card->mataKuliahs()->detach($mk->id);
+
+        $card->load('mataKuliahs.dosenPengampu', 'dosenPenilai', 'dosenPenentu');
+        $card->syncVerifikasiDosen();
+        $card->updateStatusProposalAcc();
+
+        return response()->json([
+            'success' => true,
+            'message' => "Mata kuliah {$mk->nama_matkul} berhasil dilepas dari proyek.",
+            'mata_kuliahs' => $card->fresh('mataKuliahs.dosenPengampu')->mataKuliahs,
+            'involved_dosen' => $card->getInvolvedDosen(),
+        ]);
+    }
+
+    /**
      * Admin menambahkan dosen penilai ke dalam proyek.
      */
     public function assignDosenPenilai(Request $request, ProjectCard $card): JsonResponse

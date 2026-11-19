@@ -65,7 +65,7 @@
                             </p>
                         </div>
                         <div class="mt-3 mt-sm-0 d-flex align-items-center flex-wrap" style="gap: 0.5rem;">
-                            <form method="GET" action="{{ url('evaluator') }}" class="m-0 d-flex align-items-center">
+                            <form method="GET" action="{{ url('dosen') }}" class="m-0 d-flex align-items-center">
                                 <label for="periodeSwitchEvaluator" class="small font-weight-bold text-gray-700 mr-2 mb-0 text-nowrap">
                                     <i class="fas fa-calendar-alt text-primary mr-1" aria-hidden="true"></i>Pilih Periode:
                                 </label>
@@ -80,7 +80,7 @@
                             <a href="{{ route('home') }}" target="_blank" class="btn btn-sm btn-outline-primary shadow-sm">
                                 <i class="fas fa-external-link-alt mr-1" aria-hidden="true"></i> Showcase SPA
                             </a>
-                            <a href="{{ route('evaluator.evaluasi.index') }}" class="btn btn-sm btn-primary shadow-sm">
+                            <a href="{{ route('dosen.evaluasi.index') }}" class="btn btn-sm btn-primary shadow-sm">
                                 <i class="fas fa-clipboard-check mr-1" aria-hidden="true"></i> Kelola Evaluasi
                             </a>
                         </div>
@@ -320,7 +320,7 @@
                                 <div class="card-body text-center">
                                     <div class="h3 text-warning mb-2">{{ $proyekToEvaluate }}</div>
                                     <p class="text-muted mb-0">dari {{ $totalProyekCards }} total proyek cards</p>
-                                    <a href="{{ route('evaluator.evaluasi.index') }}" class="btn btn-primary btn-sm mt-3">
+                                    <a href="{{ route('dosen.evaluasi.index') }}" class="btn btn-primary btn-sm mt-3">
                                         <i class="fas fa-eye"></i> Lihat Detail
                                     </a>
                                 </div>
@@ -338,7 +338,7 @@
                                 <div class="card-body text-center">
                                     <div class="h3 text-info mb-2">{{ $aktivitasToEvaluate }}</div>
                                     <p class="text-muted mb-0">dari {{ $totalAktivitasLists }} total aktivitas lists</p>
-                                    <a href="{{ route('evaluator.evaluasi.index') }}" class="btn btn-primary btn-sm mt-3">
+                                    <a href="{{ route('dosen.evaluasi.index') }}" class="btn btn-primary btn-sm mt-3">
                                         <i class="fas fa-eye"></i> Lihat Detail
                                     </a>
                                 </div>

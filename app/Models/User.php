@@ -134,10 +134,10 @@ class User extends Authenticatable
         return null;
     }
 
-    // Scope for admin and evaluator users
+    // Scope for admin and dosen (evaluator) users
     public function scopeAdminAndEvaluator($query): void
     {
-        $query->whereIn('role', ['admin', 'evaluator']);
+        $query->whereIn('role', ['admin', 'dosen']);
     }
 
     /**
@@ -185,6 +185,36 @@ class User extends Authenticatable
         return $this->hasMany(\App\Models\ProjectCard::class, 'dosen_penentu_id');
     }
 
+    /**
+     * Otomatis memvalidasi dan memulihkan role dosen jika user tercatat di data dosen / pengampu.
+     */
+    public function syncAndFixRole(): void
+    {
+        if ($this->role === 'mahasiswa') {
+            $isActuallyDosen = \App\Models\Dosen::where('user_id', $this->id)->exists()
+                || \App\Models\Dosen::where('nip', $this->username)->exists()
+                || \Illuminate\Support\Facades\DB::table('dosen_mata_kuliah')->where('dosen_id', $this->id)->exists()
+                || \App\Models\ProjectDosenPenilai::where('dosen_id', $this->id)->exists()
+                || \App\Models\ProjectCard::where('dosen_penentu_id', $this->id)->exists();
+
+            if ($isActuallyDosen) {
+                $this->role = 'dosen';
+                $this->save();
+
+                $bankDosen = \App\Models\Dosen::where('nip', $this->username)
+                    ->orWhere('user_id', $this->id)
+                    ->first();
+
+                if ($bankDosen && ! $bankDosen->user_id) {
+                    $bankDosen->user_id = $this->id;
+                    $bankDosen->save();
+                }
+
+                \App\Models\Mahasiswa::where('user_id', $this->id)->whereNull('nim')->delete();
+            }
+        }
+    }
+
     public function isProfileComplete(): bool
     {
         // Untuk mahasiswa, wajib memiliki no_hp dan data akademik (NIM, kelas_id, dan is_profile_complete)
@@ -197,7 +227,7 @@ class User extends Authenticatable
             return ! empty($this->no_hp) && ! empty($mhs->nim) && ! empty($mhs->kelas_id) && (bool) $mhs->is_profile_complete;
         }
 
-        // Untuk role lain (admin, evaluator, dosen), wajib melengkapi no_hp
+        // Untuk role lain (admin, dosen), wajib melengkapi no_hp
         return ! empty($this->no_hp);
     }
 
@@ -208,12 +238,13 @@ class User extends Authenticatable
 
     public function isEvaluator(): bool
     {
-        return $this->role === 'evaluator';
+        // Dosen bertindak langsung sebagai evaluator/penilai proyek
+        return $this->role === 'dosen';
     }
 
     public function isDosen(): bool
     {
-        return in_array($this->role, ['dosen', 'evaluator']);
+        return $this->role === 'dosen';
     }
 
     public function isMahasiswa(): bool

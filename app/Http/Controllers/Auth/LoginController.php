@@ -18,10 +18,11 @@ class LoginController extends Controller
     {
         if (Auth::check()) {
             $user = Auth::user();
+            $user->syncAndFixRole();
 
             return match ($user->role) {
                 'admin' => redirect()->to('/admin'),
-                'evaluator', 'dosen' => redirect()->to('/evaluator'),
+                'dosen', 'evaluator' => redirect()->to('/dosen'),
                 'mahasiswa' => redirect()->to('/mahasiswa'),
                 default => redirect()->to('/'),
             };
@@ -63,10 +64,11 @@ class LoginController extends Controller
             Alert::toast('Anda berhasil masuk.', 'success');
 
             $user = Auth::user();
+            $user->syncAndFixRole();
 
             return match ($user->role) {
                 'admin' => redirect()->to('/admin'),
-                'evaluator', 'dosen' => redirect()->to('/evaluator'),
+                'dosen', 'evaluator' => redirect()->to('/dosen'),
                 'mahasiswa' => redirect()->to('/mahasiswa'),
                 default => redirect()->intended('/'),
             };
@@ -81,10 +83,11 @@ class LoginController extends Controller
                 Alert::toast('Anda berhasil masuk.', 'success');
 
                 $user = Auth::user();
+                $user->syncAndFixRole();
 
                 return match ($user->role) {
                     'admin' => redirect()->to('/admin'),
-                    'evaluator', 'dosen' => redirect()->to('/evaluator'),
+                    'dosen', 'evaluator' => redirect()->to('/dosen'),
                     'mahasiswa' => redirect()->to('/mahasiswa'),
                     default => redirect()->intended('/'),
                 };
@@ -104,10 +107,11 @@ class LoginController extends Controller
                     Alert::toast('Anda berhasil masuk.', 'success');
 
                     $user = Auth::user();
+                    $user->syncAndFixRole();
 
                     return match ($user->role) {
                         'admin' => redirect()->to('/admin'),
-                        'evaluator', 'dosen' => redirect()->to('/evaluator'),
+                        'dosen', 'evaluator' => redirect()->to('/dosen'),
                         'mahasiswa' => redirect()->to('/mahasiswa'),
                         default => redirect()->intended('/'),
                     };

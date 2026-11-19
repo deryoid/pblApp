@@ -54,7 +54,7 @@ class RiwayatPblTest extends TestCase
             'username' => 'evaluator_pbl',
             'email' => 'evaluator_pbl@politala.ac.id',
             'password' => Hash::make('password123'),
-            'role' => 'evaluator',
+            'role' => 'dosen',
             'no_hp' => '0822222222',
         ]);
 
@@ -237,13 +237,13 @@ class RiwayatPblTest extends TestCase
     public function test_evaluator_can_access_riwayat_index_and_view_student_dossier(): void
     {
         // 1. Akses index direktori
-        $resIndex = $this->actingAs($this->evaluator)->get('/evaluator/riwayat');
+        $resIndex = $this->actingAs($this->evaluator)->get('/dosen/riwayat');
         $resIndex->assertStatus(200);
         $resIndex->assertSee('Riwayat PBL Per Orang (Mahasiswa)');
         $resIndex->assertSee('Ahmad Fajar Maulana');
 
         // 2. Akses detail dossier
-        $resShow = $this->actingAs($this->evaluator)->get('/evaluator/riwayat/'.$this->mahasiswa->uuid);
+        $resShow = $this->actingAs($this->evaluator)->get('/dosen/riwayat/'.$this->mahasiswa->uuid);
         $resShow->assertStatus(200);
         $resShow->assertSee('Diskominfo Kabupaten Tanah Laut');
         $resShow->assertSee('Sistem Otomasi Monitoring Server Jaringan Kampus');
