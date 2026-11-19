@@ -193,7 +193,13 @@ class EvaluasiController extends Controller
     /** ===== NILAI FINAL PER MAHASISWA ===== */
     public function nilaiFinal(Request $request)
     {
-        $periodeId = $request->get('periode_id');
+        $activePeriode = Periode::getLatestActive();
+        $rawPeriode = $request->get('periode_id');
+        if ($request->has('periode_id')) {
+            $periodeId = ($rawPeriode === '' || $rawPeriode === 'all') ? null : (int) $rawPeriode;
+        } else {
+            $periodeId = $activePeriode?->id;
+        }
         $kelompokId = $request->get('kelompok_id');
 
         // Get all project lists untuk periode dan kelompok yang dipilih
@@ -405,11 +411,11 @@ class EvaluasiController extends Controller
             ];
         });
 
-        $periodes = Periode::orderByDesc('id')->get(['id', 'periode']);
+        $periodes = Periode::orderByDesc('id')->get(['id', 'periode', 'status_periode']);
         $kelompoks = Kelompok::when($periodeId, fn ($q) => $q->where('periode_id', $periodeId))
             ->orderBy('nama_kelompok')->get(['id', 'nama_kelompok']);
 
-        return view('admin.evaluasi.nilai-final', compact('mahasiswaNilai', 'periodes', 'kelompoks', 'periodeId', 'kelompokId'));
+        return view('admin.evaluasi.nilai-final', compact('mahasiswaNilai', 'periodes', 'kelompoks', 'periodeId', 'kelompokId', 'activePeriode'));
     }
 
     /** ===== DETAIL KELOMPOK ===== */

@@ -376,4 +376,106 @@ class DosenRoleAndAssessmentAuthorizationTest extends TestCase
         // 5. Setelah dilepas, dosen pengampu kembali tidak berwenang menilai
         $this->assertFalse($this->card->fresh()->canBeAssessedBy($this->dosenPengampu));
     }
+
+    /**
+     * Hanya dosen pengampu mata kuliah terkait yang dapat melihat proyek (showProject).
+     * Dosen yang tidak mengampu akan ditolak dengan 403 Forbidden.
+     */
+    public function test_only_dosen_pengampu_can_view_project_card_and_unauthorized_dosen_gets_403(): void
+    {
+        // 1. Hubungkan mata kuliah ke kartu proyek
+        $this->card->mataKuliahs()->attach($this->mataKuliah->id);
+
+        // 2. Dosen pengampu dapat melihat proyek
+        $resPengampu = $this->actingAs($this->dosenPengampu)->getJson(
+            route('dosen.evaluasi.project.show', ['card' => $this->card->id])
+        );
+        $resPengampu->assertOk();
+        $resPengampu->assertJson(['success' => true]);
+
+        // 3. Dosen lain (bukan pengampu) ditolak 403
+        $resLain = $this->actingAs($this->dosenLain)->getJson(
+            route('dosen.evaluasi.project.show', ['card' => $this->card->id])
+        );
+        $resLain->assertStatus(403);
+        $resLain->assertJson(['success' => false]);
+    }
+
+    /**
+     * Di halaman showKelompok (kanban board), dosen hanya melihat kartu proyek terkait mata kuliahnya.
+     */
+    public function test_show_kelompok_kanban_only_renders_projects_for_dosen_pengampu(): void
+    {
+        // Card 1 terkait dengan dosenPengampu
+        $this->card->mataKuliahs()->attach($this->mataKuliah->id);
+
+        // Card 2 terkait mata kuliah lain yang diampu dosenLain
+        $matkulLain = MataKuliah::create([
+            'kode_matkul' => 'MK999',
+            'nama_matkul' => 'Jaringan Komputer Lanjut',
+            'semester' => 4,
+            'sks' => 3,
+            'is_active' => true,
+        ]);
+        $matkulLain->dosenPengampu()->attach($this->dosenLain->id);
+
+        $card2 = ProjectCard::create([
+            'kelompok_id' => $this->kelompok->id,
+            'periode_id' => $this->periode->id,
+            'list_id' => $this->list->id,
+            'title' => 'Implementasi Jaringan SD-WAN',
+            'status_proyek' => 'Proses',
+            'status_proposal' => 'pending',
+            'created_by' => $this->mahasiswaUser->id,
+        ]);
+        $card2->mataKuliahs()->attach($matkulLain->id);
+
+        // DosenPengampu membuka showKelompok: harus melihat Card 1, tetapi TIDAK melihat Card 2
+        $resPengampu = $this->actingAs($this->dosenPengampu)->get(
+            route('dosen.evaluasi.showKelompok', ['kelompok' => $this->kelompok])
+        );
+        $resPengampu->assertOk();
+        $resPengampu->assertSee('Implementasi Sistem IoT Smart Room');
+        $resPengampu->assertDontSee('Implementasi Jaringan SD-WAN');
+
+        // DosenLain membuka showKelompok: harus melihat Card 2, tetapi TIDAK melihat Card 1
+        $resLain = $this->actingAs($this->dosenLain)->get(
+            route('dosen.evaluasi.showKelompok', ['kelompok' => $this->kelompok])
+        );
+        $resLain->assertOk();
+        $resLain->assertSee('Implementasi Jaringan SD-WAN');
+        $resLain->assertDontSee('Implementasi Sistem IoT Smart Room');
+
+        // Admin membuka showKelompok: harus melihat KEDUA kartu
+        $resAdmin = $this->actingAs($this->admin)->get(
+            route('dosen.evaluasi.showKelompok', ['kelompok' => $this->kelompok])
+        );
+        $resAdmin->assertOk();
+        $resAdmin->assertSee('Implementasi Sistem IoT Smart Room');
+        $resAdmin->assertSee('Implementasi Jaringan SD-WAN');
+    }
+
+    /**
+     * Menu nilai mahasiswa dan nilai final otomatis menampilkan sesuai periode aktif saat ini secara default.
+     */
+    public function test_dosen_nilai_and_nilai_final_menus_default_to_active_period(): void
+    {
+        // 1. Dosen Nilai index default ke active periode
+        $resNilai = $this->actingAs($this->dosenPengampu)->get(route('dosen.nilai.index'));
+        $resNilai->assertOk();
+        $resNilai->assertViewHas('periodeId', $this->periode->id);
+        $resNilai->assertSee($this->periode->periode);
+
+        // 2. Dosen Nilai Final default ke active periode
+        $resNilaiFinal = $this->actingAs($this->dosenPengampu)->get(route('dosen.evaluasi.nilai-final'));
+        $resNilaiFinal->assertOk();
+        $resNilaiFinal->assertViewHas('periodeId', $this->periode->id);
+        $resNilaiFinal->assertSee($this->periode->periode);
+
+        // 3. Admin Nilai Final default ke active periode
+        $resAdminNilaiFinal = $this->actingAs($this->admin)->get(route('admin.evaluasi.nilai-final'));
+        $resAdminNilaiFinal->assertOk();
+        $resAdminNilaiFinal->assertViewHas('periodeId', $this->periode->id);
+        $resAdminNilaiFinal->assertSee($this->periode->periode);
+    }
 }

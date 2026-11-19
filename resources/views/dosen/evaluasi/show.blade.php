@@ -640,6 +640,15 @@
 
     <div id="sectionProjects" class="collapse show">
       <div class="card-body p-2">
+        @if(Auth::user()->isDosen() && !Auth::user()->isAdmin())
+          <div class="alert alert-info py-2 px-3 mb-2 rounded-lg d-flex align-items-center justify-content-between small">
+            <div>
+              <i class="fas fa-info-circle mr-1"></i>
+              Menampilkan kartu proyek yang terkait dengan <strong>mata kuliah yang Anda ampu</strong> pada periode ini.
+            </div>
+            <span class="badge badge-primary">{{ $proyek_total_cards }} Proyek Terkait</span>
+          </div>
+        @endif
         <div class="board-wrapper">
           <div id="board" class="board">
           @forelse ($proyekLists as $list)
@@ -947,7 +956,12 @@
                 @empty
                   <div class="card card-empty shadow-0">
                     <div class="card-body p-3 text-center text-muted small">
-                      <i class="far fa-clipboard mr-1" aria-hidden="true"></i> Belum ada proyek
+                      <i class="far fa-clipboard mr-1" aria-hidden="true"></i>
+                      @if(Auth::user()->isDosen() && !Auth::user()->isAdmin())
+                        Belum ada proyek terkait mata kuliah Anda di kolom ini
+                      @else
+                        Belum ada proyek
+                      @endif
                     </div>
                   </div>
                 @endforelse

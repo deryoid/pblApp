@@ -43,9 +43,17 @@ class DashboardController extends Controller
         $pendingEvaluations = 0;
         $completedEvaluations = 0;
 
-        // Data Proyek yang perlu dievaluasi pada periode terpilih
-        $totalProyekCards = \App\Models\ProjectCard::count();
-        $proyekToEvaluate = $selectedPeriode ? \App\Models\ProjectCard::whereHas('projectList', function ($query) use ($selectedPeriode) {
+        $user = \Illuminate\Support\Facades\Auth::user();
+        $isDosenOnly = $user && $user->isDosen() && ! $user->isAdmin();
+
+        // Data Proyek yang perlu dievaluasi pada periode terpilih (dosen hanya menghitung proyek yang diampunya)
+        $proyekCardQuery = \App\Models\ProjectCard::query();
+        if ($isDosenOnly) {
+            $proyekCardQuery->accessibleByDosen($user);
+        }
+
+        $totalProyekCards = (clone $proyekCardQuery)->count();
+        $proyekToEvaluate = $selectedPeriode ? (clone $proyekCardQuery)->whereHas('projectList', function ($query) use ($selectedPeriode) {
             $query->where('periode_id', $selectedPeriode->id);
         })->count() : 0;
 
@@ -66,7 +74,11 @@ class DashboardController extends Controller
         $evaluasiProgress = [];
         $kelompokPeriode = collect();
         if ($selectedPeriode) {
-            $kelompoks = \App\Models\Kelompok::with(['mahasiswas.user', 'projectCards'])
+            $kelompoks = \App\Models\Kelompok::with(['mahasiswas.user', 'projectCards' => function ($q) use ($isDosenOnly, $user) {
+                if ($isDosenOnly) {
+                    $q->accessibleByDosen($user);
+                }
+            }])
                 ->where('periode_id', $selectedPeriode->id)
                 ->orderBy('nama_kelompok')
                 ->get();

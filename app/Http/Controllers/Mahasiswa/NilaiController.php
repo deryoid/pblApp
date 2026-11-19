@@ -21,7 +21,14 @@ class NilaiController extends Controller
 
     public function index(Request $request)
     {
-        $periodeId = $request->get('periode_id');
+        $activePeriode = Periode::getLatestActive();
+        $rawPeriode = $request->get('periode_id');
+        if ($request->has('periode_id')) {
+            $periodeId = ($rawPeriode === '' || $rawPeriode === 'all') ? null : (int) $rawPeriode;
+        } else {
+            $periodeId = $activePeriode?->id;
+        }
+
         $kelasId = $request->get('kelas_id');
         $search = $request->get('search');
 
@@ -36,10 +43,11 @@ class NilaiController extends Controller
                 'periodeId' => $periodeId,
                 'kelompokId' => null,
                 'search' => $search,
+                'activePeriode' => $activePeriode,
             ]);
         }
 
-        $periodes = Periode::orderByDesc('id')->get(['id', 'periode']);
+        $periodes = Periode::orderByDesc('id')->get(['id', 'periode', 'status_periode']);
 
         // Only show kelas that current mahasiswa belongs to
         $kelasOptions = collect();
@@ -186,7 +194,8 @@ class NilaiController extends Controller
             'kelasOptions',
             'periodeId',
             'kelasId',
-            'search'
+            'search',
+            'activePeriode'
         ));
     }
 }

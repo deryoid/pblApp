@@ -36,10 +36,10 @@
                             <div class="col-md-3 mb-3 mb-md-0">
                                 <label for="periode_id" class="form-label font-weight-bold">Periode</label>
                                 <select name="periode_id" id="periode_id" class="form-control" onchange="this.form.submit()">
-                                    <option value="">-- Semua Periode --</option>
+                                    <option value="" {{ $periodeId === null ? 'selected' : '' }}>-- Semua Periode --</option>
                                     @foreach($periodes as $periode)
-                                        <option value="{{ $periode->id }}" {{ $periodeId == $periode->id ? 'selected' : '' }}>
-                                            {{ $periode->periode }}
+                                        <option value="{{ $periode->id }}" {{ (string)$periodeId === (string)$periode->id ? 'selected' : '' }}>
+                                            {{ $periode->periode }} {{ ($periode->status_periode ?? '') === 'Aktif' ? '(Aktif)' : '' }}
                                         </option>
                                     @endforeach
                                 </select>

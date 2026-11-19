@@ -13,21 +13,21 @@ class KelompokController extends Controller
     {
         // Ambil semua periode untuk dropdown
         $periodes = Periode::orderByDesc('id')->get(['id', 'periode', 'status_periode']);
+        $periodeAktif = Periode::getLatestActive();
 
-        // Ambil periode aktif yang paling sering digunakan oleh kelompok
-        $periodeWithKelompok = Periode::where('status_periode', 'Aktif')
-            ->whereHas('kelompoks')
-            ->first();
-
-        // Jika tidak ada, ambil periode aktif pertama
-        $periodeAktif = $periodeWithKelompok ?: Periode::where('status_periode', 'Aktif')->first();
-
-        // Ambil periode yang dipilih dari request
-        $qPeriode = $request->get('periode_id');
-        if ($qPeriode) {
-            $selectedPeriode = Periode::find($qPeriode);
+        // Ambil periode yang dipilih dari request, default ke periode aktif saat ini
+        if ($request->has('periode_id')) {
+            $rawPeriode = $request->get('periode_id');
+            if ($rawPeriode === '' || $rawPeriode === 'all') {
+                $selectedPeriode = null;
+                $qPeriode = null;
+            } else {
+                $selectedPeriode = Periode::find($rawPeriode);
+                $qPeriode = $selectedPeriode?->id;
+            }
         } else {
             $selectedPeriode = $periodeAktif;
+            $qPeriode = $periodeAktif?->id;
         }
 
         $kelompoks = Kelompok::with(['periode', 'mahasiswas.kelas', 'evaluasiMasters' => function ($query) use ($selectedPeriode) {

@@ -235,6 +235,48 @@ class ProjectCard extends Model
     }
 
     /**
+     * Scope untuk membatasi kartu proyek yang hanya dapat diakses/dilihat oleh dosen pengampu / penilai / pembimbing.
+     */
+    public function scopeAccessibleByDosen($query, ?User $user)
+    {
+        if (! $user || $user->isAdmin()) {
+            return $query;
+        }
+
+        return $query->where(function ($q) use ($user) {
+            $q->whereHas('mataKuliahs', function ($mq) use ($user) {
+                $mq->where(function ($subMq) use ($user) {
+                    $subMq->whereHas('dosenPengampu', function ($dpq) use ($user) {
+                        $dpq->where('users.id', $user->id);
+                    })->orWhere('mata_kuliah.dosen_id', $user->id);
+                });
+            })
+                ->orWhereHas('dosenPenilai', function ($dq) use ($user) {
+                    $dq->where('dosen_id', $user->id);
+                })
+                ->orWhere('dosen_penentu_id', $user->id);
+        });
+    }
+
+    /**
+     * Memeriksa apakah seorang pengguna dapat melihat proyek ini.
+     * Admin dan Mahasiswa anggota kelompok dapat melihat proyek.
+     * Dosen hanya dapat melihat proyek jika mengampu mata kuliah terkait atau ditugaskan sebagai penilai/pembimbing.
+     */
+    public function canBeViewedBy(?User $user): bool
+    {
+        if (! $user) {
+            return false;
+        }
+
+        if ($user->isAdmin() || $user->isMahasiswa()) {
+            return true;
+        }
+
+        return $this->canBeAssessedBy($user);
+    }
+
+    /**
      * Memeriksa apakah seorang pengguna (Admin atau Dosen) berwenang menilai proyek ini.
      * Admin berwenang menilai seluruh proyek.
      * Dosen atau akun yang ditugaskan (pembimbing / penilai / pengampu) berwenang menilai proyek ini.
@@ -265,8 +307,10 @@ class ProjectCard extends Model
         }
 
         // 4. Dosen Pengampu dari salah satu mata kuliah yang terhubung dengan proyek ini
-        return $this->mataKuliahs()->whereHas('dosenPengampu', function ($q) use ($user) {
-            $q->where('users.id', $user->id);
+        return $this->mataKuliahs()->where(function ($mq) use ($user) {
+            $mq->whereHas('dosenPengampu', function ($q) use ($user) {
+                $q->where('users.id', $user->id);
+            })->orWhere('mata_kuliah.dosen_id', $user->id);
         })->exists();
     }
 }

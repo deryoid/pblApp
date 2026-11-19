@@ -12,6 +12,9 @@
             </h1>
             <p class="text-muted small mb-0">
                 Ringkasan penilaian aktivitas kelompok, penilaian proyek mandiri/mitra, dan evaluasi hasil belajar
+                @if(isset($activePeriode) && $activePeriode)
+                    • Periode: <span class="badge badge-primary">{{ $activePeriode->periode }} (Aktif)</span>
+                @endif
             </p>
         </div>
         <div class="mt-3 mt-sm-0">

@@ -6,9 +6,16 @@
 <div class="container-fluid">
     <!-- Page Heading -->
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">
-            <i class="fas fa-chart-bar"></i> Nilai Mahasiswa
-        </h1>
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">
+                <i class="fas fa-chart-bar text-primary"></i> Nilai Mahasiswa
+            </h1>
+            @if(isset($activePeriode) && $activePeriode)
+                <span class="small text-muted">
+                    Periode Aktif: <span class="badge badge-success">{{ $activePeriode->periode }}</span>
+                </span>
+            @endif
+        </div>
         <div>
             <a href="{{ url('/dosen') }}" class="btn btn-secondary btn-sm">
                 <i class="fas fa-arrow-left"></i> Kembali
@@ -28,11 +35,11 @@
                         <div class="row">
                             <div class="col-md-3">
                                 <label for="periode_id" class="form-label">Periode</label>
-                                <select name="periode_id" id="periode_id" class="form-select" onchange="this.form.submit()">
-                                    <option value="">-- Semua Periode --</option>
+                                <select name="periode_id" id="periode_id" class="form-control" onchange="this.form.submit()">
+                                    <option value="" {{ $periodeId === null ? 'selected' : '' }}>-- Semua Periode --</option>
                                     @foreach($periodes as $periode)
-                                        <option value="{{ $periode->id }}" {{ $periodeId == $periode->id ? 'selected' : '' }}>
-                                            {{ $periode->periode }}
+                                        <option value="{{ $periode->id }}" {{ (string)$periodeId === (string)$periode->id ? 'selected' : '' }}>
+                                            {{ $periode->periode }} {{ $periode->status_periode === 'Aktif' ? '(Aktif)' : '' }}
                                         </option>
                                     @endforeach
                                 </select>

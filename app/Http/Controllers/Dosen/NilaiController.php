@@ -20,11 +20,19 @@ class NilaiController extends Controller
 
     public function index(Request $request)
     {
-        $periodeId = $request->get('periode_id');
+        $activePeriode = Periode::getLatestActive();
+
+        if ($request->has('periode_id')) {
+            $rawPeriode = $request->get('periode_id');
+            $periodeId = ($rawPeriode === '' || $rawPeriode === 'all') ? null : (int) $rawPeriode;
+        } else {
+            $periodeId = $activePeriode?->id;
+        }
+
         $kelasId = $request->get('kelas_id');
         $search = $request->get('search');
 
-        $periodes = Periode::orderByDesc('id')->get(['id', 'periode']);
+        $periodes = Periode::orderByDesc('id')->get(['id', 'periode', 'status_periode']);
         $kelases = \App\Models\Kelas::orderBy('kelas')->get(['id', 'kelas']);
 
         // Get evaluations dengan relasi yang lengkap
@@ -161,7 +169,8 @@ class NilaiController extends Controller
             'kelases',
             'periodeId',
             'kelasId',
-            'search'
+            'search',
+            'activePeriode'
         ));
     }
 }

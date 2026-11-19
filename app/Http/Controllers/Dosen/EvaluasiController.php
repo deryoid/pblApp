@@ -44,9 +44,14 @@ class EvaluasiController extends Controller
     public function index(Request $request)
     {
         $periodes = Periode::orderByDesc('id')->get(['id', 'periode', 'status_periode']);
-        $activePeriode = Periode::where('status_periode', 'Aktif')->orderByDesc('id')->first();
+        $activePeriode = Periode::getLatestActive();
 
-        $periodeId = (int) ($request->get('periode_id') ?: ($activePeriode?->id ?? 0));
+        if ($request->has('periode_id')) {
+            $rawPeriode = $request->get('periode_id');
+            $periodeId = ($rawPeriode === '' || $rawPeriode === 'all') ? null : (int) $rawPeriode;
+        } else {
+            $periodeId = $activePeriode?->id ?? 0;
+        }
         $keyword = trim((string) $request->get('q', ''));
 
         $query = Kelompok::query()
@@ -195,7 +200,13 @@ class EvaluasiController extends Controller
     /** ===== NILAI FINAL PER MAHASISWA ===== */
     public function nilaiFinal(Request $request)
     {
-        $periodeId = $request->get('periode_id');
+        $activePeriode = Periode::getLatestActive();
+        $rawPeriode = $request->get('periode_id');
+        if ($request->has('periode_id')) {
+            $periodeId = ($rawPeriode === '' || $rawPeriode === 'all') ? null : (int) $rawPeriode;
+        } else {
+            $periodeId = $activePeriode?->id;
+        }
         $kelompokId = $request->get('kelompok_id');
 
         // Get all project lists untuk periode dan kelompok yang dipilih
@@ -407,11 +418,11 @@ class EvaluasiController extends Controller
             ];
         });
 
-        $periodes = Periode::orderByDesc('id')->get(['id', 'periode']);
+        $periodes = Periode::orderByDesc('id')->get(['id', 'periode', 'status_periode']);
         $kelompoks = Kelompok::when($periodeId, fn ($q) => $q->where('periode_id', $periodeId))
             ->orderBy('nama_kelompok')->get(['id', 'nama_kelompok']);
 
-        return view('dosen.evaluasi.nilai-final', compact('mahasiswaNilai', 'periodes', 'kelompoks', 'periodeId', 'kelompokId'));
+        return view('dosen.evaluasi.nilai-final', compact('mahasiswaNilai', 'periodes', 'kelompoks', 'periodeId', 'kelompokId', 'activePeriode'));
     }
 
     /**
@@ -543,20 +554,28 @@ class EvaluasiController extends Controller
         } else {
             $settings = $settingsDefaults;
         }
-        // Project lists/cards
-        $proyekLists = ProjectList::with(['cards' => function ($q) use ($kelompok, $activePeriode) {
+        $user = Auth::user();
+        $isDosenOnly = $user && $user->isDosen() && ! $user->isAdmin();
+
+        // Project lists/cards - Hanya tampilkan kartu proyek mata kuliah yang diampu jika pengguna adalah dosen
+        $proyekLists = ProjectList::with(['cards' => function ($q) use ($kelompok, $activePeriode, $isDosenOnly, $user) {
             $q->where('kelompok_id', $kelompok->id)
-                ->where('periode_id', $activePeriode->id)
-                ->with([
-                    'mataKuliahs.dosenPengampu',
-                    'dosenPenilai.dosen',
-                    'dosenPenilai.mataKuliah',
-                    'dosenPenentu',
-                    'penilaianDosen.dosen',
-                    'evaluasiMitra',
-                    'createdBy',
-                    'updatedBy',
-                ])
+                ->where('periode_id', $activePeriode->id);
+
+            if ($isDosenOnly) {
+                $q->accessibleByDosen($user);
+            }
+
+            $q->with([
+                'mataKuliahs.dosenPengampu',
+                'dosenPenilai.dosen',
+                'dosenPenilai.mataKuliah',
+                'dosenPenentu',
+                'penilaianDosen.dosen',
+                'evaluasiMitra',
+                'createdBy',
+                'updatedBy',
+            ])
                 ->orderBy('position');
         }])->where('kelompok_id', $kelompok->id)
             ->where('periode_id', $activePeriode->id)
@@ -1034,6 +1053,14 @@ class EvaluasiController extends Controller
     /** ===== Show project details ===== */
     public function showProject(ProjectCard $card)
     {
+        $user = Auth::user();
+        if ($user && ! $card->canBeViewedBy($user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak berwenang melihat proyek ini karena proyek tidak terhubung dengan mata kuliah yang Anda ampu.',
+            ], 403);
+        }
+
         $card->load([
             'projectList',
             'createdBy',
@@ -1048,7 +1075,6 @@ class EvaluasiController extends Controller
         ]);
 
         $involved = $card->getInvolvedDosen();
-        $user = Auth::user();
         $isAdmin = $user ? $user->isAdmin() : false;
 
         $availableDosen = ($isAdmin || $user?->isDosen())
@@ -1080,10 +1106,18 @@ class EvaluasiController extends Controller
         $activePeriode = Periode::where('status_periode', 'Aktif')->orderByDesc('id')->first();
         abort_unless($activePeriode, 404, 'Periode aktif tidak ditemukan');
 
-        $proyekLists = ProjectList::with(['cards' => function ($q) use ($kelompok, $activePeriode) {
+        $user = Auth::user();
+        $isDosenOnly = $user && $user->isDosen() && ! $user->isAdmin();
+
+        $proyekLists = ProjectList::with(['cards' => function ($q) use ($kelompok, $activePeriode, $isDosenOnly, $user) {
             $q->where('kelompok_id', $kelompok->id)
-                ->where('periode_id', $activePeriode->id)
-                ->orderBy('tanggal_mulai')
+                ->where('periode_id', $activePeriode->id);
+
+            if ($isDosenOnly) {
+                $q->accessibleByDosen($user);
+            }
+
+            $q->orderBy('tanggal_mulai')
                 ->orderBy('due_date');
         }])->where('kelompok_id', $kelompok->id)
             ->where('periode_id', $activePeriode->id)
@@ -1396,6 +1430,13 @@ class EvaluasiController extends Controller
             ], 401);
         }
 
+        if (! $card->canBeAssessedBy(Auth::user())) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak memiliki wewenang untuk menilai proyek ini karena proyek tidak terhubung dengan mata kuliah yang Anda ampu atau penugasan Anda.',
+            ], 403);
+        }
+
         $evaluasiMasterId = (int) $request->input('evaluasi_master_id', $request->input('sesi_id'));
         $items = $request->input('items', []);
 
@@ -1650,6 +1691,14 @@ class EvaluasiController extends Controller
     {
         $projectCard = ProjectCard::where('uuid', $project)->orWhere('id', $project)->with('mataKuliahs')->firstOrFail();
 
+        $user = Auth::user();
+        if ($user && ! $projectCard->canBeViewedBy($user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak berwenang melihat penilaian proyek ini karena proyek tidak terhubung dengan mata kuliah yang Anda ampu.',
+            ], 403);
+        }
+
         $query = EvaluasiDosen::where('project_card_id', $projectCard->id)
             ->with([
                 'mahasiswa:id,nim,nama_mahasiswa',
@@ -1692,8 +1741,9 @@ class EvaluasiController extends Controller
                 ];
             });
 
-        $user = Auth::user();
-        $myTaughtMatkulIds = $user?->dosen?->mataKuliahs->pluck('id')->toArray() ?? [];
+        $taughtPivot = $user ? $user->mataKuliahs->pluck('id')->toArray() : [];
+        $taughtDirect = $user ? \App\Models\MataKuliah::where('dosen_id', $user->id)->pluck('id')->toArray() : [];
+        $myTaughtMatkulIds = array_values(array_unique(array_merge($taughtPivot, $taughtDirect)));
 
         return response()->json([
             'success' => true,
@@ -1712,6 +1762,14 @@ class EvaluasiController extends Controller
     public function getPenilaianMitraByProject($project)
     {
         $projectCard = ProjectCard::where('uuid', $project)->orWhere('id', $project)->firstOrFail();
+
+        $user = Auth::user();
+        if ($user && ! $projectCard->canBeViewedBy($user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak berwenang melihat penilaian mitra proyek ini karena proyek tidak terhubung dengan mata kuliah yang Anda ampu.',
+            ], 403);
+        }
 
         $evaluations = EvaluasiMitra::where('project_card_id', $projectCard->id)
             ->with([
