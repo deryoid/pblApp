@@ -10,7 +10,6 @@ use App\Models\Periode;
 use App\Models\ProjectCard;
 use App\Models\ProjectDosenPenilai;
 use App\Models\ProjectList;
-use App\Models\ProjectVerifikasiDosen;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -102,80 +101,87 @@ class ProjectProposalVerificationTest extends TestCase
             'password' => bcrypt('password'),
             'role' => 'mahasiswa',
             'no_hp' => '081234567895',
+            'is_profile_complete' => true,
         ]);
 
         $this->mahasiswa = Mahasiswa::create([
             'user_id' => $this->studentUser->id,
-            'nim' => '202604999',
             'nama_mahasiswa' => 'Andi Mahasiswa',
+            'nim' => '202610101',
             'kelas_id' => $this->kelas->id,
-            'semester' => 4,
-            'status' => 'Aktif',
+            'jenis_kelamin' => 'Laki-laki',
             'is_profile_complete' => true,
         ]);
 
         $this->kelompok = Kelompok::create([
-            'nama_kelompok' => 'Kelompok 10 Proyek',
-            'nomor_kelompok' => 10,
-            'kelas_id' => $this->kelas->id,
+            'nama_kelompok' => 'Kelompok Alpha PBL',
             'periode_id' => $this->periode->id,
+            'kelas_id' => $this->kelas->id,
             'skema_kategori' => 'Internal',
-            'semester' => 4,
-            'status_kelompok' => 'Disetujui',
-            'ketua_id' => $this->mahasiswa->id,
+            'status' => 'Aktif',
+            'created_by' => $this->studentUser->id,
         ]);
 
-        $this->kelompok->mahasiswas()->attach($this->mahasiswa->id, [
-            'role' => 'Ketua',
-            'periode_id' => $this->periode->id,
-        ]);
+        $this->kelompok->mahasiswas()->attach($this->mahasiswa->id, ['periode_id' => $this->periode->id]);
 
         $this->list = ProjectList::create([
-            'name' => 'Backlog Proyek',
-            'position' => 0,
             'kelompok_id' => $this->kelompok->id,
             'periode_id' => $this->periode->id,
+            'name' => 'Perencanaan',
+            'position' => 0,
         ]);
 
         $this->mataKuliah = MataKuliah::create([
-            'kode_matkul' => 'MKPBL401',
-            'nama_matkul' => 'Rekayasa Perangkat Lunak PBL',
-            'sks' => 4,
+            'kode_matkul' => 'MK401',
+            'nama_matkul' => 'Rekayasa Perangkat Lunak Lanjut',
+            'sks' => 3,
             'semester' => 4,
-            'deskripsi' => 'Pengembangan perangkat lunak berbasis PBL',
+            'is_active' => true,
         ]);
 
         $this->mataKuliah->dosenPengampu()->attach($this->dosenPengampu->id);
     }
 
-    public function test_card_proposal_starts_as_pending_when_uploaded_by_student(): void
+    public function test_student_can_upload_optional_proposal_without_acc_blocking(): void
     {
-        $file = UploadedFile::fake()->create('proposal_proyek.pdf', 1024, 'application/pdf');
+        $file = UploadedFile::fake()->create('proposal_proyek_alpha.pdf', 500, 'application/pdf');
 
         $response = $this->actingAs($this->studentUser)
             ->post(route('proyek.cards.store'), [
-                'list_id' => $this->list->id,
                 'title' => 'Sistem Informasi Manajemen Aset',
-                'description' => 'Aplikasi internal untuk inventaris barang.',
+                'description' => 'Aplikasi web untuk tracking inventaris kampus.',
+                'list' => $this->list->id,
                 'skema_pbl' => 'Internal',
                 'mata_kuliah_ids' => [$this->mataKuliah->id],
                 'proposal_file' => $file,
             ]);
 
+        $response->assertSessionHasNoErrors();
         $response->assertRedirect();
 
         $card = ProjectCard::where('title', 'Sistem Informasi Manajemen Aset')->first();
         $this->assertNotNull($card);
         $this->assertNotNull($card->proposal_file_path);
-        $this->assertEquals('pending', $card->status_proposal);
+        Storage::disk('public')->assertExists($card->proposal_file_path);
+    }
 
-        // Pastikan dosen pengampu MK tersinkronisasi ke project_verifikasi_dosen
-        $verif = ProjectVerifikasiDosen::where('project_card_id', $card->id)
-            ->where('dosen_id', $this->dosenPengampu->id)
-            ->first();
+    public function test_student_can_create_internal_project_without_proposal_file(): void
+    {
+        $response = $this->actingAs($this->studentUser)
+            ->post(route('proyek.cards.store'), [
+                'title' => 'Proyek Tanpa Proposal Awal',
+                'description' => 'Proyek internal yang dimulai tanpa lampiran file proposal.',
+                'list' => $this->list->id,
+                'skema_pbl' => 'Internal',
+                'mata_kuliah_ids' => [$this->mataKuliah->id],
+            ]);
 
-        $this->assertNotNull($verif);
-        $this->assertEquals('pending', $verif->status);
+        $response->assertSessionHasNoErrors();
+        $response->assertRedirect();
+
+        $card = ProjectCard::where('title', 'Proyek Tanpa Proposal Awal')->first();
+        $this->assertNotNull($card);
+        $this->assertNull($card->proposal_file_path);
     }
 
     public function test_admin_can_assign_dosen_penilai_to_project_card(): void
@@ -185,7 +191,6 @@ class ProjectProposalVerificationTest extends TestCase
             'periode_id' => $this->periode->id,
             'list_id' => $this->list->id,
             'title' => 'Proyek Smart IoT Farming',
-            'status_proposal' => 'pending',
             'skema_pbl' => 'Internal',
             'created_by' => $this->studentUser->id,
         ]);
@@ -206,13 +211,6 @@ class ProjectProposalVerificationTest extends TestCase
             'project_card_id' => $card->id,
             'dosen_id' => $this->dosenPenilai->id,
         ]);
-
-        // Verifikasi dosen penilai juga otomatis tersinkron di project_verifikasi_dosen
-        $this->assertDatabaseHas('project_verifikasi_dosen', [
-            'project_card_id' => $card->id,
-            'dosen_id' => $this->dosenPenilai->id,
-            'status' => 'pending',
-        ]);
     }
 
     public function test_non_admin_cannot_assign_dosen_penilai(): void
@@ -222,7 +220,6 @@ class ProjectProposalVerificationTest extends TestCase
             'periode_id' => $this->periode->id,
             'list_id' => $this->list->id,
             'title' => 'Proyek Smart IoT Farming',
-            'status_proposal' => 'pending',
             'created_by' => $this->studentUser->id,
         ]);
 
@@ -241,7 +238,6 @@ class ProjectProposalVerificationTest extends TestCase
             'periode_id' => $this->periode->id,
             'list_id' => $this->list->id,
             'title' => 'Proyek Smart IoT Farming',
-            'status_proposal' => 'pending',
             'created_by' => $this->studentUser->id,
         ]);
 
@@ -252,162 +248,20 @@ class ProjectProposalVerificationTest extends TestCase
             'assigned_by' => $this->admin->id,
         ]);
 
-        $card->syncVerifikasiDosen();
-
-        $this->assertDatabaseHas('project_verifikasi_dosen', [
-            'project_card_id' => $card->id,
-            'dosen_id' => $this->dosenPenilai->id,
-        ]);
-
         $response = $this->actingAs($this->admin)
             ->deleteJson(route('project.dosen-penilai.destroy', ['card' => $card->id, 'penilai' => $penilai->id]));
 
         $response->assertOk();
         $this->assertDatabaseMissing('project_dosen_penilai', ['id' => $penilai->id]);
-        $this->assertDatabaseMissing('project_verifikasi_dosen', [
-            'project_card_id' => $card->id,
-            'dosen_id' => $this->dosenPenilai->id,
-        ]);
     }
 
-    public function test_involved_dosen_can_acc_proposal(): void
-    {
-        $card = ProjectCard::create([
-            'kelompok_id' => $this->kelompok->id,
-            'periode_id' => $this->periode->id,
-            'list_id' => $this->list->id,
-            'title' => 'Proyek Web E-Commerce',
-            'status_proposal' => 'pending',
-            'created_by' => $this->studentUser->id,
-        ]);
-        $card->mataKuliahs()->attach($this->mataKuliah->id);
-        $card->syncVerifikasiDosen();
-
-        $response = $this->actingAs($this->dosenPengampu)
-            ->postJson(route('project.verifikasi.acc', ['card' => $card->id]), [
-                'status' => 'acc',
-                'catatan' => 'Proposal sangat baik dan relevan.',
-            ]);
-
-        $response->assertOk();
-        $response->assertJson([
-            'success' => true,
-            'status' => 'acc',
-            'status_proposal' => 'disetujui',
-        ]);
-
-        $verif = ProjectVerifikasiDosen::where('project_card_id', $card->id)
-            ->where('dosen_id', $this->dosenPengampu->id)
-            ->first();
-
-        $this->assertEquals('acc', $verif->status);
-        $this->assertEquals('Proposal sangat baik dan relevan.', $verif->catatan);
-        $this->assertNotNull($verif->verified_at);
-
-        $card->refresh();
-        $this->assertEquals('disetujui', $card->status_proposal);
-    }
-
-    public function test_uninvolved_dosen_cannot_acc_proposal(): void
-    {
-        $card = ProjectCard::create([
-            'kelompok_id' => $this->kelompok->id,
-            'periode_id' => $this->periode->id,
-            'list_id' => $this->list->id,
-            'title' => 'Proyek Web E-Commerce',
-            'status_proposal' => 'pending',
-            'created_by' => $this->studentUser->id,
-        ]);
-        $card->mataKuliahs()->attach($this->mataKuliah->id);
-        $card->syncVerifikasiDosen();
-
-        $response = $this->actingAs($this->dosenLain)
-            ->postJson(route('project.verifikasi.acc', ['card' => $card->id]), [
-                'status' => 'acc',
-            ]);
-
-        $response->assertForbidden();
-    }
-
-    public function test_all_dosen_acc_updates_project_card_status_proposal_to_disetujui(): void
-    {
-        $card = ProjectCard::create([
-            'kelompok_id' => $this->kelompok->id,
-            'periode_id' => $this->periode->id,
-            'list_id' => $this->list->id,
-            'title' => 'Proyek Mobile Tourism App',
-            'status_proposal' => 'pending',
-            'created_by' => $this->studentUser->id,
-        ]);
-        $card->mataKuliahs()->attach($this->mataKuliah->id); // Dosen Pengampu
-
-        ProjectDosenPenilai::create([
-            'project_card_id' => $card->id,
-            'dosen_id' => $this->dosenPenilai->id,
-            'assigned_by' => $this->admin->id,
-        ]);
-
-        $card->syncVerifikasiDosen();
-
-        // 1. Dosen Pengampu ACC
-        $res1 = $this->actingAs($this->dosenPengampu)
-            ->postJson(route('project.verifikasi.acc', ['card' => $card->id]), [
-                'status' => 'acc',
-            ]);
-        $res1->assertOk();
-        $card->refresh();
-        // Masih pending karena Dosen Penilai belum ACC
-        $this->assertEquals('pending', $card->status_proposal);
-
-        // 2. Dosen Penilai ACC
-        $res2 = $this->actingAs($this->dosenPenilai)
-            ->postJson(route('project.verifikasi.acc', ['card' => $card->id]), [
-                'status' => 'acc',
-            ]);
-        $res2->assertOk();
-        $card->refresh();
-        // Sekarang semua dosen telah ACC -> disetujui!
-        $this->assertEquals('disetujui', $card->status_proposal);
-    }
-
-    public function test_dosen_revisi_updates_project_card_status_proposal_to_revisi(): void
-    {
-        $card = ProjectCard::create([
-            'kelompok_id' => $this->kelompok->id,
-            'periode_id' => $this->periode->id,
-            'list_id' => $this->list->id,
-            'title' => 'Proyek Machine Learning Classifier',
-            'status_proposal' => 'pending',
-            'created_by' => $this->studentUser->id,
-        ]);
-        $card->mataKuliahs()->attach($this->mataKuliah->id);
-        $card->syncVerifikasiDosen();
-
-        $response = $this->actingAs($this->dosenPengampu)
-            ->postJson(route('project.verifikasi.acc', ['card' => $card->id]), [
-                'status' => 'revisi',
-                'catatan' => 'Metodologi di Bab 3 belum lengkap, tolong perbaiki.',
-            ]);
-
-        $response->assertOk();
-        $response->assertJson([
-            'success' => true,
-            'status' => 'revisi',
-            'status_proposal' => 'revisi',
-        ]);
-
-        $card->refresh();
-        $this->assertEquals('revisi', $card->status_proposal);
-    }
-
-    public function test_get_status_endpoint_returns_involved_dosen_and_metrics(): void
+    public function test_get_status_endpoint_returns_involved_dosen_cleanly(): void
     {
         $card = ProjectCard::create([
             'kelompok_id' => $this->kelompok->id,
             'periode_id' => $this->periode->id,
             'list_id' => $this->list->id,
             'title' => 'Proyek Analytics Dashboard',
-            'status_proposal' => 'pending',
             'created_by' => $this->studentUser->id,
         ]);
         $card->mataKuliahs()->attach($this->mataKuliah->id);
@@ -418,40 +272,12 @@ class ProjectProposalVerificationTest extends TestCase
         $response->assertOk();
         $response->assertJsonStructure([
             'success',
-            'card' => ['id', 'title', 'status_proposal'],
+            'card' => ['id', 'title'],
             'involved_dosen',
-            'stats' => ['total', 'acc', 'revisi', 'pending', 'percent', 'is_all_acc'],
-            'can_acc',
+            'is_admin',
         ]);
         $response->assertJson([
             'success' => true,
-            'can_acc' => true,
-        ]);
-    }
-
-    public function test_admin_can_acc_proposal_directly(): void
-    {
-        $card = ProjectCard::create([
-            'kelompok_id' => $this->kelompok->id,
-            'periode_id' => $this->periode->id,
-            'list_id' => $this->list->id,
-            'title' => 'Proyek Autonomous Drone',
-            'status_proposal' => 'pending',
-            'created_by' => $this->studentUser->id,
-        ]);
-        $card->mataKuliahs()->attach($this->mataKuliah->id);
-        $card->syncVerifikasiDosen();
-
-        $response = $this->actingAs($this->admin)
-            ->postJson(route('project.verifikasi.acc', ['card' => $card->id]), [
-                'status' => 'acc',
-                'catatan' => 'ACC langsung oleh Admin PBL',
-            ]);
-
-        $response->assertOk();
-        $response->assertJson([
-            'success' => true,
-            'status' => 'acc',
         ]);
     }
 
@@ -462,7 +288,6 @@ class ProjectProposalVerificationTest extends TestCase
             'periode_id' => $this->periode->id,
             'list_id' => $this->list->id,
             'title' => 'Proyek Virtual Reality Classroom',
-            'status_proposal' => 'pending',
             'created_by' => $this->studentUser->id,
         ]);
         $card->mataKuliahs()->attach($this->mataKuliah->id);
@@ -476,12 +301,12 @@ class ProjectProposalVerificationTest extends TestCase
             'success',
             'project',
             'involved_dosen',
-            'can_acc',
+            'can_assess',
             'is_admin',
             'available_dosen',
         ]);
         $this->assertTrue($resAdmin->json('is_admin'));
-        $this->assertTrue($resAdmin->json('can_acc'));
+        $this->assertTrue($resAdmin->json('can_assess'));
 
         // Dosen show project
         $resEval = $this->actingAs($this->dosenPengampu)
@@ -492,31 +317,28 @@ class ProjectProposalVerificationTest extends TestCase
             'success',
             'project',
             'involved_dosen',
-            'can_acc',
+            'can_assess',
             'is_admin',
         ]);
-        $this->assertTrue($resEval->json('can_acc'));
+        $this->assertTrue($resEval->json('can_assess'));
     }
 
-    public function test_mahasiswa_proyek_index_includes_verifikasi_stats_and_dosen(): void
+    public function test_mahasiswa_proyek_index_renders_project_card(): void
     {
         $card = ProjectCard::create([
             'kelompok_id' => $this->kelompok->id,
             'periode_id' => $this->periode->id,
             'list_id' => $this->list->id,
             'title' => 'Proyek Smart Water Quality',
-            'status_proposal' => 'pending',
             'created_by' => $this->studentUser->id,
         ]);
         $card->mataKuliahs()->attach($this->mataKuliah->id);
-        $card->syncVerifikasiDosen();
 
         $response = $this->actingAs($this->studentUser)
             ->get(route('proyek.index'));
 
         $response->assertOk();
         $response->assertSee('Proyek Smart Water Quality');
-        $response->assertSee('Menunggu ACC Proposal');
     }
 
     public function test_admin_can_assign_dosen_as_pembimbing(): void
@@ -526,7 +348,6 @@ class ProjectProposalVerificationTest extends TestCase
             'periode_id' => $this->periode->id,
             'list_id' => $this->list->id,
             'title' => 'Proyek Autonomous Drone',
-            'status_proposal' => 'pending',
             'created_by' => $this->studentUser->id,
         ]);
 
@@ -541,11 +362,6 @@ class ProjectProposalVerificationTest extends TestCase
 
         $card->refresh();
         $this->assertEquals($this->dosenLain->id, $card->dosen_penentu_id);
-
-        $this->assertDatabaseHas('project_verifikasi_dosen', [
-            'project_card_id' => $card->id,
-            'dosen_id' => $this->dosenLain->id,
-        ]);
     }
 
     public function test_admin_can_remove_dosen_from_pembimbing(): void
@@ -556,10 +372,8 @@ class ProjectProposalVerificationTest extends TestCase
             'list_id' => $this->list->id,
             'title' => 'Proyek Smart Greenhouse',
             'dosen_penentu_id' => $this->dosenLain->id,
-            'status_proposal' => 'pending',
             'created_by' => $this->studentUser->id,
         ]);
-        $card->syncVerifikasiDosen();
 
         $response = $this->actingAs($this->admin)
             ->postJson(route('project.dosen.remove', ['card' => $card->id]), [
@@ -572,10 +386,6 @@ class ProjectProposalVerificationTest extends TestCase
 
         $card->refresh();
         $this->assertNull($card->dosen_penentu_id);
-        $this->assertDatabaseMissing('project_verifikasi_dosen', [
-            'project_card_id' => $card->id,
-            'dosen_id' => $this->dosenLain->id,
-        ]);
     }
 
     public function test_admin_can_assign_and_remove_penilai_via_unified_endpoints(): void
@@ -585,7 +395,6 @@ class ProjectProposalVerificationTest extends TestCase
             'periode_id' => $this->periode->id,
             'list_id' => $this->list->id,
             'title' => 'Proyek Smart Aquaculture',
-            'status_proposal' => 'pending',
             'created_by' => $this->studentUser->id,
         ]);
 
@@ -629,7 +438,6 @@ class ProjectProposalVerificationTest extends TestCase
             'periode_id' => $this->periode->id,
             'list_id' => $this->list->id,
             'title' => 'Proyek IoT Smart Bin',
-            'status_proposal' => 'pending',
             'created_by' => $this->studentUser->id,
         ]);
 
@@ -644,9 +452,5 @@ class ProjectProposalVerificationTest extends TestCase
 
         $card->refresh();
         $this->assertEquals($this->dosenPengampu->id, $card->dosen_penentu_id);
-        $this->assertDatabaseHas('project_verifikasi_dosen', [
-            'project_card_id' => $card->id,
-            'dosen_id' => $this->dosenPengampu->id,
-        ]);
     }
 }

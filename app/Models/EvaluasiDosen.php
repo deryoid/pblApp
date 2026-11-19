@@ -207,6 +207,11 @@ class EvaluasiDosen extends Model
         return $this->belongsTo(ProjectCard::class, 'project_card_id');
     }
 
+    public function mataKuliah()
+    {
+        return $this->belongsTo(MataKuliah::class, 'mata_kuliah_id');
+    }
+
     public function evaluator()
     {
         return $this->belongsTo(User::class, 'evaluator_id');

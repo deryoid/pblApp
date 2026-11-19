@@ -157,7 +157,7 @@ class ProyekMahasiswaTest extends TestCase
         Storage::disk('public')->assertExists($card->proposal_file_path);
     }
 
-    public function test_student_cannot_create_internal_project_without_proposal(): void
+    public function test_student_can_create_internal_project_without_proposal(): void
     {
         $response = $this->actingAs($this->studentUser)->post(route('proyek.cards.store'), [
             'title' => 'Proyek Tanpa Proposal',
@@ -165,8 +165,8 @@ class ProyekMahasiswaTest extends TestCase
             'skema_pbl' => 'Internal',
         ]);
 
-        $response->assertSessionHasErrors(['proposal_file']);
-        $this->assertDatabaseMissing('project_cards', [
+        $response->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('project_cards', [
             'title' => 'Proyek Tanpa Proposal',
         ]);
     }

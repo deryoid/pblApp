@@ -12,6 +12,8 @@
         <x-sidebar/>
         <!-- End of Sidebar -->
 
+        <div id="sidebarBackdrop" class="sidebar-mobile-backdrop d-md-none"></div>
+
         <!-- Content Wrapper -->
         <div id="content-wrapper" class="d-flex flex-column">
 
@@ -82,17 +84,36 @@
         });
     </script>
 
-    <!-- Mobile Sidebar Backdrop Auto-Close -->
+    <!-- Mobile Sidebar Backdrop Auto-Close & Toggle Handling -->
     <script>
-        document.addEventListener('click', function(e) {
-            if (window.innerWidth < 768 && document.body.classList.contains('sidebar-toggled')) {
-                const sidebar = document.getElementById('accordionSidebar');
-                const toggleBtn = document.getElementById('sidebarToggleTop');
-                if (sidebar && !sidebar.contains(e.target) && toggleBtn && !toggleBtn.contains(e.target)) {
-                    document.body.classList.remove('sidebar-toggled');
-                    sidebar.classList.remove('toggled');
+        $(document).ready(function() {
+            $('#sidebarToggleTop').on('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                $('body').toggleClass('sidebar-mobile-show');
+            });
+
+            $('#sidebarBackdrop').on('click', function() {
+                $('body').removeClass('sidebar-mobile-show');
+                $('body').removeClass('sidebar-toggled');
+                $('#accordionSidebar').removeClass('toggled');
+            });
+
+            $(document).on('click', function(e) {
+                if (window.innerWidth < 768 && $('body').hasClass('sidebar-mobile-show')) {
+                    const sidebar = document.getElementById('accordionSidebar');
+                    const toggleBtn = document.getElementById('sidebarToggleTop');
+                    if (sidebar && !sidebar.contains(e.target) && toggleBtn && !toggleBtn.contains(e.target)) {
+                        $('body').removeClass('sidebar-mobile-show');
+                    }
                 }
-            }
+            });
+
+            $(document).on('keydown', function(e) {
+                if (e.key === 'Escape' && $('body').hasClass('sidebar-mobile-show')) {
+                    $('body').removeClass('sidebar-mobile-show');
+                }
+            });
         });
     </script>
 

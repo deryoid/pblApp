@@ -32,9 +32,8 @@
 
         <!-- Quick Access to Public Showcase -->
         <li class="nav-item mr-2 mr-sm-3">
-            <a href="{{ route('home') }}" class="btn btn-sm btn-outline-primary" target="_blank" title="Buka Galeri Proyek Selesai di Tab Baru">
-                <i class="fas fa-external-link-alt mr-1"></i>
-                <span class="d-none d-md-inline">Showcase Proyek</span>
+            <a href="{{ route('home') }}" class="btn btn-sm btn-outline-primary" target="_blank" title="Showcase Publik Proyek" aria-label="Showcase Publik Proyek">
+                <i class="fas fa-external-link-alt"></i>
             </a>
         </li>
 

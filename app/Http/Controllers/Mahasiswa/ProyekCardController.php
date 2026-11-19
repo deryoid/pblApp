@@ -33,7 +33,7 @@ class ProyekCardController extends Controller
         $data = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'list' => 'nullable|string', // uuid atau id list tujuan
+            'list' => 'nullable', // uuid atau id list tujuan
             'labels' => 'nullable|string', // CSV
             // field lama (kompat) & baru (skema revisi)
             'due_date' => 'nullable|date',
@@ -57,15 +57,6 @@ class ProyekCardController extends Controller
         $proposalPath = null;
         if ($request->hasFile('proposal_file')) {
             $proposalPath = $request->file('proposal_file')->store('proposals', 'public');
-        }
-
-        // Syarat wajib proposal jika skema Internal
-        if (strtolower($skema) === 'internal' && empty($proposalPath)) {
-            Alert::error('Proposal Wajib', 'Sebelum memulai proyek internal, kelompok wajib mengunggah berkas proposal proyek (PDF/DOC/DOCX).');
-
-            return back()->withErrors([
-                'proposal_file' => 'Sebelum memulai proyek internal, kelompok wajib mengunggah berkas proposal proyek (PDF/DOC/DOCX).',
-            ])->withInput();
         }
 
         $labels = $this->parseLabels($data['labels'] ?? null);
@@ -118,7 +109,6 @@ class ProyekCardController extends Controller
             'skema_pbl' => $skema,
             'jenis_proyek' => strtolower($skema) === 'external' ? 'external' : 'internal',
             'proposal_file_path' => $proposalPath,
-            'status_proposal' => 'pending',
             'biaya_barang' => $data['biaya_barang'] ?? 0,
             'biaya_jasa' => $data['biaya_jasa'] ?? 0,
             'status_proyek' => $data['status_proyek'] ?? 'Proses',
@@ -134,9 +124,6 @@ class ProyekCardController extends Controller
         if (! empty($data['mata_kuliah_ids'])) {
             $createdCard->mataKuliahs()->sync($data['mata_kuliah_ids']);
         }
-
-        $createdCard->syncVerifikasiDosen();
-        $createdCard->updateStatusProposalAcc();
 
         Alert::toast('Kartu ditambahkan.', 'success');
 
@@ -186,16 +173,6 @@ class ProyekCardController extends Controller
                 \Illuminate\Support\Facades\Storage::disk('public')->delete($card->proposal_file_path);
             }
             $proposalPath = $request->file('proposal_file')->store('proposals', 'public');
-            $isNewProposalUploaded = true;
-        }
-
-        // Jika ada unggahan berkas baru, reset status proposal ke pending untuk verifikasi ulang dosen
-        $statusProposal = $isNewProposalUploaded ? 'pending' : ($card->status_proposal ?? 'pending');
-        if ($isNewProposalUploaded) {
-            \App\Models\ProjectVerifikasiDosen::where('project_card_id', $card->id)->update([
-                'status' => 'pending',
-                'verified_at' => null,
-            ]);
         }
 
         // Update kolom utama
@@ -214,7 +191,6 @@ class ProyekCardController extends Controller
             'skema_pbl' => $skema,
             'jenis_proyek' => strtolower($skema) === 'external' ? 'external' : 'internal',
             'proposal_file_path' => $proposalPath,
-            'status_proposal' => $statusProposal,
             'biaya_barang' => $data['biaya_barang'] ?? $card->biaya_barang,
             'biaya_jasa' => $data['biaya_jasa'] ?? $card->biaya_jasa,
             'status_proyek' => $data['status_proyek'] ?? $card->status_proyek,
@@ -228,14 +204,7 @@ class ProyekCardController extends Controller
         // Sync mata kuliah (jika form dikirim, update sesuai input, kosong jika tidak dicentang)
         $card->mataKuliahs()->sync($request->input('mata_kuliah_ids', []));
 
-        $card->syncVerifikasiDosen();
-        $card->updateStatusProposalAcc();
-
-        $toastMsg = 'Kartu diperbarui.';
-        if (strtolower($skema) === 'internal' && empty($proposalPath)) {
-            $toastMsg .= ' Pengingat: Segera unggah berkas proposal proyek internal.';
-        }
-        Alert::toast($toastMsg, 'success');
+        Alert::toast('Kartu diperbarui.', 'success');
 
         return back();
     }

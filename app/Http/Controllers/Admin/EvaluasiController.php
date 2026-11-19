@@ -738,6 +738,8 @@ class EvaluasiController extends Controller
                         'komponen' => 'Sidang & Pengujian Proyek',
                         'status' => $dp->status_penilaian ?: 'Ditugaskan',
                         'user_id' => $dp->dosen_id,
+                        'card_id' => $card->id,
+                        'penilai_id' => $dp->id,
                     ]);
                 }
             }
@@ -758,6 +760,7 @@ class EvaluasiController extends Controller
                     'komponen' => 'Validasi Progress & Rekomendasi Luaran',
                     'status' => 'Pembimbing',
                     'user_id' => $card->dosen_penentu_id,
+                    'card_id' => $card->id,
                 ]);
             }
         }
@@ -826,6 +829,7 @@ class EvaluasiController extends Controller
             'mataKuliahTerkait' => $mataKuliahTerkait,
             'evaluatorList' => $evaluatorList,
             'allDosen' => \App\Models\User::whereIn('role', ['dosen', 'evaluator', 'admin'])->orderBy('nama_user')->get(['id', 'nama_user', 'username', 'email']),
+            'allMataKuliah' => \App\Models\MataKuliah::where('is_active', true)->with('dosenPengampu')->orderBy('semester')->orderBy('nama_matkul')->get(),
         ]);
     }
 
@@ -1032,8 +1036,6 @@ class EvaluasiController extends Controller
     /** ===== Show project details ===== */
     public function showProject(ProjectCard $card)
     {
-        $card->syncVerifikasiDosen();
-
         $card->load([
             'projectList',
             'createdBy',
@@ -1045,19 +1047,16 @@ class EvaluasiController extends Controller
             'penilaianDosen.dosen',
             'penilaianDosen.mataKuliah',
             'evaluasiMitra',
-            'verifikasiDosen.dosen',
         ]);
 
         $involved = $card->getInvolvedDosen();
         $user = Auth::user();
-        $isUserInvolved = $user ? $involved->contains(fn ($i) => $i->dosen_id == $user->id) : false;
-        $userVerifikasi = $user ? $involved->firstWhere('dosen_id', $user->id) : null;
         $isAdmin = $user ? $user->isAdmin() : false;
 
         $availableDosen = $isAdmin
             ? \App\Models\User::whereIn('role', ['dosen', 'admin'])
                 ->orderBy('nama_user')
-                ->get(['id', 'nama_user', 'username', 'email'])
+                ->get(['id', 'nama_user', 'username', 'email', 'role'])
             : [];
 
         $availableMatkul = $isAdmin
@@ -1070,9 +1069,7 @@ class EvaluasiController extends Controller
             'success' => true,
             'project' => $card,
             'involved_dosen' => $involved,
-            'can_acc' => $isAdmin || $isUserInvolved,
             'can_assess' => true,
-            'user_verifikasi' => $userVerifikasi,
             'is_admin' => $isAdmin,
             'available_dosen' => $availableDosen,
             'available_matkul' => $availableMatkul,
@@ -1110,6 +1107,101 @@ class EvaluasiController extends Controller
         return Excel::download(new ProjectExport($kelompok, $proyekLists, $aktivitasLists), $fileName);
     }
 
+    /** ===== Admin Tambah Proyek ke Kelompok ===== */
+    public function storeProject(Request $request, Kelompok $kelompok)
+    {
+        $activePeriode = Periode::where('status_periode', 'Aktif')->orderByDesc('id')->first()
+            ?? Periode::latest('id')->first();
+        $pid = $kelompok->periode_id ?? optional($activePeriode)->id;
+
+        $data = $request->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'list_id' => 'nullable|exists:project_lists,id',
+            'labels' => 'nullable|string',
+            'tanggal_mulai' => 'nullable|date',
+            'tanggal_selesai' => 'nullable|date',
+            'due_date' => 'nullable|date',
+            'skema_pbl' => 'nullable|string|max:50',
+            'status_proyek' => 'nullable|string|in:Proses,Dibatalkan,Selesai',
+            'nama_mitra' => 'nullable|string|max:255',
+            'kontak_mitra' => 'nullable|string|max:255',
+            'biaya_barang' => 'nullable|numeric|min:0',
+            'biaya_jasa' => 'nullable|numeric|min:0',
+            'link_drive_proyek' => 'nullable|url',
+            'dosen_penentu_id' => 'nullable|exists:users,id',
+            'kendala' => 'nullable|string',
+            'catatan' => 'nullable|string',
+            'mata_kuliah_ids' => 'nullable|array',
+            'mata_kuliah_ids.*' => 'exists:mata_kuliah,id',
+        ]);
+
+        $list = null;
+        if (! empty($data['list_id'])) {
+            $list = ProjectList::where('kelompok_id', $kelompok->id)->where('id', $data['list_id'])->first();
+        }
+        if (! $list) {
+            $list = ProjectList::where('kelompok_id', $kelompok->id)->orderBy('position')->first();
+        }
+        if (! $list) {
+            $list = ProjectList::create([
+                'kelompok_id' => $kelompok->id,
+                'periode_id' => $pid,
+                'name' => 'Perencanaan',
+                'position' => 0,
+            ]);
+        }
+
+        $maxPos = ProjectCard::where('list_id', $list->id)->max('position');
+        $pos = is_null($maxPos) ? 0 : ($maxPos + 1);
+
+        $labels = null;
+        if (! empty($data['labels'])) {
+            $labels = collect(explode(',', $data['labels']))->map(fn ($s) => trim($s))->filter()->values()->all();
+        }
+
+        $skema = ! empty($data['skema_pbl']) ? $data['skema_pbl'] : ($kelompok->skema_kategori ?: 'Internal');
+
+        $card = ProjectCard::create([
+            'kelompok_id' => $kelompok->id,
+            'periode_id' => $pid,
+            'list_id' => $list->id,
+            'title' => $data['title'],
+            'description' => $data['description'] ?? null,
+            'position' => $pos,
+            'labels' => $labels,
+            'tanggal_mulai' => $data['tanggal_mulai'] ?? null,
+            'tanggal_selesai' => $data['tanggal_selesai'] ?? ($data['due_date'] ?? null),
+            'due_date' => $data['due_date'] ?? ($data['tanggal_selesai'] ?? null),
+            'skema_pbl' => $skema,
+            'jenis_proyek' => strtolower($skema) === 'external' ? 'external' : 'internal',
+            'status_proposal' => 'pending',
+            'status_proyek' => $data['status_proyek'] ?? 'Proses',
+            'status' => $data['status_proyek'] ?? 'Proses',
+            'nama_mitra' => $data['nama_mitra'] ?? null,
+            'kontak_mitra' => $data['kontak_mitra'] ?? null,
+            'biaya_barang' => $data['biaya_barang'] ?? 0,
+            'biaya_jasa' => $data['biaya_jasa'] ?? 0,
+            'link_drive_proyek' => $data['link_drive_proyek'] ?? null,
+            'dosen_penentu_id' => ! empty($data['dosen_penentu_id']) ? (int) $data['dosen_penentu_id'] : null,
+            'kendala' => $data['kendala'] ?? null,
+            'catatan' => $data['catatan'] ?? null,
+            'progress' => 0,
+            'created_by' => Auth::id(),
+            'updated_by' => Auth::id(),
+        ]);
+
+        if (! empty($data['mata_kuliah_ids'])) {
+            $card->mataKuliahs()->sync($data['mata_kuliah_ids']);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Kartu proyek berhasil ditambahkan.',
+            'card' => $card,
+        ]);
+    }
+
     /** ===== UTIL (opsional) ===== */
     public function updateProject(Request $request, ProjectCard $card)
     {
@@ -1132,6 +1224,8 @@ class EvaluasiController extends Controller
             'catatan' => 'nullable|string',
             'status' => 'nullable|in:Proses,Selesai,Dibatalkan',
             'dosen_penentu_id' => 'nullable|exists:users,id',
+            'mata_kuliah_ids' => 'nullable|array',
+            'mata_kuliah_ids.*' => 'exists:mata_kuliah,id',
         ]);
 
         $labels = null;
@@ -1180,9 +1274,8 @@ class EvaluasiController extends Controller
         $card->updated_by = Auth::id();
         $card->save();
 
-        if (array_key_exists('dosen_penentu_id', $data)) {
-            $card->syncVerifikasiDosen();
-            $card->updateStatusProposalAcc();
+        if (array_key_exists('mata_kuliah_ids', $data)) {
+            $card->mataKuliahs()->sync($data['mata_kuliah_ids'] ?? []);
         }
 
         return response()->json(['success' => true]);
@@ -1213,6 +1306,7 @@ class EvaluasiController extends Controller
             }
 
             $evaluasiMasterId = (int) $request->input('evaluasi_master_id', $request->input('sesi_id'));
+            $mataKuliahId = $request->filled('mata_kuliah_id') ? (int) $request->input('mata_kuliah_id') : null;
             $items = $request->input('items', []);
 
             // Debug log
@@ -1316,13 +1410,22 @@ class EvaluasiController extends Controller
                 }
 
                 if (! $evaluation) {
-                    $evaluation = \App\Models\EvaluasiDosen::firstOrNew([
+                    $attributes = [
                         'evaluasi_master_id' => $evaluasiMasterId ?: null,
                         'periode_id' => $periodeId,
                         'kelompok_id' => $kelompokId,
                         'mahasiswa_id' => $mahasiswaId,
                         'project_card_id' => $card->id,
-                    ]);
+                    ];
+                    if ($mataKuliahId) {
+                        $attributes['mata_kuliah_id'] = $mataKuliahId;
+                    }
+
+                    $evaluation = \App\Models\EvaluasiDosen::firstOrNew($attributes);
+                }
+
+                if ($mataKuliahId) {
+                    $evaluation->mata_kuliah_id = $mataKuliahId;
                 }
 
                 foreach ($allDosenCriteria as $field) {
@@ -1635,16 +1738,22 @@ class EvaluasiController extends Controller
     /**
      * Get evaluations by project card
      */
-    public function getPenilaianDosenByProject($project)
+    public function getPenilaianDosenByProject(Request $request, $project)
     {
-        $projectCard = ProjectCard::where('uuid', $project)->orWhere('id', $project)->firstOrFail();
+        $projectCard = ProjectCard::where('uuid', $project)->orWhere('id', $project)->with('mataKuliahs')->firstOrFail();
 
-        $evaluations = EvaluasiDosen::where('project_card_id', $projectCard->id)
+        $query = EvaluasiDosen::where('project_card_id', $projectCard->id)
             ->with([
                 'mahasiswa:id,nim,nama_mahasiswa',
                 'evaluator:id,nama_user',
-            ])
-            ->get()
+                'mataKuliah:id,kode_matkul,nama_matkul',
+            ]);
+
+        if ($request->filled('mata_kuliah_id')) {
+            $query->where('mata_kuliah_id', $request->input('mata_kuliah_id'));
+        }
+
+        $evaluations = $query->get()
             ->map(function ($evaluation) {
                 $mahasiswa = $evaluation->mahasiswa;
 
@@ -1653,6 +1762,8 @@ class EvaluasiController extends Controller
                     'mahasiswa_id' => $evaluation->mahasiswa_id,
                     'mahasiswa_nama' => optional($mahasiswa)->nama ?? optional($mahasiswa)->nama_mahasiswa ?? '',
                     'mahasiswa_nim' => optional($mahasiswa)->nim ?? '',
+                    'mata_kuliah_id' => $evaluation->mata_kuliah_id,
+                    'mata_kuliah_nama' => optional($evaluation->mataKuliah)->nama_matkul ?? '',
                     'd_relevansi' => $evaluation->d_relevansi,
                     'd_kualitas' => $evaluation->d_kualitas ?? $evaluation->d_hasil,
                     'd_kreativitas' => $evaluation->d_kreativitas,
@@ -1676,6 +1787,12 @@ class EvaluasiController extends Controller
         return response()->json([
             'success' => true,
             'evaluations' => $evaluations,
+            'mata_kuliahs' => $projectCard->mataKuliahs->map(fn ($mk) => [
+                'id' => $mk->id,
+                'nama' => $mk->nama_matkul ?? $mk->nama_matakuliah,
+                'kode' => $mk->kode_matkul ?? $mk->kode_matakuliah,
+                'semester' => $mk->semester,
+            ]),
         ]);
     }
 

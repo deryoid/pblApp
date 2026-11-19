@@ -107,11 +107,12 @@ class AktivitasListController extends Controller
         return back();
     }
 
-    public function destroy(AktivitasList $list)
+    public function destroy(Request $request, AktivitasList $list)
     {
         $this->authorize('delete', $list);
 
-        if ($list->cards()->exists()) {
+        $hasCards = $list->cards()->exists();
+        if ($hasCards && ! $request->boolean('cascade') && ! $request->boolean('force')) {
             return back()->withErrors('Tidak dapat menghapus kolom yang berisi kartu.');
         }
 
@@ -120,6 +121,7 @@ class AktivitasListController extends Controller
         $pos = $list->position;
 
         DB::transaction(function () use ($list, $kid, $pid, $pos) {
+            $list->cards()->delete();
             $list->delete();
             AktivitasList::where('kelompok_id', $kid)
                 ->where('periode_id', $pid)

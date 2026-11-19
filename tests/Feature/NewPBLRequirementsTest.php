@@ -283,16 +283,16 @@ class NewPBLRequirementsTest extends TestCase
             'position' => 0,
         ]);
 
-        // Percobaan 1: Buat proyek internal TANPA proposal -> harus ditolak
-        $responseFail = $this->actingAs($user)->post(route('proyek.cards.store'), [
+        // Percobaan 1: Buat proyek internal TANPA proposal -> berhasil dibuat (proposal bersifat opsional)
+        $response1 = $this->actingAs($user)->post(route('proyek.cards.store'), [
             'title' => 'Sistem Informasi Manajemen Riset Kampus',
             'list' => $list->uuid,
             'skema_pbl' => 'Internal',
             'status_proyek' => 'Proses',
         ]);
 
-        $responseFail->assertSessionHasErrors(['proposal_file']);
-        $this->assertDatabaseMissing('project_cards', [
+        $response1->assertRedirect();
+        $this->assertDatabaseHas('project_cards', [
             'title' => 'Sistem Informasi Manajemen Riset Kampus',
         ]);
 
@@ -300,7 +300,7 @@ class NewPBLRequirementsTest extends TestCase
         $file = UploadedFile::fake()->create('proposal_riset_internal.pdf', 500, 'application/pdf');
 
         $responseSuccess = $this->actingAs($user)->post(route('proyek.cards.store'), [
-            'title' => 'Sistem Informasi Manajemen Riset Kampus',
+            'title' => 'Sistem Informasi Manajemen Riset Kampus Lampiran',
             'list' => $list->uuid,
             'skema_pbl' => 'Internal',
             'status_proyek' => 'Proses',
@@ -309,13 +309,12 @@ class NewPBLRequirementsTest extends TestCase
 
         $responseSuccess->assertRedirect();
         $this->assertDatabaseHas('project_cards', [
-            'title' => 'Sistem Informasi Manajemen Riset Kampus',
+            'title' => 'Sistem Informasi Manajemen Riset Kampus Lampiran',
             'skema_pbl' => 'Internal',
             'jenis_proyek' => 'internal',
-            'status_proposal' => 'pending',
         ]);
 
-        $card = ProjectCard::where('title', 'Sistem Informasi Manajemen Riset Kampus')->first();
+        $card = ProjectCard::where('title', 'Sistem Informasi Manajemen Riset Kampus Lampiran')->first();
         $this->assertNotNull($card->proposal_file_path);
         Storage::disk('public')->assertExists($card->proposal_file_path);
     }

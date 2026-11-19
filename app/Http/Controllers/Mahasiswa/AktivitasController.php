@@ -66,6 +66,7 @@ class AktivitasController extends Controller
                     'list_id' => $c->list_aktivitas_id, // untuk pengelompokan nanti
                     'tanggal_aktivitas' => optional($c->tanggal_aktivitas)->toDateString(),
                     'description' => $c->description,
+                    'bukti_kegiatan' => $c->bukti_kegiatan,
                     'created_by_name' => $createdByName,
                     'updated_by_name' => $updatedByName,
                     'created_at_human' => ($c->created_at ? $c->created_at->locale('id')->diffForHumans() : null),

@@ -38,11 +38,11 @@
     </div>
 
     <div class="ml-auto d-flex align-items-center">
-      <a href="{{ route('dosen.evaluasi.nilai-final', ['periode_id' => $periodeId]) }}" class="btn btn-sm btn-primary">
-        <i class="fas fa-chart-bar"></i> Nilai Final
+      <a href="{{ route('dosen.evaluasi.nilai-final', ['periode_id' => $periodeId]) }}" class="btn btn-sm btn-primary" title="Nilai Final" aria-label="Nilai Final">
+        <i class="fas fa-chart-bar"></i>
       </a>
-      <a href="{{ route('dosen.evaluasi.settings') }}" class="btn btn-sm btn-secondary ml-2">
-        <i class="fas fa-cog"></i> Pengaturan
+      <a href="{{ route('dosen.evaluasi.settings') }}" class="btn btn-sm btn-secondary ml-2" title="Pengaturan Evaluasi" aria-label="Pengaturan Evaluasi">
+        <i class="fas fa-cog"></i>
       </a>
     </div>
   </div>

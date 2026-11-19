@@ -83,11 +83,11 @@ if (!function_exists('avatarUrl')) {
     </div>
     <div class="ml-auto d-flex align-items-center">
       @if(isset($kelompok) && $kelompok)
-        <button type="button" class="btn btn-primary btn-sm shadow-sm mr-2 btn-add-card" data-list-id="{{ $lists[0]['id'] ?? '' }}" data-toggle="modal" data-target="#modalAddCard" title="Tambah Aktivitas">
-          <i class="fas fa-plus mr-1"></i> Tambah Aktivitas
+        <button type="button" class="btn btn-primary btn-sm shadow-sm mr-2 btn-add-card" data-list-id="{{ $lists[0]['id'] ?? '' }}" data-toggle="modal" data-target="#modalAddCard" title="Tambah Aktivitas" aria-label="Tambah Aktivitas">
+          <i class="fas fa-plus"></i>
         </button>
-        <button type="button" class="btn btn-outline-success btn-sm shadow-sm mr-2" data-toggle="modal" data-target="#modalAddList" title="Tambah Kolom">
-          <i class="fas fa-columns mr-1"></i> Tambah Kolom
+        <button type="button" class="btn btn-outline-success btn-sm shadow-sm mr-2" data-toggle="modal" data-target="#modalAddList" title="Tambah Kolom" aria-label="Tambah Kolom">
+          <i class="fas fa-columns"></i>
         </button>
       @endif
       <input id="boardSearch" type="text" class="form-control form-control-sm" placeholder="Cari..." style="max-width:220px;">
@@ -135,6 +135,7 @@ if (!function_exists('avatarUrl')) {
                     action="{{ route('aktivitas.lists.destroy', ['list' => $list['id']]) }}"
                     class="m-0">
                 @csrf @method('DELETE')
+                <input type="hidden" name="cascade" value="1">
                 <button type="button" class="btn btn-danger ml-1 btn-delete-list {{ ($list['status_evaluasi'] ?? 'Belum Evaluasi') === 'Sudah Evaluasi' ? 'disabled' : '' }}" title="Hapus kolom">
                   <i class="fas fa-trash"></i>
                 </button>
@@ -174,7 +175,8 @@ if (!function_exists('avatarUrl')) {
                    data-card-id="{{ $card['id'] }}"
                    data-title-search="{{ strtolower(($card['description'] ?? '') . ' ' . ($card['tanggal_aktivitas'] ?? '')) }}"
                    data-desc="{{ $card['description'] ?? '' }}"
-                   data-tanggal="{{ $card['tanggal_aktivitas'] ?? '' }}">
+                   data-tanggal="{{ $card['tanggal_aktivitas'] ?? '' }}"
+                   data-bukti="{{ $card['bukti_kegiatan'] ?? '' }}">
                 <div class="card-body py-2">
                   
                   {{-- 1) Tombol aksi di kanan atas --}}
@@ -203,6 +205,15 @@ if (!function_exists('avatarUrl')) {
                     <i class="far fa-calendar-alt mr-1"></i>
                     {{ $card['tanggal_aktivitas'] ? \Carbon\Carbon::parse($card['tanggal_aktivitas'])->locale('id')->translatedFormat('l, d M Y') : '-' }}
                   </div>
+
+                  {{-- 4) Bukti Kegiatan jika ada --}}
+                  @if(!empty($card['bukti_kegiatan']))
+                    <div class="mb-2">
+                      <a href="{{ $card['bukti_kegiatan'] }}" target="_blank" rel="noopener" class="btn btn-xs btn-outline-info py-0 px-2 rounded-pill font-weight-bold" style="font-size:0.75rem;">
+                        <i class="fas fa-external-link-alt mr-1"></i> Bukti Kegiatan
+                      </a>
+                    </div>
+                  @endif
 
                   <div class="mt-2 d-flex flex-column text-muted x-small">
                    {{-- CREATOR / UPDATER --}}
@@ -253,16 +264,16 @@ if (!function_exists('avatarUrl')) {
       </p>
       @if(isset($kelompok) && $kelompok)
         <div class="d-flex align-items-center justify-content-center flex-wrap gap-2">
-          <button type="button" class="btn btn-primary btn-sm shadow-sm mr-2 btn-add-card" data-list-id="" data-toggle="modal" data-target="#modalAddCard">
-            <i class="fas fa-plus mr-1"></i> Tambah Aktivitas Pertama
+          <button type="button" class="btn btn-primary btn-sm shadow-sm mr-2 btn-add-card" data-list-id="" data-toggle="modal" data-target="#modalAddCard" title="Tambah Aktivitas Pertama" aria-label="Tambah Aktivitas Pertama">
+            <i class="fas fa-plus"></i>
           </button>
-          <button class="btn btn-success btn-sm shadow-sm mr-2" data-toggle="modal" data-target="#modalAddList">
-            <i class="fas fa-columns mr-1"></i> Tambah Kolom Kustom
+          <button class="btn btn-success btn-sm shadow-sm mr-2" data-toggle="modal" data-target="#modalAddList" title="Tambah Kolom Kustom" aria-label="Tambah Kolom Kustom">
+            <i class="fas fa-columns"></i>
           </button>
           <form method="POST" action="{{ route('aktivitas.lists.quick-setup') }}" class="d-inline">
             @csrf
-            <button type="submit" class="btn btn-outline-primary btn-sm shadow-sm">
-              <i class="fas fa-magic mr-1"></i> Inisialisasi 4 Minggu Logbook
+            <button type="submit" class="btn btn-outline-primary btn-sm shadow-sm" title="Inisialisasi 4 Minggu Logbook" aria-label="Inisialisasi 4 Minggu Logbook">
+              <i class="fas fa-magic"></i>
             </button>
           </form>
         </div>
@@ -297,8 +308,8 @@ if (!function_exists('avatarUrl')) {
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
-          <button type="submit" class="btn btn-primary">Simpan</button>
+          <button type="button" class="btn btn-secondary" data-dismiss="modal" title="Batal" aria-label="Batal"><i class="fas fa-times"></i></button>
+          <button type="submit" class="btn btn-primary" title="Simpan" aria-label="Simpan"><i class="fas fa-save"></i></button>
         </div>
       </form>
     </div>
@@ -324,13 +335,13 @@ if (!function_exists('avatarUrl')) {
             <textarea name="description" id="editDesc" class="form-control" rows="3"></textarea>
           </div>
           <div class="form-group">
-            <label>Ganti Bukti (opsional)</label>
-            <input name="bukti_kegiatan" type="url" class="form-control" placeholder="https://...">
+            <label>Bukti Kegiatan (Link)</label>
+            <input name="bukti_kegiatan" id="editBukti" type="url" class="form-control" placeholder="https://...">
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
-          <button type="submit" class="btn btn-primary">Simpan</button>
+          <button type="button" class="btn btn-secondary" data-dismiss="modal" title="Batal" aria-label="Batal"><i class="fas fa-times"></i></button>
+          <button type="submit" class="btn btn-primary" title="Simpan" aria-label="Simpan"><i class="fas fa-save"></i></button>
         </div>
       </form>
     </div>
@@ -367,8 +378,8 @@ if (!function_exists('avatarUrl')) {
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
-          <button type="submit" class="btn btn-primary">Simpan</button>
+          <button type="button" class="btn btn-secondary" data-dismiss="modal" title="Batal" aria-label="Batal"><i class="fas fa-times"></i></button>
+          <button type="submit" class="btn btn-primary" title="Simpan" aria-label="Simpan"><i class="fas fa-save"></i></button>
         </div>
       </form>
     </div>
@@ -405,8 +416,8 @@ if (!function_exists('avatarUrl')) {
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
-          <button type="submit" class="btn btn-primary">Simpan</button>
+          <button type="button" class="btn btn-secondary" data-dismiss="modal" title="Batal" aria-label="Batal"><i class="fas fa-times"></i></button>
+          <button type="submit" class="btn btn-primary" title="Simpan" aria-label="Simpan"><i class="fas fa-save"></i></button>
         </div>
       </form>
     </div>
@@ -710,8 +721,10 @@ if (!function_exists('avatarUrl')) {
     const id   = card.data('card-id');
     const tgl  = card.data('tanggal')||'';
     const desc = card.data('desc')||'';
+    const bukti = card.data('bukti')||'';
     $('#editTanggal').val(tgl);
     $('#editDesc').val(desc);
+    $('#editBukti').val(bukti);
     $('#editCardForm').attr('action', "{{ url('mahasiswa/aktivitas/cards') }}/"+id);
   });
 

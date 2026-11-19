@@ -53,4 +53,10 @@ class Dosen extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function mataKuliahs(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(MataKuliah::class, 'dosen_mata_kuliah', 'dosen_id', 'mata_kuliah_id')
+            ->withTimestamps();
+    }
 }

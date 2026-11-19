@@ -174,11 +174,13 @@ Route::prefix('admin')->middleware(['auth', 'admin', 'profile.complete'])->group
         Route::post('project/reorder', [AdminEval::class, 'reorderProjectCard'])->name('project.reorder');
         Route::post('lists/reorder', [AdminEval::class, 'reorderProjectLists'])->name('lists.reorder');
 
-        // Quick action: progress & status kartu
+        // Quick action: progress & status kartu & tambah/edit proyek
+        Route::post('kelompok/{kelompok}/project', [AdminEval::class, 'storeProject'])->name('project.store');
         Route::get('project/{card}', [AdminEval::class, 'showProject'])->name('project.show');
         Route::post('project/{card}/progress', [AdminEval::class, 'updateProjectProgress'])->name('project.progress');
         Route::delete('project/{card}', [AdminEval::class, 'destroyProject'])->name('project.destroy');
-        Route::post('project/{card}/update', [AdminEval::class, 'updateProject'])->name('project.update');
+        Route::match(['post', 'put'], 'project/{card}/update', [AdminEval::class, 'updateProject'])->name('project.update');
+        Route::match(['post', 'put'], 'project/{card}', [AdminEval::class, 'updateProject'])->name('project.update.alt');
         Route::post('project/{card}/status', [AdminEval::class, 'updateProjectStatus'])->name('project.status');
 
         // Penilaian (AJAX)
@@ -255,7 +257,8 @@ Route::prefix('dosen')->middleware(['auth', 'dosen', 'profile.complete'])->name(
         Route::get('project/{card}', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'showProject'])->name('project.show');
         Route::post('project/{card}/progress', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'updateProjectProgress'])->name('project.updateProgress');
         Route::post('project/{card}/status', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'updateProjectStatus'])->name('project.updateStatus');
-        Route::put('project/{card}', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'updateProject'])->name('project.update');
+        Route::match(['post', 'put'], 'project/{card}', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'updateProject'])->name('project.update');
+        Route::match(['post', 'put'], 'project/{card}/update', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'updateProject'])->name('project.update.alt');
         Route::delete('project/{card}', [\App\Http\Controllers\Dosen\EvaluasiController::class, 'destroyProject'])->name('project.destroy');
 
         // Penilaian Dosen
@@ -408,10 +411,9 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
 });
 
-// Verifikasi Proposal Proyek & Penugasan Dosen Penilai / Pembimbing
+// Penugasan Dosen Penilai / Pembimbing & Mata Kuliah Proyek
 Route::middleware(['auth', 'profile.complete'])->group(function () {
     Route::get('/project/{card}/verifikasi-status', [\App\Http\Controllers\ProjectVerifikasiController::class, 'getStatus'])->name('project.verifikasi.status');
-    Route::post('/project/{card}/verifikasi-acc', [\App\Http\Controllers\ProjectVerifikasiController::class, 'verifikasiAcc'])->name('project.verifikasi.acc');
     Route::post('/project/{card}/assign-dosen', [\App\Http\Controllers\ProjectVerifikasiController::class, 'assignDosen'])->name('project.dosen.assign');
     Route::post('/project/{card}/remove-dosen', [\App\Http\Controllers\ProjectVerifikasiController::class, 'removeDosen'])->name('project.dosen.remove');
     Route::post('/project/{card}/dosen-penilai', [\App\Http\Controllers\ProjectVerifikasiController::class, 'assignDosenPenilai'])->name('project.dosen-penilai.store');

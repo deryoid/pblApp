@@ -40,10 +40,12 @@
     <div class="ml-auto d-flex align-items-center">
       {{-- Simple action: buka daftar sesi atau buat jadwal --}}
       @if (\Illuminate\Support\Facades\Route::has('admin.evaluasi.sesi.index'))
-        <a href="{{ route('admin.evaluasi.sesi.index', ['periode_id' => $periodeId]) }}" class="btn btn-sm btn-secondary">Lihat Sesi</a>
+        <a href="{{ route('admin.evaluasi.sesi.index', ['periode_id' => $periodeId]) }}" class="btn btn-sm btn-secondary mr-2" title="Lihat Sesi Evaluasi" aria-label="Lihat Sesi Evaluasi">
+          <i class="fas fa-calendar-alt"></i>
+        </a>
       @endif
-      <a href="{{ route('admin.evaluasi.nilai-final', ['periode_id' => $periodeId]) }}" class="btn btn-sm btn-primary">
-        <i class="fas fa-chart-bar"></i> Nilai Final
+      <a href="{{ route('admin.evaluasi.nilai-final', ['periode_id' => $periodeId]) }}" class="btn btn-sm btn-primary" title="Nilai Final" aria-label="Nilai Final">
+        <i class="fas fa-chart-bar"></i>
       </a>
     </div>
   </div>

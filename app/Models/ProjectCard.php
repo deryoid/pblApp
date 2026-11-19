@@ -195,7 +195,7 @@ class ProjectCard extends Model
         // 3. Dosen Penentu Proyek
         if ($this->dosenPenentu) {
             $existing = $involvedMap->get($this->dosen_penentu_id);
-            $peran = $existing ? ($existing['peran'].' & Pembimbing Proyek') : 'Dosen Penentu / Pembimbing Proyek';
+            $peran = $existing ? ($existing['peran'].' & Pembimbing Proyek') : 'Dosen Pembimbing Proyek';
             $involvedMap->put($this->dosen_penentu_id, [
                 'dosen' => $this->dosenPenentu,
                 'peran' => $peran,
@@ -204,89 +204,40 @@ class ProjectCard extends Model
             ]);
         }
 
-        // Gabungkan dengan data verifikasi / ACC dari tabel project_verifikasi_dosen
-        $verifGrouped = $this->verifikasiDosen->keyBy('dosen_id');
-
-        return $involvedMap->map(function ($item, $dosenId) use ($verifGrouped) {
-            $verif = $verifGrouped->get($dosenId);
-            $status = $verif ? $verif->status : 'pending';
-
+        return $involvedMap->map(function ($item, $dosenId) {
             return (object) [
                 'dosen_id' => $dosenId,
                 'dosen' => $item['dosen'],
-                'peran' => $verif && ! empty($verif->peran) ? $verif->peran : $item['peran'],
+                'nama_dosen' => $item['dosen']?->nama_user ?? 'Dosen',
+                'nip' => $item['dosen']?->username ?? '-',
+                'peran' => $item['peran'],
                 'peran_tipe' => $item['peran_tipe'] ?? 'pengampu',
                 'mata_kuliah' => $item['mata_kuliah'] ?? null,
-                'status' => $status,
-                'is_acc' => $status === 'acc',
-                'is_revisi' => $status === 'revisi',
-                'is_pending' => $status === 'pending',
-                'catatan' => $verif?->catatan,
-                'verified_at' => $verif?->verified_at,
                 'penilai_record' => $item['penilai_record'] ?? null,
             ];
         })->values();
     }
 
     /**
-     * Pastikan semua dosen yang terlibat memiliki record verifikasi di tabel project_verifikasi_dosen.
+     * Helper kompatibilitas lama (ACC proposal telah dihapus).
      */
     public function syncVerifikasiDosen(): \Illuminate\Support\Collection
     {
-        $involved = $this->getInvolvedDosen();
-
-        foreach ($involved as $item) {
-            \App\Models\ProjectVerifikasiDosen::firstOrCreate(
-                [
-                    'project_card_id' => $this->id,
-                    'dosen_id' => $item->dosen_id,
-                ],
-                [
-                    'peran' => $item->peran,
-                    'status' => 'pending',
-                ]
-            );
-        }
-
-        $this->load('verifikasiDosen');
-
         return $this->getInvolvedDosen();
     }
 
     /**
-     * Hitung ringkasan status ACC dan perbarui status_proposal project_cards.
+     * Helper kompatibilitas lama (ACC proposal telah dihapus).
      */
-    public function updateStatusProposalAcc(): string
+    public function updateStatusProposalAcc(): ?string
     {
-        $involved = $this->getInvolvedDosen();
-
-        if ($involved->isEmpty()) {
-            return $this->status_proposal ?? 'pending';
-        }
-
-        $hasRevisi = $involved->contains(fn ($i) => $i->status === 'revisi');
-        $allAcc = $involved->every(fn ($i) => $i->status === 'acc');
-
-        $newStatus = 'pending';
-        if ($hasRevisi) {
-            $newStatus = 'revisi';
-        } elseif ($allAcc) {
-            $newStatus = 'disetujui';
-        }
-
-        if ($this->status_proposal !== $newStatus) {
-            $this->status_proposal = $newStatus;
-            $this->save();
-        }
-
-        return $newStatus;
+        return null;
     }
 
     /**
      * Memeriksa apakah seorang pengguna (Admin atau Dosen) berwenang menilai proyek ini.
      * Admin berwenang menilai seluruh proyek.
-     * Dosen hanya berwenang menilai jika proyek terhubung dengan mata kuliah yang dia ampu
-     * atau proyek yang menugaskan dirinya (sebagai pembimbing atau penilai).
+     * Dosen atau akun yang ditugaskan (pembimbing / penilai / pengampu) berwenang menilai proyek ini.
      */
     public function canBeAssessedBy(?User $user): bool
     {
@@ -294,7 +245,18 @@ class ProjectCard extends Model
             return false;
         }
 
+        // 1. Admin selalu berwenang menilai seluruh proyek
         if ($user->isAdmin()) {
+            return true;
+        }
+
+        // 2. Dosen Penentu / Pembimbing pada proyek ini
+        if ($this->dosen_penentu_id == $user->id) {
+            return true;
+        }
+
+        // 3. Ditugaskan khusus oleh Admin sebagai Dosen Penilai / Penguji pada proyek ini
+        if ($this->dosenPenilai()->where('dosen_id', $user->id)->exists()) {
             return true;
         }
 
@@ -302,17 +264,7 @@ class ProjectCard extends Model
             return false;
         }
 
-        // 1. Dosen Penentu / Pembimbing pada proyek ini
-        if ($this->dosen_penentu_id == $user->id) {
-            return true;
-        }
-
-        // 2. Dosen Penilai / Penguji khusus pada proyek ini
-        if ($this->dosenPenilai()->where('dosen_id', $user->id)->exists()) {
-            return true;
-        }
-
-        // 3. Dosen Pengampu dari salah satu mata kuliah yang terhubung dengan proyek ini
+        // 4. Dosen Pengampu dari salah satu mata kuliah yang terhubung dengan proyek ini
         return $this->mataKuliahs()->whereHas('dosenPengampu', function ($q) use ($user) {
             $q->where('users.id', $user->id);
         })->exists();

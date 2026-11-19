@@ -844,6 +844,7 @@ class EvaluasiController extends Controller
             'studentEvalStats' => $studentEvalStats,
             'mataKuliahTerkait' => $mataKuliahTerkait,
             'evaluatorList' => $evaluatorList,
+            'allMataKuliah' => \App\Models\MataKuliah::where('is_active', true)->with('dosenPengampu')->orderBy('semester')->orderBy('nama_matkul')->get(),
         ]);
     }
 
@@ -998,6 +999,10 @@ class EvaluasiController extends Controller
     /** ===== Quick action: update progress ===== */
     public function updateProjectProgress(Request $request, ProjectCard $card)
     {
+        if (! $card->canBeAssessedBy(Auth::user())) {
+            return response()->json(['success' => false, 'message' => 'Anda tidak berwenang mengelola kartu proyek ini.'], 403);
+        }
+
         $data = $request->validate(['progress' => 'required|integer|min:0|max:100']);
         $card->update([
             'progress' => $data['progress'],
@@ -1010,6 +1015,10 @@ class EvaluasiController extends Controller
     /** ===== Quick action: update status ===== */
     public function updateProjectStatus(Request $request, ProjectCard $card)
     {
+        if (! $card->canBeAssessedBy(Auth::user())) {
+            return response()->json(['success' => false, 'message' => 'Anda tidak berwenang mengelola kartu proyek ini.'], 403);
+        }
+
         $data = $request->validate(['status' => 'required|string|in:Proses,Selesai,Dibatalkan']);
 
         // Simpan ke kedua kolom untuk kompatibilitas
@@ -1025,8 +1034,6 @@ class EvaluasiController extends Controller
     /** ===== Show project details ===== */
     public function showProject(ProjectCard $card)
     {
-        $card->syncVerifikasiDosen();
-
         $card->load([
             'projectList',
             'createdBy',
@@ -1038,13 +1045,10 @@ class EvaluasiController extends Controller
             'penilaianDosen.dosen',
             'penilaianDosen.mataKuliah',
             'evaluasiMitra',
-            'verifikasiDosen.dosen',
         ]);
 
         $involved = $card->getInvolvedDosen();
         $user = Auth::user();
-        $isUserInvolved = $user ? $involved->contains(fn ($i) => $i->dosen_id == $user->id) : false;
-        $userVerifikasi = $user ? $involved->firstWhere('dosen_id', $user->id) : null;
         $isAdmin = $user ? $user->isAdmin() : false;
 
         $availableDosen = ($isAdmin || $user?->isDosen())
@@ -1063,9 +1067,7 @@ class EvaluasiController extends Controller
             'success' => true,
             'project' => $card,
             'involved_dosen' => $involved,
-            'can_acc' => $isAdmin || $isUserInvolved,
             'can_assess' => $card->canBeAssessedBy($user),
-            'user_verifikasi' => $userVerifikasi,
             'is_admin' => $isAdmin,
             'available_dosen' => $availableDosen,
             'available_matkul' => $availableMatkul,
@@ -1106,6 +1108,10 @@ class EvaluasiController extends Controller
     /** ===== UTIL (opsional) ===== */
     public function updateProject(Request $request, ProjectCard $card)
     {
+        if (! $card->canBeAssessedBy(Auth::user())) {
+            return response()->json(['success' => false, 'message' => 'Anda tidak berwenang mengelola kartu proyek ini.'], 403);
+        }
+
         $data = $request->validate([
             'title' => 'nullable|string|max:255',
             'description' => 'nullable|string',
@@ -1174,6 +1180,10 @@ class EvaluasiController extends Controller
 
     public function destroyProject(ProjectCard $card)
     {
+        if (! $card->canBeAssessedBy(Auth::user())) {
+            return response()->json(['success' => false, 'message' => 'Anda tidak berwenang mengelola kartu proyek ini.'], 403);
+        }
+
         $card->delete();
 
         return response()->json([
@@ -1204,6 +1214,7 @@ class EvaluasiController extends Controller
             }
 
             $evaluasiMasterId = (int) $request->input('evaluasi_master_id', $request->input('sesi_id'));
+            $mataKuliahId = $request->filled('mata_kuliah_id') ? (int) $request->input('mata_kuliah_id') : null;
             $items = $request->input('items', []);
 
             // Debug log
@@ -1307,13 +1318,22 @@ class EvaluasiController extends Controller
                 }
 
                 if (! $evaluation) {
-                    $evaluation = \App\Models\EvaluasiDosen::firstOrNew([
+                    $attributes = [
                         'evaluasi_master_id' => $evaluasiMasterId ?: null,
                         'periode_id' => $periodeId,
                         'kelompok_id' => $kelompokId,
                         'mahasiswa_id' => $mahasiswaId,
                         'project_card_id' => $card->id,
-                    ]);
+                    ];
+                    if ($mataKuliahId) {
+                        $attributes['mata_kuliah_id'] = $mataKuliahId;
+                    }
+
+                    $evaluation = \App\Models\EvaluasiDosen::firstOrNew($attributes);
+                }
+
+                if ($mataKuliahId) {
+                    $evaluation->mata_kuliah_id = $mataKuliahId;
                 }
 
                 foreach ($allDosenCriteria as $field) {
@@ -1626,16 +1646,22 @@ class EvaluasiController extends Controller
     /**
      * Get evaluations by project card
      */
-    public function getPenilaianDosenByProject($project)
+    public function getPenilaianDosenByProject(Request $request, $project)
     {
-        $projectCard = ProjectCard::where('uuid', $project)->orWhere('id', $project)->firstOrFail();
+        $projectCard = ProjectCard::where('uuid', $project)->orWhere('id', $project)->with('mataKuliahs')->firstOrFail();
 
-        $evaluations = EvaluasiDosen::where('project_card_id', $projectCard->id)
+        $query = EvaluasiDosen::where('project_card_id', $projectCard->id)
             ->with([
                 'mahasiswa:id,nim,nama_mahasiswa',
                 'evaluator:id,nama_user',
-            ])
-            ->get()
+                'mataKuliah:id,kode_matkul,nama_matkul',
+            ]);
+
+        if ($request->filled('mata_kuliah_id')) {
+            $query->where('mata_kuliah_id', $request->input('mata_kuliah_id'));
+        }
+
+        $evaluations = $query->get()
             ->map(function ($evaluation) {
                 $mahasiswa = $evaluation->mahasiswa;
 
@@ -1644,6 +1670,8 @@ class EvaluasiController extends Controller
                     'mahasiswa_id' => $evaluation->mahasiswa_id,
                     'mahasiswa_nama' => optional($mahasiswa)->nama ?? optional($mahasiswa)->nama_mahasiswa ?? '',
                     'mahasiswa_nim' => optional($mahasiswa)->nim ?? '',
+                    'mata_kuliah_id' => $evaluation->mata_kuliah_id,
+                    'mata_kuliah_nama' => optional($evaluation->mataKuliah)->nama_matkul ?? '',
                     'd_relevansi' => $evaluation->d_relevansi,
                     'd_kualitas' => $evaluation->d_kualitas ?? $evaluation->d_hasil,
                     'd_kreativitas' => $evaluation->d_kreativitas,
@@ -1664,9 +1692,20 @@ class EvaluasiController extends Controller
                 ];
             });
 
+        $user = Auth::user();
+        $myTaughtMatkulIds = $user?->dosen?->mataKuliahs->pluck('id')->toArray() ?? [];
+
         return response()->json([
             'success' => true,
             'evaluations' => $evaluations,
+            'mata_kuliahs' => $projectCard->mataKuliahs->map(fn ($mk) => [
+                'id' => $mk->id,
+                'nama' => $mk->nama_matkul ?? $mk->nama_matakuliah,
+                'kode' => $mk->kode_matkul ?? $mk->kode_matakuliah,
+                'semester' => $mk->semester,
+                'is_taught' => in_array($mk->id, $myTaughtMatkulIds, true),
+            ]),
+            'my_taught_matkul_ids' => $myTaughtMatkulIds,
         ]);
     }
 

@@ -530,9 +530,14 @@
 
           {{-- TAB 2: SIAPA SAJA YANG BISA MENGEVALUASI --}}
           <div class="tab-pane fade" id="pills-evaluator-list" role="tabpanel" aria-labelledby="pills-evaluator-list-tab">
-            <div class="alert alert-primary py-2 px-3 small rounded mb-3">
-              <i class="fas fa-info-circle mr-1"></i>
-              <strong>Matriks Wewenang Penilaian:</strong> Tabel di bawah ini merinci seluruh dosen, mitra, dan evaluator yang memiliki hak dan wewenang untuk mengevaluasi kelompok ini beserta cakupan komponen penilaiannya.
+            <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center mb-3 p-2.5 px-3 rounded" style="background: #f8fafc; border: 1px solid #e2e8f0;">
+              <div class="small text-muted mb-2 mb-sm-0">
+                <i class="fas fa-info-circle text-primary mr-1"></i>
+                <strong>Matriks Penilai:</strong> Admin dapat menambahkan dosen atau akun penilai ke dalam proyek mahasiswa di bawah ini.
+              </div>
+              <button type="button" class="btn btn-primary btn-sm shadow-sm" data-toggle="modal" data-target="#modalTugaskanPenilai" title="Tugaskan Dosen / Penilai" aria-label="Tugaskan Dosen / Penilai">
+                <i class="fas fa-user-plus"></i>
+              </button>
             </div>
 
             <div class="table-responsive">
@@ -544,7 +549,8 @@
                     <th>Nama Penilai & Identitas</th>
                     <th>Konteks / Mata Kuliah</th>
                     <th>Komponen yang Dinilai</th>
-                    <th style="width: 140px;" class="text-center">Status</th>
+                    <th style="width: 130px;" class="text-center">Status</th>
+                    <th style="width: 70px;" class="text-center">Aksi</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -609,10 +615,21 @@
                           </span>
                         @endif
                       </td>
+                      <td class="text-center align-middle">
+                        @if(($ev['type'] === 'dosen_penilai' || $ev['type'] === 'dosen_penentu') && !empty($ev['card_id']) && !empty($ev['user_id']))
+                          <button type="button" class="btn btn-xs btn-outline-danger py-0 px-2"
+                                  onclick="hapusDosenProyek({{ $ev['card_id'] }}, {{ $ev['user_id'] }}, '{{ $ev['type'] === 'dosen_penentu' ? 'pembimbing' : 'penilai' }}', {{ $ev['penilai_id'] ?? 'null' }})"
+                                  title="Hapus penugasan penilai">
+                            <i class="fas fa-trash-alt fa-xs"></i>
+                          </button>
+                        @else
+                          <span class="text-muted small">-</span>
+                        @endif
+                      </td>
                     </tr>
                   @empty
                     <tr>
-                      <td colspan="6" class="text-center py-3 text-muted">Belum ada tim penilai yang terdaftar.</td>
+                      <td colspan="7" class="text-center py-3 text-muted">Belum ada tim penilai yang terdaftar.</td>
                     </tr>
                   @endforelse
                 </tbody>
@@ -631,9 +648,12 @@
         <div class="section-title mb-0 mr-2">Daftar Proyek</div>
       </div>
       <div class="d-flex align-items-center">
+        <button type="button" class="btn btn-sm btn-primary mr-2 shadow-sm" data-toggle="modal" data-target="#modalAddProyekAdmin" title="Tambah Proyek" aria-label="Tambah Proyek">
+          <i class="fas fa-plus"></i>
+        </button>
         <button class="btn btn-sm btn-secondary mr-2" type="button"
                 data-toggle="collapse" data-target="#sectionProjects"
-                aria-expanded="true" aria-controls="sectionProjects">Toggle</button>
+                aria-expanded="true" aria-controls="sectionProjects" title="Buka/Tutup Daftar Proyek" aria-label="Buka/Tutup Daftar Proyek"><i class="fas fa-chevron-down"></i></button>
         <input id="boardSearch" type="text" class="form-control form-control-sm mr-2" placeholder="Cari Proyek..." style="max-width: 220px;" aria-label="Cari kartu proyek">
       </div>
     </div>
@@ -760,29 +780,12 @@
                         <span class="small text-muted">{{ (int)($card->progress ?? 0) }}%</span>
                       </div>
 
-                      {{-- Status Verifikasi Proposal Dosen --}}
-                      @if($card->hasProposal() || ($card->verifikasiDosen && $card->verifikasiDosen->count() > 0))
-                        @php
-                          $vInvolved = $card->getInvolvedDosen();
-                          $vTotal = $vInvolved->count();
-                          $vAcc = $vInvolved->where('status', 'acc')->count();
-                          $vRev = $vInvolved->where('status', 'revisi')->count();
-                          $vStatus = $card->status_proposal ?? 'pending';
-                        @endphp
+                      {{-- Berkas Proposal Proyek --}}
+                      @if($card->hasProposal())
                         <div class="mb-2">
-                          @if($vTotal > 0 && $vAcc === $vTotal)
-                            <span class="badge border border-success text-success bg-white px-2 py-0.5" style="font-size: 0.7rem;" title="Proposal telah di-ACC lengkap oleh seluruh dosen terkait">
-                              <i class="fas fa-check-circle mr-1"></i> Proposal Disetujui ({{ $vAcc }}/{{ $vTotal }} ACC)
-                            </span>
-                          @elseif($vRev > 0 || $vStatus === 'revisi')
-                            <span class="badge border border-danger text-danger bg-white px-2 py-0.5" style="font-size: 0.7rem;" title="{{ $vRev }} dosen meminta revisi proposal">
-                              <i class="fas fa-exclamation-circle mr-1"></i> Proposal Perlu Revisi
-                            </span>
-                          @else
-                            <span class="badge border border-secondary text-secondary bg-white px-2 py-0.5" style="font-size: 0.7rem;" title="Menunggu persetujuan proposal dari dosen terkait">
-                              <i class="far fa-clock mr-1"></i> Menunggu ACC ({{ $vAcc }}/{{ $vTotal }})
-                            </span>
-                          @endif
+                          <a href="{{ $card->proposal_url }}" target="_blank" rel="noopener" class="badge badge-light border text-primary px-2 py-0.5" style="font-size: 0.7rem;" title="Buka berkas proposal">
+                            <i class="fas fa-file-pdf mr-1 text-danger"></i> Berkas Proposal
+                          </a>
                         </div>
                       @endif
 
@@ -975,6 +978,7 @@
                                   data-namami="{{ $card->nama_mitra ?? '' }}"
                                   data-kontak="{{ $card->kontak_mitra ?? '' }}"
                                   data-dosen_penentu_id="{{ $card->dosen_penentu_id ?? '' }}"
+                                  data-matkul='@json($card->mataKuliahs->pluck("id"))'
                                   data-kendala="{{ addslashes($card->kendala ?? '') }}"
                                   data-catatan="{{ addslashes($card->catatan ?? '') }}">
                             <i class="fas fa-edit" aria-hidden="true"></i>
@@ -1019,7 +1023,7 @@
       <div class="d-flex align-items-center">
          <button class="btn btn-sm btn-secondary mr-2" type="button"
                 data-toggle="collapse" data-target="#sectionAktivitas"
-                aria-expanded="true" aria-controls="sectionAktivitas">Toggle</button>
+                aria-expanded="true" aria-controls="sectionAktivitas" title="Buka/Tutup Aktivitas Mingguan" aria-label="Buka/Tutup Aktivitas Mingguan"><i class="fas fa-chevron-down"></i></button>
         <input id="actSearch" type="text" class="form-control form-control-sm mr-2"
                placeholder="Cari Aktivitas…" style="max-width: 220px;" aria-label="Cari aktivitas">
       </div>
@@ -1041,7 +1045,7 @@
               <div class="board-col-head d-flex align-items-center justify-content-between">
                 <div class="d-flex flex-column">
                   <h6 class="mb-1 text-uppercase font-weight-bold truncate">
-                    {{ $alist->title ?? $alist->nama_aktivitas ?? $alist->deskripsi ?? ($alist ? 'Minggu' : 'Aktivitas') }}
+                    {{ $alist->name ?? $alist->title ?? ($alist ? 'Minggu' : 'Aktivitas') }}
                     <span class="badge badge-soft mr-2">{{ count($validCards) }}</span>
                   </h6>
                   <div class="align-items-center x-small mt-auto pt-1">
@@ -1067,17 +1071,15 @@
 
                       {{-- Nilai AP --}}
                       <button type="button"
-                              class="btn btn-sm btn-primary {{ ($alist->status_evaluasi ?? 'Belum Evaluasi') === 'Sudah Evaluasi' ? 'disabled' : '' }}"
+                              class="btn btn-sm btn-primary"
                               title="Nilai AP"
-                              onclick="gradeAP('{{ $alist->id }}','{{ addslashes($alist->title ?? $alist->nama_aktivitas ?? $alist->deskripsi ?? ($alist ? 'Aktivitas' : 'Aktivitas')) }}')">
+                              onclick="gradeAP('{{ $alist->id }}','{{ addslashes($alist->name ?? $alist->title ?? 'Minggu') }}')">
                               <i class="fas fa-clipboard-list" aria-hidden="true"></i>
                       </button>
 
-                    
-
                       {{-- Update Status --}}
                       <button type="button"
-                              class="btn btn-sm btn-success mr-2 js-aktivitas-status {{ ($alist->status_evaluasi ?? 'Belum Evaluasi') === 'Sudah Evaluasi' ? 'disabled' : '' }}"
+                              class="btn btn-sm btn-success mr-2 js-aktivitas-status"
                               data-uuid="{{ $alist->uuid ?? $alist->id }}"
                               data-status="{{ $statusNow }}"
                               data-target="#{{ $badgeId }}"
@@ -1184,7 +1186,7 @@
         <!-- Content will be loaded dynamically -->
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+        <button type="button" class="btn btn-secondary" data-dismiss="modal" title="Tutup" aria-label="Tutup"><i class="fas fa-times"></i></button>
       </div>
     </div>
   </div>
@@ -1264,7 +1266,25 @@
               <option value="{{ $d->id }}">{{ $d->nama_user ?: $d->name }} (NIP/ID: {{ $d->username ?: ($d->email ?: '-') }})</option>
             @endforeach
           </select>
-          <small class="form-text text-muted">Dosen pembimbing akan tercatat pada kartu proyek dan terlibat langsung dalam verifikasi proposal serta evaluasi akhir.</small>
+          <small class="form-text text-muted">Dosen pembimbing akan tercatat pada kartu proyek dan berwenang mengevaluasi proyek ini.</small>
+        </div>
+        <div class="form-group">
+          <label for="ep_mata_kuliah_ids" class="font-weight-bold text-dark">
+            <i class="fas fa-book-reader text-primary mr-1"></i> Keterkaitan Mata Kuliah
+          </label>
+          <select class="form-control select2-matkul-admin" name="mata_kuliah_ids[]" id="ep_mata_kuliah_ids" multiple="multiple" style="width: 100%;">
+            @php
+              $allMatkulGrouped = ($allMataKuliah ?? collect())->groupBy('semester');
+            @endphp
+            @foreach($allMatkulGrouped as $sem => $mks)
+              <optgroup label="Semester {{ $sem }}">
+                @foreach($mks as $mk)
+                  <option value="{{ $mk->id }}">[{{ $mk->kode_matkul }}] {{ $mk->nama_matkul }} ({{ $mk->sks }} SKS)</option>
+                @endforeach
+              </optgroup>
+            @endforeach
+          </select>
+          <small class="form-text text-muted">Admin dapat memilih satu atau beberapa mata kuliah yang terkait dengan proyek ini.</small>
         </div>
         <div class="form-row">
           <div class="form-group col-md-6">
@@ -1290,8 +1310,181 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary" data-dismiss="modal" type="button">Batal</button>
-        <button class="btn btn-primary" type="submit"><i class="fas fa-save" aria-hidden="true"></i> Simpan</button>
+        <button class="btn btn-secondary" data-dismiss="modal" type="button" title="Batal" aria-label="Batal"><i class="fas fa-times"></i></button>
+        <button class="btn btn-primary" type="submit" title="Simpan" aria-label="Simpan"><i class="fas fa-save"></i></button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{{-- Modal Tugaskan Penilai Proyek oleh Admin --}}
+<div class="modal fade" id="modalTugaskanPenilai" tabindex="-1" role="dialog" aria-labelledby="modalTugaskanPenilaiLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <form id="formTugaskanPenilaiAdmin" class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title font-weight-bold" id="modalTugaskanPenilaiLabel">
+          <i class="fas fa-user-plus text-primary mr-1"></i> Tugaskan Akun Penilai / Pembimbing
+        </h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Tutup"><span aria-hidden="true">&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-light border small text-muted mb-3">
+          <i class="fas fa-info-circle text-primary mr-1"></i>
+          Admin dapat menugaskan dosen atau akun berwenang untuk menilai maupun membimbing proyek mahasiswa.
+        </div>
+
+        <div class="form-group">
+          <label class="font-weight-bold small text-dark">Pilih Dosen / Akun Penilai <span class="text-danger">*</span></label>
+          <select id="modal_assign_dosen_id" class="form-control form-control-sm" required>
+            <option value="">-- Pilih Dosen / Akun --</option>
+            @foreach(($allDosen ?? []) as $d)
+              <option value="{{ $d->id }}">{{ $d->nama_user ?: $d->name }} ({{ strtoupper($d->role ?? 'DOSEN') }} - {{ $d->username ?: ($d->email ?: '-') }})</option>
+            @endforeach
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="font-weight-bold small text-dark">Target Proyek Mahasiswa <span class="text-danger">*</span></label>
+          <select id="modal_assign_card_id" class="form-control form-control-sm" required>
+            @php $allGroupCards = collect($proyekLists ?? [])->flatMap(fn($l) => $l->cards ?? []); @endphp
+            @if($allGroupCards->isEmpty())
+              <option value="">Belum ada kartu proyek (Buat proyek terlebih dahulu)</option>
+            @else
+              @foreach($allGroupCards as $gc)
+                <option value="{{ $gc->id }}">{{ $gc->title }} ({{ $gc->status_proyek ?? 'Proses' }})</option>
+              @endforeach
+            @endif
+          </select>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-md-6">
+            <label class="font-weight-bold small text-dark">Peran Penugasan <span class="text-danger">*</span></label>
+            <select id="modal_assign_peran" class="form-control form-control-sm" onchange="toggleModalAssignPeran(this.value)" required>
+              <option value="penilai">Dosen Penilai / Penguji</option>
+              <option value="pembimbing">Dosen Pembimbing / Penentu</option>
+            </select>
+          </div>
+          <div class="form-group col-md-6" id="modal_assign_matkul_col">
+            <label class="font-weight-bold small text-dark">Mata Kuliah Terkait</label>
+            <select id="modal_assign_mata_kuliah_id" class="form-control form-control-sm">
+              <option value="">Semua MK / Sidang PBL</option>
+              @foreach(($mataKuliahTerkait ?? []) as $mkt)
+                <option value="{{ $mkt->id }}">{{ $mkt->kode_matkul ? '['.$mkt->kode_matkul.'] ' : '' }}{{ $mkt->nama_matkul }}</option>
+              @endforeach
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal" title="Batal" aria-label="Batal"><i class="fas fa-times"></i></button>
+        <button type="submit" class="btn btn-primary btn-sm font-weight-bold" title="Simpan Penugasan" aria-label="Simpan Penugasan">
+          <i class="fas fa-check"></i>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{{-- Modal Tambah Proyek oleh Admin --}}
+<div class="modal fade" id="modalAddProyekAdmin" tabindex="-1" role="dialog" aria-labelledby="modalAddProyekAdminLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg" role="document">
+    <form id="formAddProyekAdmin" class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title font-weight-bold" id="modalAddProyekAdminLabel">
+          <i class="fas fa-plus text-primary mr-1"></i> Tambah Proyek / Kegiatan PBL
+        </h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Tutup"><span aria-hidden="true">&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group col-md-8">
+            <label class="font-weight-bold small text-dark">Judul Proyek <span class="text-danger">*</span></label>
+            <input type="text" class="form-control form-control-sm" name="title" placeholder="Contoh: Aplikasi Monitoring Sistem IoT" required>
+          </div>
+          <div class="form-group col-md-4">
+            <label class="font-weight-bold small text-dark">Kolom / Tahapan Proyek</label>
+            <select class="form-control form-control-sm" name="list_id">
+              @foreach(($proyekLists ?? []) as $pl)
+                <option value="{{ $pl->id }}">{{ $pl->name }}</option>
+              @endforeach
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="font-weight-bold small text-dark">Deskripsi Proyek</label>
+          <textarea class="form-control form-control-sm" rows="3" name="description" placeholder="Jelaskan ruang lingkup luaran proyek..."></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-md-4">
+            <label class="font-weight-bold small text-dark">Skema PBL <span class="text-danger">*</span></label>
+            <select class="form-control form-control-sm" name="skema_pbl" required>
+              <option value="Internal">Internal (Wajib Proposal)</option>
+              <option value="External">External (Mitra Industri)</option>
+              <option value="Hibah/Penelitian">Hibah/Penelitian</option>
+              <option value="Lomba">Lomba</option>
+              <option value="Teaching Factory">Teaching Factory</option>
+            </select>
+          </div>
+          <div class="form-group col-md-4">
+            <label class="font-weight-bold small text-dark">Status Proyek</label>
+            <select class="form-control form-control-sm" name="status_proyek">
+              <option value="Proses">Proses</option>
+              <option value="Selesai">Selesai</option>
+              <option value="Dibatalkan">Dibatalkan</option>
+            </select>
+          </div>
+          <div class="form-group col-md-4">
+            <label class="font-weight-bold small text-dark">Dosen Pembimbing / Penentu</label>
+            <select class="form-control form-control-sm" name="dosen_penentu_id">
+              <option value="">- Belum Ditentukan -</option>
+              @foreach(($allDosen ?? []) as $d)
+                <option value="{{ $d->id }}">{{ $d->nama_user ?: $d->name }} ({{ strtoupper($d->role ?? 'DOSEN') }})</option>
+              @endforeach
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-md-6">
+            <label class="font-weight-bold small text-dark">Tanggal Mulai</label>
+            <input type="date" class="form-control form-control-sm" name="tanggal_mulai">
+          </div>
+          <div class="form-group col-md-6">
+            <label class="font-weight-bold small text-dark">Tanggal Selesai</label>
+            <input type="date" class="form-control form-control-sm" name="tanggal_selesai">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-md-6">
+            <label class="font-weight-bold small text-dark">Nama Mitra (jika External)</label>
+            <input type="text" class="form-control form-control-sm" name="nama_mitra" placeholder="Nama mitra / perusahaan">
+          </div>
+          <div class="form-group col-md-6">
+            <label class="font-weight-bold small text-dark">Kontak Mitra</label>
+            <input type="text" class="form-control form-control-sm" name="kontak_mitra" placeholder="No. telp / email mitra">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group col-md-6">
+            <label class="font-weight-bold small text-dark">Link Folder Google Drive</label>
+            <input type="url" class="form-control form-control-sm" name="link_drive_proyek" placeholder="https://drive.google.com/...">
+          </div>
+          <div class="form-group col-md-6">
+            <label class="font-weight-bold small text-dark">Label (pisahkan koma)</label>
+            <input type="text" class="form-control form-control-sm" name="labels" placeholder="Internal, AI, IoT">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal" title="Batal" aria-label="Batal"><i class="fas fa-times"></i></button>
+        <button type="submit" class="btn btn-primary btn-sm font-weight-bold" title="Simpan Proyek" aria-label="Simpan Proyek">
+          <i class="fas fa-save"></i>
+        </button>
       </div>
     </form>
   </div>
@@ -1554,6 +1747,19 @@
     $('#ep_dosen_penentu').val(btn.data('dosen_penentu_id') || '');
     $('#ep_kendala').val(btn.data('kendala')||'');
     $('#ep_catatan').val(btn.data('catatan')||'');
+
+    const matkulIds = (btn.data('matkul') || []).map(String);
+    if (window.jQuery && jQuery().select2) {
+      if (!$('#ep_mata_kuliah_ids').hasClass('select2-hidden-accessible')) {
+        $('#ep_mata_kuliah_ids').select2({
+          dropdownParent: $('#modalEditProyek'),
+          placeholder: '-- Hubungkan Mata Kuliah --',
+          allowClear: true,
+          width: '100%'
+        });
+      }
+    }
+    $('#ep_mata_kuliah_ids').val(matkulIds).trigger('change');
   });
 
   
@@ -1768,95 +1974,49 @@
               </div>
             ` : ''}
 
-            <!-- Verifikasi & ACC Proposal Proyek (Desain Clean & Profesional) -->
+            <!-- Tim Dosen Terlibat & Penilai Proyek -->
             <div class="mb-4" style="border-radius: 8px; border: 1px solid #e2e8f0; background: #ffffff; overflow: hidden;">
-              <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center px-3 py-2.5" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
-                <div class="d-flex align-items-center mb-1 mb-md-0">
-                  <div class="text-secondary mr-2" style="font-size: 1rem;">
-                    <i class="fas fa-clipboard-check"></i>
+              <div class="d-flex justify-content-between align-items-center px-3 py-2.5" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                <div class="d-flex align-items-center">
+                  <div class="text-primary mr-2" style="font-size: 1rem;">
+                    <i class="fas fa-user-friends"></i>
                   </div>
                   <div>
-                    <span class="font-weight-bold text-dark" style="font-size: 0.95rem;">Verifikasi Proposal & Dosen Terkait</span>
-                    <span class="text-muted small ml-1">&bull; Persetujuan kolektif tim pembimbing & penilai</span>
+                    <span class="font-weight-bold text-dark" style="font-size: 0.95rem;">Tim Dosen Terkait & Penilai Proyek</span>
+                    <span class="text-muted small ml-1">&bull; Dosen pembimbing, pengampu mata kuliah, dan penilai</span>
                   </div>
                 </div>
-                <div>
-                  ${hasRevisi
-                    ? `<span class="badge border border-danger text-danger bg-white px-2.5 py-1 font-weight-bold" style="font-size: 0.8rem;"><i class="fas fa-exclamation-circle mr-1"></i> Perlu Revisi (${revisiDosen} Dosen)</span>`
-                    : (isAllAcc
-                      ? `<span class="badge border border-success text-success bg-white px-2.5 py-1 font-weight-bold" style="font-size: 0.8rem;"><i class="fas fa-check-circle mr-1"></i> Proposal Disetujui (${accDosen}/${totalDosen})</span>`
-                      : `<span class="badge border border-secondary text-secondary bg-white px-2.5 py-1 font-weight-bold" style="font-size: 0.8rem;"><i class="far fa-clock mr-1"></i> Menunggu ACC (${accDosen}/${totalDosen})</span>`
-                    )
-                  }
-                </div>
+                <span class="badge badge-primary font-weight-bold px-2.5 py-1">${totalDosen} Dosen</span>
               </div>
 
               <div class="p-3">
-                <!-- Berkas Proposal & Progress ACC -->
-                <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between p-2.5 px-3 rounded mb-3" style="background: #f8fafc; border: 1px solid #e2e8f0;">
-                  <div class="d-flex align-items-center mb-2 mb-md-0">
+                <!-- Berkas Proposal Dokumen -->
+                <div class="d-flex align-items-center justify-content-between p-2.5 px-3 rounded mb-3" style="background: #f8fafc; border: 1px solid #e2e8f0;">
+                  <div class="d-flex align-items-center">
                     <i class="far fa-file-pdf text-danger fa-lg mr-2.5"></i>
                     <div>
                       <div class="font-weight-bold text-dark small">Dokumen Proposal Proyek</div>
                       ${(card.proposal_url || card.proposal_file_path)
-                        ? `<div class="text-muted" style="font-size: 0.75rem;">Berkas dokumen PDF resmi dari kelompok</div>`
-                        : `<div class="text-muted font-italic" style="font-size: 0.75rem;">Belum ada berkas yang diunggah mahasiswa</div>`
+                        ? `<div class="text-muted" style="font-size: 0.75rem;">Berkas dokumen proposal resmi dari kelompok</div>`
+                        : `<div class="text-muted font-italic" style="font-size: 0.75rem;">Belum ada berkas proposal yang diunggah</div>`
                       }
                     </div>
-                    ${(card.proposal_url || card.proposal_file_path) ? `
-                      <a href="${card.proposal_url || ('/storage/' + card.proposal_file_path)}" target="_blank" rel="noopener" class="btn btn-xs btn-outline-secondary ml-3 py-1 px-2.5 font-weight-500">
-                        <i class="fas fa-external-link-alt mr-1"></i> Buka Proposal
-                      </a>
-                    ` : ''}
                   </div>
-
-                  <div class="d-flex align-items-center w-100 w-md-auto justify-content-between justify-content-md-end">
-                    <span class="small font-weight-bold text-muted mr-2">Progress ACC: ${accDosen}/${totalDosen} (${percentAcc}%)</span>
-                    <div class="progress" style="width: 110px; height: 6px; border-radius: 3px; background: #e2e8f0;">
-                      <div class="progress-bar ${isAllAcc ? 'bg-success' : (hasRevisi ? 'bg-danger' : 'bg-primary')}"
-                           style="width: ${percentAcc}%;"></div>
-                    </div>
-                  </div>
+                  ${(card.proposal_url || card.proposal_file_path) ? `
+                    <a href="${card.proposal_url || ('/storage/' + card.proposal_file_path)}" target="_blank" rel="noopener" class="btn btn-xs btn-outline-primary py-1 px-2.5 font-weight-500" title="Buka Proposal" aria-label="Buka Proposal">
+                      <i class="fas fa-external-link-alt"></i>
+                    </a>
+                  ` : ''}
                 </div>
-
-                <!-- Panel Aksi Verifikasi untuk Dosen / Admin -->
-                ${canAcc ? `
-                  <div class="p-2.5 px-3 rounded mb-3 d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center" style="background: #ffffff; border: 1px solid #cbd5e1;">
-                    <div class="mb-2 mb-sm-0">
-                      <div class="font-weight-bold text-dark small">
-                        <i class="fas fa-user-check text-primary mr-1"></i> Aksi Verifikasi Anda:
-                        <span class="badge ${userVerifikasi?.status === 'acc' ? 'badge-success' : (userVerifikasi?.status === 'revisi' ? 'badge-danger' : 'badge-light border text-muted')} ml-1 font-weight-normal">
-                          ${userVerifikasi ? userVerifikasi.status.toUpperCase() : 'PENDING'}
-                        </span>
-                        ${userVerifikasi?.verified_at ? `<span class="text-muted ml-1" style="font-size: 0.72rem;">(${formatDateTime(userVerifikasi.verified_at)})</span>` : ''}
-                      </div>
-                    </div>
-                    <div class="d-flex align-items-center">
-                      <button type="button" class="btn btn-success btn-sm px-3 mr-2 font-weight-500" onclick="submitVerifikasiAcc(${card.id}, 'acc')">
-                        <i class="fas fa-check mr-1"></i> ACC Proposal
-                      </button>
-                      <button type="button" class="btn btn-outline-danger btn-sm px-3 font-weight-500" onclick="promptRevisiProposal(${card.id})">
-                        <i class="fas fa-undo-alt mr-1"></i> Minta Revisi
-                      </button>
-                    </div>
-                  </div>
-                ` : ''}
 
                 <!-- Tabel Dosen yang Terlibat -->
                 <div class="mb-1">
-                  <div class="d-flex justify-content-between align-items-center mb-2">
-                    <span class="font-weight-bold text-dark small">
-                      <i class="fas fa-users mr-1 text-secondary"></i> Dosen Terkait & Status Persetujuan (${totalDosen})
-                    </span>
-                  </div>
-
                   <div class="table-responsive" style="border: 1px solid #e2e8f0; border-radius: 6px;">
                     <table class="table table-sm table-hover mb-0" style="font-size: 0.84rem;">
                       <thead style="background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
                         <tr>
                           <th style="font-weight: 600; color: #475569;">Dosen</th>
                           <th style="font-weight: 600; color: #475569;">Peran dalam Proyek</th>
-                          <th style="font-weight: 600; color: #475569;">Status Proposal</th>
                           ${isAdmin ? `<th style="width: 80px; text-align: center; font-weight: 600; color: #475569;">Aksi</th>` : ''}
                         </tr>
                       </thead>
@@ -1870,21 +2030,6 @@
                           if (d.peran_tipe === 'penentu') roleBadge = 'badge-light border border-primary text-primary';
                           if (d.peran_tipe === 'penilai') roleBadge = 'badge-light border border-info text-info';
 
-                          let statusCell = '';
-                          if (d.status === 'acc') {
-                            statusCell = `
-                              <span class="text-success font-weight-bold"><i class="fas fa-check-circle mr-1"></i> Disetujui (ACC)</span>
-                              ${d.verified_at ? `<div class="text-muted" style="font-size:0.72rem;">${formatDateTime(d.verified_at)}</div>` : ''}
-                            `;
-                          } else if (d.status === 'revisi') {
-                            statusCell = `
-                              <span class="text-danger font-weight-bold"><i class="fas fa-times-circle mr-1"></i> Perlu Revisi</span>
-                              ${d.catatan ? `<div class="text-danger mt-1 small font-italic bg-light p-1 rounded border-left border-danger" style="border-left-width: 3px !important;">"${d.catatan}"</div>` : ''}
-                            `;
-                          } else {
-                            statusCell = `<span class="text-muted"><i class="far fa-clock mr-1"></i> Menunggu Persetujuan</span>`;
-                          }
-
                           let actionCell = '';
                           if (isAdmin) {
                             if (d.peran_tipe === 'penilai' || d.peran_tipe === 'penentu' || d.penilai_record) {
@@ -1893,7 +2038,7 @@
                                 <td class="text-center align-middle">
                                   <button type="button" class="btn btn-xs btn-outline-danger py-0 px-2"
                                           onclick="hapusDosenProyek(${card.id}, ${d.dosen_id}, '${d.peran_tipe}', ${penilaiId})"
-                                          title="Hapus keterlibatan dosen ini dari proyek">
+                                          title="Hapus keterlibatan dosen ini dari proyek" aria-label="Hapus keterlibatan dosen ini">
                                     <i class="fas fa-trash-alt fa-xs"></i>
                                   </button>
                                 </td>
@@ -1912,15 +2057,12 @@
                               <td class="align-middle">
                                 <span class="badge ${roleBadge} font-weight-normal px-2 py-1">${roleLabel}</span>
                               </td>
-                              <td class="align-middle">
-                                ${statusCell}
-                              </td>
                               ${actionCell}
                             </tr>
                           `;
                         }).join('') : `
                           <tr>
-                            <td colspan="${isAdmin ? 4 : 3}" class="text-center py-3 text-muted font-italic">
+                            <td colspan="${isAdmin ? 3 : 2}" class="text-center py-3 text-muted font-italic">
                               Belum ada dosen yang ditugaskan pada proyek ini. Gunakan formulir di bawah untuk menambahkan dosen.
                             </td>
                           </tr>
@@ -2212,73 +2354,6 @@
     });
   }
 
-  window.submitVerifikasiAcc = async function(cardId, status, catatan = '') {
-    try {
-      Swal.fire({
-        title: 'Menyimpan Verifikasi...',
-        allowOutsideClick: false,
-        didOpen: () => Swal.showLoading()
-      });
-
-      const response = await fetch("{{ route('project.verifikasi.acc', ['card' => '__ID__']) }}".replace('__ID__', cardId), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': '{{ csrf_token() }}',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-          status: status,
-          catatan: catatan
-        })
-      });
-
-      const res = await response.json();
-      if (!res.success) {
-        throw new Error(res.message || 'Gagal memverifikasi proposal');
-      }
-
-      Swal.fire({
-        icon: 'success',
-        title: 'Berhasil',
-        text: res.message,
-        timer: 1800,
-        showConfirmButton: false
-      });
-
-      if (typeof window.showProjectCardDetail === 'function') {
-        window.showProjectCardDetail(cardId, null, null);
-      }
-    } catch (err) {
-      console.error(err);
-      Swal.fire('Gagal', err.message || 'Terjadi kesalahan saat verifikasi', 'error');
-    }
-  };
-
-  window.promptRevisiProposal = function(cardId) {
-    Swal.fire({
-      title: 'Minta Revisi Proposal',
-      text: 'Masukkan catatan perbaikan untuk kelompok mahasiswa:',
-      input: 'textarea',
-      inputPlaceholder: 'Contoh: Mohon perbaiki metodologi dan lampirkan rancangan sistem...',
-      showCancelButton: true,
-      confirmButtonText: '<i class="fas fa-paper-plane mr-1"></i> Kirim Catatan Revisi',
-      cancelButtonText: 'Batal',
-      confirmButtonColor: '#dc3545',
-      preConfirm: (catatan) => {
-        if (!catatan || !catatan.trim()) {
-          Swal.showValidationMessage('Catatan revisi tidak boleh kosong');
-          return false;
-        }
-        return catatan;
-      }
-    }).then((result) => {
-      if (result.isConfirmed) {
-        submitVerifikasiAcc(cardId, 'revisi', result.value);
-      }
-    });
-  };
-
   window.toggleAssignPeran = function(peran) {
     if (peran === 'pembimbing') {
       $('#assign_matkul_col').hide();
@@ -2286,6 +2361,116 @@
       $('#assign_matkul_col').show();
     }
   };
+
+  window.toggleModalAssignPeran = function(peran) {
+    if (peran === 'pembimbing') {
+      $('#modal_assign_matkul_col').hide();
+    } else {
+      $('#modal_assign_matkul_col').show();
+    }
+  };
+
+  $('#formTugaskanPenilaiAdmin').on('submit', async function(e) {
+    e.preventDefault();
+    const cardId = $('#modal_assign_card_id').val();
+    const dosenId = $('#modal_assign_dosen_id').val();
+    const peran = $('#modal_assign_peran').val() || 'penilai';
+    const matkulId = $('#modal_assign_mata_kuliah_id').val();
+
+    if (!cardId) {
+      Swal.fire('Perhatian', 'Silakan pilih proyek mahasiswa target.', 'warning');
+      return;
+    }
+    if (!dosenId) {
+      Swal.fire('Perhatian', 'Silakan pilih akun dosen / penilai.', 'warning');
+      return;
+    }
+
+    try {
+      Swal.fire({
+        title: 'Menugaskan Penilai...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
+
+      const response = await fetch("{{ route('project.dosen.assign', ['card' => '__ID__']) }}".replace('__ID__', cardId), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': '{{ csrf_token() }}',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          dosen_id: dosenId,
+          peran: peran,
+          mata_kuliah_id: matkulId || null
+        })
+      });
+
+      const res = await response.json();
+      if (!res.success) {
+        throw new Error(res.message || 'Gagal menugaskan penilai ke proyek');
+      }
+
+      $('#modalTugaskanPenilai').modal('hide');
+      Swal.fire({
+        icon: 'success',
+        title: 'Berhasil',
+        text: res.message,
+        timer: 1500,
+        showConfirmButton: false
+      }).then(() => {
+        window.location.reload();
+      });
+    } catch (err) {
+      console.error(err);
+      Swal.fire('Gagal', err.message || 'Gagal menugaskan penilai ke proyek', 'error');
+    }
+  });
+
+  $('#formAddProyekAdmin').on('submit', async function(e) {
+    e.preventDefault();
+    const form = $(this);
+    const payload = form.serialize();
+
+    try {
+      Swal.fire({
+        title: 'Menyimpan Proyek...',
+        allowOutsideClick: false,
+        didOpen: () => Swal.showLoading()
+      });
+
+      const storeUrl = "{{ route('admin.evaluasi.project.store', ['kelompok' => $kelompok->uuid ?? $kelompok->id]) }}";
+      const response = await fetch(storeUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-CSRF-TOKEN': '{{ csrf_token() }}',
+          'Accept': 'application/json'
+        },
+        body: payload
+      });
+
+      const res = await response.json();
+      if (!res.success) {
+        throw new Error(res.message || 'Gagal menambahkan proyek baru');
+      }
+
+      $('#modalAddProyekAdmin').modal('hide');
+      Swal.fire({
+        icon: 'success',
+        title: 'Berhasil',
+        text: res.message || 'Proyek baru berhasil ditambahkan.',
+        timer: 1500,
+        showConfirmButton: false
+      }).then(() => {
+        window.location.reload();
+      });
+    } catch (err) {
+      console.error(err);
+      Swal.fire('Gagal', err.message || 'Gagal menambahkan proyek', 'error');
+    }
+  });
 
   window.tambahDosenProyek = async function(cardId) {
     const dosenId = $('#assign_dosen_id').val();
@@ -2390,8 +2575,10 @@
             showConfirmButton: false
           });
 
-          if (typeof window.showProjectCardDetail === 'function') {
+          if ($('#modalProjectCardDetail').hasClass('show') && typeof window.showProjectCardDetail === 'function') {
             window.showProjectCardDetail(cardId, null, null);
+          } else {
+            window.location.reload();
           }
         } catch (err) {
           console.error(err);
@@ -2498,8 +2685,10 @@
             showConfirmButton: false
           });
 
-          if (typeof window.showProjectCardDetail === 'function') {
+          if ($('#modalProjectCardDetail').hasClass('show') && typeof window.showProjectCardDetail === 'function') {
             window.showProjectCardDetail(cardId, null, null);
+          } else {
+            window.location.reload();
           }
         } catch (err) {
           console.error(err);
@@ -3590,6 +3779,7 @@
     };
 
     const existingEvaluations = {};
+    let cardMataKuliahs = [];
     try {
       const response = await fetch(fetchUrl, {
         headers: {
@@ -3601,14 +3791,17 @@
 
       if (response.ok) {
         const payload = await response.json();
-        if (payload?.success && Array.isArray(payload.evaluations)) {
-          payload.evaluations.forEach(item => {
-            if (!item || typeof item.mahasiswa_id === 'undefined') {
-              return;
-            }
-            existingEvaluations[String(item.mahasiswa_id)] = item;
-          });
-          syncCardEvaluations(payload.evaluations);
+        if (payload?.success) {
+          cardMataKuliahs = Array.isArray(payload.mata_kuliahs) ? payload.mata_kuliahs : [];
+          if (Array.isArray(payload.evaluations)) {
+            payload.evaluations.forEach(item => {
+              if (!item || typeof item.mahasiswa_id === 'undefined') {
+                return;
+              }
+              existingEvaluations[String(item.mahasiswa_id)] = item;
+            });
+            syncCardEvaluations(payload.evaluations);
+          }
         }
       }
     } catch (error) {
@@ -3653,20 +3846,48 @@
         </tr>`;
     };
 
+    let matkulSelectorHtml = '';
+    if (cardMataKuliahs.length > 0) {
+      matkulSelectorHtml = `
+        <div class="card bg-light border p-2 mb-3 text-left">
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <label class="font-weight-bold text-dark mb-0 small" for="evaluasi_matkul_selector">
+              <i class="fas fa-book mr-1 text-primary"></i> Penilaian Mata Kuliah:
+            </label>
+            <select id="evaluasi_matkul_selector" class="custom-select custom-select-sm font-weight-bold" style="max-width: 340px;">
+              <option value="">-- Semua Mata Kuliah / Proyek Umum --</option>
+              ${cardMataKuliahs.map(mk => `
+                <option value="${mk.id}">${mk.nama} (${mk.kode}) - Sem ${mk.semester}</option>
+              `).join('')}
+            </select>
+          </div>
+        </div>
+      `;
+    } else {
+      matkulSelectorHtml = `
+        <div class="alert alert-secondary py-2 px-3 mb-3 text-left small">
+          <i class="fas fa-info-circle mr-1"></i> Proyek ini tidak memiliki keterkaitan mata kuliah khusus (Penilaian Umum).
+        </div>
+      `;
+    }
+
     const modalHtml = `
       <div class="project-detail-modal">
-        <div class="text-center mb-4">
-          <h4 style="margin: 0; font-size: 1.3rem; font-weight: 600; color: #2c3e50; margin-bottom: 8px;">${cardTitle}</h4>
-          <div class="mb-3">
+        <div class="text-center mb-3">
+          <h4 style="margin: 0; font-size: 1.25rem; font-weight: 600; color: #2c3e50; margin-bottom: 8px;">${cardTitle}</h4>
+          <div class="mb-2">
             <span class="badge badge-success">Evaluasi 4 Pilar Proyek</span>
-            <span class="badge badge-info ml-2">Total Bobot: ${totalBobot}%</span>
-            <a href="{{ route('rubrik.index') }}" target="_blank" class="badge badge-light border ml-2 text-primary" style="text-decoration:none;">
+            <span class="badge badge-info ml-1">Total Bobot: ${totalBobot}%</span>
+            <a href="{{ route('rubrik.index') }}" target="_blank" class="badge badge-light border ml-1 text-primary" style="text-decoration:none;">
               <i class="fas fa-external-link-alt mr-1"></i>Rubrik Acuan
             </a>
           </div>
         </div>
-        <div class="table-responsive" style="max-height: 65vh; overflow-y: auto;">
-          <table class="table table-bordered" style="font-size: 0.9rem;">
+
+        ${matkulSelectorHtml}
+
+        <div class="table-responsive" style="max-height: 55vh; overflow-y: auto;">
+          <table class="table table-bordered mb-0" style="font-size: 0.9rem;">
             <thead class="sticky-top">
               <tr>
                 <th style="width: 200px; background: #343a40; color: white; padding: 12px;">Mahasiswa</th>
@@ -3686,14 +3907,14 @@
           </table>
         </div>
 
-        <div class="d-flex justify-content-between align-items-center mt-4">
+        <div class="d-flex justify-content-between align-items-center mt-3">
           <div class="text-left">
             <small class="text-muted">
-              <strong>Keterangan:</strong> Input nilai 1-100 • Rata-rata dihitung otomatis • Final score berdasarkan bobot
+              <strong>Keterangan:</strong> Nilai 0-100 • Rata-rata & final otomatis
             </small>
           </div>
           <div class="text-right">
-            <small class="text-muted">Total Mahasiswa: ${members.length}</small>
+            <small class="text-muted">Total: ${members.length} Mahasiswa</small>
           </div>
         </div>
       </div>
@@ -3701,16 +3922,56 @@
 
     Swal.fire({
       html: modalHtml,
-      width: '900px',
+      width: '920px',
       showConfirmButton: true,
-      confirmButtonText: ' Simpan Nilai',
+      confirmButtonText: '<i class="fas fa-save" title="Simpan Nilai" aria-label="Simpan Nilai"></i>',
       confirmButtonColor: '#28a745',
       showCancelButton: true,
-      cancelButtonText: ' Batal',
+      cancelButtonText: '<i class="fas fa-times" title="Batal" aria-label="Batal"></i>',
       showCloseButton: true,
       showLoaderOnConfirm: true,
       allowOutsideClick: () => !Swal.isLoading(),
       didOpen: () => {
+        const matkulSelect = Swal.getPopup().querySelector('#evaluasi_matkul_selector');
+        if (matkulSelect) {
+          matkulSelect.addEventListener('change', async function() {
+            const selectedMkId = this.value;
+            const targetUrl = fetchUrl + (selectedMkId ? (fetchUrl.includes('?') ? '&' : '?') + 'mata_kuliah_id=' + selectedMkId : '');
+            try {
+              const res = await fetch(targetUrl, {
+                headers: {
+                  'Accept': 'application/json',
+                  'X-Requested-With': 'XMLHttpRequest',
+                  'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                }
+              });
+              if (res.ok) {
+                const p = await res.json();
+                const evalMap = {};
+                (p.evaluations || []).forEach(item => {
+                  if (item && typeof item.mahasiswa_id !== 'undefined') {
+                    evalMap[String(item.mahasiswa_id)] = item;
+                  }
+                });
+
+                document.querySelectorAll('.project-detail-modal tbody tr').forEach(row => {
+                  const mId = row.getAttribute('data-member');
+                  const currentEval = evalMap[mId] || {};
+                  row.setAttribute('data-evaluation-id', currentEval.id || '');
+                  row.querySelectorAll('.grade-input').forEach(input => {
+                    const itemKey = input.getAttribute('data-item');
+                    const rawVal = currentEval[itemKey];
+                    input.value = (rawVal === 0 || (rawVal && rawVal !== '' && !isNaN(rawVal))) ? rawVal : '';
+                  });
+                  calculateRowTotals(row);
+                });
+              }
+            } catch (err) {
+              console.error('Gagal memuat nilai untuk mata kuliah terpilih', err);
+            }
+          });
+        }
+
         document.querySelectorAll('.grade-input').forEach(input => {
           input.addEventListener('input', function() {
             const row = this.closest('tr');
@@ -3727,6 +3988,7 @@
       preConfirm: () => {
         const popup = Swal.getPopup();
         const rows = popup.querySelectorAll('tbody tr');
+        const selectedMatkulId = popup.querySelector('#evaluasi_matkul_selector')?.value || null;
         const items = {};
 
         rows.forEach(row => calculateRowTotals(row));
@@ -3769,7 +4031,7 @@
         const finalScores = [];
         rows.forEach(row => {
           const val = parseFloat(row.dataset.finalScore || '0');
-          if (! Number.isNaN(val) && val > 0) {
+          if (! Number.isNaN(val) && val >= 0 && row.dataset.finalScore !== '') {
             finalScores.push(val);
           }
         });
@@ -3785,6 +4047,7 @@
           body: JSON.stringify({
             evaluasi_master_id: {{ $sesi->id }},
             sesi_id: {{ $sesi->id }},
+            mata_kuliah_id: selectedMatkulId,
             items
           })
         })
@@ -3949,23 +4212,26 @@
 
   function calculateRowTotals(row) {
     const inputs = row.querySelectorAll('.grade-input');
-    const dosenItems = [
-      { kode: 'd_relevansi', bobot: {{ (int)($settings['d_relevansi'] ?? 25) }} },
-      { kode: 'd_kualitas', bobot: {{ (int)($settings['d_kualitas'] ?? 25) }} },
-      { kode: 'd_kreativitas', bobot: {{ (int)($settings['d_kreativitas'] ?? 25) }} },
-      { kode: 'd_estetika', bobot: {{ (int)($settings['d_estetika'] ?? 25) }} }
-    ];
+    const bobotMap = {
+      d_relevansi: {{ (int)($settings['d_relevansi'] ?? 25) }},
+      d_kualitas: {{ (int)($settings['d_kualitas'] ?? 25) }},
+      d_kreativitas: {{ (int)($settings['d_kreativitas'] ?? 25) }},
+      d_estetika: {{ (int)($settings['d_estetika'] ?? 25) }}
+    };
 
     let total = 0;
     let count = 0;
     let weightedTotal = 0;
 
-    inputs.forEach((input, index) => {
-      const value = parseInt(input.value) || 0;
-      if (value > 0) {
+    inputs.forEach(input => {
+      const raw = input.value.trim();
+      if (raw !== '' && !isNaN(raw)) {
+        const value = Math.max(0, Math.min(100, parseInt(raw, 10)));
         total += value;
         count++;
-        weightedTotal += (value * dosenItems[index].bobot / 100);
+        const itemKey = input.getAttribute('data-item');
+        const bobot = bobotMap[itemKey] ?? 25;
+        weightedTotal += (value * bobot / 100);
       }
     });
 
@@ -3973,20 +4239,22 @@
     const finalCell = row.querySelector('.final-badge');
 
     row.dataset.averageScore = count > 0 ? (total / count).toFixed(2) : '';
-    row.dataset.finalScore = weightedTotal > 0 ? weightedTotal.toFixed(2) : '';
+    row.dataset.finalScore = count > 0 ? weightedTotal.toFixed(2) : '';
 
     // Update average badge
     if (count > 0) {
       const avgScore = (total / count).toFixed(1);
       avgCell.textContent = avgScore;
       avgCell.style.background = avgScore >= 80 ? '#28a745' : avgScore >= 60 ? '#ffc107' : '#dc3545';
+      avgCell.style.color = '#fff';
     } else {
       avgCell.textContent = '-';
       avgCell.style.background = '#6c757d';
+      avgCell.style.color = '#fff';
     }
 
     // Update final badge
-    if (weightedTotal > 0) {
+    if (count > 0) {
       const final = weightedTotal.toFixed(1);
       const grade = getGradeFromScore(weightedTotal);
       const gradeColor = getGradeColor(grade);
@@ -3994,9 +4262,11 @@
       finalCell.style.background = gradeColor === 'success' ? '#28a745' :
                                       gradeColor === 'warning' ? '#ffc107' :
                                       gradeColor === 'danger' ? '#dc3545' : '#6c757d';
+      finalCell.style.color = '#fff';
     } else {
       finalCell.textContent = '-';
-      finalCell.style.background = '#fd7e14';
+      finalCell.style.background = '#6c757d';
+      finalCell.style.color = '#fff';
     }
   }
 

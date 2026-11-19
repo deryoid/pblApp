@@ -69,6 +69,21 @@
             flex-direction: column;
         }
 
+        /* Sticky Sidebar on Desktop (>= 768px) */
+        @media (min-width: 768px) {
+            #accordionSidebar.sidebar,
+            .sidebar {
+                position: sticky !important;
+                top: 0 !important;
+                height: 100vh !important;
+                max-height: 100vh !important;
+                overflow-y: auto !important;
+                overflow-x: hidden !important;
+                z-index: 1020 !important;
+                flex-shrink: 0 !important;
+            }
+        }
+
         /* Sleek custom scrollbar */
         .sidebar::-webkit-scrollbar {
             width: 4px;
@@ -679,62 +694,77 @@
         /* MOBILE RESPONSIVE SIDEBAR (< 768px)                      */
         /* ======================================================== */
         @media (max-width: 767.98px) {
+            #accordionSidebar.sidebar,
             .sidebar {
                 position: fixed !important;
-                top: 0;
-                bottom: 0;
-                left: 0;
+                top: 0 !important;
+                bottom: 0 !important;
+                left: 0 !important;
                 height: 100vh !important;
-                width: 16.5rem !important;
-                max-width: 82vw !important;
-                z-index: 1050 !important;
-                transform: translateX(-100%);
+                width: 17rem !important;
+                max-width: 85vw !important;
+                z-index: 1060 !important;
+                transform: translateX(-100%) !important;
                 transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
                 overflow-y: auto !important;
+                overflow-x: hidden !important;
+                display: flex !important;
+                flex-direction: column !important;
                 -webkit-overflow-scrolling: touch;
             }
 
-            .sidebar.toggled {
+            body.sidebar-mobile-show #accordionSidebar.sidebar,
+            body.sidebar-mobile-show .sidebar,
+            body.sidebar-toggled #accordionSidebar.sidebar,
+            body.sidebar-toggled .sidebar {
                 transform: translateX(0) !important;
-                box-shadow: 14px 0 36px rgba(0, 0, 0, 0.45) !important;
+                box-shadow: 16px 0 40px rgba(0, 0, 0, 0.6) !important;
             }
 
-            .sidebar.toggled .sidebar-brand {
+            body.sidebar-mobile-show .sidebar-brand,
+            body.sidebar-toggled .sidebar-brand {
                 height: 4.5rem;
                 padding: 1rem 1.15rem;
                 justify-content: flex-start !important;
                 width: 100% !important;
             }
 
-            .sidebar.toggled .brand-text-group {
+            body.sidebar-mobile-show .brand-text-group,
+            body.sidebar-toggled .brand-text-group {
                 display: flex !important;
             }
 
-            .sidebar.toggled .sidebar-user-card {
+            body.sidebar-mobile-show .sidebar-user-card,
+            body.sidebar-toggled .sidebar-user-card {
                 display: flex !important;
                 padding: 0.5rem 0.65rem !important;
                 margin: 0.5rem 0.65rem !important;
             }
 
-            .sidebar.toggled .sidebar-user-avatar-wrap {
+            body.sidebar-mobile-show .sidebar-user-avatar-wrap,
+            body.sidebar-toggled .sidebar-user-avatar-wrap {
                 margin-right: 0.65rem !important;
             }
 
-            .sidebar.toggled .sidebar-user-meta {
+            body.sidebar-mobile-show .sidebar-user-meta,
+            body.sidebar-toggled .sidebar-user-meta {
                 display: block !important;
             }
 
-            .sidebar.toggled .sidebar-heading {
+            body.sidebar-mobile-show .sidebar-heading,
+            body.sidebar-toggled .sidebar-heading {
                 display: flex !important;
             }
 
-            .sidebar.toggled .nav-item {
+            body.sidebar-mobile-show .nav-item,
+            body.sidebar-toggled .nav-item {
                 width: auto !important;
                 text-align: left !important;
                 margin: 0.125rem 0.65rem !important;
             }
 
-            .sidebar.toggled .nav-item .nav-link {
+            body.sidebar-mobile-show .nav-item .nav-link,
+            body.sidebar-toggled .nav-item .nav-link {
                 display: flex !important;
                 flex-direction: row !important;
                 align-items: center !important;
@@ -746,7 +776,8 @@
                 text-align: left !important;
             }
 
-            .sidebar.toggled .nav-item .nav-link .nav-icon-box {
+            body.sidebar-mobile-show .nav-item .nav-link .nav-icon-box,
+            body.sidebar-toggled .nav-item .nav-link .nav-icon-box {
                 margin-right: 0.75rem !important;
                 margin-bottom: 0 !important;
                 width: 30px !important;
@@ -755,49 +786,57 @@
                 border: 1px solid rgba(255, 255, 255, 0.04) !important;
             }
 
-            .sidebar.toggled .nav-item .nav-link i {
+            body.sidebar-mobile-show .nav-item .nav-link i,
+            body.sidebar-toggled .nav-item .nav-link i {
                 margin-right: 0 !important;
                 margin-bottom: 0 !important;
                 font-size: 0.875rem !important;
             }
 
-            .sidebar.toggled .nav-item .nav-link span.nav-link-text,
-            .sidebar.toggled .nav-item .nav-link > span:not(.badge):not(.nav-icon-box) {
+            body.sidebar-mobile-show .nav-item .nav-link span.nav-link-text,
+            body.sidebar-toggled .nav-item .nav-link span.nav-link-text,
+            body.sidebar-mobile-show .nav-item .nav-link > span:not(.badge):not(.nav-icon-box),
+            body.sidebar-toggled .nav-item .nav-link > span:not(.badge):not(.nav-icon-box) {
                 font-size: 0.84rem !important;
                 display: inline !important;
                 max-width: none !important;
                 text-align: left !important;
             }
 
-            .sidebar.toggled .nav-item .nav-link .badge {
+            body.sidebar-mobile-show .nav-item .nav-link .badge,
+            body.sidebar-toggled .nav-item .nav-link .badge {
                 display: inline-block !important;
             }
 
-            .sidebar.toggled .nav-item .nav-link[data-toggle="collapse"]::after {
-                display: inline-block !important;
-            }
-
-            .sidebar.toggled .sidebar-period-chip,
-            .sidebar.toggled .sidebar-period-card {
+            body.sidebar-mobile-show .sidebar-period-chip,
+            body.sidebar-toggled .sidebar-period-chip {
                 display: flex !important;
             }
 
-            .sidebar.toggled .sidebar-footer-wrapper,
-            .sidebar.toggled .sidebar-toggle-wrapper {
+            body.sidebar-mobile-show .sidebar-footer-wrapper,
+            body.sidebar-toggled .sidebar-footer-wrapper,
+            body.sidebar-mobile-show .sidebar-toggle-wrapper,
+            body.sidebar-toggled .sidebar-toggle-wrapper {
                 display: none !important;
             }
 
-            body.sidebar-toggled::before {
-                content: '';
+            .sidebar-mobile-backdrop {
+                display: none;
                 position: fixed;
                 top: 0;
                 left: 0;
                 right: 0;
                 bottom: 0;
                 background: rgba(15, 23, 42, 0.65);
-                backdrop-filter: blur(4px);
-                z-index: 1045;
-                animation: fadeIn 0.2s ease-in-out;
+                backdrop-filter: blur(3px);
+                z-index: 1050;
+                opacity: 0;
+                transition: opacity 0.25s ease;
+            }
+
+            body.sidebar-mobile-show .sidebar-mobile-backdrop {
+                display: block !important;
+                opacity: 1 !important;
             }
         }
 

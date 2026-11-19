@@ -155,6 +155,11 @@ class User extends Authenticatable
             ->withTimestamps();
     }
 
+    public function mataKuliahs(): BelongsToMany
+    {
+        return $this->mataKuliahsPengampu();
+    }
+
     public function mahasiswa(): HasOne
     {
         return $this->hasOne(\App\Models\Mahasiswa::class);

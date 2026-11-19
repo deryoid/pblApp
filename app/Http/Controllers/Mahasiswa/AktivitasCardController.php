@@ -10,6 +10,7 @@ use App\Models\Periode;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use RealRashid\SweetAlert\Facades\Alert;
 
 class AktivitasCardController extends Controller
 {
@@ -21,11 +22,18 @@ class AktivitasCardController extends Controller
         }
         $this->authorize('create', AktivitasCard::class);
 
+        if ($req->filled('bukti_kegiatan')) {
+            $bukti = trim((string) $req->input('bukti_kegiatan'));
+            if ($bukti !== '' && ! preg_match('~^https?://~i', $bukti)) {
+                $req->merge(['bukti_kegiatan' => 'https://'.$bukti]);
+            }
+        }
+
         $data = $req->validate([
             'list' => 'nullable|string',
             'tanggal_aktivitas' => 'nullable|date',
             'description' => 'nullable|string',
-            'bukti_kegiatan' => 'nullable|string', // 50MB
+            'bukti_kegiatan' => 'nullable|string|max:500',
         ]);
 
         $list = null;
@@ -66,6 +74,8 @@ class AktivitasCardController extends Controller
             'updated_by' => Auth::id(),
         ]);
 
+        Alert::toast('Aktivitas ditambahkan.', 'success');
+
         return back();
     }
 
@@ -73,19 +83,29 @@ class AktivitasCardController extends Controller
     {
         $this->authorize('update', $card);
 
+        if ($req->filled('bukti_kegiatan')) {
+            $bukti = trim((string) $req->input('bukti_kegiatan'));
+            if ($bukti !== '' && ! preg_match('~^https?://~i', $bukti)) {
+                $req->merge(['bukti_kegiatan' => 'https://'.$bukti]);
+            }
+        }
+
         $data = $req->validate([
             'tanggal_aktivitas' => 'nullable|date',
             'description' => 'nullable|string',
-            'bukti_kegiatan' => 'nullable|file|max:51200',
+            'bukti_kegiatan' => 'nullable|string|max:500',
         ]);
 
         $payload = [
             'tanggal_aktivitas' => $data['tanggal_aktivitas'] ?? $card->tanggal_aktivitas,
             'description' => $data['description'] ?? $card->description,
+            'bukti_kegiatan' => array_key_exists('bukti_kegiatan', $data) ? $data['bukti_kegiatan'] : $card->bukti_kegiatan,
             'updated_by' => Auth::id(),
         ];
 
         $card->update($payload);
+
+        Alert::toast('Aktivitas diperbarui.', 'success');
 
         return back();
     }
@@ -105,6 +125,8 @@ class AktivitasCardController extends Controller
                 ->where('position', '>', $pos)
                 ->decrement('position');
         });
+
+        Alert::toast('Aktivitas dihapus.', 'success');
 
         return back();
     }

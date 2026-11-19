@@ -84,11 +84,12 @@ class ProyekListController extends Controller
         return back();
     }
 
-    public function destroy(ProjectList $list)
+    public function destroy(Request $request, ProjectList $list)
     {
         $this->authorize('delete', $list);
 
-        if ($list->cards()->exists()) {
+        $hasCards = $list->cards()->exists();
+        if ($hasCards && ! $request->boolean('cascade') && ! $request->boolean('force')) {
             Alert::error('Gagal', 'Tidak dapat menghapus kolom yang masih berisi kartu. Pindahkan atau hapus kartu di dalamnya terlebih dahulu.');
 
             return back()->withErrors('Tidak dapat menghapus kolom yang masih berisi kartu. Pindahkan atau hapus kartu di dalamnya terlebih dahulu.');
@@ -98,6 +99,13 @@ class ProyekListController extends Controller
         $pos = $list->position;
 
         DB::transaction(function () use ($list, $kid, $pos) {
+            foreach ($list->cards as $card) {
+                if ($card->proposal_file_path) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($card->proposal_file_path);
+                }
+                $card->delete();
+            }
+
             $list->delete();
 
             ProjectList::where('kelompok_id', $kid)
