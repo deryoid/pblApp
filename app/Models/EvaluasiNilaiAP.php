@@ -71,6 +71,11 @@ class EvaluasiNilaiAP extends Model
         return $this->belongsTo(AktivitasList::class, 'aktivitas_list_id');
     }
 
+    public function mataKuliah()
+    {
+        return $this->belongsTo(MataKuliah::class, 'mata_kuliah_id');
+    }
+
     // Accessors
     public function getKehadiranBobotAttribute(): float
     {

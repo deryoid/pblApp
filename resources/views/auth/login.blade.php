@@ -6,7 +6,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="description" content="Masuk ke PBL TRKJ Politala">
-    <meta name="author" content="Dery Yuswanto Jaya, M.Kom - TRKJ Politala">
+    <meta name="author" content="Kolaborasi Mitra PBL dan Mahasiswa">
     
     <title>Masuk | PBL TRKJ Politala</title>
     <link rel="icon" href="{{ asset('sbadmin2/img/logo-campus.png') }}" type="image/png">
@@ -465,7 +465,7 @@
         </div>
 
         <p class="footer-note">
-            &copy; {{ date('Y') }} TRKJ Politala. Hak Cipta Dilindungi. | Develop by Dery Yuswanto Jaya, M.Kom
+            &copy; {{ date('Y') }} Kolaborasi Mitra PBL dan Mahasiswa. Hak Cipta Dilindungi.
         </p>
 
     </div>

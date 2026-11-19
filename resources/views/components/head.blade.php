@@ -3,7 +3,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="description" content="PBL TRKJ Politala - Sistem Informasi Manajemen Evaluasi & Proyek">
-    <meta name="author" content="Dery Yuswanto Jaya, M.Kom - TRKJ Politala">
+    <meta name="author" content="Kolaborasi Mitra PBL dan Mahasiswa">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>@yield('title', 'PBL TRKJ Politala')</title>

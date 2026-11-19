@@ -1195,21 +1195,21 @@
 
 {{-- Modal Detail Project Card --}}
 <div class="modal fade" id="modalProjectCardDetail" tabindex="-1" role="dialog" aria-labelledby="modalProjectCardDetailLabel" aria-hidden="true">
-  <div class="modal-dialog modal-xl" role="document">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="modalProjectCardDetailLabel">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" role="document">
+    <div class="modal-content shadow-lg border-0">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title font-weight-bold" id="modalProjectCardDetailLabel">
           <i class="fas fa-info-circle mr-2"></i>Detail Project Card
         </h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Tutup">
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Tutup">
           <span aria-hidden="true">&times;</span>
         </button>
       </div>
-      <div class="modal-body" id="modalProjectCardContent">
+      <div class="modal-body p-4" id="modalProjectCardContent">
         <!-- Content will be loaded dynamically -->
       </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-dismiss="modal" title="Tutup" aria-label="Tutup"><i class="fas fa-times"></i></button>
+      <div class="modal-footer bg-light">
+        <button type="button" class="btn btn-secondary px-4" data-dismiss="modal" title="Tutup" aria-label="Tutup"><i class="fas fa-times mr-1"></i> Tutup</button>
       </div>
     </div>
   </div>
@@ -1217,125 +1217,163 @@
 
 {{-- Modal Edit Proyek --}}
 <div class="modal fade" id="modalEditProyek" tabindex="-1" role="dialog" aria-labelledby="modalEditProyekLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg" role="document">
-    <form id="formEditProyek" class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="modalEditProyekLabel">Edit Proyek/Kegiatan</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Tutup"><span aria-hidden="true">&times;</span></button>
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" role="document">
+    <form id="formEditProyek" class="modal-content shadow-lg border-0">
+      <div class="modal-header bg-dark text-white">
+        <h5 class="modal-title font-weight-bold" id="modalEditProyekLabel">
+          <i class="fas fa-edit text-warning mr-2"></i>Edit Proyek / Kegiatan PBL
+        </h5>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Tutup"><span aria-hidden="true">&times;</span></button>
       </div>
-      <div class="modal-body">
+      <div class="modal-body p-4">
         <input type="hidden" name="id" id="ep_id">
         <input type="hidden" id="ep_domid">
         <input type="hidden" name="mata_kuliah_present" value="1">
 
+        {{-- Baris 1: Judul & Status --}}
         <div class="form-row">
-          <div class="form-group col-md-8">
-            <label for="ep_title">Judul</label>
-            <input type="text" class="form-control" name="title" id="ep_title" required>
+          <div class="form-group col-12 col-md-8">
+            <label for="ep_title" class="font-weight-bold text-dark">Judul Proyek <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" name="title" id="ep_title" placeholder="Judul proyek PBL" required>
           </div>
-          <div class="form-group col-md-4">
-            <label for="ep_status">Status</label>
+          <div class="form-group col-12 col-md-4">
+            <label for="ep_status" class="font-weight-bold text-dark">Status Proyek</label>
             <select class="form-control" name="status_proyek" id="ep_status">
-              <option>Proses</option>
-              <option>Dibatalkan</option>
-              <option>Selesai</option>
+              <option value="Proses">Proses</option>
+              <option value="Selesai">Selesai</option>
+              <option value="Dibatalkan">Dibatalkan</option>
             </select>
           </div>
         </div>
 
-        <div class="form-group">
-          <label for="ep_desc">Deskripsi</label>
-          <textarea class="form-control" rows="3" name="description" id="ep_desc"></textarea>
-        </div>
-        <div class="form-group">
-          <label for="ep_progress">Progress (%)</label>
-          <input type="number" min="0" max="100" class="form-control" name="progress" id="ep_progress">
-        </div>
-        <div class="form-group">
-          <label for="ep_labels">Label (pisahkan koma)</label>
-          <input type="text" class="form-control" name="labels" id="ep_labels" placeholder="AI, IoT">
-        </div>
-        <div class="form-group">
-          <label for="ep_kontak">Kontak Mitra</label>
-          <input type="text" class="form-control" name="kontak_mitra" id="ep_kontak">
-        </div>
+        {{-- Baris 2: Deskripsi & Kendala --}}
         <div class="form-row">
-          <div class="form-group col-md-6">
-            <label for="ep_tglmulai">Tanggal Mulai</label>
+          <div class="form-group col-12 col-md-6">
+            <label for="ep_desc" class="font-weight-bold text-dark">Deskripsi Proyek</label>
+            <textarea class="form-control" rows="3" name="description" id="ep_desc" placeholder="Ruang lingkup proyek..."></textarea>
+          </div>
+          <div class="form-group col-12 col-md-6">
+            <label for="ep_kendala" class="font-weight-bold text-dark">Kendala Proyek</label>
+            <textarea class="form-control" rows="3" name="kendala" id="ep_kendala" placeholder="Kendala atau hambatan..."></textarea>
+          </div>
+        </div>
+
+        {{-- Baris 3: Progress & Label --}}
+        <div class="form-row">
+          <div class="form-group col-12 col-md-6">
+            <label for="ep_progress" class="font-weight-bold text-dark">Progress (%)</label>
+            <div class="input-group">
+              <input type="number" min="0" max="100" class="form-control" name="progress" id="ep_progress" placeholder="0 - 100">
+              <div class="input-group-append">
+                <span class="input-group-text">%</span>
+              </div>
+            </div>
+          </div>
+          <div class="form-group col-12 col-md-6">
+            <label for="ep_labels" class="font-weight-bold text-dark">Label / Tagar (pisahkan koma)</label>
+            <input type="text" class="form-control" name="labels" id="ep_labels" placeholder="AI, IoT, Mobile, Web">
+          </div>
+        </div>
+
+        {{-- Baris 4: Dosen Pembimbing & Mata Kuliah Terkait --}}
+        <div class="form-row">
+          <div class="form-group col-12 col-md-6">
+            <label for="ep_dosen_penentu" class="font-weight-bold text-dark">
+              <i class="fas fa-chalkboard-teacher text-primary mr-1"></i> Dosen Pembimbing / Penentu Proyek
+            </label>
+            <select class="form-control" name="dosen_penentu_id" id="ep_dosen_penentu">
+              <option value="">- Belum Ditentukan -</option>
+              @foreach(($allDosen ?? []) as $d)
+                <option value="{{ $d->id }}">{{ $d->nama_user ?: $d->name }} (NIP/ID: {{ $d->username ?: ($d->email ?: '-') }})</option>
+              @endforeach
+            </select>
+            <small class="form-text text-muted">Dosen pembimbing berwenang mengevaluasi proyek ini.</small>
+          </div>
+          <div class="form-group col-12 col-md-6">
+            <label for="ep_mata_kuliah_ids" class="font-weight-bold text-dark">
+              <i class="fas fa-book-reader text-primary mr-1"></i> Keterkaitan Mata Kuliah
+            </label>
+            <select class="form-control select2-matkul-admin" name="mata_kuliah_ids[]" id="ep_mata_kuliah_ids" multiple="multiple" style="width: 100%;">
+              @php
+                $allMatkulGrouped = ($allMataKuliah ?? collect())->groupBy('semester');
+              @endphp
+              @foreach($allMatkulGrouped as $sem => $mks)
+                <optgroup label="Semester {{ $sem }}">
+                  @foreach($mks as $mk)
+                    <option value="{{ $mk->id }}">[{{ $mk->kode_matkul }}] {{ $mk->nama_matkul }} ({{ $mk->sks }} SKS)</option>
+                  @endforeach
+                </optgroup>
+              @endforeach
+            </select>
+            <small class="form-text text-muted">Admin dapat menghubungkan satu atau beberapa mata kuliah.</small>
+          </div>
+        </div>
+
+        {{-- Baris 5: Tanggal Mulai & Tanggal Selesai --}}
+        <div class="form-row">
+          <div class="form-group col-12 col-md-6">
+            <label for="ep_tglmulai" class="font-weight-bold text-dark">Tanggal Mulai</label>
             <input type="date" class="form-control" name="tanggal_mulai" id="ep_tglmulai">
           </div>
-          <div class="form-group col-md-6">
-            <label for="ep_tglselesai">Tanggal Selesai</label>
+          <div class="form-group col-12 col-md-6">
+            <label for="ep_tglselesai" class="font-weight-bold text-dark">Tanggal Selesai / Deadline</label>
             <input type="date" class="form-control" name="tanggal_selesai" id="ep_tglselesai">
           </div>
         </div>
+
+        {{-- Baris 6: Skema PBL & Link Drive --}}
         <div class="form-row">
-          <div class="form-group col-md-6">
-            <label for="ep_skema">Skema PBL</label>
+          <div class="form-group col-12 col-md-6">
+            <label for="ep_skema" class="font-weight-bold text-dark">Skema PBL</label>
             <select class="form-control" name="skema_pbl" id="ep_skema">
-              <option value="">- Pilih -</option>
-              <option>Penelitian</option><option>Pengabdian</option><option>Lomba</option><option>PBL x TeFa</option>
+              <option value="">- Pilih Skema -</option>
+              <option value="Penelitian">Penelitian</option>
+              <option value="Pengabdian">Pengabdian</option>
+              <option value="Lomba">Lomba</option>
+              <option value="PBL x TeFa">PBL x TeFa</option>
             </select>
           </div>
-          <div class="form-group col-md-6">
-            <label for="ep_namami">Nama Mitra</label>
-            <input type="text" class="form-control" name="nama_mitra" id="ep_namami">
+          <div class="form-group col-12 col-md-6">
+            <label for="ep_drivelink" class="font-weight-bold text-dark">Link Drive Proyek</label>
+            <input type="url" class="form-control" name="link_drive_proyek" id="ep_drivelink" placeholder="https://drive.google.com/...">
           </div>
         </div>
-        <div class="form-group">
-          <label for="ep_dosen_penentu" class="font-weight-bold text-dark">Dosen Pembimbing / Penentu Proyek</label>
-          <select class="form-control" name="dosen_penentu_id" id="ep_dosen_penentu">
-            <option value="">- Belum Ditentukan -</option>
-            @foreach(($allDosen ?? []) as $d)
-              <option value="{{ $d->id }}">{{ $d->nama_user ?: $d->name }} (NIP/ID: {{ $d->username ?: ($d->email ?: '-') }})</option>
-            @endforeach
-          </select>
-          <small class="form-text text-muted">Dosen pembimbing akan tercatat pada kartu proyek dan berwenang mengevaluasi proyek ini.</small>
-        </div>
-        <div class="form-group">
-          <label for="ep_mata_kuliah_ids" class="font-weight-bold text-dark">
-            <i class="fas fa-book-reader text-primary mr-1"></i> Keterkaitan Mata Kuliah
-          </label>
-          <select class="form-control select2-matkul-admin" name="mata_kuliah_ids[]" id="ep_mata_kuliah_ids" multiple="multiple" style="width: 100%;">
-            @php
-              $allMatkulGrouped = ($allMataKuliah ?? collect())->groupBy('semester');
-            @endphp
-            @foreach($allMatkulGrouped as $sem => $mks)
-              <optgroup label="Semester {{ $sem }}">
-                @foreach($mks as $mk)
-                  <option value="{{ $mk->id }}">[{{ $mk->kode_matkul }}] {{ $mk->nama_matkul }} ({{ $mk->sks }} SKS)</option>
-                @endforeach
-              </optgroup>
-            @endforeach
-          </select>
-          <small class="form-text text-muted">Admin dapat memilih satu atau beberapa mata kuliah yang terkait dengan proyek ini.</small>
-        </div>
+
+        {{-- Baris 7: Mitra Industri & Kontak --}}
         <div class="form-row">
-          <div class="form-group col-md-6">
-            <label for="ep_biayabarang">Biaya Barang</label>
-            <input type="number" min="0" step="0.01" class="form-control" name="biaya_barang" id="ep_biayabarang">
+          <div class="form-group col-12 col-md-6">
+            <label for="ep_namami" class="font-weight-bold text-dark">Nama Mitra</label>
+            <input type="text" class="form-control" name="nama_mitra" id="ep_namami" placeholder="PT / Instansi Mitra">
           </div>
-          <div class="form-group col-md-6">
-            <label for="ep_biayajasa">Biaya Jasa</label>
-            <input type="number" min="0" step="0.01" class="form-control" name="biaya_jasa" id="ep_biayajasa">
+          <div class="form-group col-12 col-md-6">
+            <label for="ep_kontak" class="font-weight-bold text-dark">Kontak Mitra (PIC)</label>
+            <input type="text" class="form-control" name="kontak_mitra" id="ep_kontak" placeholder="No Telp / Email">
           </div>
         </div>
-        <div class="form-group">
-          <label for="ep_drivelink">Link Drive</label>
-          <input type="url" class="form-control" name="link_drive_proyek" id="ep_drivelink" placeholder="https://...">
+
+        {{-- Baris 8: Estimasi Biaya --}}
+        <div class="form-row">
+          <div class="form-group col-12 col-md-6">
+            <label for="ep_biayabarang" class="font-weight-bold text-dark">Biaya Barang (Rp)</label>
+            <input type="number" min="0" step="0.01" class="form-control" name="biaya_barang" id="ep_biayabarang" placeholder="0">
+          </div>
+          <div class="form-group col-12 col-md-6">
+            <label for="ep_biayajasa" class="font-weight-bold text-dark">Biaya Jasa (Rp)</label>
+            <input type="number" min="0" step="0.01" class="form-control" name="biaya_jasa" id="ep_biayajasa" placeholder="0">
+          </div>
         </div>
-        <div class="form-group">
-          <label for="ep_kendala">Kendala</label>
-          <textarea class="form-control" rows="2" name="kendala" id="ep_kendala"></textarea>
-        </div>
-        <div class="form-group mb-0">
-          <label for="ep_catatan">Catatan</label>
-          <textarea class="form-control" rows="2" name="catatan" id="ep_catatan"></textarea>
+
+        {{-- Baris 9: Catatan --}}
+        <div class="form-row">
+          <div class="form-group col-12">
+            <label for="ep_catatan" class="font-weight-bold text-dark">Catatan Proyek</label>
+            <textarea class="form-control" rows="2" name="catatan" id="ep_catatan" placeholder="Catatan evaluasi atau arahan tambahan..."></textarea>
+          </div>
         </div>
       </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" data-dismiss="modal" type="button" title="Batal" aria-label="Batal"><i class="fas fa-times"></i></button>
-        <button class="btn btn-primary" type="submit" title="Simpan" aria-label="Simpan"><i class="fas fa-save"></i></button>
+      <div class="modal-footer bg-light">
+        <button class="btn btn-secondary px-4" data-dismiss="modal" type="button" title="Batal" aria-label="Batal"><i class="fas fa-times mr-1"></i> Batal</button>
+        <button class="btn btn-primary px-4" type="submit" title="Simpan" aria-label="Simpan"><i class="fas fa-save mr-1"></i> Simpan Perubahan</button>
       </div>
     </form>
   </div>
@@ -1343,53 +1381,54 @@
 
 {{-- Modal Tugaskan Penilai Proyek oleh Admin --}}
 <div class="modal fade" id="modalTugaskanPenilai" tabindex="-1" role="dialog" aria-labelledby="modalTugaskanPenilaiLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered" role="document">
-    <form id="formTugaskanPenilaiAdmin" class="modal-content">
-      <div class="modal-header">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" role="document">
+    <form id="formTugaskanPenilaiAdmin" class="modal-content shadow-lg border-0">
+      <div class="modal-header bg-primary text-white">
         <h5 class="modal-title font-weight-bold" id="modalTugaskanPenilaiLabel">
-          <i class="fas fa-user-plus text-primary mr-1"></i> Tugaskan Akun Penilai / Pembimbing
+          <i class="fas fa-user-plus mr-2"></i>Tugaskan Akun Penilai / Pembimbing Proyek
         </h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Tutup"><span aria-hidden="true">&times;</span></button>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Tutup"><span aria-hidden="true">&times;</span></button>
       </div>
-      <div class="modal-body">
-        <div class="alert alert-light border small text-muted mb-3">
-          <i class="fas fa-info-circle text-primary mr-1"></i>
+      <div class="modal-body p-4">
+        <div class="alert alert-info border small mb-3">
+          <i class="fas fa-info-circle mr-1"></i>
           Admin dapat menugaskan dosen atau akun berwenang untuk menilai maupun membimbing proyek mahasiswa.
         </div>
 
-        <div class="form-group">
-          <label class="font-weight-bold small text-dark">Pilih Dosen / Akun Penilai <span class="text-danger">*</span></label>
-          <select id="modal_assign_dosen_id" class="form-control form-control-sm" required>
-            <option value="">-- Pilih Dosen / Akun --</option>
-            @foreach(($allDosen ?? []) as $d)
-              <option value="{{ $d->id }}">{{ $d->nama_user ?: $d->name }} ({{ strtoupper($d->role ?? 'DOSEN') }} - {{ $d->username ?: ($d->email ?: '-') }})</option>
-            @endforeach
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label class="font-weight-bold small text-dark">Target Proyek Mahasiswa <span class="text-danger">*</span></label>
-          <select id="modal_assign_card_id" class="form-control form-control-sm" required>
-            @php $allGroupCards = collect($proyekLists ?? [])->flatMap(fn($l) => $l->cards ?? []); @endphp
-            @if($allGroupCards->isEmpty())
-              <option value="">Belum ada kartu proyek (Buat proyek terlebih dahulu)</option>
-            @else
-              @foreach($allGroupCards as $gc)
-                <option value="{{ $gc->id }}">{{ $gc->title }} ({{ $gc->status_proyek ?? 'Proses' }})</option>
+        <div class="form-row">
+          <div class="form-group col-12 col-md-6">
+            <label class="font-weight-bold small text-dark">Pilih Dosen / Akun Penilai <span class="text-danger">*</span></label>
+            <select id="modal_assign_dosen_id" class="form-control form-control-sm" required>
+              <option value="">-- Pilih Dosen / Akun --</option>
+              @foreach(($allDosen ?? []) as $d)
+                <option value="{{ $d->id }}">{{ $d->nama_user ?: $d->name }} ({{ strtoupper($d->role ?? 'DOSEN') }} - {{ $d->username ?: ($d->email ?: '-') }})</option>
               @endforeach
-            @endif
-          </select>
+            </select>
+          </div>
+          <div class="form-group col-12 col-md-6">
+            <label class="font-weight-bold small text-dark">Target Proyek Mahasiswa <span class="text-danger">*</span></label>
+            <select id="modal_assign_card_id" class="form-control form-control-sm" required>
+              @php $allGroupCards = collect($proyekLists ?? [])->flatMap(fn($l) => $l->cards ?? []); @endphp
+              @if($allGroupCards->isEmpty())
+                <option value="">Belum ada kartu proyek (Buat proyek terlebih dahulu)</option>
+              @else
+                @foreach($allGroupCards as $gc)
+                  <option value="{{ $gc->id }}">{{ $gc->title }} ({{ $gc->status_proyek ?? 'Proses' }})</option>
+                @endforeach
+              @endif
+            </select>
+          </div>
         </div>
 
         <div class="form-row">
-          <div class="form-group col-md-6">
+          <div class="form-group col-12 col-md-6">
             <label class="font-weight-bold small text-dark">Peran Penugasan <span class="text-danger">*</span></label>
             <select id="modal_assign_peran" class="form-control form-control-sm" onchange="toggleModalAssignPeran(this.value)" required>
               <option value="penilai">Dosen Penilai / Penguji</option>
               <option value="pembimbing">Dosen Pembimbing / Penentu</option>
             </select>
           </div>
-          <div class="form-group col-md-6" id="modal_assign_matkul_col">
+          <div class="form-group col-12 col-md-6" id="modal_assign_matkul_col">
             <label class="font-weight-bold small text-dark">Mata Kuliah Terkait</label>
             <select id="modal_assign_mata_kuliah_id" class="form-control form-control-sm">
               <option value="">Semua MK / Sidang PBL</option>
@@ -1400,10 +1439,10 @@
           </div>
         </div>
       </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal" title="Batal" aria-label="Batal"><i class="fas fa-times"></i></button>
-        <button type="submit" class="btn btn-primary btn-sm font-weight-bold" title="Simpan Penugasan" aria-label="Simpan Penugasan">
-          <i class="fas fa-check"></i>
+      <div class="modal-footer bg-light">
+        <button type="button" class="btn btn-secondary px-3" data-dismiss="modal" title="Batal" aria-label="Batal"><i class="fas fa-times mr-1"></i> Batal</button>
+        <button type="submit" class="btn btn-primary px-3 font-weight-bold" title="Simpan Penugasan" aria-label="Simpan Penugasan">
+          <i class="fas fa-check mr-1"></i> Simpan Penugasan
         </button>
       </div>
     </form>
@@ -1412,23 +1451,24 @@
 
 {{-- Modal Tambah Proyek oleh Admin --}}
 <div class="modal fade" id="modalAddProyekAdmin" tabindex="-1" role="dialog" aria-labelledby="modalAddProyekAdminLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg" role="document">
-    <form id="formAddProyekAdmin" class="modal-content">
-      <div class="modal-header">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" role="document">
+    <form id="formAddProyekAdmin" class="modal-content shadow-lg border-0">
+      <div class="modal-header bg-primary text-white">
         <h5 class="modal-title font-weight-bold" id="modalAddProyekAdminLabel">
-          <i class="fas fa-plus text-primary mr-1"></i> Tambah Proyek / Kegiatan PBL
+          <i class="fas fa-plus-circle mr-2"></i> Tambah Proyek / Kegiatan PBL
         </h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Tutup"><span aria-hidden="true">&times;</span></button>
+        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Tutup"><span aria-hidden="true">&times;</span></button>
       </div>
-      <div class="modal-body">
+      <div class="modal-body p-4">
+        {{-- Baris 1: Judul & Kolom Tahapan --}}
         <div class="form-row">
-          <div class="form-group col-md-8">
+          <div class="form-group col-12 col-md-8">
             <label class="font-weight-bold small text-dark">Judul Proyek <span class="text-danger">*</span></label>
-            <input type="text" class="form-control form-control-sm" name="title" placeholder="Contoh: Aplikasi Monitoring Sistem IoT" required>
+            <input type="text" class="form-control" name="title" placeholder="Contoh: Aplikasi Monitoring Sistem IoT" required>
           </div>
-          <div class="form-group col-md-4">
+          <div class="form-group col-12 col-md-4">
             <label class="font-weight-bold small text-dark">Kolom / Tahapan Proyek</label>
-            <select class="form-control form-control-sm" name="list_id">
+            <select class="form-control" name="list_id">
               @foreach(($proyekLists ?? []) as $pl)
                 <option value="{{ $pl->id }}">{{ $pl->name }}</option>
               @endforeach
@@ -1436,15 +1476,24 @@
           </div>
         </div>
 
-        <div class="form-group">
-          <label class="font-weight-bold small text-dark">Deskripsi Proyek</label>
-          <textarea class="form-control form-control-sm" rows="3" name="description" placeholder="Jelaskan ruang lingkup luaran proyek..."></textarea>
+        {{-- Baris 2: Deskripsi & Label --}}
+        <div class="form-row">
+          <div class="form-group col-12 col-md-6">
+            <label class="font-weight-bold small text-dark">Deskripsi Proyek</label>
+            <textarea class="form-control" rows="3" name="description" placeholder="Jelaskan ruang lingkup luaran proyek..."></textarea>
+          </div>
+          <div class="form-group col-12 col-md-6">
+            <label class="font-weight-bold small text-dark">Label / Tagar (pisahkan koma)</label>
+            <input type="text" class="form-control" name="labels" placeholder="Internal, AI, IoT, Mobile">
+            <small class="form-text text-muted">Contoh: Web, Mobile, IoT, Machine Learning</small>
+          </div>
         </div>
 
+        {{-- Baris 3: Skema PBL & Status Proyek --}}
         <div class="form-row">
-          <div class="form-group col-md-4">
+          <div class="form-group col-12 col-md-6">
             <label class="font-weight-bold small text-dark">Skema PBL <span class="text-danger">*</span></label>
-            <select class="form-control form-control-sm" name="skema_pbl" required>
+            <select class="form-control" name="skema_pbl" required>
               <option value="Internal">Internal (Wajib Proposal)</option>
               <option value="External">External (Mitra Industri)</option>
               <option value="Hibah/Penelitian">Hibah/Penelitian</option>
@@ -1452,82 +1501,90 @@
               <option value="Teaching Factory">Teaching Factory</option>
             </select>
           </div>
-          <div class="form-group col-md-4">
+          <div class="form-group col-12 col-md-6">
             <label class="font-weight-bold small text-dark">Status Proyek</label>
-            <select class="form-control form-control-sm" name="status_proyek">
+            <select class="form-control" name="status_proyek">
               <option value="Proses">Proses</option>
               <option value="Selesai">Selesai</option>
               <option value="Dibatalkan">Dibatalkan</option>
             </select>
           </div>
-          <div class="form-group col-md-4">
-            <label class="font-weight-bold small text-dark">Dosen Pembimbing / Penentu</label>
-            <select class="form-control form-control-sm" name="dosen_penentu_id">
+        </div>
+
+        {{-- Baris 4: Dosen Pembimbing & Mata Kuliah Terkait --}}
+        <div class="form-row">
+          <div class="form-group col-12 col-md-6">
+            <label class="font-weight-bold small text-dark">
+              <i class="fas fa-chalkboard-teacher text-primary mr-1"></i> Dosen Pembimbing / Penentu
+            </label>
+            <select class="form-control" name="dosen_penentu_id">
               <option value="">- Belum Ditentukan -</option>
               @foreach(($allDosen ?? []) as $d)
                 <option value="{{ $d->id }}">{{ $d->nama_user ?: $d->name }} ({{ strtoupper($d->role ?? 'DOSEN') }})</option>
               @endforeach
             </select>
           </div>
+          <div class="form-group col-12 col-md-6">
+            <label for="add_mata_kuliah_ids" class="font-weight-bold small text-dark">
+              <i class="fas fa-book-reader text-primary mr-1"></i> Keterkaitan Mata Kuliah
+            </label>
+            <select class="form-control select2-matkul-add" name="mata_kuliah_ids[]" id="add_mata_kuliah_ids" multiple="multiple" style="width: 100%;">
+              @php
+                $allMatkulGrouped = ($allMataKuliah ?? collect())->groupBy('semester');
+              @endphp
+              @foreach($allMatkulGrouped as $sem => $mks)
+                <optgroup label="Semester {{ $sem }}">
+                  @foreach($mks as $mk)
+                    <option value="{{ $mk->id }}">[{{ $mk->kode_matkul }}] {{ $mk->nama_matkul }} ({{ $mk->sks }} SKS)</option>
+                  @endforeach
+                </optgroup>
+              @endforeach
+            </select>
+            <small class="form-text text-muted">Admin dapat memilih satu atau beberapa mata kuliah yang terkait.</small>
+          </div>
         </div>
 
-        <div class="form-group">
-          <label for="add_mata_kuliah_ids" class="font-weight-bold small text-dark">
-            <i class="fas fa-book-reader text-primary mr-1"></i> Keterkaitan Mata Kuliah
-          </label>
-          <select class="form-control select2-matkul-add" name="mata_kuliah_ids[]" id="add_mata_kuliah_ids" multiple="multiple" style="width: 100%;">
-            @php
-              $allMatkulGrouped = ($allMataKuliah ?? collect())->groupBy('semester');
-            @endphp
-            @foreach($allMatkulGrouped as $sem => $mks)
-              <optgroup label="Semester {{ $sem }}">
-                @foreach($mks as $mk)
-                  <option value="{{ $mk->id }}">[{{ $mk->kode_matkul }}] {{ $mk->nama_matkul }} ({{ $mk->sks }} SKS)</option>
-                @endforeach
-              </optgroup>
-            @endforeach
-          </select>
-          <small class="form-text text-muted">Admin dapat memilih satu atau beberapa mata kuliah yang terkait langsung dengan proyek ini.</small>
-        </div>
-
+        {{-- Baris 5: Tanggal Mulai & Tanggal Selesai --}}
         <div class="form-row">
-          <div class="form-group col-md-6">
+          <div class="form-group col-12 col-md-6">
             <label class="font-weight-bold small text-dark">Tanggal Mulai</label>
-            <input type="date" class="form-control form-control-sm" name="tanggal_mulai">
+            <input type="date" class="form-control" name="tanggal_mulai">
           </div>
-          <div class="form-group col-md-6">
+          <div class="form-group col-12 col-md-6">
             <label class="font-weight-bold small text-dark">Tanggal Selesai</label>
-            <input type="date" class="form-control form-control-sm" name="tanggal_selesai">
+            <input type="date" class="form-control" name="tanggal_selesai">
           </div>
         </div>
 
+        {{-- Baris 6: Mitra Industri & Kontak --}}
         <div class="form-row">
-          <div class="form-group col-md-6">
+          <div class="form-group col-12 col-md-6">
             <label class="font-weight-bold small text-dark">Nama Mitra (jika External)</label>
-            <input type="text" class="form-control form-control-sm" name="nama_mitra" placeholder="Nama mitra / perusahaan">
+            <input type="text" class="form-control" name="nama_mitra" placeholder="Nama mitra / perusahaan">
           </div>
-          <div class="form-group col-md-6">
+          <div class="form-group col-12 col-md-6">
             <label class="font-weight-bold small text-dark">Kontak Mitra</label>
-            <input type="text" class="form-control form-control-sm" name="kontak_mitra" placeholder="No. telp / email mitra">
+            <input type="text" class="form-control" name="kontak_mitra" placeholder="No. telp / email mitra">
           </div>
         </div>
 
+        {{-- Baris 7: Link Drive Folder --}}
         <div class="form-row">
-          <div class="form-group col-md-6">
+          <div class="form-group col-12">
             <label class="font-weight-bold small text-dark">Link Folder Google Drive</label>
-            <input type="url" class="form-control form-control-sm" name="link_drive_proyek" placeholder="https://drive.google.com/...">
-          </div>
-          <div class="form-group col-md-6">
-            <label class="font-weight-bold small text-dark">Label (pisahkan koma)</label>
-            <input type="text" class="form-control form-control-sm" name="labels" placeholder="Internal, AI, IoT">
+            <input type="url" class="form-control" name="link_drive_proyek" placeholder="https://drive.google.com/...">
           </div>
         </div>
       </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal" title="Batal" aria-label="Batal"><i class="fas fa-times"></i></button>
-        <button type="submit" class="btn btn-primary btn-sm font-weight-bold" title="Simpan Proyek" aria-label="Simpan Proyek">
-          <i class="fas fa-save"></i>
+      <div class="modal-footer bg-light">
+        <button type="button" class="btn btn-secondary px-3" data-dismiss="modal" title="Batal" aria-label="Batal"><i class="fas fa-times mr-1"></i> Batal</button>
+        <button type="submit" class="btn btn-primary px-3 font-weight-bold" title="Simpan Proyek" aria-label="Simpan Proyek">
+          <i class="fas fa-save mr-1"></i> Simpan Proyek Baru
         </button>
+      </div>
+    </form>
+  </div>
+</div>
       </div>
     </form>
   </div>
@@ -3302,11 +3359,14 @@
     };
 
     let existingData = {};
+    let relatedCourses = [];
+    let evaluatorsSummary = [];
+    let isAuthorized = true;
     let dataLoaded = false;
 
     // Show loading indicator
     Swal.fire({
-      title: 'Memuat data...',
+      title: 'Memuat data evaluasi...',
       text: `Mengambil data nilai AP untuk ${aktivitasNama}`,
       allowOutsideClick: false,
       showConfirmButton: false,
@@ -3330,173 +3390,295 @@
       const result = await response.json();
 
       if (result.success && Array.isArray(result.nilai_ap)) {
-        // Group data by mahasiswa_id
         existingData = result.nilai_ap.reduce((acc, item) => {
           acc[item.mahasiswa_id] = item;
           return acc;
         }, {});
+        relatedCourses = result.related_courses || [];
+        evaluatorsSummary = result.evaluators_summary || [];
+        isAuthorized = result.is_authorized !== false;
         dataLoaded = true;
 
-        // Show success notification for data loading
         Swal.close();
-        swalToast('success', `Data ${aktivitasNama} berhasil dimuat`);
       } else {
         Swal.close();
-        // Show error if server returns success: false
         if (result.message) {
           swalToast('error', result.message);
         }
+        return;
       }
     } catch (error) {
       console.error('Error loading AP data:', error);
       Swal.close();
       swalToast('error', `Gagal memuat data: ${error.message}`);
+      return;
     }
 
-    const buildRow = (member) => {
+    // Bangun daftar mata kuliah terkait
+    let coursesHtml = '';
+    if (relatedCourses.length > 0) {
+      coursesHtml = relatedCourses.map(c => `
+        <div class="col-12 col-md-6 mb-2">
+          <div class="p-2 border rounded bg-white shadow-sm text-left h-100">
+            <div class="font-weight-bold text-dark text-truncate" style="font-size: 0.85rem;">
+              <i class="fas fa-book text-primary mr-1"></i> [${c.kode}] ${c.nama} (${c.sks} SKS)
+            </div>
+            <div class="text-muted small mt-1">
+              <i class="fas fa-chalkboard-teacher text-secondary mr-1"></i> Pengampu: 
+              ${(c.dosen_pengampu || []).map(dp => `<span class="badge badge-light border text-dark font-weight-normal">${dp.nama}</span>`).join(' ') || '<span class="text-muted">-</span>'}
+            </div>
+          </div>
+        </div>
+      `).join('');
+    } else {
+      coursesHtml = '<div class="col-12 text-muted small p-2 text-left">Belum ada mata kuliah yang terhubung langsung ke kartu proyek kelompok ini.</div>';
+    }
+
+    // Bangun status penilai
+    let evaluatorsHtml = '';
+    if (evaluatorsSummary.length > 0) {
+      evaluatorsHtml = evaluatorsSummary.map(e => `
+        <span class="badge ${e.has_evaluated ? 'badge-success' : 'badge-secondary'} mr-2 mb-2 p-2 text-left" style="font-size: 0.78rem;">
+          <i class="fas ${e.has_evaluated ? 'fa-check-circle' : 'fa-clock'} mr-1"></i>
+          <strong>${e.nama}</strong> (${e.mata_kuliah_nama || 'Penilai'}): 
+          ${e.has_evaluated ? 'Sudah Menilai' : 'Belum Menilai'}
+        </span>
+      `).join('');
+    }
+
+    const buildMemberCard = (member) => {
       const current = existingData[member.id] || {};
+      const myKehadiran = current.my_kehadiran || current.w_ap_kehadiran || '';
+      const myTanggal = current.my_tanggal_hadir || current.tanggal_hadir || '{{ now()->toDateString() }}';
+      const myPresentasi = current.my_presentasi !== undefined && current.my_presentasi !== '' ? current.my_presentasi : (current.w_ap_presentasi !== undefined ? current.w_ap_presentasi : '');
+      const myCatatan = current.my_catatan || current.catatan_presentasi || '';
+      const cumulativePres = current.cumulative_presentasi !== null && current.cumulative_presentasi !== undefined ? current.cumulative_presentasi : null;
+      const evalCount = current.evaluators_count || 0;
+      const breakdowns = current.evaluations_breakdown || [];
+
+      let breakdownHtml = '';
+      if (breakdowns.length > 0) {
+        breakdownHtml = `
+          <div class="mt-2 p-2 bg-light rounded text-left border small">
+            <div class="font-weight-bold text-secondary mb-1">
+              <i class="fas fa-users mr-1"></i> Rincian Penilaian Dosen Mata Kuliah Terkait (${breakdowns.length}):
+            </div>
+            <div class="d-flex flex-wrap">
+              ${breakdowns.map(b => `
+                <div class="mr-2 mb-1 p-2 bg-white border rounded shadow-xs" style="font-size: 0.8rem;">
+                  <strong>${b.evaluator_nama}</strong> ${b.mata_kuliah_nama ? `<span class="text-muted">(${b.mata_kuliah_nama})</span>` : ''}: 
+                  <span class="badge badge-info ml-1">Presentasi: ${b.w_ap_presentasi !== null ? b.w_ap_presentasi : '-'}</span>
+                  ${b.w_ap_kehadiran ? `<span class="badge badge-light border ml-1">${b.w_ap_kehadiran}</span>` : ''}
+                  ${b.catatan_presentasi ? `<div class="text-muted font-italic mt-1">"${b.catatan_presentasi}"</div>` : ''}
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
 
       return `
-        <tr data-member="${member.id}">
-          <td style="vertical-align: middle; background: #f8f9fa; font-weight: 600; padding: 12px; width: 200px;">
-            <div>${member.nama}</div>
-            <small class="text-muted">${member.nim}</small>
-          </td>
-          <td style="vertical-align: middle; padding: 8px;">
-            <div class="form-group mb-2">
-              <label style="font-size: 0.8rem; font-weight: 600;">Status Kehadiran</label>
-              <select class="form-control form-control-sm"
-                      data-member="${member.id}"
-                      data-field="w_ap_kehadiran">
-                <option value="">Pilih Status</option>
-                <option value="Hadir" ${current.w_ap_kehadiran === 'Hadir' ? 'selected' : ''}>Hadir</option>
-                <option value="Tidak Hadir" ${current.w_ap_kehadiran === 'Tidak Hadir' ? 'selected' : ''}>Tidak Hadir</option>
-                <option value="Izin" ${current.w_ap_kehadiran === 'Izin' ? 'selected' : ''}>Izin</option>
-                <option value="Sakit" ${current.w_ap_kehadiran === 'Sakit' ? 'selected' : ''}>Sakit</option>
-              </select>
+        <div class="card mb-3 border shadow-sm member-card text-left" data-member="${member.id}" style="border-radius: 8px;">
+          <div class="card-header bg-light py-2 px-3 d-flex flex-wrap align-items-center justify-content-between">
+            <div class="d-flex align-items-center">
+              <div class="avatar-circle mr-2 bg-primary text-white font-weight-bold" style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.85rem;">
+                ${member.nama.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <span class="font-weight-bold text-dark" style="font-size: 0.95rem;">${member.nama}</span>
+                <span class="text-muted small ml-1">(${member.nim})</span>
+              </div>
             </div>
-            <div class="form-group mb-0">
-              <label style="font-size: 0.8rem;">Tanggal</label>
-              <input type="date"
-                     class="form-control form-control-sm"
-                     data-member="${member.id}"
-                     data-field="tanggal_hadir"
-                     value="${current.tanggal_hadir || '{{ now()->toDateString() }}'}">
+            <div class="d-flex align-items-center mt-1 mt-md-0">
+              ${cumulativePres !== null ? `
+                <span class="badge badge-info mr-2" style="font-size: 0.8rem;" title="Rata-rata presentasi dari ${evalCount} dosen penilai">
+                  <i class="fas fa-calculator mr-1"></i> Rata-rata Presentasi: <strong>${cumulativePres}</strong> (${evalCount} Dosen)
+                </span>
+              ` : ''}
+              <span class="badge badge-secondary total-badge px-3 py-1 font-weight-bold" style="font-size: 0.85rem;">-</span>
             </div>
-          </td>
-          <td style="vertical-align: middle; padding: 8px;">
-            <div class="form-group mb-0">
-              <label style="font-size: 0.8rem; font-weight: 600;">Nilai Presentasi</label>
-              <input type="number"
-                     class="form-control form-control-sm"
-                     data-member="${member.id}"
-                     data-field="w_ap_presentasi"
-                     min="0"
-                     max="100"
-                     value="${current.w_ap_presentasi || ''}"
-                     placeholder="0-100"
-                     style="width: 100px; text-align: center;">
-              <small class="text-muted d-block text-center mt-1">Rentang: 0-100</small>
+          </div>
+          <div class="card-body p-3">
+            <div class="form-row">
+              {{-- Kolom 1: Kehadiran & Tanggal Hadir --}}
+              <div class="col-12 col-md-6 mb-3 mb-md-0 border-right-md pr-md-3">
+                <div class="form-row">
+                  <div class="col-12 col-sm-6 mb-2">
+                    <label class="font-weight-bold text-muted small mb-1 d-block">
+                      <i class="fas fa-user-check text-info mr-1"></i> Status Kehadiran
+                    </label>
+                    <select class="form-control form-control-sm"
+                            data-member="${member.id}"
+                            data-field="w_ap_kehadiran">
+                      <option value="">Pilih Status</option>
+                      <option value="Hadir" ${myKehadiran === 'Hadir' ? 'selected' : ''}>Hadir (100%)</option>
+                      <option value="Izin" ${myKehadiran === 'Izin' ? 'selected' : ''}>Izin (70%)</option>
+                      <option value="Sakit" ${myKehadiran === 'Sakit' ? 'selected' : ''}>Sakit (60%)</option>
+                      <option value="Terlambat" ${myKehadiran === 'Terlambat' ? 'selected' : ''}>Terlambat (50%)</option>
+                      <option value="Tidak Hadir" ${myKehadiran === 'Tidak Hadir' ? 'selected' : ''}>Tidak Hadir (0%)</option>
+                      <option value="Tanpa Keterangan" ${myKehadiran === 'Tanpa Keterangan' ? 'selected' : ''}>Tanpa Keterangan (0%)</option>
+                    </select>
+                  </div>
+                  <div class="col-12 col-sm-6 mb-2">
+                    <label class="font-weight-bold text-muted small mb-1 d-block">
+                      <i class="fas fa-calendar-alt text-secondary mr-1"></i> Tanggal Hadir
+                    </label>
+                    <input type="date"
+                           class="form-control form-control-sm"
+                           data-member="${member.id}"
+                           data-field="tanggal_hadir"
+                           value="${myTanggal}">
+                  </div>
+                </div>
+              </div>
+
+              {{-- Kolom 2: Nilai Presentasi & Catatan --}}
+              <div class="col-12 col-md-6 pl-md-3">
+                <div class="form-row">
+                  <div class="col-12 col-sm-5 mb-2">
+                    <label class="font-weight-bold text-muted small mb-1 d-block">
+                      <i class="fas fa-award text-warning mr-1"></i> Nilai Presentasi (0-100)
+                    </label>
+                    <input type="number"
+                           class="form-control form-control-sm font-weight-bold text-center"
+                           data-member="${member.id}"
+                           data-field="w_ap_presentasi"
+                           min="0"
+                           max="100"
+                           step="0.1"
+                           value="${myPresentasi}"
+                           placeholder="0 - 100">
+                  </div>
+                  <div class="col-12 col-sm-7 mb-2">
+                    <label class="font-weight-bold text-muted small mb-1 d-block">
+                      <i class="fas fa-comment-dots text-primary mr-1"></i> Catatan Presentasi
+                    </label>
+                    <input type="text"
+                           class="form-control form-control-sm"
+                           data-member="${member.id}"
+                           data-field="catatan_presentasi"
+                           value="${myCatatan}"
+                           placeholder="Catatan evaluasi presentasi...">
+                  </div>
+                </div>
+              </div>
             </div>
-          </td>
-          <td style="text-align: center; vertical-align: middle; font-weight: 600; background: #e9ecef; padding: 12px; width: 100px;">
-            <span class="badge badge-secondary total-badge">-</span>
-            <div class="small text-muted mt-1">Total Nilai</div>
-          </td>
-        </tr>`;
+
+            ${breakdownHtml}
+          </div>
+        </div>
+      `;
     };
 
     const modalHtml = `
-      <div class="grade-ap-modal-container">
-        <div class="text-center mb-4">
-          <h4 style="margin: 0; font-size: 1.3rem; font-weight: 600; color: #2c3e50; margin-bottom: 8px;">Nilai AP - ${aktivitasNama}</h4>
-          <div class="mb-3">
-            <span class="badge badge-info">Bobot: Kehadiran ${apWeights.kehadiran}% • Presentasi ${apWeights.presentasi}%</span>
+      <div class="grade-ap-modal-container text-left" style="font-family: inherit;">
+        <div class="text-center mb-3">
+          <h4 class="font-weight-bold text-dark mb-1" style="font-size: 1.35rem;">
+            <i class="fas fa-clipboard-check text-primary mr-2"></i>Evaluasi Mingguan (AP) - ${aktivitasNama}
+          </h4>
+          <div>
+            <span class="badge badge-info px-3 py-1">
+              Bobot Nilai: Kehadiran ${apWeights.kehadiran}% • Presentasi ${apWeights.presentasi}% (Kumulatif Dosen Terkait)
+            </span>
           </div>
         </div>
 
-        <div class="table-responsive" style="max-height: 60vh; overflow-y: auto;">
-          <table class="table table-bordered" style="font-size: 0.9rem;">
-            <thead class="sticky-top">
-              <tr>
-                <th style="width: 200px; background: #343a40; color: white; padding: 12px;">Mahasiswa</th>
-                <th style="text-align: center; background: #17a2b8; color: white; padding: 12px;">Kehadiran</th>
-                <th style="text-align: center; background: #17a2b8; color: white; padding: 12px;">Presentasi</th>
-                <th style="text-align: center; background: #28a745; color: white; padding: 12px; width: 100px;">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${members.map(buildRow).join('')}
-            </tbody>
-          </table>
+        {{-- Box Mata Kuliah Terkait & Dosen Penilai --}}
+        <div class="card mb-3 border bg-light shadow-xs" style="border-radius: 8px;">
+          <div class="card-header bg-white py-2 px-3 border-bottom d-flex align-items-center justify-content-between">
+            <span class="font-weight-bold text-dark small">
+              <i class="fas fa-project-diagram text-primary mr-1"></i> Mata Kuliah Terkait Proyek & Dosen Penilai
+            </span>
+            <span class="badge badge-light border">${relatedCourses.length} Mata Kuliah Terkait</span>
+          </div>
+          <div class="card-body p-2">
+            <div class="row no-gutters">
+              ${coursesHtml}
+            </div>
+            ${evaluatorsHtml ? `
+              <div class="mt-2 pt-2 border-top">
+                <div class="text-muted font-weight-bold x-small mb-1"><i class="fas fa-user-check mr-1"></i> Status Penilaian Dosen:</div>
+                <div class="d-flex flex-wrap">${evaluatorsHtml}</div>
+              </div>
+            ` : ''}
+          </div>
         </div>
 
-        <div class="d-flex justify-content-between align-items-center mt-4">
-          <div class="text-left">
-            <small class="text-muted">
-              <strong>Keterangan:</strong> Pilih status kehadiran • Isi nilai presentasi 0-100 • Sistem menghitung total otomatis
-            </small>
+        {{-- Daftar Mahasiswa --}}
+        <div style="max-height: 55vh; overflow-y: auto; padding-right: 5px;">
+          ${members.map(buildMemberCard).join('')}
+        </div>
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center mt-3 pt-2 border-top small text-muted">
+          <div>
+            <i class="fas fa-info-circle text-info mr-1"></i>
+            Nilai presentasi akhir dihitung secara kumulatif (rata-rata) dari dosen mata kuliah yang terhubung ke proyek.
           </div>
-          <div class="text-right">
-            <small class="text-muted">Total Mahasiswa: ${members.length}</small>
+          <div class="font-weight-bold mt-1 mt-md-0">
+            Total Mahasiswa: ${members.length} Orang
           </div>
         </div>
-      </div>`;
+      </div>
+    `;
 
     Swal.fire({
       html: modalHtml,
-      width: '800px',
+      width: window.innerWidth > 992 ? '1050px' : '96%',
       showConfirmButton: true,
-      confirmButtonText: ' Simpan Nilai',
+      confirmButtonText: '<i class="fas fa-save mr-1"></i> Simpan Nilai AP',
       confirmButtonColor: '#28a745',
       showCancelButton: true,
-      cancelButtonText: ' Batal',
+      cancelButtonText: '<i class="fas fa-times mr-1"></i> Tutup',
+      cancelButtonColor: '#6c757d',
       showCloseButton: true,
       allowOutsideClick: () => !Swal.isLoading(),
       didOpen: () => {
         const popup = Swal.getPopup();
 
-        // Auto-calculate total when values change
-        const calculateRowTotal = (row) => {
-          const kehadiranInput = row.querySelector('select[data-field="w_ap_kehadiran"]');
-          const presentasiInput = row.querySelector('input[data-field="w_ap_presentasi"]');
-          const totalBadge = row.querySelector('.total-badge');
+        // Auto-calculate total per member card
+        const calculateCardTotal = (card) => {
+          const kehadiranInput = card.querySelector('select[data-field="w_ap_kehadiran"]');
+          const presentasiInput = card.querySelector('input[data-field="w_ap_presentasi"]');
+          const totalBadge = card.querySelector('.total-badge');
 
-          const kehadiran = kehadiranInput.value;
+          const kehadiran = kehadiranInput ? kehadiranInput.value : '';
           const presentasi = parseFloat(presentasiInput?.value) || 0;
 
-          // Only calculate if there's data (kehadiran filled or presentasi has value)
           if (kehadiran || presentasi > 0) {
             const kehadiranBobot = kehadiran ? {
               'Hadir': 100,
               'Izin': 70,
               'Sakit': 60,
               'Terlambat': 50,
+              'Tidak Hadir': 0,
               'Tanpa Keterangan': 0
             }[kehadiran] || 0 : 0;
 
-            // Use bobot from config
             const totalScore = (kehadiranBobot * apWeights.kehadiran / 100) + (presentasi * apWeights.presentasi / 100);
-            const finalScore = Math.round(totalScore);
-            totalBadge.textContent = finalScore || '-';
-            totalBadge.className = `badge ${finalScore >= 70 ? 'badge-success' : finalScore >= 50 ? 'badge-warning' : 'badge-danger'} total-badge`;
+            const finalScore = Math.round(totalScore * 10) / 10;
+            totalBadge.textContent = `Nilai: ${finalScore}`;
+            totalBadge.className = `badge ${finalScore >= 70 ? 'badge-success' : finalScore >= 50 ? 'badge-warning' : 'badge-danger'} total-badge px-3 py-1 font-weight-bold`;
           } else {
-            totalBadge.textContent = '-';
-            totalBadge.className = 'badge badge-info total-badge';
+            totalBadge.textContent = 'Belum Ada Nilai';
+            totalBadge.className = 'badge badge-secondary total-badge px-3 py-1 font-weight-bold';
           }
         };
 
-        // Add event listeners to all inputs
+        // Add event listeners
         popup.querySelectorAll('select[data-field="w_ap_kehadiran"], input[data-field="w_ap_presentasi"]').forEach(input => {
+          input.addEventListener('input', () => {
+            const card = input.closest('.member-card');
+            calculateCardTotal(card);
+          });
           input.addEventListener('change', () => {
-            const row = input.closest('tr');
-            calculateRowTotal(row);
+            const card = input.closest('.member-card');
+            calculateCardTotal(card);
           });
         });
 
-        // Calculate initial totals
-        popup.querySelectorAll('tbody tr').forEach(row => {
-          calculateRowTotal(row);
+        // Hitung nilai awal
+        popup.querySelectorAll('.member-card').forEach(card => {
+          calculateCardTotal(card);
         });
 
         if (!document.querySelector(`#${styleId}`)) {
@@ -3504,55 +3686,17 @@
           style.id = styleId;
           style.textContent = `
             .grade-ap-modal .swal2-popup {
-              padding: 0;
               border-radius: 12px;
-              max-width: none;
-              width: 100%;
-              box-shadow: 0 10px 40px rgba(0,0,0,0.15);
-            }
-            .grade-ap-modal .swal2-html-container {
-              padding: 0;
-              margin: 0;
+              padding: 1.25rem;
+              max-width: 1080px;
             }
             .grade-ap-modal .form-control {
-              transition: all 0.3s ease;
-              border: 1px solid #ced4da;
-            }
-            .grade-ap-modal .form-control:focus {
-              border-color: #667eea;
-              box-shadow: 0 0 0 0.2rem rgba(102,126,234,0.25);
-              transform: translateY(-1px);
-            }
-            .grade-ap-modal .form-control:hover {
-              border-color: #667eea;
-              box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            }
-            .grade-ap-modal .table {
-              background: white;
-              border-radius: 8px;
-              overflow: hidden;
-            }
-            .grade-ap-modal .table th {
-              position: sticky;
-              top: 0;
-              z-index: 10;
-              border: none;
-            }
-            .grade-ap-modal .table td {
-              border: 1px solid #e9ecef;
-              vertical-align: middle;
-            }
-              .grade-ap-modal .badge {
-              font-weight: 600;
               border-radius: 6px;
             }
-            .grade-ap-modal .input-group-text {
-              border-radius: 0 6px 6px 0;
-              font-weight: 600;
-            }
-            .grade-ap-modal .form-group label {
-              margin-bottom: 6px;
-              font-weight: 600;
+            @media (min-width: 768px) {
+              .border-right-md {
+                border-right: 1px solid #dee2e6;
+              }
             }
           `;
           document.head.appendChild(style);
@@ -3560,65 +3704,43 @@
       },
       preConfirm: () => {
         const popup = Swal.getPopup();
-        const rows = Array.from(popup.querySelectorAll('tbody tr'));
+        const cards = Array.from(popup.querySelectorAll('.member-card'));
         const items = [];
         let hasAnyData = false;
 
-        rows.forEach(row => {
-          const memberId = row.getAttribute('data-member');
+        cards.forEach(card => {
+          const memberId = card.getAttribute('data-member');
           if (!memberId) {
             return;
           }
 
-          // Get all inputs for this member
-          const kehadiranSelect = row.querySelector(`select[data-member="${memberId}"][data-field="w_ap_kehadiran"]`);
-          const presentasiInput = row.querySelector(`input[data-member="${memberId}"][data-field="w_ap_presentasi"]`);
-          const tanggalInput = row.querySelector(`input[data-member="${memberId}"][data-field="tanggal_hadir"]`);
+          const kehadiranSelect = card.querySelector(`select[data-member="${memberId}"][data-field="w_ap_kehadiran"]`);
+          const presentasiInput = card.querySelector(`input[data-member="${memberId}"][data-field="w_ap_presentasi"]`);
+          const tanggalInput = card.querySelector(`input[data-member="${memberId}"][data-field="tanggal_hadir"]`);
+          const catatanInput = card.querySelector(`input[data-member="${memberId}"][data-field="catatan_presentasi"]`);
 
-          // Get values
           const kehadiran = kehadiranSelect?.value.trim() || '';
           const presentasi = presentasiInput?.value.trim() || '';
           const tanggal = tanggalInput?.value.trim() || '';
+          const catatan = catatanInput?.value.trim() || '';
 
-          // Only create item if there's any data
           if (kehadiran || presentasi) {
             hasAnyData = true;
-            const existing = existingData[memberId] || {};
-
             items.push({
               mahasiswa_id: memberId,
               aktivitas_list_id: parseInt(aktivitasListId),
               w_ap_kehadiran: kehadiran || null,
               tanggal_hadir: tanggal || null,
-              w_ap_presentasi: presentasi ? parseFloat(presentasi) : null,
-              status: 'Submitted',
-              catatan: null
-            });
-
-            // Debug log
-            console.log('Saving item for member', memberId, {
-              kehadiran,
-              tanggal,
-              presentasi,
-              kehadiranBobot: kehadiran ? {
-                'Hadir': 100,
-                'Izin': 70,
-                'Sakit': 60,
-                'Terlambat': 50,
-                'Tanpa Keterangan': 0
-              }[kehadiran] || 0 : 0
+              w_ap_presentasi: presentasi !== '' ? parseFloat(presentasi) : null,
+              catatan_presentasi: catatan || null,
+              status: 'Submitted'
             });
           }
         });
 
         if (!hasAnyData) {
-          // For validation, throw a special error that we can catch and handle silently
           throw new Error('VALIDATION_FAILED');
         }
-
-        console.log('Sending data to server:', {
-          nilai_ap: items
-        });
 
         return fetch(storeUrl, {
           method: 'POST',
@@ -3649,58 +3771,43 @@
             return result;
           })
           .catch(error => {
-            // Handle validation failures silently
             if (error.message === 'VALIDATION_FAILED') {
-              return false; // Silent validation failure
+              return false;
             }
-            // Show actual errors
             Swal.showValidationMessage(error.message || 'Terjadi kesalahan saat menyimpan');
             throw error;
           });
       }
     }).then((result) => {
-      // Handle cancel actions silently
       if (!result || result.dismissed) {
-        // User cancelled - no action needed
         return;
       }
 
       const data = result.value;
-
-      // Check if data exists and has success property
       if (!data) {
-        // Validation failed or cancelled silently
         return;
       }
 
       if (data.success) {
-        // Show detailed success alert with more information
         Swal.fire({
           icon: 'success',
           title: 'Penilaian AP Berhasil!',
-          html: `
-            <div class="text-left">
-              <p><strong>${aktivitasNama}</strong></p>
-              <p class="mb-2">${data.message || 'Nilai AP berhasil disimpan'}</p>
-              ${dataLoaded ? '<p class="text-muted small"><em>Data yang ada telah diperbarui</em></p>' : ''}
-            </div>
-          `,
-          timer: 4000,
-          timerProgressBar: true,
-          showConfirmButton: true,
-          confirmButtonText: 'OK',
-          confirmButtonColor: '#28a745'
+          text: data.message || 'Nilai AP mingguan berhasil disimpan',
+          timer: 2000,
+          showConfirmButton: false
+        }).then(() => {
+          window.location.reload();
         });
-
-        // Also show brief toast for quick feedback
-        setTimeout(() => {
-          // Try the custom swalToast function first
-          try {
-            swalToast('success', data.message || 'Nilai AP berhasil disimpan');
-          } catch (toastError) {
-            // Fallback to basic SweetAlert2 toast
-            Swal.fire({
-              toast: true,
+      }
+    }).catch(error => {
+      Swal.fire({
+        icon: 'error',
+        title: 'Error!',
+        text: error.message || 'Terjadi kesalahan tak terduga',
+        confirmButtonColor: '#dc3545'
+      });
+    });
+  };
               position: 'top-end',
               icon: 'success',
               title: data.message || 'Nilai AP berhasil disimpan',

@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover">
     <meta name="description" content="Showcase Proyek Selesai PBL TRKJ Politala - Galeri Inovasi Mahasiswa">
-    <meta name="author" content="Dery Yuswanto Jaya, M.Kom - TRKJ Politala">
+    <meta name="author" content="Kolaborasi Mitra PBL dan Mahasiswa">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>PBL Showcase | Galeri Inovasi & Proyek Mahasiswa TRKJ Politala</title>
@@ -2006,10 +2006,7 @@
 
             <div class="footer-bottom">
                 <div>
-                    &copy; {{ date('Y') }} TRKJ Politala. Hak Cipta Dilindungi Undang-Undang.
-                </div>
-                <div>
-                    Develop by Dery Yuswanto Jaya, M.Kom
+                    &copy; {{ date('Y') }} Kolaborasi Mitra PBL dan Mahasiswa. Hak Cipta Dilindungi Undang-Undang.
                 </div>
             </div>
         </div>

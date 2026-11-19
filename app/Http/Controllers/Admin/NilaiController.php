@@ -109,19 +109,23 @@ class NilaiController extends Controller
             // Hitung nilai rata-rata mitra
             $avgMitra = $evalMitraMahasiswa->avg('nilai_akhir') ?? 0;
 
-            // Hitung nilai rata-rata AP
+            // Hitung nilai rata-rata AP kumulatif per aktivitas mingguan
             $avgAP = 0;
-            $countAP = $nilaiAPMahasiswa->count();
+            $weeklyAPGroups = $nilaiAPMahasiswa->groupBy('aktivitas_list_id');
+            $countAP = $weeklyAPGroups->count();
 
             if ($countAP > 0) {
                 $totalAP = 0;
-                foreach ($nilaiAPMahasiswa as $nilaiAPRecord) {
-                    // Konversi kehadiran ke nilai numerik
-                    $kehadiranValue = $this->gradingService->convertAttendanceToValue($nilaiAPRecord->w_ap_kehadiran);
-                    $presentasiValue = $nilaiAPRecord->w_ap_presentasi ?? 0;
+                foreach ($weeklyAPGroups as $actId => $groupRecords) {
+                    $bestRecord = $groupRecords->first(fn ($r) => ! empty($r->w_ap_kehadiran));
+                    $kehadiranValue = $this->gradingService->convertAttendanceToValue($bestRecord?->w_ap_kehadiran);
 
-                    // Hitung nilai AP per aktivitas: 50% kehadiran + 50% presentasi
-                    $nilaiAPItem = $this->gradingService->calculateActivityScore($kehadiranValue, $presentasiValue);
+                    $presentasiRecords = $groupRecords->whereNotNull('w_ap_presentasi');
+                    $avgPresentasi = $presentasiRecords->isNotEmpty()
+                        ? (float) $presentasiRecords->avg('w_ap_presentasi')
+                        : 0.0;
+
+                    $nilaiAPItem = $this->gradingService->calculateActivityScore($kehadiranValue, $avgPresentasi);
                     $totalAP += $nilaiAPItem;
                 }
                 $avgAP = $totalAP / $countAP;

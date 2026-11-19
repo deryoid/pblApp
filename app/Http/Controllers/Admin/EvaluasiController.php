@@ -305,15 +305,20 @@ class EvaluasiController extends Controller
             $finalAvgMitra = $listAverages->avg('avg_mitra');
             $finalNilaiProject = ($finalAvgDosen * 0.8) + ($finalAvgMitra * 0.2);
 
-            // Ambil nilai AP untuk mahasiswa ini dan hitung berdasarkan kehadiran dan presentasi
+            // Ambil nilai AP untuk mahasiswa ini dan hitung secara kumulatif per aktivitas mingguan
             $mahasiswaNilaiAP = $nilaiAP->where('mahasiswa_id', $mahasiswaId);
             $totalAP = 0;
             $countAP = 0;
             $presensiData = [];
 
-            foreach ($mahasiswaNilaiAP as $nilaiAPRecord) {
-                // Konversi kehadiran ke nilai numerik
-                $kehadiranValue = match ($nilaiAPRecord->w_ap_kehadiran) {
+            // Kelompokkan per aktivitas_list_id agar beberapa dosen yang menilai di minggu yang sama dikumulatifkan (rata-rata)
+            $weeklyAPGroups = $mahasiswaNilaiAP->groupBy('aktivitas_list_id');
+
+            foreach ($weeklyAPGroups as $actId => $groupRecords) {
+                // Kehadiran: Ambil status kehadiran yang valid
+                $bestRecord = $groupRecords->first(fn ($r) => ! empty($r->w_ap_kehadiran));
+                $kehadiranStatus = $bestRecord?->w_ap_kehadiran;
+                $kehadiranValue = match ($kehadiranStatus) {
                     'Hadir' => 100,
                     'Izin' => 70,
                     'Sakit' => 60,
@@ -322,45 +327,34 @@ class EvaluasiController extends Controller
                     default => 0,
                 };
 
-                // Nilai presentasi sudah dalam bentuk numerik
-                $presentasiValue = $nilaiAPRecord->w_ap_presentasi ?? 0;
+                // Presentasi: Kumulatif rata-rata dari seluruh dosen penilai pada minggu tersebut
+                $presentasiRecords = $groupRecords->whereNotNull('w_ap_presentasi');
+                $avgPresentasiMinggu = $presentasiRecords->isNotEmpty()
+                    ? (float) $presentasiRecords->avg('w_ap_presentasi')
+                    : 0.0;
 
-                // Hitung nilai AP per aktivitas: 50% kehadiran + 50% presentasi
-                $nilaiAPItem = $this->gradingService->calculateActivityScore($kehadiranValue, $presentasiValue);
+                // Hitung nilai AP per aktivitas: 50% kehadiran + 50% presentasi kumulatif
+                $nilaiAPItem = $this->gradingService->calculateActivityScore($kehadiranValue, $avgPresentasiMinggu);
                 $totalAP += $nilaiAPItem;
                 $countAP++;
 
                 // Tambahkan data detail untuk view
                 $presensiData[] = (object) [
-                    'aktivitas_list' => $nilaiAPRecord->aktivitasList,
-                    'w_ap_kehadiran' => $nilaiAPRecord->w_ap_kehadiran,
-                    'w_ap_presentasi' => $nilaiAPRecord->w_ap_presentasi,
+                    'aktivitas_list' => $groupRecords->first()->aktivitasList,
+                    'w_ap_kehadiran' => $kehadiranStatus,
+                    'w_ap_presentasi' => round($avgPresentasiMinggu, 2),
                     'kehadiran_value' => $kehadiranValue,
-                    'presentasi_value' => $presentasiValue,
-                    'nilai_final_ap' => $nilaiAPItem,
+                    'presentasi_value' => round($avgPresentasiMinggu, 2),
+                    'nilai_final_ap' => round($nilaiAPItem, 2),
+                    'evaluators_count' => $groupRecords->count(),
                 ];
             }
 
             $averageAP = $countAP > 0 ? $totalAP / $countAP : 0;
 
-            // Hitung rata-rata kehadiran dan presentasi untuk tampilan
-            $totalKehadiran = 0;
-            $totalPresentasi = 0;
-            foreach ($mahasiswaNilaiAP as $nilaiAPRecord) {
-                $kehadiranValue = match ($nilaiAPRecord->w_ap_kehadiran) {
-                    'Hadir' => 100,
-                    'Izin' => 70,
-                    'Sakit' => 60,
-                    'Terlambat' => 50,
-                    'Tanpa Keterangan' => 0,
-                    default => 0,
-                };
-                $presentasiValue = $nilaiAPRecord->w_ap_presentasi ?? 0;
-                $totalKehadiran += $kehadiranValue;
-                $totalPresentasi += $presentasiValue;
-            }
-            $avgKehadiran = $countAP > 0 ? $totalKehadiran / $countAP : 0;
-            $avgPresentasi = $countAP > 0 ? $totalPresentasi / $countAP : 0;
+            // Hitung rata-rata kehadiran dan presentasi kumulatif untuk tampilan
+            $avgKehadiran = $countAP > 0 ? (float) collect($presensiData)->avg('kehadiran_value') : 0;
+            $avgPresentasi = $countAP > 0 ? (float) collect($presensiData)->avg('presentasi_value') : 0;
 
             // Hitung nilai akhir dengan bobot: 30% AP + 70% Project
             $finalNilaiAkhir = $this->gradingService->calculateFinalScore($finalNilaiProject, $averageAP);
@@ -2138,37 +2132,196 @@ class EvaluasiController extends Controller
         try {
             $aktivitasList = AktivitasList::where('uuid', $aktivitasList)->orWhere('id', $aktivitasList)->firstOrFail();
 
-            $nilaiAP = EvaluasiNilaiAP::where('aktivitas_list_id', $aktivitasList->id)
+            $user = Auth::user();
+            $kelompok = Kelompok::with([
+                'mahasiswas' => function ($q) use ($aktivitasList) {
+                    $q->where('kelompok_mahasiswa.periode_id', $aktivitasList->periode_id)
+                        ->select('mahasiswa.id', 'nim', 'nama_mahasiswa');
+                },
+            ])->find($aktivitasList->kelompok_id);
+
+            // Ambil seluruh proyek pada kelompok ini di periode aktif
+            $projectCards = ProjectCard::where('kelompok_id', $aktivitasList->kelompok_id)
+                ->where('periode_id', $aktivitasList->periode_id)
+                ->with([
+                    'mataKuliahs.dosenPengampu',
+                    'dosenPenilai.dosen',
+                    'dosenPenilai.mataKuliah',
+                    'dosenPenentu',
+                ])
+                ->get();
+
+            // Ekstrak daftar mata kuliah terkait proyek ini
+            $relatedCourses = collect();
+            $authorizedDosenMap = collect();
+
+            foreach ($projectCards as $card) {
+                foreach ($card->mataKuliahs as $mk) {
+                    if (! $relatedCourses->has($mk->id)) {
+                        $pengampuList = $mk->dosenPengampu->map(function ($dp) {
+                            return [
+                                'id' => $dp->id,
+                                'nama' => $dp->nama_user ?: $dp->name,
+                                'nip' => $dp->username ?: '-',
+                                'email' => $dp->email,
+                            ];
+                        });
+
+                        $relatedCourses->put($mk->id, [
+                            'id' => $mk->id,
+                            'kode' => $mk->kode_matkul,
+                            'nama' => $mk->nama_matkul,
+                            'sks' => $mk->sks,
+                            'semester' => $mk->semester,
+                            'dosen_pengampu' => $pengampuList,
+                        ]);
+                    }
+
+                    foreach ($mk->dosenPengampu as $dp) {
+                        if (! $authorizedDosenMap->has($dp->id)) {
+                            $authorizedDosenMap->put($dp->id, [
+                                'dosen_id' => $dp->id,
+                                'nama' => $dp->nama_user ?: $dp->name,
+                                'nip' => $dp->username ?: '-',
+                                'peran' => 'Dosen Pengampu MK: '.$mk->nama_matkul,
+                                'mata_kuliah_id' => $mk->id,
+                                'mata_kuliah_nama' => $mk->nama_matkul,
+                            ]);
+                        }
+                    }
+                }
+
+                // Dosen Penilai khusus
+                foreach ($card->dosenPenilai as $dPenilai) {
+                    if ($dPenilai->dosen && ! $authorizedDosenMap->has($dPenilai->dosen_id)) {
+                        $authorizedDosenMap->put($dPenilai->dosen_id, [
+                            'dosen_id' => $dPenilai->dosen_id,
+                            'nama' => $dPenilai->dosen->nama_user ?: $dPenilai->dosen->name,
+                            'nip' => $dPenilai->dosen->username ?: '-',
+                            'peran' => 'Dosen Penilai Proyek: '.$card->title,
+                            'mata_kuliah_id' => $dPenilai->mata_kuliah_id,
+                            'mata_kuliah_nama' => $dPenilai->mataKuliah?->nama_matkul ?: 'Sidang PBL',
+                        ]);
+                    }
+                }
+
+                // Dosen Penentu Proyek
+                if ($card->dosenPenentu && ! $authorizedDosenMap->has($card->dosen_penentu_id)) {
+                    $authorizedDosenMap->put($card->dosen_penentu_id, [
+                        'dosen_id' => $card->dosen_penentu_id,
+                        'nama' => $card->dosenPenentu->nama_user ?: $card->dosenPenentu->name,
+                        'nip' => $card->dosenPenentu->username ?: '-',
+                        'peran' => 'Dosen Pembimbing / Penentu Proyek',
+                        'mata_kuliah_id' => null,
+                        'mata_kuliah_nama' => 'Pembimbing Proyek',
+                    ]);
+                }
+            }
+
+            // Admin selalu authorized
+            $isAuthorized = true;
+            $currentUserCourse = null;
+
+            // Ambil seluruh rekam evaluasi nilai AP untuk aktivitas ini
+            $allNilaiAP = EvaluasiNilaiAP::where('aktivitas_list_id', $aktivitasList->id)
                 ->with([
                     'mahasiswa:id,nim,nama_mahasiswa',
-                    'evaluator:id,nama_user',
-                    'aktivitasList:id,name',
+                    'evaluator:id,nama_user,username',
+                    'mataKuliah:id,nama_matkul,kode_matkul',
                 ])
-                ->get()
-                ->map(function ($nilai) {
-                    $mahasiswa = $nilai->mahasiswa;
+                ->get();
 
+            // Status evaluasi per dosen
+            $evaluatorsStatus = $authorizedDosenMap->values()->map(function ($dosenInfo) use ($allNilaiAP) {
+                $evals = $allNilaiAP->where('evaluator_id', $dosenInfo['dosen_id']);
+                $hasEvaluated = $evals->isNotEmpty();
+
+                return array_merge($dosenInfo, [
+                    'has_evaluated' => $hasEvaluated,
+                    'evaluated_count' => $evals->count(),
+                    'last_evaluated_at' => $hasEvaluated ? $evals->max('updated_at')?->format('d/m/Y H:i') : null,
+                ]);
+            });
+
+            // Group rekam per mahasiswa
+            $groupedByMhs = $allNilaiAP->groupBy('mahasiswa_id');
+
+            $mahasiswaList = $kelompok ? $kelompok->mahasiswas : collect();
+            if ($mahasiswaList->isEmpty()) {
+                $mahasiswaList = $allNilaiAP->pluck('mahasiswa')->unique('id')->filter()->values();
+            }
+
+            $mappedNilaiAP = $mahasiswaList->map(function ($mhs) use ($groupedByMhs, $user, $aktivitasList) {
+                $mhsEvals = $groupedByMhs->get($mhs->id, collect());
+
+                // Rekam evaluasi oleh user saat ini
+                $myEval = $user ? $mhsEvals->firstWhere('evaluator_id', $user->id) : null;
+
+                // Hitung kumulatif presentasi (rata-rata dari seluruh dosen yang menilai presentasi mahasiswa ini)
+                $presentasiRecords = $mhsEvals->whereNotNull('w_ap_presentasi');
+                $cumulativePresentasi = $presentasiRecords->isNotEmpty()
+                    ? round((float) $presentasiRecords->avg('w_ap_presentasi'), 2)
+                    : null;
+
+                // Kehadiran (prioritas: nilai oleh user saat ini, atau rekam pertama yang ada nilai kehadiran)
+                $firstAttendanceRecord = $mhsEvals->first(fn ($r) => ! empty($r->w_ap_kehadiran));
+                $attendanceStatus = $myEval?->w_ap_kehadiran ?? $firstAttendanceRecord?->w_ap_kehadiran;
+                $attendanceDate = $myEval?->tanggal_hadir
+                    ? $myEval->tanggal_hadir->format('Y-m-d')
+                    : ($firstAttendanceRecord?->tanggal_hadir ? $firstAttendanceRecord->tanggal_hadir->format('Y-m-d') : null);
+
+                // Rincian evaluasi dari setiap dosen
+                $breakdown = $mhsEvals->map(function ($eval) {
                     return [
-                        'id' => $nilai->uuid,
-                        'mahasiswa_id' => $nilai->mahasiswa_id,
-                        'aktivitas_list_id' => $nilai->aktivitas_list_id,
-                        'mahasiswa_nama' => optional($mahasiswa)->nama_mahasiswa ?? '',
-                        'mahasiswa_nim' => optional($mahasiswa)->nim ?? '',
-                        'w_ap_kehadiran' => $nilai->w_ap_kehadiran,
-                        'tanggal_hadir' => $nilai->tanggal_hadir ? $nilai->tanggal_hadir->format('Y-m-d') : null,
-                        'w_ap_presentasi' => $nilai->w_ap_presentasi,
-                        'catatan_presentasi' => $nilai->catatan_presentasi,
-                        'kehadiran_bobot' => $nilai->kehadiran_bobot,
-                        'status' => $nilai->status,
-                        'evaluator_nama' => optional($nilai->evaluator)->nama_user ?? '',
-                        'created_at' => $nilai->created_at,
-                        'updated_at' => $nilai->updated_at,
+                        'id' => $eval->uuid,
+                        'evaluator_id' => $eval->evaluator_id,
+                        'evaluator_nama' => $eval->evaluator?->nama_user ?? 'Dosen',
+                        'evaluator_nip' => $eval->evaluator?->username ?? '-',
+                        'mata_kuliah_nama' => $eval->mataKuliah?->nama_matkul,
+                        'w_ap_kehadiran' => $eval->w_ap_kehadiran,
+                        'w_ap_presentasi' => $eval->w_ap_presentasi !== null ? (float) $eval->w_ap_presentasi : null,
+                        'catatan_presentasi' => $eval->catatan_presentasi,
+                        'status' => $eval->status,
+                        'updated_at' => $eval->updated_at ? $eval->updated_at->format('d M Y H:i') : null,
                     ];
-                });
+                })->values();
+
+                return [
+                    'id' => $myEval?->uuid,
+                    'mahasiswa_id' => $mhs->id,
+                    'aktivitas_list_id' => $aktivitasList->id,
+                    'mahasiswa_nama' => $mhs->nama_mahasiswa,
+                    'mahasiswa_nim' => $mhs->nim,
+                    'my_kehadiran' => $myEval?->w_ap_kehadiran ?? '',
+                    'my_tanggal_hadir' => $myEval?->tanggal_hadir ? $myEval->tanggal_hadir->format('Y-m-d') : '',
+                    'my_presentasi' => $myEval?->w_ap_presentasi !== null ? (float) $myEval->w_ap_presentasi : '',
+                    'my_catatan' => $myEval?->catatan_presentasi ?? '',
+                    'w_ap_kehadiran' => $attendanceStatus,
+                    'tanggal_hadir' => $attendanceDate,
+                    'w_ap_presentasi' => $myEval?->w_ap_presentasi !== null ? (float) $myEval->w_ap_presentasi : $cumulativePresentasi,
+                    'catatan_presentasi' => $myEval?->catatan_presentasi,
+                    'kehadiran_bobot' => $myEval?->kehadiran_bobot,
+                    'status' => $myEval?->status ?? 'Draft',
+                    'evaluator_nama' => $user?->nama_user ?? '',
+                    'cumulative_presentasi' => $cumulativePresentasi,
+                    'evaluators_count' => $mhsEvals->count(),
+                    'evaluations_breakdown' => $breakdown,
+                ];
+            });
 
             return response()->json([
                 'success' => true,
-                'nilai_ap' => $nilaiAP,
+                'aktivitas' => [
+                    'id' => $aktivitasList->id,
+                    'uuid' => $aktivitasList->uuid,
+                    'name' => $aktivitasList->name ?? $aktivitasList->title ?? 'Minggu',
+                    'status_evaluasi' => $aktivitasList->status_evaluasi,
+                ],
+                'is_authorized' => $isAuthorized,
+                'current_user_course' => $currentUserCourse,
+                'related_courses' => $relatedCourses->values(),
+                'evaluators_summary' => $evaluatorsStatus,
+                'nilai_ap' => $mappedNilaiAP,
             ]);
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
@@ -2195,22 +2348,33 @@ class EvaluasiController extends Controller
     public function storeNilaiAPPerAktivitasList(Request $request)
     {
         try {
-            // Log incoming data for debugging
-            Log::info('storeNilaiAPPerAktivitasList called with data:', $request->all());
-
             // Validate batch data
             $validated = $request->validate([
                 'nilai_ap' => 'required|array|min:1',
-                'nilai_ap.*.id' => 'nullable|string|uuid',
+                'nilai_ap.*.id' => 'nullable|string',
                 'nilai_ap.*.mahasiswa_id' => 'required|exists:mahasiswa,id',
                 'nilai_ap.*.aktivitas_list_id' => 'required|exists:aktivitas_lists,id',
                 'nilai_ap.*.w_ap_kehadiran' => 'nullable|string|in:Hadir,Tidak Hadir,Izin,Sakit,Dispensasi,Terlambat,Tanpa Keterangan',
                 'nilai_ap.*.tanggal_hadir' => 'nullable|date',
                 'nilai_ap.*.w_ap_presentasi' => 'nullable|numeric|min:0|max:100',
+                'nilai_ap.*.catatan_presentasi' => 'nullable|string|max:1000',
+                'nilai_ap.*.mata_kuliah_id' => 'nullable|exists:mata_kuliah,id',
                 'nilai_ap.*.status' => 'nullable|string|in:Draft,Submitted,Reviewed',
             ]);
 
-            Log::info('Validated data:', $validated);
+            $user = Auth::user();
+            $firstItem = $validated['nilai_ap'][0];
+            $aktivitasList = AktivitasList::find($firstItem['aktivitas_list_id']);
+            if (! $aktivitasList) {
+                return response()->json(['success' => false, 'message' => 'Aktivitas tidak ditemukan'], 404);
+            }
+
+            // Pastikan evaluasi master tersedia
+            $evaluasiMaster = \App\Models\EvaluasiMaster::ensureForKelompok(
+                $aktivitasList->periode_id,
+                $aktivitasList->kelompok_id,
+                $user?->id
+            );
 
             $savedItems = [];
             $updatedCount = 0;
@@ -2218,22 +2382,9 @@ class EvaluasiController extends Controller
 
             foreach ($validated['nilai_ap'] as $item) {
                 // Skip if no data to save
-                if (empty($item['w_ap_kehadiran']) && empty($item['w_ap_presentasi'])) {
+                if (empty($item['w_ap_kehadiran']) && (! isset($item['w_ap_presentasi']) || $item['w_ap_presentasi'] === '')) {
                     continue;
                 }
-
-                // Get related data from aktivitas_list
-                $aktivitasList = \App\Models\AktivitasList::find($item['aktivitas_list_id']);
-                if (! $aktivitasList) {
-                    continue;
-                }
-
-                // Get or create evaluasi_master for this kelompok and periode
-                $evaluasiMaster = \App\Models\EvaluasiMaster::ensureForKelompok(
-                    $aktivitasList->periode_id,
-                    $aktivitasList->kelompok_id,
-                    Auth::id()
-                );
 
                 $saveData = [
                     'periode_id' => $aktivitasList->periode_id,
@@ -2241,47 +2392,31 @@ class EvaluasiController extends Controller
                     'evaluasi_master_id' => $evaluasiMaster->id,
                     'mahasiswa_id' => $item['mahasiswa_id'],
                     'aktivitas_list_id' => $item['aktivitas_list_id'],
+                    'evaluator_id' => $user?->id,
+                    'mata_kuliah_id' => $item['mata_kuliah_id'] ?? null,
                     'w_ap_kehadiran' => $item['w_ap_kehadiran'] ?? null,
                     'tanggal_hadir' => $item['tanggal_hadir'] ?? null,
-                    'w_ap_presentasi' => $item['w_ap_presentasi'] ?? null,
+                    'w_ap_presentasi' => isset($item['w_ap_presentasi']) && $item['w_ap_presentasi'] !== '' ? $item['w_ap_presentasi'] : null,
+                    'catatan_presentasi' => $item['catatan_presentasi'] ?? null,
                     'status' => $item['status'] ?? 'Submitted',
                 ];
 
-                // Add evaluator_id if logged in
-                if (Auth::check()) {
-                    $saveData['evaluator_id'] = Auth::id();
-                }
+                $nilaiAP = EvaluasiNilaiAP::updateOrCreate(
+                    [
+                        'evaluasi_master_id' => $evaluasiMaster->id,
+                        'mahasiswa_id' => $item['mahasiswa_id'],
+                        'aktivitas_list_id' => $item['aktivitas_list_id'],
+                        'evaluator_id' => $user?->id,
+                    ],
+                    $saveData
+                );
 
-                Log::info('Saving data for mahasiswa '.$item['mahasiswa_id'], $saveData);
-
-                // Check if record exists
-                if (! empty($item['id'])) {
-                    // Update existing record by UUID
-                    $nilaiAP = EvaluasiNilaiAP::where('uuid', $item['id'])->first();
-                    if ($nilaiAP) {
-                        $nilaiAP->update($saveData);
-                        $updatedCount++;
-                    } else {
-                        // Create new if UUID not found
-                        $nilaiAP = EvaluasiNilaiAP::create($saveData);
-                        $createdCount++;
-                    }
+                if ($nilaiAP->wasRecentlyCreated) {
+                    $createdCount++;
                 } else {
-                    // Create or update by unique constraint: evaluasi_master_id, mahasiswa_id, aktivitas_list_id
-                    // Since evaluasi_master_id is null for AP, we use mahasiswa_id and aktivitas_list_id
-                    $nilaiAP = EvaluasiNilaiAP::updateOrCreate(
-                        [
-                            'mahasiswa_id' => $item['mahasiswa_id'],
-                            'aktivitas_list_id' => $item['aktivitas_list_id'],
-                        ],
-                        $saveData
-                    );
-                    if ($nilaiAP->wasRecentlyCreated) {
-                        $createdCount++;
-                    } else {
-                        $updatedCount++;
-                    }
+                    $updatedCount++;
                 }
+
                 $savedItems[] = [
                     'id' => $nilaiAP->uuid,
                     'mahasiswa_id' => $nilaiAP->mahasiswa_id,
@@ -2293,7 +2428,11 @@ class EvaluasiController extends Controller
                 ];
             }
 
-            $message = "Nilai AP berhasil disimpan ({$updatedCount} update, {$createdCount} baru)";
+            if (! empty($savedItems)) {
+                $aktivitasList->update(['status_evaluasi' => 'Sudah Evaluasi']);
+            }
+
+            $message = "Nilai AP berhasil disimpan ({$updatedCount} diperbarui, {$createdCount} baru)";
 
             return response()->json([
                 'success' => true,
@@ -2309,7 +2448,7 @@ class EvaluasiController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal menyimpan data: '.$e->getMessage(),
+                'message' => 'Gagal menyimpan nilai AP: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -2386,6 +2525,7 @@ class EvaluasiController extends Controller
                         'evaluasi_master_id' => $saveData['evaluasi_master_id'],
                         'mahasiswa_id' => $saveData['mahasiswa_id'],
                         'aktivitas_list_id' => $saveData['aktivitas_list_id'],
+                        'evaluator_id' => Auth::id(),
                     ],
                     $saveData
                 );
@@ -2559,6 +2699,7 @@ class EvaluasiController extends Controller
                             'evaluasi_master_id' => $nilaiAPData['evaluasi_master_id'],
                             'mahasiswa_id' => $nilaiAPData['mahasiswa_id'],
                             'aktivitas_list_id' => $nilaiAPData['aktivitas_list_id'],
+                            'evaluator_id' => Auth::id(),
                         ],
                         $nilaiAPData
                     );

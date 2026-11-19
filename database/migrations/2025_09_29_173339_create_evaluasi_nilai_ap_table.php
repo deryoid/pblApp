@@ -29,7 +29,7 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->unique(['evaluasi_master_id', 'mahasiswa_id', 'aktivitas_list_id'], 'evaluasi_nilai_ap_unique');
+            $table->unique(['evaluasi_master_id', 'mahasiswa_id', 'aktivitas_list_id', 'evaluator_id'], 'evaluasi_nilai_ap_evaluator_unique');
         });
     }
 

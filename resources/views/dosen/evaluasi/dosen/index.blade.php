@@ -210,11 +210,11 @@
 
 <!-- Modal Penilaian -->
 <div class="modal fade" id="gradeModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Penilaian Dosen - <span id="modalTitle"></span></h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" role="document">
+        <div class="modal-content shadow-lg border-0">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title font-weight-bold">Penilaian Dosen - <span id="modalTitle"></span></h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
@@ -222,7 +222,7 @@
                 @csrf
                 <input type="hidden" name="kelompok_id" id="kelompokId">
 
-                <div class="modal-body">
+                <div class="modal-body p-4">
                     <div class="alert alert-info">
                         <i class="fas fa-info-circle"></i>
                         <strong>Panduan Penilaian:</strong> Berikan nilai untuk setiap kriteria dengan rentang 1-100.
@@ -249,10 +249,10 @@
                     </div>
                 </div>
 
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> Simpan Nilai
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary px-3" data-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary px-3">
+                        <i class="fas fa-save mr-1"></i> Simpan Nilai
                     </button>
                 </div>
             </form>
@@ -262,22 +262,25 @@
 
 <!-- Modal Detail Nilai -->
 <div class="modal fade" id="detailModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Detail Penilaian Dosen - <span id="detailTitle"></span></h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" role="document">
+        <div class="modal-content shadow-lg border-0">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title font-weight-bold">Detail Penilaian Dosen - <span id="detailTitle"></span></h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <div class="modal-body">
+            <div class="modal-body p-4">
                 <div id="detailContent">
                     <!-- Dynamic content -->
                 </div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary px-4" data-dismiss="modal">Tutup</button>
             </div>
+        </div>
+    </div>
+</div>
         </div>
     </div>
 </div>

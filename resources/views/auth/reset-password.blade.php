@@ -6,7 +6,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="description" content="Atur Ulang Kata Sandi - PBL TRKJ Politala">
-    <meta name="author" content="Dery Yuswanto Jaya, M.Kom - TRKJ Politala">
+    <meta name="author" content="Kolaborasi Mitra PBL dan Mahasiswa">
     
     <title>Atur Ulang Kata Sandi | PBL TRKJ Politala</title>
     <link rel="icon" href="{{ asset('sbadmin2/img/logo-campus.png') }}" type="image/png">

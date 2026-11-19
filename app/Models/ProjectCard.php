@@ -253,8 +253,7 @@ class ProjectCard extends Model
             })
                 ->orWhereHas('dosenPenilai', function ($dq) use ($user) {
                     $dq->where('dosen_id', $user->id);
-                })
-                ->orWhere('dosen_penentu_id', $user->id);
+                });
         });
     }
 

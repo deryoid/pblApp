@@ -6,7 +6,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="description" content="Portal Publik PBL TRKJ Politala - Politeknik Negeri Tanah Laut">
-    <meta name="author" content="Dery Yuswanto Jaya, M.Kom - TRKJ Politala">
+    <meta name="author" content="Kolaborasi Mitra PBL dan Mahasiswa">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>@yield('title', 'PBL TRKJ Politala')</title>
@@ -285,7 +285,7 @@
     <footer class="public-footer">
         <div class="container text-center">
             <p class="mb-1 text-white font-weight-bold">PBL TRKJ Politala</p>
-            <p class="mb-0 text-muted small">&copy; {{ date('Y') }} TRKJ Politala. All rights reserved. | Develop by Dery Yuswanto Jaya, M.Kom</p>
+            <p class="mb-0 text-muted small">&copy; {{ date('Y') }} Kolaborasi Mitra PBL dan Mahasiswa. Seluruh Hak Cipta Dilindungi.</p>
         </div>
     </footer>
 

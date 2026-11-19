@@ -78,13 +78,12 @@ class SidebarComponentTest extends TestCase
         $response->assertSee('PBL TRKJ');
         $response->assertSee('Dosen Penilai PBL');
         $response->assertSee('Dosen / Penilai');
-        $response->assertSee('Data Kelompok');
+        $response->assertSee('Beranda');
         $response->assertSee('Kelompok PBL');
-        $response->assertSee('Penilaian & Evaluasi', false);
         $response->assertSee('Evaluasi Proyek');
-        $response->assertSee('Rubrik Penilaian');
-        $response->assertSee('Nilai Akhir');
-        $response->assertSee('Riwayat PBL Mahasiswa');
+        $response->assertDontSee('Rubrik Penilaian');
+        $response->assertDontSee('Nilai Akhir');
+        $response->assertDontSee('Riwayat PBL Mahasiswa');
     }
 
     public function test_mahasiswa_sidebar_renders_expected_sections_and_links(): void
@@ -141,5 +140,37 @@ class SidebarComponentTest extends TestCase
         $response->assertSee('Riwayat PBL Saya');
         $response->assertSee('Akun');
         $response->assertSee('Biodata & Profil', false);
+    }
+
+    public function test_footer_renders_updated_copyright_and_removes_author_credit(): void
+    {
+        $responseLogin = $this->get('/login');
+        $responseLogin->assertStatus(200);
+        $responseLogin->assertSee('Kolaborasi Mitra PBL dan Mahasiswa');
+        $responseLogin->assertDontSee('Dery Yuswanto Jaya');
+
+        $responseRegister = $this->get('/register');
+        $responseRegister->assertStatus(200);
+        $responseRegister->assertSee('Kolaborasi Mitra PBL dan Mahasiswa');
+        $responseRegister->assertDontSee('Dery Yuswanto Jaya');
+
+        $responseHome = $this->get('/');
+        $responseHome->assertStatus(200);
+        $responseHome->assertSee('Kolaborasi Mitra PBL dan Mahasiswa');
+        $responseHome->assertDontSee('Dery Yuswanto Jaya');
+
+        $dosen = User::create([
+            'nama_user' => 'Dosen Penilai PBL',
+            'username' => 'dosen_eval_footer',
+            'email' => 'evaluator_footer@politala.ac.id',
+            'password' => Hash::make('password123'),
+            'role' => 'dosen',
+            'no_hp' => '081234567895',
+        ]);
+
+        $responseDosen = $this->actingAs($dosen)->get('/dosen');
+        $responseDosen->assertStatus(200);
+        $responseDosen->assertSee('Kolaborasi Mitra PBL dan Mahasiswa');
+        $responseDosen->assertDontSee('Dery Yuswanto Jaya');
     }
 }

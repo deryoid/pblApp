@@ -86,6 +86,7 @@
     </li>
 
     {{-- Showcase Publik Proyek --}}
+    @if ($role !== 'dosen' && $role !== 'evaluator')
     <li class="nav-item">
         <a class="nav-link" href="{{ route('home') }}" target="_blank">
             <span class="nav-icon-box"><i class="fas fa-fw fa-globe text-info"></i></span>
@@ -93,6 +94,7 @@
             <span class="badge badge-info ml-auto font-weight-bold" style="font-size: 0.65rem; padding: 2px 6px;">SPA</span>
         </a>
     </li>
+    @endif
 
     {{-- ======================= ADMIN ======================= --}}
     @if ($role === 'admin')
@@ -194,7 +196,7 @@
 
     {{-- =================== DOSEN / PENILAI =================== --}}
     @elseif ($role === 'dosen' || $role === 'evaluator')
-        <div class="sidebar-heading">Data Kelompok</div>
+        <div class="sidebar-heading">Kegiatan PBL</div>
 
         {{-- Kelompok PBL --}}
         <li class="nav-item {{ request()->routeIs('dosen.kelompok.*', 'evaluator.kelompok.*') ? 'active' : '' }}">
@@ -204,37 +206,11 @@
             </a>
         </li>
 
-        <div class="sidebar-heading">Penilaian & Evaluasi</div>
-
         {{-- Evaluasi Proyek --}}
         <li class="nav-item {{ request()->routeIs('dosen.evaluasi.index','dosen.evaluasi.kelompok.show','dosen.evaluasi.nilai-final', 'evaluator.evaluasi.*') ? 'active' : '' }}">
             <a class="nav-link" href="{{ route('dosen.evaluasi.index') }}">
                 <span class="nav-icon-box"><i class="fas fa-fw fa-project-diagram"></i></span>
                 <span class="nav-link-text">Evaluasi Proyek</span>
-            </a>
-        </li>
-
-        {{-- Rubrik Penilaian --}}
-        <li class="nav-item {{ request()->routeIs('dosen.evaluasi.rubrik.*', 'evaluator.evaluasi.rubrik.*') ? 'active' : '' }}">
-            <a class="nav-link" href="{{ route('dosen.evaluasi.rubrik.index') }}">
-                <span class="nav-icon-box"><i class="fas fa-fw fa-clipboard-check"></i></span>
-                <span class="nav-link-text">Rubrik Penilaian</span>
-            </a>
-        </li>
-
-        {{-- Nilai Akhir --}}
-        <li class="nav-item {{ request()->routeIs('dosen.nilai.*', 'evaluator.nilai.*') ? 'active' : '' }}">
-            <a class="nav-link" href="{{ route('dosen.nilai.index') }}">
-                <span class="nav-icon-box"><i class="fas fa-fw fa-chart-bar"></i></span>
-                <span class="nav-link-text">Nilai Akhir</span>
-            </a>
-        </li>
-
-        {{-- Riwayat PBL Mahasiswa --}}
-        <li class="nav-item {{ request()->routeIs('dosen.riwayat.*', 'evaluator.riwayat.*') ? 'active' : '' }}">
-            <a class="nav-link" href="{{ route('dosen.riwayat.index') }}">
-                <span class="nav-icon-box"><i class="fas fa-fw fa-history"></i></span>
-                <span class="nav-link-text">Riwayat PBL Mahasiswa</span>
             </a>
         </li>
 
