@@ -35,6 +35,10 @@ class NilaiController extends Controller
         $periodes = Periode::orderByDesc('id')->get(['id', 'periode', 'status_periode']);
         $kelases = \App\Models\Kelas::orderBy('kelas')->get(['id', 'kelas']);
 
+        $user = auth()->user();
+        $isDosenOnly = $user && $user->isDosen() && ! $user->isAdmin();
+        $accessibleKelompokIds = $isDosenOnly ? Kelompok::accessibleByDosen($user)->pluck('id')->toArray() : null;
+
         // Get evaluations dengan relasi yang lengkap
         $evaluationsDosen = EvaluasiDosen::with([
             'mahasiswa:id,nama_mahasiswa,nim',
@@ -44,6 +48,7 @@ class NilaiController extends Controller
             'evaluator:id,nama_user',
         ])
             ->when($periodeId, fn ($q) => $q->where('periode_id', $periodeId))
+            ->when($isDosenOnly, fn ($q) => $q->whereIn('kelompok_id', $accessibleKelompokIds))
             ->get();
 
         $evaluationsMitra = EvaluasiMitra::with([
@@ -54,6 +59,7 @@ class NilaiController extends Controller
             'evaluator:id,nama_user',
         ])
             ->when($periodeId, fn ($q) => $q->where('periode_id', $periodeId))
+            ->when($isDosenOnly, fn ($q) => $q->whereIn('kelompok_id', $accessibleKelompokIds))
             ->get();
 
         // Get data absensi dan presensi (AP)
@@ -64,6 +70,7 @@ class NilaiController extends Controller
             'aktivitasList:id,name',
         ])
             ->when($periodeId, fn ($q) => $q->where('periode_id', $periodeId))
+            ->when($isDosenOnly, fn ($q) => $q->whereIn('kelompok_id', $accessibleKelompokIds))
             ->get();
 
         // Get unique mahasiswa from evaluations

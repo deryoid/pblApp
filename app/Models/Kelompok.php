@@ -306,4 +306,42 @@ class Kelompok extends Model
 
         return $boxes;
     }
+
+    /**
+     * Scope untuk membatasi kelompok yang tampil hanya yang relevan dengan dosen (berdasarkan proyek, penugasan, atau mata kuliah yang diampu).
+     */
+    public function scopeAccessibleByDosen($query, ?User $user)
+    {
+        if (! $user || $user->isAdmin()) {
+            return $query;
+        }
+
+        $taughtMatkulIds = $user->getTaughtMataKuliahIds();
+        $taughtSemesters = $user->getTaughtSemesters();
+
+        // Fallback: Jika akun dosen belum dikonfigurasi dengan mata kuliah apapun di sistem (misal akun baru / data testing)
+        if (empty($taughtMatkulIds) && empty($taughtSemesters)) {
+            return $query;
+        }
+
+        return $query->whereHas('projectCards', function ($q) use ($user) {
+            $q->accessibleByDosen($user);
+        });
+    }
+
+    /**
+     * Cek apakah kelompok ini dapat diakses oleh dosen yang sedang login.
+     */
+    public function isAccessibleByDosen(?User $user): bool
+    {
+        if (! $user) {
+            return false;
+        }
+
+        if ($user->isAdmin()) {
+            return true;
+        }
+
+        return self::where('id', $this->id)->accessibleByDosen($user)->exists();
+    }
 }

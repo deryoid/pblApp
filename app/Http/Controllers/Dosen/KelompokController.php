@@ -30,11 +30,14 @@ class KelompokController extends Controller
             $qPeriode = $periodeAktif?->id;
         }
 
-        $kelompoks = Kelompok::with(['periode', 'mahasiswas.kelas', 'evaluasiMasters' => function ($query) use ($selectedPeriode) {
-            if ($selectedPeriode) {
-                $query->where('periode_id', $selectedPeriode->id);
-            }
-        }])
+        $user = auth()->user();
+
+        $kelompoks = Kelompok::accessibleByDosen($user)
+            ->with(['periode', 'mahasiswas.kelas', 'evaluasiMasters' => function ($query) use ($selectedPeriode) {
+                if ($selectedPeriode) {
+                    $query->where('periode_id', $selectedPeriode->id);
+                }
+            }])
             ->when($selectedPeriode, function ($query) use ($selectedPeriode) {
                 return $query->where('periode_id', $selectedPeriode->id);
             })
@@ -53,6 +56,8 @@ class KelompokController extends Controller
 
     public function show(Kelompok $kelompok)
     {
+        abort_unless($kelompok->isAccessibleByDosen(auth()->user()), 403, 'Anda tidak memiliki wewenang untuk melihat data kelompok ini.');
+
         $kelompok->load(['periode', 'mahasiswas.kelas', 'aktivitasLists']);
 
         return view('dosen.kelompok.show', compact('kelompok'));

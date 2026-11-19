@@ -100,6 +100,7 @@ class DosenRoleAndAssessmentAuthorizationTest extends TestCase
 
         $kelas = Kelas::create([
             'kelas' => 'TRKJ 4A',
+            'semester' => 4,
         ]);
 
         $mhs = Mahasiswa::create([
@@ -119,6 +120,7 @@ class DosenRoleAndAssessmentAuthorizationTest extends TestCase
 
         $this->kelompok = Kelompok::create([
             'nama_kelompok' => 'Kelompok 1 Smart Campus',
+            'semester' => 4,
             'periode_id' => $this->periode->id,
             'creator_id' => $this->mahasiswaUser->id,
         ]);
@@ -477,5 +479,108 @@ class DosenRoleAndAssessmentAuthorizationTest extends TestCase
         $resAdminNilaiFinal->assertOk();
         $resAdminNilaiFinal->assertViewHas('periodeId', $this->periode->id);
         $resAdminNilaiFinal->assertSee($this->periode->periode);
+    }
+
+    /**
+     * Dosen hanya melihat kelompok PBL yang relevan pada menu Kelompok dan Evaluasi.
+     * Kelompok lain yang tidak diampu tidak tampil, dan akses langsung dicegah.
+     */
+    public function test_kelompok_and_evaluasi_indices_only_display_accessible_groups_for_dosen(): void
+    {
+        $this->card->mataKuliahs()->attach($this->mataKuliah->id);
+
+        $matkulLain = MataKuliah::create([
+            'kode_matkul' => 'MK-NET02',
+            'nama_matkul' => 'Jaringan Komputer Lanjut',
+            'sks' => 3,
+            'semester' => 4,
+            'is_active' => true,
+        ]);
+        $matkulLain->dosenPengampu()->attach($this->dosenLain->id);
+
+        $kelompokLain = Kelompok::create([
+            'nama_kelompok' => 'Kelompok 2 - CyberSec',
+            'semester' => 4,
+            'periode_id' => $this->periode->id,
+        ]);
+
+        $listLain = ProjectList::create([
+            'name' => 'Dalam Pengerjaan',
+            'kelompok_id' => $kelompokLain->id,
+            'periode_id' => $this->periode->id,
+            'position' => 0,
+        ]);
+
+        $cardLain = ProjectCard::create([
+            'title' => 'Sistem Pertahanan Keamanan Jaringan',
+            'list_id' => $listLain->id,
+            'kelompok_id' => $kelompokLain->id,
+            'periode_id' => $this->periode->id,
+            'position' => 0,
+            'status' => 'Proses',
+        ]);
+        $cardLain->mataKuliahs()->attach($matkulLain->id);
+
+        // 1. Dosen Pengampu melihat Kelompok 1, TIDAK melihat Kelompok 2 pada daftar Kelompok PBL
+        $resKelompok = $this->actingAs($this->dosenPengampu)->get(route('dosen.kelompok.index'));
+        $resKelompok->assertOk();
+        $resKelompok->assertSee($this->kelompok->nama_kelompok);
+        $resKelompok->assertDontSee($kelompokLain->nama_kelompok);
+
+        // 2. Dosen Pengampu melihat Kelompok 1, TIDAK melihat Kelompok 2 pada daftar Evaluasi Proyek
+        $resEvaluasi = $this->actingAs($this->dosenPengampu)->get(route('dosen.evaluasi.index'));
+        $resEvaluasi->assertOk();
+        $resEvaluasi->assertSee($this->kelompok->nama_kelompok);
+        $resEvaluasi->assertDontSee($kelompokLain->nama_kelompok);
+
+        // 3. Dosen Pengampu mencoba membuka show kelompok lain yang tidak diampu -> dicegah dengan 403
+        $resShowKelompokLain = $this->actingAs($this->dosenPengampu)->get(
+            route('dosen.kelompok.show', ['kelompok' => $kelompokLain])
+        );
+        $resShowKelompokLain->assertForbidden();
+
+        // 4. Dosen Pengampu mencoba membuka show evaluasi kelompok lain yang tidak diampu -> dialihkan
+        $resShowEvalLain = $this->actingAs($this->dosenPengampu)->get(
+            route('dosen.evaluasi.showKelompok', ['kelompok' => $kelompokLain])
+        );
+        $resShowEvalLain->assertRedirect(route('dosen.evaluasi.index'));
+
+        // 5. Dosen Lain (yang mengampu Kelompok 2) melihat Kelompok 2 dan TIDAK melihat Kelompok 1
+        $resKelompokDosenLain = $this->actingAs($this->dosenLain)->get(route('dosen.kelompok.index'));
+        $resKelompokDosenLain->assertOk();
+        $resKelompokDosenLain->assertSee($kelompokLain->nama_kelompok);
+        $resKelompokDosenLain->assertDontSee($this->kelompok->nama_kelompok);
+    }
+
+    /**
+     * Proyek PBL sesuai mata kuliah yang diampu hanya tampil mata kuliah yang diletakkan oleh mahasiswanya (bukan seluruh semester).
+     */
+    public function test_proyek_pbl_hanya_tampil_sesuai_mata_kuliah_yang_diletakkan_mahasiswa(): void
+    {
+        $newCard = ProjectCard::create([
+            'title' => 'Proyek Mahasiswa Terhubung MK Pengampu',
+            'list_id' => $this->list->id,
+            'kelompok_id' => $this->kelompok->id,
+            'periode_id' => $this->periode->id,
+            'position' => 1,
+            'status' => 'Proses',
+        ]);
+
+        // Sebelum mahasiswa meletakkan mata kuliah pengampu, dosen pengampu belum dapat melihat / menilai
+        $this->assertFalse($newCard->canBeViewedBy($this->dosenPengampu));
+        $this->assertFalse($newCard->canBeAssessedBy($this->dosenPengampu));
+
+        // Mahasiswa meletakkan mata kuliah ke proyek
+        $newCard->mataKuliahs()->attach($this->mataKuliah->id);
+
+        // Setelah diletakkan, dosen pengampu dapat melihat dan menilai
+        $this->assertTrue($newCard->canBeViewedBy($this->dosenPengampu));
+        $this->assertTrue($newCard->canBeAssessedBy($this->dosenPengampu));
+
+        $res = $this->actingAs($this->dosenPengampu)->get(
+            route('dosen.evaluasi.showKelompok', ['kelompok' => $this->kelompok])
+        );
+        $res->assertOk();
+        $res->assertSee('Proyek Mahasiswa Terhubung MK Pengampu');
     }
 }

@@ -54,6 +54,9 @@ class EvaluasiController extends Controller
         }
         $keyword = trim((string) $request->get('q', ''));
 
+        $user = Auth::user();
+        $isDosenOnly = $user && $user->isDosen() && ! $user->isAdmin();
+
         $query = Kelompok::query()
             ->with(['periode:id,periode'])
             ->when($periodeId, fn ($q) => $q->where('periode_id', $periodeId))
@@ -70,6 +73,10 @@ class EvaluasiController extends Controller
                     $q->where('kelompok_mahasiswa.periode_id', $periodeId);
                 }
             }]);
+
+        if ($isDosenOnly) {
+            $query->accessibleByDosen($user);
+        }
 
         if ($keyword !== '') {
             $kw = "%{$keyword}%";
@@ -200,6 +207,9 @@ class EvaluasiController extends Controller
     /** ===== NILAI FINAL PER MAHASISWA ===== */
     public function nilaiFinal(Request $request)
     {
+        $user = Auth::user();
+        $isDosenOnly = $user && $user->isDosen() && ! $user->isAdmin();
+
         $activePeriode = Periode::getLatestActive();
         $rawPeriode = $request->get('periode_id');
         if ($request->has('periode_id')) {
@@ -209,9 +219,19 @@ class EvaluasiController extends Controller
         }
         $kelompokId = $request->get('kelompok_id');
 
+        if ($isDosenOnly && $kelompokId) {
+            $targetKelompok = Kelompok::find($kelompokId);
+            if ($targetKelompok && ! $targetKelompok->isAccessibleByDosen($user)) {
+                abort(403, 'Anda tidak berwenang melihat nilai akhir kelompok ini.');
+            }
+        }
+
+        $accessibleKelompokIds = $isDosenOnly ? Kelompok::accessibleByDosen($user)->pluck('id')->toArray() : null;
+
         // Get all project lists untuk periode dan kelompok yang dipilih
         $projectLists = ProjectList::when($periodeId, fn ($q) => $q->where('periode_id', $periodeId))
             ->when($kelompokId, fn ($q) => $q->where('kelompok_id', $kelompokId))
+            ->when($isDosenOnly && ! $kelompokId, fn ($q) => $q->whereIn('kelompok_id', $accessibleKelompokIds))
             ->with(['cards'])
             ->orderBy('position')
             ->get();
@@ -226,6 +246,7 @@ class EvaluasiController extends Controller
         ])
             ->when($periodeId, fn ($q) => $q->where('periode_id', $periodeId))
             ->when($kelompokId, fn ($q) => $q->where('kelompok_id', $kelompokId))
+            ->when($isDosenOnly && ! $kelompokId, fn ($q) => $q->whereIn('kelompok_id', $accessibleKelompokIds))
             ->get();
 
         $evaluationsMitra = EvaluasiMitra::with([
@@ -237,6 +258,7 @@ class EvaluasiController extends Controller
         ])
             ->when($periodeId, fn ($q) => $q->where('periode_id', $periodeId))
             ->when($kelompokId, fn ($q) => $q->where('kelompok_id', $kelompokId))
+            ->when($isDosenOnly && ! $kelompokId, fn ($q) => $q->whereIn('kelompok_id', $accessibleKelompokIds))
             ->get();
 
         // Get data absensi dan presensi (AP)
@@ -248,6 +270,7 @@ class EvaluasiController extends Controller
         ])
             ->when($periodeId, fn ($q) => $q->where('periode_id', $periodeId))
             ->when($kelompokId, fn ($q) => $q->where('kelompok_id', $kelompokId))
+            ->when($isDosenOnly && ! $kelompokId, fn ($q) => $q->whereIn('kelompok_id', $accessibleKelompokIds))
             ->get();
 
         // Group by mahasiswa dan hitung nilai final berdasarkan list
@@ -413,8 +436,11 @@ class EvaluasiController extends Controller
         });
 
         $periodes = Periode::orderByDesc('id')->get(['id', 'periode', 'status_periode']);
-        $kelompoks = Kelompok::when($periodeId, fn ($q) => $q->where('periode_id', $periodeId))
-            ->orderBy('nama_kelompok')->get(['id', 'nama_kelompok']);
+        $kelompoksQuery = Kelompok::when($periodeId, fn ($q) => $q->where('periode_id', $periodeId));
+        if ($isDosenOnly) {
+            $kelompoksQuery->accessibleByDosen($user);
+        }
+        $kelompoks = $kelompoksQuery->orderBy('nama_kelompok')->get(['id', 'nama_kelompok']);
 
         return view('dosen.evaluasi.nilai-final', compact('mahasiswaNilai', 'periodes', 'kelompoks', 'periodeId', 'kelompokId', 'activePeriode'));
     }
@@ -447,8 +473,43 @@ class EvaluasiController extends Controller
     /** ===== DETAIL KELOMPOK ===== */
     public function showKelompok(Kelompok $kelompok)
     {
+        $user = Auth::user();
+        $isDosenOnly = $user && $user->isDosen() && ! $user->isAdmin();
+
+        if ($isDosenOnly && ! $kelompok->isAccessibleByDosen($user)) {
+            Alert::error('Akses Ditolak', 'Anda tidak memiliki akses evaluasi pada kelompok ini.');
+
+            return redirect()->route('dosen.evaluasi.index');
+        }
+
         $activePeriode = Periode::where('status_periode', 'Aktif')->orderByDesc('id')->first();
         abort_unless($activePeriode, 404, 'Periode aktif tidak ditemukan');
+
+        $targetPeriodeId = $kelompok->periode_id ?: $activePeriode->id;
+
+        // Auto-heal: Jika ada kartu proyek pada kelompok ini yang belum memiliki kolom (list_id IS NULL), otomatis tautkan ke kolom
+        $unassignedCards = ProjectCard::where('kelompok_id', $kelompok->id)
+            ->whereNull('list_id')
+            ->get();
+
+        if ($unassignedCards->isNotEmpty()) {
+            $defaultList = ProjectList::where('kelompok_id', $kelompok->id)->orderBy('position')->first();
+            if (! $defaultList) {
+                $defaultList = ProjectList::create([
+                    'uuid' => (string) Str::uuid(),
+                    'kelompok_id' => $kelompok->id,
+                    'periode_id' => $targetPeriodeId,
+                    'name' => 'Perencanaan',
+                    'position' => 0,
+                ]);
+            }
+            foreach ($unassignedCards as $idx => $uc) {
+                $uc->update([
+                    'list_id' => $defaultList->id,
+                    'position' => $idx,
+                ]);
+            }
+        }
 
         // Data mitra
         $mitra = KunjunganMitra::where('kelompok_id', $kelompok->id)
@@ -552,9 +613,13 @@ class EvaluasiController extends Controller
         $isDosenOnly = $user && $user->isDosen() && ! $user->isAdmin();
 
         // Project lists/cards - Hanya tampilkan kartu proyek mata kuliah yang diampu jika pengguna adalah dosen
-        $proyekLists = ProjectList::with(['cards' => function ($q) use ($kelompok, $activePeriode, $isDosenOnly, $user) {
+        $proyekLists = ProjectList::with(['cards' => function ($q) use ($kelompok, $targetPeriodeId, $activePeriode, $isDosenOnly, $user) {
             $q->where('kelompok_id', $kelompok->id)
-                ->where('periode_id', $activePeriode->id);
+                ->where(function ($w) use ($targetPeriodeId, $activePeriode) {
+                    $w->where('periode_id', $targetPeriodeId)
+                        ->orWhere('periode_id', $activePeriode->id)
+                        ->orWhereNull('periode_id');
+                });
 
             if ($isDosenOnly) {
                 $q->accessibleByDosen($user);
@@ -572,7 +637,11 @@ class EvaluasiController extends Controller
             ])
                 ->orderBy('position');
         }])->where('kelompok_id', $kelompok->id)
-            ->where('periode_id', $activePeriode->id)
+            ->where(function ($w) use ($targetPeriodeId, $activePeriode) {
+                $w->where('periode_id', $targetPeriodeId)
+                    ->orWhere('periode_id', $activePeriode->id)
+                    ->orWhereNull('periode_id');
+            })
             ->orderBy('position')
             ->get();
 
@@ -1103,9 +1172,19 @@ class EvaluasiController extends Controller
         $user = Auth::user();
         $isDosenOnly = $user && $user->isDosen() && ! $user->isAdmin();
 
-        $proyekLists = ProjectList::with(['cards' => function ($q) use ($kelompok, $activePeriode, $isDosenOnly, $user) {
+        if ($isDosenOnly && ! $kelompok->isAccessibleByDosen($user)) {
+            abort(403, 'Anda tidak berwenang mengekspor proyek kelompok ini.');
+        }
+
+        $targetPeriodeId = $kelompok->periode_id ?: $activePeriode->id;
+
+        $proyekLists = ProjectList::with(['cards' => function ($q) use ($kelompok, $targetPeriodeId, $activePeriode, $isDosenOnly, $user) {
             $q->where('kelompok_id', $kelompok->id)
-                ->where('periode_id', $activePeriode->id);
+                ->where(function ($w) use ($targetPeriodeId, $activePeriode) {
+                    $w->where('periode_id', $targetPeriodeId)
+                        ->orWhere('periode_id', $activePeriode->id)
+                        ->orWhereNull('periode_id');
+                });
 
             if ($isDosenOnly) {
                 $q->accessibleByDosen($user);
@@ -1114,7 +1193,11 @@ class EvaluasiController extends Controller
             $q->orderBy('tanggal_mulai')
                 ->orderBy('due_date');
         }])->where('kelompok_id', $kelompok->id)
-            ->where('periode_id', $activePeriode->id)
+            ->where(function ($w) use ($targetPeriodeId, $activePeriode) {
+                $w->where('periode_id', $targetPeriodeId)
+                    ->orWhere('periode_id', $activePeriode->id)
+                    ->orWhereNull('periode_id');
+            })
             ->orderBy('position')
             ->get();
 
@@ -1352,6 +1435,7 @@ class EvaluasiController extends Controller
                         'kelompok_id' => $kelompokId,
                         'mahasiswa_id' => $mahasiswaId,
                         'project_card_id' => $card->id,
+                        'evaluator_id' => Auth::id(),
                     ];
                     if ($mataKuliahId) {
                         $attributes['mata_kuliah_id'] = $mataKuliahId;
@@ -1735,9 +1819,7 @@ class EvaluasiController extends Controller
                 ];
             });
 
-        $taughtPivot = $user ? $user->mataKuliahs->pluck('id')->toArray() : [];
-        $taughtDirect = $user ? \App\Models\MataKuliah::where('dosen_id', $user->id)->pluck('id')->toArray() : [];
-        $myTaughtMatkulIds = array_values(array_unique(array_merge($taughtPivot, $taughtDirect)));
+        $myTaughtMatkulIds = $user ? $user->getTaughtMataKuliahIds() : [];
 
         return response()->json([
             'success' => true,
@@ -2139,7 +2221,7 @@ class EvaluasiController extends Controller
 
             // Ambil seluruh proyek pada kelompok ini di periode aktif
             $projectCards = ProjectCard::where('kelompok_id', $aktivitasList->kelompok_id)
-                ->where('periode_id', $aktivitasList->periode_id)
+                ->where(fn ($w) => $w->where('periode_id', $aktivitasList->periode_id)->orWhereNull('periode_id'))
                 ->with([
                     'mataKuliahs.dosenPengampu',
                     'dosenPenilai.dosen',
@@ -2219,12 +2301,21 @@ class EvaluasiController extends Controller
             $isAuthorized = true;
             if ($user && ! $user->isAdmin()) {
                 if ($authorizedDosenMap->isNotEmpty()) {
-                    $isAuthorized = $authorizedDosenMap->has($user->id);
+                    $identityIds = $user->getDosenIdentityIds();
+                    $isAuthorized = $authorizedDosenMap->keys()->intersect($identityIds)->isNotEmpty();
                 }
             }
 
             // Mata kuliah yang diampu user saat ini pada proyek ini
-            $currentUserCourse = $user ? $authorizedDosenMap->get($user->id) : null;
+            $currentUserCourse = null;
+            if ($user) {
+                foreach ($user->getDosenIdentityIds() as $id) {
+                    if ($authorizedDosenMap->has($id)) {
+                        $currentUserCourse = $authorizedDosenMap->get($id);
+                        break;
+                    }
+                }
+            }
 
             // Ambil seluruh rekam evaluasi nilai AP untuk aktivitas ini
             $allNilaiAP = EvaluasiNilaiAP::where('aktivitas_list_id', $aktivitasList->id)
@@ -2383,15 +2474,19 @@ class EvaluasiController extends Controller
             // Cek otorisasi jika dosen
             if ($user && ! $user->isAdmin()) {
                 $hasAccess = ProjectCard::where('kelompok_id', $aktivitasList->kelompok_id)
-                    ->where('periode_id', $aktivitasList->periode_id)
+                    ->where(function ($w) use ($aktivitasList) {
+                        $w->where('periode_id', $aktivitasList->periode_id)
+                            ->orWhereNull('periode_id');
+                    })
                     ->accessibleByDosen($user)
                     ->exists();
 
                 if (! $hasAccess) {
+                    $identityIds = $user->getDosenIdentityIds();
                     $hasAnyAccess = ProjectCard::where('kelompok_id', $aktivitasList->kelompok_id)
-                        ->where(function ($q) use ($user) {
-                            $q->where('dosen_penentu_id', $user->id)
-                                ->orWhereHas('dosenPenilai', fn ($dq) => $dq->where('dosen_id', $user->id));
+                        ->where(function ($q) use ($identityIds) {
+                            $q->whereIn('dosen_penentu_id', $identityIds)
+                                ->orWhereHas('dosenPenilai', fn ($dq) => $dq->whereIn('dosen_id', $identityIds));
                         })->exists();
 
                     if (! $hasAnyAccess && ProjectCard::where('kelompok_id', $aktivitasList->kelompok_id)->exists()) {
@@ -2406,7 +2501,8 @@ class EvaluasiController extends Controller
             // Identifikasi mata kuliah dosen yang bersangkutan jika belum dispesifikasi
             $defaultMataKuliahId = null;
             if ($user && ! $user->isAdmin()) {
-                $userMatkul = \App\Models\MataKuliah::whereHas('dosenPengampu', fn ($q) => $q->where('users.id', $user->id))
+                $taughtIds = $user->getTaughtMataKuliahIds();
+                $userMatkul = \App\Models\MataKuliah::whereIn('id', $taughtIds)
                     ->whereHas('projectCards', fn ($pq) => $pq->where('kelompok_id', $aktivitasList->kelompok_id))
                     ->first();
                 $defaultMataKuliahId = $userMatkul?->id;

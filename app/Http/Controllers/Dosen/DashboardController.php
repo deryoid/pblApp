@@ -21,30 +21,45 @@ class DashboardController extends Controller
             $selectedPeriode = $activePeriode ?? $periodes->first();
         }
 
+        $user = \Illuminate\Support\Facades\Auth::user();
+        $isDosenOnly = $user && $user->isDosen() && ! $user->isAdmin();
+
+        $kelompokQuery = \App\Models\Kelompok::query();
+        if ($isDosenOnly) {
+            $kelompokQuery->accessibleByDosen($user);
+        }
+
         // Data Akademik Global
         $totalPeriodes = $periodes->count();
         $totalKelas = \App\Models\Kelas::count();
-        $totalKelompoks = \App\Models\Kelompok::count();
+        $totalKelompoks = (clone $kelompokQuery)->count();
 
         // Data Khusus Periode Terpilih
-        $activeKelompoks = $selectedPeriode ? \App\Models\Kelompok::where('periode_id', $selectedPeriode->id)->count() : 0;
+        $activeKelompoks = $selectedPeriode ? (clone $kelompokQuery)->where('periode_id', $selectedPeriode->id)->count() : 0;
 
         // Data Mahasiswa
-        $totalMahasiswas = \App\Models\Mahasiswa::count();
-        $activeMahasiswas = $selectedPeriode ? \App\Models\Mahasiswa::whereHas('kelompoks', function ($query) use ($selectedPeriode) {
+        $mahasiswaQuery = \App\Models\Mahasiswa::query();
+        if ($isDosenOnly) {
+            $mahasiswaQuery->whereHas('kelompoks', function ($q) use ($user) {
+                $q->accessibleByDosen($user);
+            });
+        }
+        $totalMahasiswas = (clone $mahasiswaQuery)->count();
+        $activeMahasiswas = $selectedPeriode ? (clone $mahasiswaQuery)->whereHas('kelompoks', function ($query) use ($selectedPeriode) {
             $query->where('kelompok.periode_id', $selectedPeriode->id);
         })->count() : 0;
 
         // Data Evaluasi - khusus untuk evaluator
-        $totalSesiEvaluasi = \App\Models\EvaluasiMaster::count();
-        $activeSesiEvaluasi = $selectedPeriode ? \App\Models\EvaluasiMaster::where('periode_id', $selectedPeriode->id)->count() : 0;
+        $evaluasiMasterQuery = \App\Models\EvaluasiMaster::query();
+        if ($isDosenOnly) {
+            $evaluasiMasterQuery->whereHas('kelompok', fn ($kq) => $kq->accessibleByDosen($user));
+        }
+        $totalSesiEvaluasi = (clone $evaluasiMasterQuery)->count();
+        $activeSesiEvaluasi = $selectedPeriode ? (clone $evaluasiMasterQuery)->where('periode_id', $selectedPeriode->id)->count() : 0;
 
         // Progress evaluasi evaluator
         $pendingEvaluations = 0;
         $completedEvaluations = 0;
-
-        $user = \Illuminate\Support\Facades\Auth::user();
-        $isDosenOnly = $user && $user->isDosen() && ! $user->isAdmin();
 
         // Data Proyek yang perlu dievaluasi pada periode terpilih (dosen hanya menghitung proyek yang diampunya)
         $proyekCardQuery = \App\Models\ProjectCard::query();
@@ -64,7 +79,11 @@ class DashboardController extends Controller
             ->count() : 0;
 
         // Jadwal evaluasi
-        $todayEvaluations = $selectedPeriode ? \App\Models\EvaluasiMaster::where('periode_id', $selectedPeriode->id)
+        $todayEvaluationsQuery = \App\Models\EvaluasiMaster::query();
+        if ($isDosenOnly) {
+            $todayEvaluationsQuery->whereHas('kelompok', fn ($kq) => $kq->accessibleByDosen($user));
+        }
+        $todayEvaluations = $selectedPeriode ? (clone $todayEvaluationsQuery)->where('periode_id', $selectedPeriode->id)
             ->with(['kelompok', 'creator'])
             ->orderBy('created_at', 'desc')
             ->limit(5)
@@ -74,12 +93,18 @@ class DashboardController extends Controller
         $evaluasiProgress = [];
         $kelompokPeriode = collect();
         if ($selectedPeriode) {
-            $kelompoks = \App\Models\Kelompok::with(['mahasiswas.user', 'projectCards' => function ($q) use ($isDosenOnly, $user) {
+            $kelompokListQuery = \App\Models\Kelompok::with(['mahasiswas.user', 'projectCards' => function ($q) use ($isDosenOnly, $user) {
                 if ($isDosenOnly) {
                     $q->accessibleByDosen($user);
                 }
             }])
-                ->where('periode_id', $selectedPeriode->id)
+                ->where('periode_id', $selectedPeriode->id);
+
+            if ($isDosenOnly) {
+                $kelompokListQuery->accessibleByDosen($user);
+            }
+
+            $kelompoks = $kelompokListQuery
                 ->orderBy('nama_kelompok')
                 ->get();
 

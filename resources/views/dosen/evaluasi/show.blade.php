@@ -2207,13 +2207,6 @@
   window.hapusDosenPenilai = function(cardId, penilaiId) {
     return window.hapusDosenProyek(cardId, null, 'penilai', penilaiId);
   };
-        } catch (err) {
-          console.error(err);
-          Swal.fire('Gagal', err.message || 'Gagal menghapus dosen penilai', 'error');
-        }
-      }
-    });
-  };
 
   function formatNumber(num) {
     return parseInt(num).toLocaleString('id-ID');

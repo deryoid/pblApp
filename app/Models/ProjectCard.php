@@ -243,24 +243,24 @@ class ProjectCard extends Model
             return $query;
         }
 
-        return $query->where(function ($q) use ($user) {
-            $q->whereHas('mataKuliahs', function ($mq) use ($user) {
-                $mq->where(function ($subMq) use ($user) {
-                    $subMq->whereHas('dosenPengampu', function ($dpq) use ($user) {
-                        $dpq->where('users.id', $user->id);
-                    })->orWhere('mata_kuliah.dosen_id', $user->id);
-                });
+        $identityIds = $user->getDosenIdentityIds();
+        $taughtMatkulIds = $user->getTaughtMataKuliahIds();
+
+        return $query->where(function ($q) use ($identityIds, $taughtMatkulIds) {
+            $q->whereHas('mataKuliahs', function ($mq) use ($taughtMatkulIds) {
+                $mq->whereIn('mata_kuliah.id', $taughtMatkulIds);
             })
-                ->orWhereHas('dosenPenilai', function ($dq) use ($user) {
-                    $dq->where('dosen_id', $user->id);
-                });
+                ->orWhereHas('dosenPenilai', function ($dq) use ($identityIds) {
+                    $dq->whereIn('dosen_id', $identityIds);
+                })
+                ->orWhereIn('dosen_penentu_id', $identityIds);
         });
     }
 
     /**
      * Memeriksa apakah seorang pengguna dapat melihat proyek ini.
      * Admin dan Mahasiswa anggota kelompok dapat melihat proyek.
-     * Dosen hanya dapat melihat proyek jika mengampu mata kuliah terkait atau ditugaskan sebagai penilai/pembimbing.
+     * Dosen hanya dapat melihat proyek jika mengampu mata kuliah terkait atau ditugaskan sebagai penilai/pembimbing/evaluator kelompok.
      */
     public function canBeViewedBy(?User $user): bool
     {
@@ -291,13 +291,16 @@ class ProjectCard extends Model
             return true;
         }
 
+        $identityIds = $user->getDosenIdentityIds();
+        $taughtMatkulIds = $user->getTaughtMataKuliahIds();
+
         // 2. Dosen Penentu / Pembimbing pada proyek ini
-        if ($this->dosen_penentu_id == $user->id) {
+        if (in_array((int) $this->dosen_penentu_id, $identityIds, true)) {
             return true;
         }
 
         // 3. Ditugaskan khusus oleh Admin sebagai Dosen Penilai / Penguji pada proyek ini
-        if ($this->dosenPenilai()->where('dosen_id', $user->id)->exists()) {
+        if ($this->dosenPenilai()->whereIn('dosen_id', $identityIds)->exists()) {
             return true;
         }
 
@@ -306,10 +309,6 @@ class ProjectCard extends Model
         }
 
         // 4. Dosen Pengampu dari salah satu mata kuliah yang terhubung dengan proyek ini
-        return $this->mataKuliahs()->where(function ($mq) use ($user) {
-            $mq->whereHas('dosenPengampu', function ($q) use ($user) {
-                $q->where('users.id', $user->id);
-            })->orWhere('mata_kuliah.dosen_id', $user->id);
-        })->exists();
+        return $this->mataKuliahs()->whereIn('mata_kuliah.id', $taughtMatkulIds)->exists();
     }
 }

@@ -180,6 +180,56 @@ class User extends Authenticatable
         return $this->hasMany(\App\Models\ProjectDosenPenilai::class, 'dosen_id');
     }
 
+    /**
+     * Dapatkan seluruh ID identitas dosen (baik users.id maupun dosen.id jika ada).
+     *
+     * @return array<int>
+     */
+    public function getDosenIdentityIds(): array
+    {
+        $dosen = $this->dosen ?? \App\Models\Dosen::where('user_id', $this->id)
+            ->orWhere('nip', $this->username)
+            ->first();
+
+        return array_values(array_unique(array_filter([
+            (int) $this->id,
+            $dosen ? (int) $dosen->id : null,
+            $dosen && $dosen->user_id ? (int) $dosen->user_id : null,
+        ])));
+    }
+
+    /**
+     * Dapatkan daftar ID seluruh mata kuliah yang diampu oleh dosen ini.
+     *
+     * @return array<int>
+     */
+    public function getTaughtMataKuliahIds(): array
+    {
+        $identityIds = $this->getDosenIdentityIds();
+
+        return \App\Models\MataKuliah::where(function ($q) use ($identityIds) {
+            $q->whereIn('dosen_id', $identityIds)
+                ->orWhereHas('dosenPengampu', fn ($dp) => $dp->whereIn('users.id', $identityIds));
+        })->pluck('id')->toArray();
+    }
+
+    /**
+     * Dapatkan daftar semester yang diajar oleh dosen ini berdasarkan mata kuliah yang diampu.
+     *
+     * @return array<int>
+     */
+    public function getTaughtSemesters(): array
+    {
+        $matkulIds = $this->getTaughtMataKuliahIds();
+
+        return \App\Models\MataKuliah::whereIn('id', $matkulIds)
+            ->pluck('semester')
+            ->unique()
+            ->filter()
+            ->values()
+            ->toArray();
+    }
+
     public function penilaianProyek(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(\App\Models\PenilaianProyekDosen::class, 'dosen_id');
