@@ -600,6 +600,27 @@
       .border-top-light { border-top: 1px solid #f1f2f4; }
       .btn-drive { padding: .18rem .5rem; }
       .labels-wrap { display: flex; flex-wrap: wrap; }
+
+      /* Mobile responsive board */
+      @media (max-width: 575.98px) {
+        .board-column {
+          width: 280px;
+          min-width: 280px;
+        }
+        .board {
+          gap: 1rem;
+        }
+        .board-col-head .btn-group .btn {
+          font-size: 0.68rem;
+          padding: 0.2rem 0.4rem;
+        }
+        .card-top-row {
+          flex-wrap: wrap;
+        }
+        .card-mitra-box {
+          flex-wrap: wrap;
+        }
+      }
     </style>
 @endpush
 <div class="container-fluid">
@@ -1013,9 +1034,10 @@
 
 {{-- Modal tambah kartu --}}
 <div class="modal fade" id="modalAddCard" role="dialog" aria-hidden="true">
-  <div class="modal-dialog" role="document">
+  <div class="modal-dialog modal-dialog-scrollable" role="document">
     <div class="modal-content">
-      <div class="modal-header"><h5 class="modal-title">Tambah Proyek/Kegiatan</h5>
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-plus-circle text-primary mr-2"></i>Tambah Proyek/Kegiatan</h5>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
       </div>
       <form method="POST" action="{{ route('proyek.cards.store') }}" enctype="multipart/form-data">
@@ -1133,8 +1155,8 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-dismiss="modal" title="Batal" aria-label="Batal"><i class="fas fa-times"></i></button>
-          <button type="submit" class="btn btn-primary font-weight-bold" title="Simpan Proyek" aria-label="Simpan Proyek"><i class="fas fa-save"></i></button>
+          <button type="button" class="btn btn-secondary" data-dismiss="modal" title="Batal" aria-label="Batal"><i class="fas fa-times mr-1"></i> Batal</button>
+          <button type="submit" class="btn btn-primary font-weight-bold" title="Simpan Proyek" aria-label="Simpan Proyek"><i class="fas fa-save mr-1"></i> Simpan</button>
         </div>
       </form>
     </div>
@@ -1143,21 +1165,40 @@
 
 {{-- Modal edit kartu --}}
 <div class="modal fade" id="modalEditCard" role="dialog" aria-hidden="true">
-  <div class="modal-dialog" role="document">
+  <div class="modal-dialog modal-dialog-scrollable" role="document">
     <div class="modal-content">
-      <div class="modal-header"><h5 class="modal-title">Ubah Proyek/Kegiatan</h5>
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-edit text-primary mr-2"></i>Ubah Proyek/Kegiatan</h5>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
       </div>
       <form id="editCardForm" method="POST" action="#" enctype="multipart/form-data">
         @csrf @method('PUT')
         <div class="modal-body">
-          <div class="form-group"><label>Judul Proyek <span class="text-danger">*</span></label><input name="title" id="editTitle" type="text" class="form-control" required></div>
-          <div class="form-group"><label>Deskripsi Proyek</label><textarea name="description" id="editDescription" class="form-control" rows="3"></textarea></div>
-          <div class="form-group"><label>Label</label><input name="labels" id="editLabels" type="text" class="form-control"></div>
-          <div class="form-group"><label>Kontak Mitra</label><input name="kontak_mitra" id="editKontak" type="text" class="form-control"></div>
+          <div class="form-group">
+            <label>Judul Proyek <span class="text-danger">*</span></label>
+            <input name="title" id="editTitle" type="text" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label>Deskripsi Proyek</label>
+            <textarea name="description" id="editDescription" class="form-control" rows="3"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Label</label>
+            <input name="labels" id="editLabels" type="text" class="form-control">
+          </div>
+          <div class="form-group">
+            <label>Kontak Mitra</label>
+            <input name="kontak_mitra" id="editKontak" type="text" class="form-control">
+          </div>
           <div class="form-row">
-            <div class="form-group col-md-6"><label>Tanggal Mulai</label><input name="tanggal_mulai" id="editStart" type="date" class="form-control"></div>
-            <div class="form-group col-md-6"><label>Tanggal Selesai</label><input name="tanggal_selesai" id="editEnd" type="date" class="form-control"></div>
+            <div class="form-group col-md-6">
+              <label>Tanggal Mulai</label>
+              <input name="tanggal_mulai" id="editStart" type="date" class="form-control">
+            </div>
+            <div class="form-group col-md-6">
+              <label>Tanggal Selesai</label>
+              <input name="tanggal_selesai" id="editEnd" type="date" class="form-control">
+            </div>
           </div>
           <div class="form-row">
             <div class="form-group col-md-6">
@@ -1186,7 +1227,7 @@
               <span><i class="fas fa-book-reader text-primary mr-1"></i> Keterkaitan Mata Kuliah & Dosen Pengampu</span>
               <span id="editMatkulBadgeNote" class="badge badge-primary">Semester {{ $kelompokSemester ?? 1 }}</span>
             </label>
-            <select name="mata_kuliah_ids[]" id="editMataKuliah" class="form-control select2-matkul" multiple="multiple" style="width: 100%;">
+            <select name="mata_kuliah_ids[]" id="editMataKuliah" class="form-control" multiple="multiple" style="width: 100%;">
               @foreach($matkulBySemester as $sem => $mks)
                 <optgroup label="Semester {{ $sem }}">
                   @foreach($mks as $mk)
@@ -1216,25 +1257,40 @@
               </a>
             </div>
           </div>
-          <div class="form-group"><label>Nama Mitra</label><input name="nama_mitra" id="editMitra" type="text" class="form-control"></div>
-          <div class="form-row">
-            <div class="form-group col-md-6"><label>Biaya Barang</label><input name="biaya_barang" id="editBiayaBarang" type="number" step="0.01" min="0" class="form-control"></div>
-            <div class="form-group col-md-6"><label>Biaya Jasa</label><input name="biaya_jasa" id="editBiayaJasa" type="number" step="0.01" min="0" class="form-control"></div>
+          <div class="form-group">
+            <label>Nama Mitra</label>
+            <input name="nama_mitra" id="editMitra" type="text" class="form-control">
           </div>
-          <div class="form-group"><label>Link Drive</label><input name="link_drive_proyek" id="editDrive" type="url" class="form-control" placeholder="https://..."></div>
-          <div class="form-group"><label>Progress</label><input name="progress" id="editProgress" type="number" min="0" max="100" class="form-control"></div>
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label>Biaya Barang</label>
+              <input name="biaya_barang" id="editBiayaBarang" type="number" step="0.01" min="0" class="form-control">
+            </div>
+            <div class="form-group col-md-6">
+              <label>Biaya Jasa</label>
+              <input name="biaya_jasa" id="editBiayaJasa" type="number" step="0.01" min="0" class="form-control">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Link Drive</label>
+            <input name="link_drive_proyek" id="editDrive" type="url" class="form-control" placeholder="https://...">
+          </div>
+          <div class="form-group">
+            <label>Progress</label>
+            <input name="progress" id="editProgress" type="number" min="0" max="100" class="form-control">
+          </div>
           <div class="form-group">
             <label>Kendala</label>
             <textarea name="kendala" id="editKendala" class="form-control" rows="2"></textarea>
           </div>
-          <div class="form-group">
+          <div class="form-group mb-0">
             <label>Catatan</label>
             <textarea name="catatan" id="editCatatan" class="form-control" rows="2" readonly></textarea>
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-dismiss="modal" title="Batal" aria-label="Batal"><i class="fas fa-times"></i></button>
-          <button type="submit" class="btn btn-primary" title="Simpan" aria-label="Simpan"><i class="fas fa-save"></i></button>
+          <button type="button" class="btn btn-secondary" data-dismiss="modal" title="Batal" aria-label="Batal"><i class="fas fa-times mr-1"></i> Batal</button>
+          <button type="submit" class="btn btn-primary font-weight-bold" title="Simpan" aria-label="Simpan"><i class="fas fa-save mr-1"></i> Simpan</button>
         </div>
       </form>
     </div>
@@ -1243,19 +1299,23 @@
 
 {{-- Modal tambah kolom --}}
 <div class="modal fade" id="modalAddList" role="dialog" aria-hidden="true">
-  <div class="modal-dialog" role="document">
+  <div class="modal-dialog modal-dialog-scrollable" role="document">
     <div class="modal-content">
-      <div class="modal-header"><h5 class="modal-title">Tambah Kolom</h5>
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-columns text-success mr-2"></i>Tambah Kolom</h5>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
       </div>
       <form method="POST" action="{{ route('proyek.lists.store') }}">
         @csrf
         <div class="modal-body">
-          <div class="form-group"><label>Nama Kolom (Mis: Proyek 1)</label><input name="name" type="text" class="form-control" required></div>
+          <div class="form-group mb-0">
+            <label>Nama Kolom (Mis: Proyek 1)</label>
+            <input name="name" type="text" class="form-control" required>
+          </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-dismiss="modal" title="Batal" aria-label="Batal"><i class="fas fa-times"></i></button>
-          <button type="submit" class="btn btn-primary" title="Simpan" aria-label="Simpan"><i class="fas fa-save"></i></button>
+          <button type="button" class="btn btn-secondary" data-dismiss="modal" title="Batal" aria-label="Batal"><i class="fas fa-times mr-1"></i> Batal</button>
+          <button type="submit" class="btn btn-primary font-weight-bold" title="Simpan" aria-label="Simpan"><i class="fas fa-save mr-1"></i> Simpan</button>
         </div>
       </form>
     </div>
@@ -1264,19 +1324,23 @@
 
 {{-- Modal edit kolom --}}
 <div class="modal fade" id="modalEditList" role="dialog" aria-hidden="true">
-  <div class="modal-dialog" role="document">
+  <div class="modal-dialog modal-dialog-scrollable" role="document">
     <div class="modal-content">
-      <div class="modal-header"><h5 class="modal-title">Ubah Kolom</h5>
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fas fa-edit text-primary mr-2"></i>Ubah Kolom</h5>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
       </div>
       <form id="editListForm" method="POST" action="#">
         @csrf @method('PUT')
         <div class="modal-body">
-          <div class="form-group"><label>Nama Kolom</label><input name="name" id="editListName" type="text" class="form-control" required></div>
+          <div class="form-group mb-0">
+            <label>Nama Kolom</label>
+            <input name="name" id="editListName" type="text" class="form-control" required>
+          </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-dismiss="modal" title="Batal" aria-label="Batal"><i class="fas fa-times"></i></button>
-          <button type="submit" class="btn btn-primary" title="Simpan" aria-label="Simpan"><i class="fas fa-save"></i></button>
+          <button type="button" class="btn btn-secondary" data-dismiss="modal" title="Batal" aria-label="Batal"><i class="fas fa-times mr-1"></i> Batal</button>
+          <button type="submit" class="btn btn-primary font-weight-bold" title="Simpan" aria-label="Simpan"><i class="fas fa-save mr-1"></i> Simpan</button>
         </div>
       </form>
     </div>
@@ -1381,6 +1445,28 @@
 
   const kelompokSemester = {{ (int) ($kelompokSemester ?? 1) }};
 
+  /**
+   * Initialize or re-initialize Select2 on a <select> inside a modal.
+   * Destroys any previous instance first to prevent duplicate widgets.
+   */
+  function initSelect2(selectEl, modalEl) {
+    const $sel = $(selectEl);
+    const $modal = $(modalEl);
+    if (!window.jQuery || !jQuery().select2) { return; }
+
+    // Destroy existing instance to avoid duplicates
+    if ($sel.hasClass('select2-hidden-accessible')) {
+      $sel.select2('destroy');
+    }
+
+    $sel.select2({
+      dropdownParent: $modal,
+      placeholder: '-- Pilih Mata Kuliah Terkait --',
+      allowClear: true,
+      width: '100%'
+    });
+  }
+
   function updateMatkulFilter(selectSkemaEl, selectMatkulEl, helpEl, badgeEl) {
     const skema = $(selectSkemaEl).val() || 'Internal';
     const isInternal = (skema.toLowerCase() === 'internal');
@@ -1391,17 +1477,6 @@
     } else {
       $(badgeEl).removeClass('badge-primary badge-info').addClass('badge-success').text('Bebas (Semua Semester)');
       $(helpEl).html('<i class="fas fa-check-circle mr-1 text-success"></i> Proyek <strong>' + skema + '</strong> bebas memilih mata kuliah dari semua semester.');
-    }
-
-    if (window.jQuery && jQuery().select2) {
-      if (!$(selectMatkulEl).hasClass('select2-hidden-accessible')) {
-        $(selectMatkulEl).select2({
-          dropdownParent: $(selectMatkulEl).closest('.modal'),
-          placeholder: '-- Pilih Mata Kuliah Terkait --',
-          allowClear: true,
-          width: '100%'
-        });
-      }
     }
   }
 
@@ -1420,12 +1495,25 @@
     $('#addCardListId').val(listId);
   });
 
+  // Modal Add Card: init Select2 on shown
   $('#modalAddCard').on('shown.bs.modal', function () {
     if (!$('#addCardListId').val()) {
       const firstCol = $('.board-column').first().data('col-id');
-      if (firstCol) $('#addCardListId').val(firstCol);
+      if (firstCol) { $('#addCardListId').val(firstCol); }
     }
+    initSelect2('#addMataKuliah', '#modalAddCard');
     updateMatkulFilter('#addSkema', '#addMataKuliah', '#addMatkulHelp', '#addMatkulBadgeNote');
+  });
+
+  // Destroy Select2 when modal hides to prevent DOM leaks
+  $('#modalAddCard').on('hidden.bs.modal', function () {
+    const $sel = $('#addMataKuliah');
+    if ($sel.hasClass('select2-hidden-accessible')) { $sel.select2('destroy'); }
+  });
+
+  $('#modalEditCard').on('hidden.bs.modal', function () {
+    const $sel = $('#editMataKuliah');
+    if ($sel.hasClass('select2-hidden-accessible')) { $sel.select2('destroy'); }
   });
 
   // Hapus kartu
@@ -1455,7 +1543,10 @@
     }).then(r=>{ if(r.isConfirmed) form.submit(); });
   });
 
-  // Edit kartu: isi modal
+  // Variabel penyimpan data kartu yang sedang di-edit
+  let pendingEditMatkulIds = [];
+
+  // Edit kartu: isi modal fields lalu buka modal
   $(document).on('click','.btn-edit-card',function(e){
     e.preventDefault();
     const cardEl = $(this).closest('.board-card');
@@ -1479,12 +1570,11 @@
     $('#editKendala').val(card.kendala || '');
     $('#editCatatan').val(card.catatan || '');
 
-    // Update filter skema terlebih dahulu
-    updateMatkulFilter('#editSkema', '#editMataKuliah', '#editMatkulHelp', '#editMatkulBadgeNote');
+    // Simpan mata kuliah IDs untuk di-set setelah Select2 terinisialisasi
+    pendingEditMatkulIds = (card.mata_kuliah_ids || []).map(String);
 
-    // Set nilai mata kuliah yang sudah dipilih
-    const matkulIds = (card.mata_kuliah_ids || []).map(String);
-    $('#editMataKuliah').val(matkulIds).trigger('change');
+    // Set native select values (before Select2 init)
+    $('#editMataKuliah').val(pendingEditMatkulIds);
 
     const proposalUrl = card.proposal_url;
     if (proposalUrl) {
@@ -1499,8 +1589,15 @@
     showModal('modalEditCard');
   });
 
+  // Modal Edit Card: init Select2 and set values AFTER modal is fully visible
   $('#modalEditCard').on('shown.bs.modal', function () {
+    initSelect2('#editMataKuliah', '#modalEditCard');
     updateMatkulFilter('#editSkema', '#editMataKuliah', '#editMatkulHelp', '#editMatkulBadgeNote');
+
+    // Set the saved matkul values now that Select2 is initialized
+    if (pendingEditMatkulIds.length > 0) {
+      $('#editMataKuliah').val(pendingEditMatkulIds).trigger('change');
+    }
   });
 
   // Edit kolom

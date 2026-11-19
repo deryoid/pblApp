@@ -930,6 +930,14 @@
         .modal-dialog {
             margin: 1.75rem auto !important;
             transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+            max-width: 620px !important;
+        }
+
+        @media (max-width: 575.98px) {
+            .modal-dialog {
+                margin: 0.5rem !important;
+                max-width: calc(100vw - 1rem) !important;
+            }
         }
 
         .modal.fade .modal-dialog {
@@ -986,6 +994,42 @@
         .modal-body {
             padding: 1.5rem !important;
             background: #ffffff !important;
+            max-height: calc(100vh - 200px) !important;
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .modal-body::-webkit-scrollbar {
+            width: 5px;
+        }
+        .modal-body::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        .modal-body::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        @media (max-width: 575.98px) {
+            .modal-body {
+                padding: 1rem !important;
+                max-height: calc(100vh - 160px) !important;
+            }
+            .modal-header {
+                padding: 0.85rem 1rem !important;
+            }
+            .modal-footer {
+                padding: 0.75rem 1rem !important;
+            }
+            .modal-body .form-row {
+                flex-direction: column !important;
+            }
+            .modal-body .form-row > .col-md-6 {
+                max-width: 100% !important;
+                flex: 0 0 100% !important;
+                padding-left: 0 !important;
+                padding-right: 0 !important;
+            }
         }
 
         .modal-body .form-group label {
@@ -1021,6 +1065,76 @@
             align-items: center !important;
             justify-content: flex-end !important;
             gap: 0.5rem !important;
+        }
+
+        /* Select2 inside Modal z-index fix */
+        .select2-container--open {
+            z-index: 1070 !important;
+        }
+        .select2-dropdown {
+            z-index: 1070 !important;
+            border-radius: 10px !important;
+            border: 1px solid #cbd5e1 !important;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.12), 0 4px 10px -3px rgba(0,0,0,0.06) !important;
+            overflow: hidden !important;
+        }
+        .select2-container--default .select2-selection--multiple {
+            border-radius: 10px !important;
+            border: 1px solid #cbd5e1 !important;
+            padding: 0.35rem 0.5rem !important;
+            min-height: 42px !important;
+            background-color: #ffffff !important;
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out !important;
+        }
+        .select2-container--default.select2-container--focus .select2-selection--multiple,
+        .select2-container--default.select2-container--open .select2-selection--multiple {
+            border-color: #3b82f6 !important;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18) !important;
+        }
+        .select2-container--default .select2-selection--multiple .select2-selection__choice {
+            background: #eff6ff !important;
+            border: 1px solid #bfdbfe !important;
+            border-radius: 6px !important;
+            padding: 0.2rem 0.5rem !important;
+            font-size: 0.8rem !important;
+            color: #1e40af !important;
+            font-weight: 500 !important;
+            margin: 2px 4px 2px 0 !important;
+        }
+        .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+            color: #3b82f6 !important;
+            margin-right: 4px !important;
+            font-weight: 700 !important;
+        }
+        .select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
+            color: #dc2626 !important;
+        }
+        .select2-container--default .select2-results__option--highlighted[aria-selected] {
+            background: #2563eb !important;
+            border-radius: 6px !important;
+        }
+        .select2-results__option {
+            padding: 0.5rem 0.75rem !important;
+            font-size: 0.84rem !important;
+        }
+        .select2-search--dropdown .select2-search__field {
+            border-radius: 8px !important;
+            border: 1px solid #e2e8f0 !important;
+            padding: 0.5rem 0.75rem !important;
+            font-size: 0.84rem !important;
+        }
+        .select2-search--dropdown .select2-search__field:focus {
+            border-color: #3b82f6 !important;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15) !important;
+            outline: none !important;
+        }
+        .select2-results__group {
+            font-weight: 700 !important;
+            font-size: 0.75rem !important;
+            color: #64748b !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.03em !important;
+            padding: 0.6rem 0.75rem 0.3rem !important;
         }
 
         /* ----- Modern Cards ----- */
