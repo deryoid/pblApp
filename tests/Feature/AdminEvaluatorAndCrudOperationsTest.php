@@ -7,6 +7,7 @@ use App\Models\AktivitasList;
 use App\Models\Kelas;
 use App\Models\Kelompok;
 use App\Models\Mahasiswa;
+use App\Models\MataKuliah;
 use App\Models\Periode;
 use App\Models\ProjectCard;
 use App\Models\ProjectList;
@@ -240,6 +241,138 @@ class AdminEvaluatorAndCrudOperationsTest extends TestCase
             'title' => 'Upaya Update Ilegal',
         ]);
         $resDosenLain->assertStatus(403);
+    }
+
+    public function test_admin_can_add_project_card_with_mata_kuliah_in_evaluasi_kelompok(): void
+    {
+        $mk1 = MataKuliah::create([
+            'kode_matkul' => 'MK-ADM-01',
+            'nama_matkul' => 'Pemrograman Web Lanjut',
+            'sks' => 3,
+            'semester' => 3,
+            'is_active' => true,
+        ]);
+        $mk2 = MataKuliah::create([
+            'kode_matkul' => 'MK-ADM-02',
+            'nama_matkul' => 'Jaringan Komputer',
+            'sks' => 3,
+            'semester' => 3,
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($this->admin)->postJson(route('admin.evaluasi.project.store', ['kelompok' => $this->kelompok->uuid]), [
+            'title' => 'Proyek Terintegrasi MK Admin',
+            'description' => 'Deskripsi integrasi MK',
+            'skema_pbl' => 'Internal',
+            'status_proyek' => 'Proses',
+            'mata_kuliah_ids' => [$mk1->id, $mk2->id],
+        ]);
+
+        $response->assertOk();
+        $card = ProjectCard::where('title', 'Proyek Terintegrasi MK Admin')->firstOrFail();
+
+        $this->assertDatabaseHas('project_mata_kuliah', [
+            'project_card_id' => $card->id,
+            'mata_kuliah_id' => $mk1->id,
+        ]);
+        $this->assertDatabaseHas('project_mata_kuliah', [
+            'project_card_id' => $card->id,
+            'mata_kuliah_id' => $mk2->id,
+        ]);
+        $this->assertCount(2, $card->fresh()->mataKuliahs);
+    }
+
+    public function test_admin_can_update_project_card_mata_kuliah_in_evaluasi_kelompok(): void
+    {
+        $mk1 = MataKuliah::create([
+            'kode_matkul' => 'MK-ADM-03',
+            'nama_matkul' => 'Basis Data',
+            'sks' => 3,
+            'semester' => 3,
+            'is_active' => true,
+        ]);
+        $mk2 = MataKuliah::create([
+            'kode_matkul' => 'MK-ADM-04',
+            'nama_matkul' => 'Kecerdasan Buatan',
+            'sks' => 3,
+            'semester' => 3,
+            'is_active' => true,
+        ]);
+
+        // Attach initial
+        $this->projectCard->mataKuliahs()->attach([$mk1->id]);
+        $this->assertCount(1, $this->projectCard->fresh()->mataKuliahs);
+
+        // Update with mk2 instead
+        $response = $this->actingAs($this->admin)->postJson(route('admin.evaluasi.project.update', ['card' => $this->projectCard->uuid]), [
+            'title' => $this->projectCard->title,
+            'mata_kuliah_present' => '1',
+            'mata_kuliah_ids' => [$mk2->id],
+        ]);
+
+        $response->assertOk();
+        $this->assertEquals([$mk2->id], $this->projectCard->fresh()->mataKuliahs->pluck('id')->all());
+
+        // Update with empty (removing all courses)
+        $responseRemove = $this->actingAs($this->admin)->postJson(route('admin.evaluasi.project.update', ['card' => $this->projectCard->uuid]), [
+            'title' => $this->projectCard->title,
+            'mata_kuliah_present' => '1',
+            'mata_kuliah_ids' => [],
+        ]);
+
+        $responseRemove->assertOk();
+        $this->assertCount(0, $this->projectCard->fresh()->mataKuliahs);
+    }
+
+    public function test_admin_can_attach_and_detach_mata_kuliah_in_detail_modal(): void
+    {
+        $mk = MataKuliah::create([
+            'kode_matkul' => 'MK-ADM-05',
+            'nama_matkul' => 'Keamanan Jaringan',
+            'sks' => 3,
+            'semester' => 3,
+            'is_active' => true,
+        ]);
+
+        // Attach
+        $resAttach = $this->actingAs($this->admin)->postJson(route('project.mata-kuliah.attach', ['card' => $this->projectCard->id]), [
+            'mata_kuliah_id' => $mk->id,
+        ]);
+        $resAttach->assertOk();
+        $this->assertDatabaseHas('project_mata_kuliah', [
+            'project_card_id' => $this->projectCard->id,
+            'mata_kuliah_id' => $mk->id,
+        ]);
+
+        // Detach
+        $resDetach = $this->actingAs($this->admin)->deleteJson(route('project.mata-kuliah.detach', [
+            'card' => $this->projectCard->id,
+            'mataKuliah' => $mk->id,
+        ]));
+        $resDetach->assertOk();
+        $this->assertDatabaseMissing('project_mata_kuliah', [
+            'project_card_id' => $this->projectCard->id,
+            'mata_kuliah_id' => $mk->id,
+        ]);
+    }
+
+    public function test_admin_evaluasi_kelompok_view_renders_mata_kuliah_options(): void
+    {
+        $mk = MataKuliah::create([
+            'kode_matkul' => 'MK-ADM-VIEW',
+            'nama_matkul' => 'Sistem Informasi Manajemen',
+            'sks' => 3,
+            'semester' => 3,
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($this->admin)->get(route('admin.evaluasi.kelompok.show', ['kelompok' => $this->kelompok->uuid]));
+
+        $response->assertOk();
+        $response->assertSee('name="mata_kuliah_ids[]"', false);
+        $response->assertSee('add_mata_kuliah_ids', false);
+        $response->assertSee('ep_mata_kuliah_ids', false);
+        $response->assertSee('Sistem Informasi Manajemen');
     }
 
     public function test_mahasiswa_can_add_edit_and_delete_project_card(): void

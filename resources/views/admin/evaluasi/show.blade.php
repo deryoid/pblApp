@@ -724,7 +724,13 @@
 
                       {{-- Judul --}}
                       <div class="d-flex align-items-start mb-1">
-                        <div class="card-title-full font-weight-bold flex-grow-1">{{ $card->title }}</div>
+                        <div class="card-title-full font-weight-bold flex-grow-1">
+                          <a href="javascript:void(0)" class="text-dark text-decoration-none hover-primary"
+                             onclick="showProjectCardDetail({{ $card->id }}, '{{ addslashes($card->title) }}', {{ $card->list_id }})"
+                             title="Klik untuk melihat detail & kelola mata kuliah proyek">
+                            {{ $card->title }}
+                          </a>
+                        </div>
                       </div>
 
                       {{-- Tanggal --}}
@@ -742,20 +748,29 @@
                       @endif
 
                       {{-- Mata Kuliah Terkait Kartu --}}
-                      @if($card->mataKuliahs && $card->mataKuliahs->count() > 0)
-                        <div class="mb-2 p-1 px-2 rounded bg-light border small">
-                          <div class="text-muted font-weight-bold" style="font-size: 0.675rem; text-transform: uppercase;">
-                            <i class="fas fa-book mr-1 text-primary"></i> MK Terkait:
-                          </div>
-                          <div class="d-flex flex-wrap" style="gap: 0.2rem; margin-top: 2px;">
+                      <div class="mb-2 p-1 px-2 rounded bg-light border small">
+                        <div class="d-flex justify-content-between align-items-center text-muted font-weight-bold" style="font-size: 0.675rem; text-transform: uppercase;">
+                          <span><i class="fas fa-book mr-1 text-primary"></i> MK Terkait ({{ $card->mataKuliahs ? $card->mataKuliahs->count() : 0 }}):</span>
+                          <button type="button" class="btn btn-xs btn-link p-0 text-primary font-weight-bold text-decoration-none"
+                                  title="Kelola Mata Kuliah Terkait"
+                                  onclick="event.stopPropagation(); showProjectCardDetail({{ $card->id }}, '{{ addslashes($card->title) }}', {{ $card->list_id }})">
+                            <i class="fas fa-plus-circle fa-sm mr-0.5"></i> Kelola
+                          </button>
+                        </div>
+                        @if($card->mataKuliahs && $card->mataKuliahs->count() > 0)
+                          <div class="d-flex flex-wrap" style="gap: 0.2rem; margin-top: 3px;">
                             @foreach($card->mataKuliahs as $cardMk)
                               <span class="badge badge-white border text-dark font-weight-bold" style="font-size: 0.7rem;" title="Pengampu: {{ $cardMk->dosen_pengampu_names ?: 'Belum ada dosen' }}">
                                 {{ $cardMk->kode_matkul ?: 'MK' }} - {{ \Illuminate\Support\Str::limit($cardMk->nama_matkul, 20) }}
                               </span>
                             @endforeach
                           </div>
-                        </div>
-                      @endif
+                        @else
+                          <div class="text-muted font-italic" style="font-size: 0.68rem; margin-top: 2px;">
+                            Belum ada mata kuliah terkait
+                          </div>
+                        @endif
+                      </div>
 
                       {{-- Mitra Industri Kartu --}}
                       @if(!empty($card->nama_mitra))
@@ -940,6 +955,14 @@
                           @endif
 
                          
+                          {{-- Detail Proyek & Kelola MK --}}
+                          <button type="button"
+                                  class="btn btn-circle btn-light border text-primary"
+                                  title="Detail Proyek & Hubungkan Mata Kuliah"
+                                  onclick="showProjectCardDetail({{ $card->id }}, '{{ addslashes($card->title) }}', {{ $card->list_id }})">
+                            <i class="fas fa-eye" aria-hidden="true"></i>
+                          </button>
+
                           {{-- Nilai Dosen --}}
                           <button type="button"
                                   class="btn btn-circle btn-primary"
@@ -1203,6 +1226,7 @@
       <div class="modal-body">
         <input type="hidden" name="id" id="ep_id">
         <input type="hidden" id="ep_domid">
+        <input type="hidden" name="mata_kuliah_present" value="1">
 
         <div class="form-row">
           <div class="form-group col-md-8">
@@ -1445,6 +1469,25 @@
               @endforeach
             </select>
           </div>
+        </div>
+
+        <div class="form-group">
+          <label for="add_mata_kuliah_ids" class="font-weight-bold small text-dark">
+            <i class="fas fa-book-reader text-primary mr-1"></i> Keterkaitan Mata Kuliah
+          </label>
+          <select class="form-control select2-matkul-add" name="mata_kuliah_ids[]" id="add_mata_kuliah_ids" multiple="multiple" style="width: 100%;">
+            @php
+              $allMatkulGrouped = ($allMataKuliah ?? collect())->groupBy('semester');
+            @endphp
+            @foreach($allMatkulGrouped as $sem => $mks)
+              <optgroup label="Semester {{ $sem }}">
+                @foreach($mks as $mk)
+                  <option value="{{ $mk->id }}">[{{ $mk->kode_matkul }}] {{ $mk->nama_matkul }} ({{ $mk->sks }} SKS)</option>
+                @endforeach
+              </optgroup>
+            @endforeach
+          </select>
+          <small class="form-text text-muted">Admin dapat memilih satu atau beberapa mata kuliah yang terkait langsung dengan proyek ini.</small>
         </div>
 
         <div class="form-row">
@@ -1748,7 +1791,11 @@
     $('#ep_kendala').val(btn.data('kendala')||'');
     $('#ep_catatan').val(btn.data('catatan')||'');
 
-    const matkulIds = (btn.data('matkul') || []).map(String);
+    let matkulRaw = btn.attr('data-matkul') || btn.data('matkul') || [];
+    if (typeof matkulRaw === 'string') {
+      try { matkulRaw = JSON.parse(matkulRaw); } catch(err) { matkulRaw = []; }
+    }
+    const matkulIds = (Array.isArray(matkulRaw) ? matkulRaw : []).map(String);
     if (window.jQuery && jQuery().select2) {
       if (!$('#ep_mata_kuliah_ids').hasClass('select2-hidden-accessible')) {
         $('#ep_mata_kuliah_ids').select2({
@@ -1800,37 +1847,35 @@
     const url = "{{ route('admin.evaluasi.project.update', ['card'=>'__ID__']) }}".replace('__ID__', uuid);
     const payload = $(this).serialize();
 
+    Swal.fire({
+      title: 'Menyimpan Perubahan...',
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading()
+    });
+
     $.ajax({
       url, type:'POST',
       data: payload + '&_token={{ csrf_token() }}',
       success: function(r){
         if(r.success){
-          const title = $('#ep_title').val();
-          const status = $('#ep_status').val();
-          const progress = parseInt($('#ep_progress').val() || 0, 10);
-
-          let cardEl = $('.board-card[data-card-id="'+domid+'"]');
-          if (cardEl.length === 0) { cardEl = $('.board-card[data-card-uuid="'+uuid+'"]'); }
-          cardEl.find('.card-title-full').text(title);
-
-          let badge = $('#status-'+domid);
-          if (badge.length === 0) { badge = cardEl.find('span[id^="status-"]'); }
-          badge.removeClass('badge-info badge-success badge-danger');
-          let cls = 'badge-info'; if(status==='Selesai') cls='badge-success'; if(status==='Dibatalkan') cls='badge-danger';
-          badge.addClass(cls).text(status);
-
-          let bar = $('#progress-'+domid);
-          if (bar.length === 0) { bar = cardEl.find('.progress .progress-bar').first(); }
-          bar.css('width', progress+'%').attr('aria-valuenow', progress);
-          progress===100 ? bar.addClass('bg-success') : bar.removeClass('bg-success');
-
           $('#modalEditProyek').modal('hide');
-          swalToast('success','Perubahan proyek disimpan');
+          Swal.fire({
+            icon: 'success',
+            title: 'Berhasil',
+            text: 'Perubahan proyek berhasil disimpan.',
+            timer: 1200,
+            showConfirmButton: false
+          }).then(() => {
+            window.location.reload();
+          });
         } else {
           Swal.fire('Gagal', r.message || 'Gagal menyimpan perubahan.', 'error');
         }
       },
-      error: function(){ Swal.fire('Gagal', 'Gagal menyimpan perubahan.', 'error'); }
+      error: function(xhr){
+        const msg = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Gagal menyimpan perubahan.';
+        Swal.fire('Gagal', msg, 'error');
+      }
     });
   });
 
@@ -2171,21 +2216,31 @@
               </div>
 
               <!-- Admin Action: Hubungkan Mata Kuliah -->
-              ${isAdmin && availableMatkul && availableMatkul.length > 0 ? `
-                <div class="p-2.5 px-3 rounded mt-2.5 d-flex flex-column flex-sm-row justify-content-between align-items-sm-center" style="background: #f8fafc; border: 1px solid #e2e8f0;">
-                  <div class="d-flex align-items-center mb-2 mb-sm-0 w-100 mr-sm-2">
-                    <span class="small font-weight-bold text-muted mr-2 text-nowrap"><i class="fas fa-plus-circle text-primary mr-1"></i> Hubungkan MK:</span>
-                    <select id="attach_mk_select" class="form-control form-control-sm">
-                      <option value="">-- Pilih Mata Kuliah --</option>
-                      ${availableMatkul
-                        .filter(am => !(card.mata_kuliahs || []).some(cm => cm.id === am.id))
-                        .map(am => `<option value="${am.id}">${am.kode_matkul ? '[' + am.kode_matkul + '] ' : ''}${am.nama_matkul} (${am.sks} SKS - Sem ${am.semester || '-'})</option>`)
-                        .join('')}
-                    </select>
+              ${isAdmin ? `
+                <div class="p-2.5 px-3 rounded mt-2.5" style="background: #f8fafc; border: 1px solid #e2e8f0;">
+                  <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center">
+                    <div class="d-flex align-items-center mb-2 mb-sm-0 w-100 mr-sm-2">
+                      <span class="small font-weight-bold text-muted mr-2 text-nowrap"><i class="fas fa-plus-circle text-primary mr-1"></i> Hubungkan MK:</span>
+                      <select id="attach_mk_select" class="form-control form-control-sm">
+                        ${availableMatkul && availableMatkul.filter(am => !(card.mata_kuliahs || []).some(cm => cm.id === am.id)).length > 0
+                          ? `<option value="">-- Pilih Mata Kuliah --</option>` +
+                            availableMatkul
+                              .filter(am => !(card.mata_kuliahs || []).some(cm => cm.id === am.id))
+                              .map(am => `<option value="${am.id}">${am.kode_matkul ? '[' + am.kode_matkul + '] ' : ''}${am.nama_matkul} (${am.sks} SKS - Sem ${am.semester || '-'})</option>`)
+                              .join('')
+                          : `<option value="">-- Semua mata kuliah aktif sudah terhubung --</option>`
+                        }
+                      </select>
+                    </div>
+                    <button type="button" class="btn btn-primary btn-sm text-nowrap px-3 font-weight-500"
+                            ${availableMatkul && availableMatkul.filter(am => !(card.mata_kuliahs || []).some(cm => cm.id === am.id)).length > 0 ? '' : 'disabled'}
+                            onclick="attachMataKuliahProyek(${card.id})">
+                      <i class="fas fa-link mr-1"></i> Hubungkan MK
+                    </button>
                   </div>
-                  <button type="button" class="btn btn-primary btn-sm text-nowrap px-3 font-weight-500" onclick="attachMataKuliahProyek(${card.id})">
-                    <i class="fas fa-link mr-1"></i> Hubungkan MK
-                  </button>
+                  <small class="text-muted mt-1 d-block" style="font-size: 0.73rem;">
+                    * Menghubungkan mata kuliah akan otomatis menambahkan dosen pengampu mata kuliah ke daftar evaluator proyek ini.
+                  </small>
                 </div>
               ` : ''}
             </div>
@@ -2472,6 +2527,29 @@
     }
   });
 
+  $('#modalAddProyekAdmin').on('shown.bs.modal', function(){
+    if (window.jQuery && jQuery().select2) {
+      if (!$('#add_mata_kuliah_ids').hasClass('select2-hidden-accessible')) {
+        $('#add_mata_kuliah_ids').select2({
+          dropdownParent: $('#modalAddProyekAdmin'),
+          placeholder: '-- Pilih Mata Kuliah Terkait --',
+          allowClear: true,
+          width: '100%'
+        });
+      }
+    }
+  });
+
+  $('#modalAddProyekAdmin').on('hidden.bs.modal', function(){
+    const form = $('#formAddProyekAdmin');
+    if (form.length && form[0]) {
+      form[0].reset();
+    }
+    if ($('#add_mata_kuliah_ids').hasClass('select2-hidden-accessible')) {
+      $('#add_mata_kuliah_ids').val([]).trigger('change');
+    }
+  });
+
   window.tambahDosenProyek = async function(cardId) {
     const dosenId = $('#assign_dosen_id').val();
     const peran = $('#assign_peran').val() || 'penilai';
@@ -2515,6 +2593,8 @@
         timer: 1600,
         showConfirmButton: false
       });
+
+      window.projectCardChanged = true;
 
       if (typeof window.showProjectCardDetail === 'function') {
         window.showProjectCardDetail(cardId, null, null);
@@ -2631,6 +2711,8 @@
         showConfirmButton: false
       });
 
+      window.projectCardChanged = true;
+
       if (typeof window.showProjectCardDetail === 'function') {
         window.showProjectCardDetail(cardId, null, null);
       }
@@ -2685,6 +2767,8 @@
             showConfirmButton: false
           });
 
+          window.projectCardChanged = true;
+
           if ($('#modalProjectCardDetail').hasClass('show') && typeof window.showProjectCardDetail === 'function') {
             window.showProjectCardDetail(cardId, null, null);
           } else {
@@ -2697,6 +2781,12 @@
       }
     });
   };
+
+  $('#modalProjectCardDetail').on('hidden.bs.modal', function() {
+    if (window.projectCardChanged) {
+      window.location.reload();
+    }
+  });
 
   function formatNumber(num) {
     return parseInt(num).toLocaleString('id-ID');

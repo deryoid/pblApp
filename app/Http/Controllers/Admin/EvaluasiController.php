@@ -1067,6 +1067,7 @@ class EvaluasiController extends Controller
 
         $availableMatkul = $isAdmin
             ? \App\Models\MataKuliah::where('is_active', true)
+                ->orderBy('semester')
                 ->orderBy('nama_matkul')
                 ->get(['id', 'kode_matkul', 'nama_matkul', 'sks', 'semester'])
             : [];
@@ -1280,7 +1281,7 @@ class EvaluasiController extends Controller
         $card->updated_by = Auth::id();
         $card->save();
 
-        if (array_key_exists('mata_kuliah_ids', $data)) {
+        if ($request->has('mata_kuliah_present') || array_key_exists('mata_kuliah_ids', $data)) {
             $card->mataKuliahs()->sync($data['mata_kuliah_ids'] ?? []);
         }
 
