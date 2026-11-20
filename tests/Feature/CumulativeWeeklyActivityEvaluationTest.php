@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\AktivitasCard;
 use App\Models\AktivitasList;
 use App\Models\Dosen;
+use App\Models\EvaluasiDosen;
 use App\Models\EvaluasiMaster;
 use App\Models\EvaluasiNilaiAP;
 use App\Models\Kelompok;
@@ -484,5 +485,347 @@ class CumulativeWeeklyActivityEvaluationTest extends TestCase
         $adminViewResp->assertSee('modalEditProyek');
         $adminViewResp->assertSee('modalProjectCardDetail');
         $adminViewResp->assertSee('modal-xl');
+    }
+
+    public function test_user_can_select_specific_evaluator_to_store_weekly_ap(): void
+    {
+        // Admin menilai dengan memilih evaluator Dosen B (user yang bersangkutan)
+        $adminUser = User::create([
+            'nama_user' => 'Admin Test Evaluator Choice',
+            'username' => 'admin_choice',
+            'email' => 'admin_choice@politala.ac.id',
+            'password' => bcrypt('password'),
+            'role' => 'admin',
+            'no_hp' => '081234567877',
+            'is_profile_complete' => true,
+        ]);
+
+        $response = $this->actingAs($adminUser)
+            ->postJson(route('admin.evaluasi.nilai-ap.store-per-aktivitas-list'), [
+                'evaluator_id' => $this->dosenUserB->id,
+                'mata_kuliah_id' => $this->matkulB->id,
+                'nilai_ap' => [
+                    [
+                        'mahasiswa_id' => $this->mahasiswa->id,
+                        'aktivitas_list_id' => $this->aktivitasList->id,
+                        'evaluator_id' => $this->dosenUserB->id,
+                        'mata_kuliah_id' => $this->matkulB->id,
+                        'w_ap_kehadiran' => 'Hadir',
+                        'tanggal_hadir' => now()->format('Y-m-d'),
+                        'w_ap_presentasi' => 88.0,
+                        'catatan_presentasi' => 'Dinilai atas nama Dosen B',
+                    ],
+                ],
+            ]);
+
+        $response->assertOk();
+        $response->assertJson([
+            'success' => true,
+            'evaluator_id' => $this->dosenUserB->id,
+        ]);
+
+        $savedRecord = EvaluasiNilaiAP::where('mahasiswa_id', $this->mahasiswa->id)
+            ->where('evaluator_id', $this->dosenUserB->id)
+            ->first();
+
+        $this->assertNotNull($savedRecord);
+        $this->assertEquals(88.0, (float) $savedRecord->w_ap_presentasi);
+        $this->assertEquals('Dinilai atas nama Dosen B', $savedRecord->catatan_presentasi);
+    }
+
+    public function test_subsequent_evaluators_can_grade_without_collision_and_update_cumulatively(): void
+    {
+        // 1. Dosen A menilai (skor 80)
+        $this->actingAs($this->dosenUserA)
+            ->postJson(route('dosen.evaluasi.nilai-ap.store-per-aktivitas-list'), [
+                'evaluator_id' => $this->dosenUserA->id,
+                'nilai_ap' => [
+                    [
+                        'mahasiswa_id' => $this->mahasiswa->id,
+                        'aktivitas_list_id' => $this->aktivitasList->id,
+                        'w_ap_kehadiran' => 'Hadir',
+                        'tanggal_hadir' => now()->format('Y-m-d'),
+                        'w_ap_presentasi' => 80.0,
+                    ],
+                ],
+            ])
+            ->assertOk();
+
+        // 2. Dosen B menilai (skor 90)
+        $this->actingAs($this->dosenUserB)
+            ->postJson(route('dosen.evaluasi.nilai-ap.store-per-aktivitas-list'), [
+                'evaluator_id' => $this->dosenUserB->id,
+                'nilai_ap' => [
+                    [
+                        'mahasiswa_id' => $this->mahasiswa->id,
+                        'aktivitas_list_id' => $this->aktivitasList->id,
+                        'w_ap_kehadiran' => 'Hadir',
+                        'tanggal_hadir' => now()->format('Y-m-d'),
+                        'w_ap_presentasi' => 90.0,
+                    ],
+                ],
+            ])
+            ->assertOk();
+
+        // 3. Periksa get API: harus ada 2 evaluasi dan rata-rata 85.0
+        $getResp = $this->actingAs($this->dosenUserA)
+            ->getJson(route('dosen.evaluasi.nilai-ap.show-by-aktivitas-list', ['aktivitasList' => $this->aktivitasList->id]));
+
+        $getResp->assertOk();
+        $data = $getResp->json();
+        $this->assertCount(2, $data['all_evaluations']);
+        $studentItem = collect($data['nilai_ap'])->firstWhere('mahasiswa_id', $this->mahasiswa->id);
+        $this->assertEquals(85.0, (float) $studentItem['cumulative_presentasi']);
+
+        // 4. Dosen A memperbarui nilainya menjadi 85.0
+        $this->actingAs($this->dosenUserA)
+            ->postJson(route('dosen.evaluasi.nilai-ap.store-per-aktivitas-list'), [
+                'evaluator_id' => $this->dosenUserA->id,
+                'nilai_ap' => [
+                    [
+                        'mahasiswa_id' => $this->mahasiswa->id,
+                        'aktivitas_list_id' => $this->aktivitasList->id,
+                        'w_ap_kehadiran' => 'Hadir',
+                        'tanggal_hadir' => now()->format('Y-m-d'),
+                        'w_ap_presentasi' => 85.0,
+                    ],
+                ],
+            ])
+            ->assertOk();
+
+        // 5. Total rekam tetap 2, dan rata-rata sekarang menjadi (85 + 90) / 2 = 87.5
+        $totalRecords = EvaluasiNilaiAP::where('mahasiswa_id', $this->mahasiswa->id)
+            ->where('aktivitas_list_id', $this->aktivitasList->id)
+            ->count();
+        $this->assertEquals(2, $totalRecords);
+
+        $getRespAfter = $this->actingAs($this->dosenUserA)
+            ->getJson(route('dosen.evaluasi.nilai-ap.show-by-aktivitas-list', ['aktivitasList' => $this->aktivitasList->id]));
+        $afterData = $getRespAfter->json();
+        $updatedStudent = collect($afterData['nilai_ap'])->firstWhere('mahasiswa_id', $this->mahasiswa->id);
+        $this->assertEquals(87.5, (float) $updatedStudent['cumulative_presentasi']);
+    }
+
+    public function test_multiple_dosen_can_grade_project_card_without_overwriting(): void
+    {
+        // 1. Dosen A menilai proyek mahasiswa (skor 80)
+        $responseA = $this->actingAs($this->dosenUserA)
+            ->postJson(route('dosen.evaluasi.project.grade.dosen', ['card' => $this->projectCard->id]), [
+                'evaluator_id' => $this->dosenUserA->id,
+                'mata_kuliah_id' => $this->matkulA->id,
+                'items' => [
+                    $this->mahasiswa->id => [
+                        'nilai' => [
+                            'd_relevansi' => 80,
+                            'd_kualitas' => 80,
+                            'd_kreativitas' => 80,
+                            'd_estetika' => 80,
+                        ],
+                    ],
+                ],
+            ]);
+
+        $responseA->assertOk();
+        $responseA->assertJson(['success' => true]);
+
+        // 2. Dosen B menilai proyek mahasiswa yang sama (skor 90)
+        $responseB = $this->actingAs($this->dosenUserB)
+            ->postJson(route('dosen.evaluasi.project.grade.dosen', ['card' => $this->projectCard->id]), [
+                'evaluator_id' => $this->dosenUserB->id,
+                'mata_kuliah_id' => $this->matkulB->id,
+                'items' => [
+                    $this->mahasiswa->id => [
+                        'nilai' => [
+                            'd_relevansi' => 90,
+                            'd_kualitas' => 90,
+                            'd_kreativitas' => 90,
+                            'd_estetika' => 90,
+                        ],
+                    ],
+                ],
+            ]);
+
+        $responseB->assertOk();
+        $responseB->assertJson(['success' => true]);
+
+        // 3. Pastikan tersimpan 2 baris terpisah di database (Dosen A dan Dosen B tidak saling menimpa)
+        $evals = EvaluasiDosen::where('project_card_id', $this->projectCard->id)
+            ->where('mahasiswa_id', $this->mahasiswa->id)
+            ->get();
+
+        $this->assertCount(2, $evals);
+        $this->assertEquals(1, $evals->where('evaluator_id', $this->dosenUserA->id)->count());
+        $this->assertEquals(1, $evals->where('evaluator_id', $this->dosenUserB->id)->count());
+
+        // 4. API getPenilaianDosenByProject mengembalikan kumulatif rata-rata 85.0 dari 2 dosen yang menilai
+        $getResp = $this->actingAs($this->dosenUserA)
+            ->getJson(route('dosen.evaluasi.penilaian-dosen.show-by-project', ['project' => $this->projectCard->id]));
+
+        $getResp->assertOk();
+        $data = $getResp->json();
+        $this->assertTrue($data['success']);
+        $this->assertCount(2, $data['evaluations']);
+
+        $summary = $data['summary_per_mahasiswa'][$this->mahasiswa->id] ?? null;
+        $this->assertNotNull($summary);
+        $this->assertEquals(85.0, (float) $summary['cumulative_score']);
+        $this->assertEquals(2, $summary['evaluators_count']);
+    }
+
+    public function test_unauthorized_dosen_cannot_grade_project_card(): void
+    {
+        $response = $this->actingAs($this->dosenUserUnauth)
+            ->postJson(route('dosen.evaluasi.project.grade.dosen', ['card' => $this->projectCard->id]), [
+                'evaluator_id' => $this->dosenUserUnauth->id,
+                'items' => [
+                    $this->mahasiswa->id => [
+                        'nilai' => [
+                            'd_relevansi' => 75,
+                            'd_kualitas' => 75,
+                            'd_kreativitas' => 75,
+                            'd_estetika' => 75,
+                        ],
+                    ],
+                ],
+            ]);
+
+        $response->assertStatus(403);
+    }
+
+    public function test_admin_can_grade_project_card_for_any_evaluator_and_updates_cumulatively(): void
+    {
+        $adminUser = User::create([
+            'nama_user' => 'Super Admin',
+            'name' => 'Super Admin',
+            'username' => 'admin_pbl',
+            'email' => 'admin_pbl@politala.ac.id',
+            'password' => bcrypt('password'),
+            'role' => 'admin',
+            'no_hp' => '081234567888',
+            'is_profile_complete' => true,
+        ]);
+
+        // 1. Admin menilai atas nama Dosen A
+        $respAdminA = $this->actingAs($adminUser)
+            ->postJson(route('admin.evaluasi.project.grade.dosen', ['card' => $this->projectCard->id]), [
+                'evaluator_id' => $this->dosenUserA->id,
+                'mata_kuliah_id' => $this->matkulA->id,
+                'items' => [
+                    $this->mahasiswa->id => [
+                        'nilai' => [
+                            'd_relevansi' => 84,
+                            'd_kualitas' => 84,
+                            'd_kreativitas' => 84,
+                            'd_estetika' => 84,
+                        ],
+                    ],
+                ],
+            ]);
+
+        $respAdminA->assertOk();
+        $respAdminA->assertJson(['success' => true]);
+
+        // 2. Admin menilai atas nama Dosen B
+        $respAdminB = $this->actingAs($adminUser)
+            ->postJson(route('admin.evaluasi.project.grade.dosen', ['card' => $this->projectCard->id]), [
+                'evaluator_id' => $this->dosenUserB->id,
+                'mata_kuliah_id' => $this->matkulB->id,
+                'items' => [
+                    $this->mahasiswa->id => [
+                        'nilai' => [
+                            'd_relevansi' => 92,
+                            'd_kualitas' => 92,
+                            'd_kreativitas' => 92,
+                            'd_estetika' => 92,
+                        ],
+                    ],
+                ],
+            ]);
+
+        $respAdminB->assertOk();
+        $respAdminB->assertJson(['success' => true]);
+
+        // 3. Admin memeriksa hasil kumulatif: (84 + 92) / 2 = 88.0
+        $getResp = $this->actingAs($adminUser)
+            ->getJson(route('admin.evaluasi.penilaian-dosen.show-by-project', ['project' => $this->projectCard->id]));
+
+        $getResp->assertOk();
+        $data = $getResp->json();
+        $this->assertTrue($data['success']);
+
+        $summary = $data['summary_per_mahasiswa'][$this->mahasiswa->id] ?? null;
+        $this->assertNotNull($summary);
+        $this->assertEquals(88.0, (float) $summary['cumulative_score']);
+        $this->assertEquals(2, $summary['evaluators_count']);
+    }
+
+    public function test_dosen_can_update_their_own_project_grade_without_affecting_other_dosen(): void
+    {
+        // 1. Dosen A (80) & Dosen B (90)
+        $this->actingAs($this->dosenUserA)
+            ->postJson(route('dosen.evaluasi.project.grade.dosen', ['card' => $this->projectCard->id]), [
+                'evaluator_id' => $this->dosenUserA->id,
+                'mata_kuliah_id' => $this->matkulA->id,
+                'items' => [
+                    $this->mahasiswa->id => [
+                        'nilai' => [
+                            'd_relevansi' => 80,
+                            'd_kualitas' => 80,
+                            'd_kreativitas' => 80,
+                            'd_estetika' => 80,
+                        ],
+                    ],
+                ],
+            ])
+            ->assertOk();
+
+        $this->actingAs($this->dosenUserB)
+            ->postJson(route('dosen.evaluasi.project.grade.dosen', ['card' => $this->projectCard->id]), [
+                'evaluator_id' => $this->dosenUserB->id,
+                'mata_kuliah_id' => $this->matkulB->id,
+                'items' => [
+                    $this->mahasiswa->id => [
+                        'nilai' => [
+                            'd_relevansi' => 90,
+                            'd_kualitas' => 90,
+                            'd_kreativitas' => 90,
+                            'd_estetika' => 90,
+                        ],
+                    ],
+                ],
+            ])
+            ->assertOk();
+
+        // 2. Dosen A update nilainya menjadi 86
+        $this->actingAs($this->dosenUserA)
+            ->postJson(route('dosen.evaluasi.project.grade.dosen', ['card' => $this->projectCard->id]), [
+                'evaluator_id' => $this->dosenUserA->id,
+                'mata_kuliah_id' => $this->matkulA->id,
+                'items' => [
+                    $this->mahasiswa->id => [
+                        'nilai' => [
+                            'd_relevansi' => 86,
+                            'd_kualitas' => 86,
+                            'd_kreativitas' => 86,
+                            'd_estetika' => 86,
+                        ],
+                    ],
+                ],
+            ])
+            ->assertOk();
+
+        // 3. Rekam tetap 2, Dosen B tetap 90, rata-rata baru (86 + 90) / 2 = 88.0
+        $this->assertEquals(2, EvaluasiDosen::where('project_card_id', $this->projectCard->id)->count());
+
+        $evalB = EvaluasiDosen::where('project_card_id', $this->projectCard->id)
+            ->where('evaluator_id', $this->dosenUserB->id)
+            ->first();
+        $this->assertEquals(90.0, (float) $evalB->nilai_akhir);
+
+        $getResp = $this->actingAs($this->dosenUserB)
+            ->getJson(route('dosen.evaluasi.penilaian-dosen.show-by-project', ['project' => $this->projectCard->id]));
+        $getResp->assertOk();
+        $summary = $getResp->json('summary_per_mahasiswa.'.$this->mahasiswa->id);
+        $this->assertEquals(88.0, (float) $summary['cumulative_score']);
     }
 }

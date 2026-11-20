@@ -2720,7 +2720,9 @@
       presentasi: {{ config('evaluasi.defaults.w_ap_presentasi', 50) }}
     };
 
-    let existingData = {};
+    let availableEvaluators = [];
+    let allEvaluations = [];
+    let selectedEvaluatorId = null;
     let relatedCourses = [];
     let evaluatorsSummary = [];
     let isAuthorized = true;
@@ -2752,16 +2754,31 @@
 
       const result = await response.json();
 
-      if (result.success && Array.isArray(result.nilai_ap)) {
-        existingData = result.nilai_ap.reduce((acc, item) => {
-          acc[item.mahasiswa_id] = item;
-          return acc;
-        }, {});
+      if (result.success) {
+        availableEvaluators = result.available_evaluators || [];
+        allEvaluations = result.all_evaluations || [];
+        selectedEvaluatorId = result.default_evaluator_id;
         relatedCourses = result.related_courses || [];
         evaluatorsSummary = result.evaluators_summary || [];
         isAuthorized = result.is_authorized !== false;
         currentUserCourse = result.current_user_course;
         dataLoaded = true;
+
+        if (availableEvaluators.length === 0 && result.current_user) {
+          availableEvaluators.push({
+            dosen_id: result.current_user.id,
+            nama: result.current_user.nama || 'Dosen Penilai',
+            nip: '-',
+            peran: 'Dosen Penilai',
+            mata_kuliah_id: null,
+            mata_kuliah_nama: null,
+            has_evaluated: false,
+            is_current_user: true
+          });
+        }
+        if (!selectedEvaluatorId && availableEvaluators.length > 0) {
+          selectedEvaluatorId = availableEvaluators[0].dosen_id;
+        }
 
         Swal.close();
       } else {
@@ -2777,6 +2794,49 @@
       swalToast('error', `Gagal memuat data: ${error.message}`);
       return;
     }
+
+    // Bangun daftar opsi evaluator
+    const buildEvaluatorOptions = () => {
+      return availableEvaluators.map(e => {
+        const isSel = e.dosen_id == selectedEvaluatorId ? 'selected' : '';
+        const roleText = e.mata_kuliah_nama ? `[MK: ${e.mata_kuliah_nama}]` : (e.peran || 'Penilai');
+        const evalStatus = e.has_evaluated ? '✓ Sudah Menilai' : '⏳ Belum Menilai';
+        const youTag = e.is_current_user ? ' (Anda)' : '';
+        return `<option value="${e.dosen_id}" data-matkul-id="${e.mata_kuliah_id || ''}" data-matkul-nama="${e.mata_kuliah_nama || ''}" data-nama="${e.nama}" data-evaluated="${e.has_evaluated ? '1' : '0'}" ${isSel}>${e.nama} — ${roleText} [${evalStatus}]${youTag}</option>`;
+      }).join('');
+    };
+
+    const evaluatorSelectorHtml = `
+      <div class="card mb-3 border shadow-xs" style="border-radius: 8px; background-color: #f8faff; border-color: #d1d3e2;">
+        <div class="card-body p-3">
+          <div class="form-row align-items-center">
+            <div class="col-12 col-md-3 mb-2 mb-md-0">
+              <label class="font-weight-bold text-dark mb-0 d-flex align-items-center" style="font-size: 0.9rem;">
+                <i class="fas fa-user-edit text-primary mr-2" style="font-size: 1.15rem;"></i>
+                Menilai Sebagai:
+              </label>
+              <small class="text-muted d-block">Pilih dosen yang bersangkutan</small>
+            </div>
+            <div class="col-12 col-md-6 mb-2 mb-md-0">
+              <select id="ap_evaluator_select" class="form-control form-control-sm font-weight-bold shadow-xs" style="border-color: #4e73df; font-size: 0.88rem;">
+                ${buildEvaluatorOptions()}
+              </select>
+            </div>
+            <div class="col-12 col-md-3 text-md-right">
+              <span id="evaluator_status_badge" class="badge px-3 py-2 badge-pill" style="font-size: 0.8rem;"></span>
+            </div>
+          </div>
+          <div class="mt-2 pt-2 border-top small d-flex flex-wrap align-items-center justify-content-between text-muted">
+            <div id="evaluator_mk_info">
+              <i class="fas fa-book text-info mr-1"></i> <span id="evaluator_mk_text">Mata Kuliah: -</span>
+            </div>
+            <div class="text-secondary mt-1 mt-md-0 font-italic" style="font-size: 0.78rem;">
+              <i class="fas fa-layer-group text-primary mr-1"></i> Nilai presentasi dihitung kumulatif (rata-rata) dari seluruh dosen penilai.
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
 
     // Bangun daftar mata kuliah terkait
     let coursesHtml = '';
@@ -2822,27 +2882,32 @@
     }
 
     const buildMemberCard = (member) => {
-      const current = existingData[member.id] || {};
-      const myKehadiran = current.my_kehadiran || current.w_ap_kehadiran || '';
-      const myTanggal = current.my_tanggal_hadir || current.tanggal_hadir || '';
-      const myPresentasi = current.my_presentasi !== undefined && current.my_presentasi !== '' ? current.my_presentasi : (current.w_ap_presentasi !== undefined ? current.w_ap_presentasi : '');
-      const myCatatan = current.my_catatan || current.catatan_presentasi || '';
-      const cumulativePres = current.cumulative_presentasi !== null && current.cumulative_presentasi !== undefined ? current.cumulative_presentasi : null;
-      const evalCount = current.evaluators_count || 0;
-      const breakdowns = current.evaluations_breakdown || [];
+      const mhsEvals = allEvaluations.filter(e => e.mahasiswa_id == member.id);
+      const evalForCurrent = mhsEvals.find(e => e.evaluator_id == selectedEvaluatorId) || null;
+
+      const myKehadiran = evalForCurrent ? (evalForCurrent.w_ap_kehadiran || '') : '';
+      const myTanggal = evalForCurrent ? (evalForCurrent.tanggal_hadir || '{{ now()->toDateString() }}') : '{{ now()->toDateString() }}';
+      const myPresentasi = evalForCurrent && evalForCurrent.w_ap_presentasi !== null && evalForCurrent.w_ap_presentasi !== undefined ? evalForCurrent.w_ap_presentasi : '';
+      const myCatatan = evalForCurrent ? (evalForCurrent.catatan_presentasi || '') : '';
+
+      const presEvals = mhsEvals.filter(e => e.w_ap_presentasi !== null && e.w_ap_presentasi !== undefined && e.w_ap_presentasi !== '');
+      const cumulativePres = presEvals.length > 0
+        ? Math.round((presEvals.reduce((acc, curr) => acc + parseFloat(curr.w_ap_presentasi), 0) / presEvals.length) * 100) / 100
+        : null;
+      const evalCount = presEvals.length;
 
       let breakdownHtml = '';
-      if (breakdowns.length > 0) {
+      if (mhsEvals.length > 0) {
         breakdownHtml = `
-          <div class="mt-2 p-2 bg-light rounded text-left border small">
+          <div class="mt-2 p-2 bg-light rounded text-left border small breakdown-container">
             <div class="font-weight-bold text-secondary mb-1">
-              <i class="fas fa-users mr-1"></i> Rincian Penilaian Dosen Mata Kuliah Terkait (${breakdowns.length}):
+              <i class="fas fa-users mr-1"></i> Rincian Penilaian Seluruh Dosen Terkait (${mhsEvals.length}):
             </div>
             <div class="d-flex flex-wrap">
-              ${breakdowns.map(b => `
+              ${mhsEvals.map(b => `
                 <div class="mr-2 mb-1 p-2 bg-white border rounded shadow-xs" style="font-size: 0.8rem;">
-                  <strong>${b.evaluator_nama}</strong> ${b.mata_kuliah_nama ? `<span class="text-muted">(${b.mata_kuliah_nama})</span>` : ''}: 
-                  <span class="badge badge-info ml-1">Presentasi: ${b.w_ap_presentasi !== null ? b.w_ap_presentasi : '-'}</span>
+                  <strong>${b.evaluator_nama || 'Dosen'}</strong> ${b.mata_kuliah_nama ? `<span class="text-muted">(${b.mata_kuliah_nama})</span>` : ''}: 
+                  <span class="badge badge-info ml-1">Presentasi: ${b.w_ap_presentasi !== null && b.w_ap_presentasi !== undefined ? b.w_ap_presentasi : '-'}</span>
                   ${b.w_ap_kehadiran ? `<span class="badge badge-light border ml-1">${b.w_ap_kehadiran}</span>` : ''}
                   ${b.catatan_presentasi ? `<div class="text-muted font-italic mt-1">"${b.catatan_presentasi}"</div>` : ''}
                 </div>
@@ -2964,6 +3029,8 @@
 
         ${authWarning}
 
+        ${evaluatorSelectorHtml}
+
         {{-- Box Mata Kuliah Terkait & Dosen Penilai --}}
         <div class="card mb-3 border bg-light shadow-xs" style="border-radius: 8px;">
           <div class="card-header bg-white py-2 px-3 border-bottom d-flex align-items-center justify-content-between">
@@ -2986,7 +3053,7 @@
         </div>
 
         {{-- Daftar Mahasiswa --}}
-        <div style="max-height: 55vh; overflow-y: auto; padding-right: 5px;">
+        <div style="max-height: 52vh; overflow-y: auto; padding-right: 5px;">
           ${members.map(buildMemberCard).join('')}
         </div>
 
@@ -3015,6 +3082,9 @@
       allowOutsideClick: () => !Swal.isLoading(),
       didOpen: () => {
         const popup = Swal.getPopup();
+        const evaluatorSelect = popup.querySelector('#ap_evaluator_select');
+        const statusBadge = popup.querySelector('#evaluator_status_badge');
+        const mkText = popup.querySelector('#evaluator_mk_text');
 
         // Auto-calculate total per member card
         const calculateCardTotal = (card) => {
@@ -3037,7 +3107,7 @@
 
             const totalScore = (kehadiranBobot * apWeights.kehadiran / 100) + (presentasi * apWeights.presentasi / 100);
             const finalScore = Math.round(totalScore * 10) / 10;
-            totalBadge.textContent = `Nilai Anda: ${finalScore}`;
+            totalBadge.textContent = `Nilai: ${finalScore}`;
             totalBadge.className = `badge ${finalScore >= 70 ? 'badge-success' : finalScore >= 50 ? 'badge-warning' : 'badge-danger'} total-badge px-3 py-1 font-weight-bold`;
           } else {
             totalBadge.textContent = 'Belum Ada Nilai';
@@ -3045,7 +3115,60 @@
           }
         };
 
-        // Add event listeners
+        // Fungsi memperbarui tampilan nilai ketika dosen evaluator dipilih
+        const updateEvaluatorView = (evaluatorId) => {
+          const evalObj = availableEvaluators.find(e => e.dosen_id == evaluatorId);
+          if (evalObj) {
+            if (evalObj.has_evaluated) {
+              statusBadge.className = 'badge badge-success px-3 py-2 badge-pill';
+              statusBadge.innerHTML = `<i class="fas fa-check-circle mr-1"></i> Sudah Menilai (${evalObj.evaluated_count || 0} mhs)`;
+            } else {
+              statusBadge.className = 'badge badge-secondary px-3 py-2 badge-pill';
+              statusBadge.innerHTML = '<i class="fas fa-clock mr-1"></i> Belum Menilai';
+            }
+
+            if (evalObj.mata_kuliah_nama) {
+              mkText.innerHTML = `Mata Kuliah: <strong>${evalObj.mata_kuliah_nama}</strong>`;
+            } else {
+              mkText.innerHTML = `Peran: <strong>${evalObj.peran || 'Dosen Penilai'}</strong>`;
+            }
+          }
+
+          popup.querySelectorAll('.member-card').forEach(card => {
+            const memberId = card.getAttribute('data-member');
+            const evalRecord = allEvaluations.find(e => e.mahasiswa_id == memberId && e.evaluator_id == evaluatorId);
+
+            const kehadiranInput = card.querySelector('select[data-field="w_ap_kehadiran"]');
+            const tanggalInput = card.querySelector('input[data-field="tanggal_hadir"]');
+            const presentasiInput = card.querySelector('input[data-field="w_ap_presentasi"]');
+            const catatanInput = card.querySelector('input[data-field="catatan_presentasi"]');
+
+            if (evalRecord) {
+              if (kehadiranInput) kehadiranInput.value = evalRecord.w_ap_kehadiran || '';
+              if (tanggalInput) tanggalInput.value = evalRecord.tanggal_hadir || '{{ now()->toDateString() }}';
+              if (presentasiInput) presentasiInput.value = evalRecord.w_ap_presentasi !== null && evalRecord.w_ap_presentasi !== undefined ? evalRecord.w_ap_presentasi : '';
+              if (catatanInput) catatanInput.value = evalRecord.catatan_presentasi || '';
+            } else {
+              if (kehadiranInput) kehadiranInput.value = '';
+              if (tanggalInput) tanggalInput.value = '{{ now()->toDateString() }}';
+              if (presentasiInput) presentasiInput.value = '';
+              if (catatanInput) catatanInput.value = '';
+            }
+
+            calculateCardTotal(card);
+          });
+        };
+
+        if (evaluatorSelect) {
+          evaluatorSelect.addEventListener('change', (e) => {
+            const newEvalId = parseInt(e.target.value);
+            selectedEvaluatorId = newEvalId;
+            updateEvaluatorView(newEvalId);
+          });
+          updateEvaluatorView(selectedEvaluatorId);
+        }
+
+        // Add event listeners for inputs
         popup.querySelectorAll('select[data-field="w_ap_kehadiran"], input[data-field="w_ap_presentasi"]').forEach(input => {
           input.addEventListener('input', () => {
             const card = input.closest('.member-card');
@@ -3089,6 +3212,11 @@
         }
 
         const popup = Swal.getPopup();
+        const evalSelect = popup.querySelector('#ap_evaluator_select');
+        const activeEvaluatorId = evalSelect ? parseInt(evalSelect.value) : selectedEvaluatorId;
+        const selectedOption = evalSelect ? evalSelect.selectedOptions[0] : null;
+        const activeMatkulId = selectedOption?.getAttribute('data-matkul-id') ? parseInt(selectedOption.getAttribute('data-matkul-id')) : null;
+
         const cards = Array.from(popup.querySelectorAll('.member-card'));
         const items = [];
         let hasAnyData = false;
@@ -3109,23 +3237,25 @@
           const tanggal = tanggalInput?.value.trim() || '';
           const catatan = catatanInput?.value.trim() || '';
 
-          if (kehadiran || presentasi) {
+          if (kehadiran || presentasi !== '') {
             hasAnyData = true;
             items.push({
-              mahasiswa_id: memberId,
+              mahasiswa_id: parseInt(memberId),
               aktivitas_list_id: parseInt(aktivitasListId),
+              evaluator_id: activeEvaluatorId,
+              mata_kuliah_id: activeMatkulId,
               w_ap_kehadiran: kehadiran || null,
               tanggal_hadir: tanggal || null,
               w_ap_presentasi: presentasi !== '' ? parseFloat(presentasi) : null,
               catatan_presentasi: catatan || null,
-              mata_kuliah_id: currentUserCourse ? currentUserCourse.mata_kuliah_id : null,
               status: 'Submitted'
             });
           }
         });
 
         if (!hasAnyData) {
-          throw new Error('VALIDATION_FAILED');
+          Swal.showValidationMessage('Harap isi minimal status kehadiran atau nilai presentasi untuk salah satu mahasiswa');
+          return false;
         }
 
         return fetch(storeUrl, {
@@ -3137,29 +3267,24 @@
             'X-Requested-With': 'XMLHttpRequest'
           },
           body: JSON.stringify({
+            evaluator_id: activeEvaluatorId,
+            mata_kuliah_id: activeMatkulId,
             nilai_ap: items
           })
         })
-          .then(res => {
-            if (!res.ok) {
-              return res.json().then(err => {
-                throw new Error(err.message || 'Gagal menyimpan data');
-              }).catch(() => {
-                throw new Error('Gagal menyimpan data');
-              });
+          .then(async res => {
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.success) {
+              let errMsg = data.message || `Gagal menyimpan data (HTTP ${res.status})`;
+              if (data.errors) {
+                const errList = Object.values(data.errors).flat().join(', ');
+                errMsg += ` (${errList})`;
+              }
+              throw new Error(errMsg);
             }
-            return res.json();
-          })
-          .then(result => {
-            if (!result.success) {
-              throw new Error(result.message || 'Gagal menyimpan data');
-            }
-            return result;
+            return data;
           })
           .catch(error => {
-            if (error.message === 'VALIDATION_FAILED') {
-              return false;
-            }
             Swal.showValidationMessage(error.message || 'Terjadi kesalahan saat menyimpan');
             throw error;
           });
@@ -3230,13 +3355,19 @@
       }
 
       const list = Array.isArray(evaluations) ? evaluations : [];
-      const validScores = list
-        .map(item => item?.nilai_akhir)
-        .filter(value => value !== null && value !== undefined)
-        .map(value => parseFloat(value))
-        .filter(value => ! Number.isNaN(value));
+      const mhsGroup = {};
+      list.forEach(item => {
+        if (item && item.mahasiswa_id && item.nilai_akhir !== null && item.nilai_akhir !== undefined) {
+          const val = parseFloat(item.nilai_akhir);
+          if (!isNaN(val)) {
+            mhsGroup[String(item.mahasiswa_id)] = mhsGroup[String(item.mahasiswa_id)] || [];
+            mhsGroup[String(item.mahasiswa_id)].push(val);
+          }
+        }
+      });
 
-      const avg = validScores.length ? Math.round(validScores.reduce((sum, value) => sum + value, 0) / validScores.length) : null;
+      const mhsAvgs = Object.values(mhsGroup).map(scores => scores.reduce((s, v) => s + v, 0) / scores.length);
+      const avg = mhsAvgs.length ? Math.round(mhsAvgs.reduce((s, v) => s + v, 0) / mhsAvgs.length) : null;
       const titleWrap = cardEl.querySelector('.d-flex.align-items-start.mb-1');
       let badge = titleWrap?.querySelector('.badge.badge-success.badge-pill');
 
@@ -3279,14 +3410,16 @@
             scoreCard.appendChild(wrapper);
           }
 
-          const rowsHtml = list.map((item, index) => {
-            const member = membersMap[String(item.mahasiswa_id)] || {};
-            const name = item.mahasiswa_nama || member.nama || 'Mahasiswa';
-            const nim = item.mahasiswa_nim || member.nim || '-';
-            const nilai = item.nilai_akhir !== null && item.nilai_akhir !== undefined
-              ? Number.parseFloat(item.nilai_akhir).toFixed(1)
-              : null;
-            const grade = item.grade || (nilai !== null ? getGradeFromScore(Number.parseFloat(item.nilai_akhir)) : null);
+          const uniqueMhsIds = [...new Set(list.map(it => String(it.mahasiswa_id)))];
+          const rowsHtml = uniqueMhsIds.map((mhsId, index) => {
+            const member = membersMap[mhsId] || {};
+            const mhsScores = mhsGroup[mhsId] || [];
+            const evalCount = mhsScores.length;
+            const avgMhs = evalCount ? (mhsScores.reduce((s, v) => s + v, 0) / evalCount) : null;
+            const name = member.nama || 'Mahasiswa';
+            const nim = member.nim || '-';
+            const nilai = avgMhs !== null ? avgMhs.toFixed(1) : null;
+            const grade = avgMhs !== null ? getGradeFromScore(avgMhs) : null;
             const gradeClass = grade ? `badge-${getGradeColor(grade)}` : 'badge-secondary';
             const borderClass = index === 0 ? '' : 'border-top';
 
@@ -3308,7 +3441,7 @@
                   <div class="text-muted">${nim}</div>
                 </div>
                 <div class="text-right">
-                  <div class="font-weight-bold">${nilai}</div>
+                  <div class="font-weight-bold">${nilai} <small class="text-muted font-weight-normal">(${evalCount} Dosen)</small></div>
                   <span class="badge ${gradeClass}">${grade || '-'}</span>
                 </div>
               </div>`;
@@ -3316,8 +3449,8 @@
 
           wrapper.innerHTML = `
             <div class="d-flex justify-content-between align-items-center text-muted text-uppercase small">
-              <span>Nilai Dosen per Mahasiswa</span>
-              <span class="badge badge-light border">${list.length} orang</span>
+              <span>Nilai Dosen per Mahasiswa (Kumulatif)</span>
+              <span class="badge badge-light border">${uniqueMhsIds.length} orang</span>
             </div>
             <div class="mt-2 rounded bg-white" style="border:1px solid var(--border);">
               ${rowsHtml}
@@ -3335,7 +3468,10 @@
 
     const existingEvaluations = {};
     let cardMataKuliahs = [];
-    let defaultSelectedMkId = '';
+    let availableEvaluators = [];
+    let allEvaluations = [];
+    let summaryPerMahasiswa = {};
+    let selectedEvaluatorId = null;
 
     try {
       const response = await fetch(fetchUrl, {
@@ -3349,25 +3485,30 @@
       if (response.ok) {
         const payload = await response.json();
         if (payload?.success) {
+          allEvaluations = Array.isArray(payload.evaluations) ? payload.evaluations : [];
+          availableEvaluators = Array.isArray(payload.available_evaluators) ? payload.available_evaluators : [];
+          selectedEvaluatorId = payload.default_evaluator_id;
+          summaryPerMahasiswa = payload.summary_per_mahasiswa || {};
           cardMataKuliahs = Array.isArray(payload.mata_kuliahs) ? payload.mata_kuliahs : [];
-          const taught = cardMataKuliahs.find(mk => mk.is_taught);
-          if (taught) {
-            defaultSelectedMkId = String(taught.id);
-          } else if (cardMataKuliahs.length === 1) {
-            defaultSelectedMkId = String(cardMataKuliahs[0].id);
+
+          if (availableEvaluators.length === 0 && payload.current_user) {
+            availableEvaluators.push({
+              dosen_id: payload.current_user.id,
+              nama: payload.current_user.nama || 'Dosen Penilai',
+              nip: '-',
+              peran: 'Dosen Penilai',
+              mata_kuliah_id: null,
+              mata_kuliah_nama: null,
+              has_evaluated: false,
+              is_current_user: true
+            });
+          }
+          if (!selectedEvaluatorId && availableEvaluators.length > 0) {
+            selectedEvaluatorId = availableEvaluators[0].dosen_id;
           }
 
-          if (Array.isArray(payload.evaluations)) {
-            payload.evaluations.forEach(item => {
-              if (!item || typeof item.mahasiswa_id === 'undefined') {
-                return;
-              }
-              // If defaultSelectedMkId, only take evaluations matching it or general
-              if (!defaultSelectedMkId || String(item.mata_kuliah_id) === defaultSelectedMkId) {
-                existingEvaluations[String(item.mahasiswa_id)] = item;
-              }
-            });
-            syncCardEvaluations(payload.evaluations);
+          if (allEvaluations.length > 0) {
+            syncCardEvaluations(allEvaluations);
           }
         }
       }
@@ -3375,16 +3516,63 @@
       console.warn('Gagal memuat evaluasi dosen awal', error);
     }
 
+    const buildProjectEvaluatorOptions = () => {
+      return availableEvaluators.map(e => {
+        const isSel = e.dosen_id == selectedEvaluatorId ? 'selected' : '';
+        const roleText = e.mata_kuliah_nama ? `[MK: ${e.mata_kuliah_nama}]` : (e.peran || 'Penilai');
+        const evalStatus = e.has_evaluated ? '✓ Sudah Menilai' : '⏳ Belum Menilai';
+        const youTag = e.is_current_user ? ' (Anda)' : '';
+        return `<option value="${e.dosen_id}" data-matkul-id="${e.mata_kuliah_id || ''}" data-matkul-nama="${e.mata_kuliah_nama || ''}" data-nama="${e.nama}" ${isSel}>${e.nama} — ${roleText} [${evalStatus}]${youTag}</option>`;
+      }).join('');
+    };
+
+    const evaluatorSelectorHtml = `
+      <div class="card mb-3 border shadow-xs" style="border-radius: 8px; background-color: #f8faff; border-color: #d1d3e2;">
+        <div class="card-body p-3">
+          <div class="form-row align-items-center">
+            <div class="col-12 col-md-3 mb-2 mb-md-0">
+              <label class="font-weight-bold text-dark mb-0 d-flex align-items-center" style="font-size: 0.9rem;">
+                <i class="fas fa-user-check text-primary mr-2" style="font-size: 1.15rem;"></i>
+                Menilai Sebagai:
+              </label>
+              <small class="text-muted d-block">Pilih dosen yang bersangkutan</small>
+            </div>
+            <div class="col-12 col-md-6 mb-2 mb-md-0">
+              <select id="project_evaluator_select" class="form-control form-control-sm font-weight-bold shadow-xs" style="border-color: #4e73df; font-size: 0.88rem;">
+                ${buildProjectEvaluatorOptions()}
+              </select>
+            </div>
+            <div class="col-12 col-md-3 text-md-right">
+              <span id="project_evaluator_status_badge" class="badge px-3 py-2 badge-pill" style="font-size: 0.8rem;"></span>
+            </div>
+          </div>
+          <div class="mt-2 pt-2 border-top small d-flex flex-wrap align-items-center justify-content-between text-muted">
+            <div id="project_evaluator_mk_info">
+              <i class="fas fa-book text-info mr-1"></i> <span id="project_evaluator_mk_text">Mata Kuliah: -</span>
+            </div>
+            <div class="text-secondary mt-1 mt-md-0 font-italic" style="font-size: 0.78rem;">
+              <i class="fas fa-calculator text-primary mr-1"></i> Nilai akhir proyek dihitung rata-rata kumulatif / dosen yang mengisi saat ini.
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
     const buildRow = member => {
-      const current = existingEvaluations[member.id] || {};
+      const evalForCurrent = allEvaluations.find(e => e.mahasiswa_id == member.id && e.evaluator_id == selectedEvaluatorId) || null;
+      const summary = summaryPerMahasiswa[member.id] || {};
+      const cumScore = summary.cumulative_score !== null && summary.cumulative_score !== undefined ? summary.cumulative_score : '-';
+      const evalCount = summary.evaluators_count || 0;
+      const breakdown = summary.breakdown || [];
+
       return `
-        <tr data-member="${member.id}" data-evaluation-id="${current.id || ''}">
-          <td style="vertical-align: middle; background: #f8f9fa; font-weight: 600; padding: 12px; width: 200px;">
+        <tr data-member="${member.id}" data-evaluation-id="${evalForCurrent?.id || ''}">
+          <td style="vertical-align: middle; background: #f8f9fa; font-weight: 600; padding: 12px; width: 180px;">
             <div>${member.nama}</div>
             <small class="text-muted">${member.nim}</small>
           </td>
           ${dosenItems.map(item => {
-            const raw = current[item.kode];
+            const raw = evalForCurrent ? evalForCurrent[item.kode] : '';
             const value = (raw === 0 || (raw && raw !== '' && !isNaN(raw))) ? raw : '';
             return `
               <td style="text-align: center; vertical-align: middle; padding: 8px;">
@@ -3402,43 +3590,36 @@
                 </div>
               </td>`;
           }).join('')}
-          <td style="text-align: center; vertical-align: middle; font-weight: 600; background: #e9ecef; padding: 12px; width: 100px;">
+          <td style="text-align: center; vertical-align: middle; font-weight: 600; background: #e9ecef; padding: 10px; width: 90px;">
             <span class="average-badge badge badge-info">-</span>
             <div class="small text-muted mt-1">Rata-rata</div>
           </td>
-          <td style="text-align: center; vertical-align: middle; font-weight: 600; background: #e9ecef; padding: 12px; width: 100px;">
+          <td style="text-align: center; vertical-align: middle; font-weight: 600; background: #e9ecef; padding: 10px; width: 90px;">
             <span class="final-badge badge badge-warning">-</span>
-            <div class="small text-muted mt-1">Final</div>
+            <div class="small text-muted mt-1">Nilai Anda</div>
+          </td>
+          <td class="cumulative-cell" style="text-align: center; vertical-align: middle; background: #f0fdf4; padding: 10px; width: 140px;">
+            ${cumScore !== '-' ? `
+              <span class="badge badge-success px-2 py-1 font-weight-bold" style="font-size: 0.85rem;" title="Rata-rata dari ${evalCount} dosen penilai">
+                ${cumScore}
+              </span>
+              <div class="x-small text-muted mt-1 font-weight-bold">${evalCount} Dosen</div>
+            ` : `
+              <span class="badge badge-secondary px-2 py-1">-</span>
+              <div class="x-small text-muted mt-1">Belum dinilai</div>
+            `}
+            ${breakdown.length > 0 ? `
+              <div class="mt-1 d-flex flex-column text-left" style="font-size: 0.72rem;">
+                ${breakdown.map(b => `
+                  <div class="text-truncate text-muted" title="${b.evaluator_nama}: ${b.nilai_akhir}">
+                    • <strong>${b.evaluator_nama}</strong>: <span class="badge badge-light border">${b.nilai_akhir ?? '-'}</span>
+                  </div>
+                `).join('')}
+              </div>
+            ` : ''}
           </td>
         </tr>`;
     };
-
-    let matkulSelectorHtml = '';
-    if (cardMataKuliahs.length > 0) {
-      matkulSelectorHtml = `
-        <div class="card bg-light border p-2 mb-3 text-left">
-          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
-            <label class="font-weight-bold text-dark mb-0 small" for="evaluasi_matkul_selector">
-              <i class="fas fa-book mr-1 text-primary"></i> Penilaian Mata Kuliah:
-            </label>
-            <select id="evaluasi_matkul_selector" class="custom-select custom-select-sm font-weight-bold" style="max-width: 340px;">
-              <option value="">-- Semua Mata Kuliah / Proyek Umum --</option>
-              ${cardMataKuliahs.map(mk => `
-                <option value="${mk.id}" ${String(mk.id) === defaultSelectedMkId ? 'selected' : ''}>
-                  ${mk.is_taught ? '★ ' : ''}${mk.nama} (${mk.kode}) - Sem ${mk.semester} ${mk.is_taught ? '(Diampu Anda)' : ''}
-                </option>
-              `).join('')}
-            </select>
-          </div>
-        </div>
-      `;
-    } else {
-      matkulSelectorHtml = `
-        <div class="alert alert-secondary py-2 px-3 mb-3 text-left small">
-          <i class="fas fa-info-circle mr-1"></i> Proyek ini tidak memiliki keterkaitan mata kuliah khusus (Penilaian Umum).
-        </div>
-      `;
-    }
 
     const modalHtml = `
       <div class="project-detail-modal">
@@ -3453,21 +3634,22 @@
           </div>
         </div>
 
-        ${matkulSelectorHtml}
+        ${evaluatorSelectorHtml}
 
-        <div class="table-responsive" style="max-height: 55vh; overflow-y: auto;">
+        <div class="table-responsive" style="max-height: 52vh; overflow-y: auto;">
           <table class="table table-bordered mb-0" style="font-size: 0.9rem;">
             <thead class="sticky-top">
               <tr>
-                <th style="width: 200px; background: #343a40; color: white; padding: 12px;">Mahasiswa</th>
+                <th style="width: 180px; background: #343a40; color: white; padding: 12px;">Mahasiswa</th>
                 ${dosenItems.map(item => `
                   <th style="text-align: center; background: #17a2b8; color: white; padding: 12px;">
                     <div>${item.nama}</div>
                     <small>Bobot: ${item.bobot}%</small>
                   </th>
                 `).join('')}
-                <th style="text-align: center; background: #6f42c1; color: white; padding: 12px; width: 100px;">Rata-rata</th>
-                <th style="text-align: center; background: #fd7e14; color: white; padding: 12px; width: 100px;">Final</th>
+                <th style="text-align: center; background: #6f42c1; color: white; padding: 12px; width: 90px;">Rata-rata</th>
+                <th style="text-align: center; background: #fd7e14; color: white; padding: 12px; width: 90px;">Nilai Anda</th>
+                <th style="text-align: center; background: #20c997; color: white; padding: 12px; width: 140px;">Kumulatif Proyek</th>
               </tr>
             </thead>
             <tbody>
@@ -3479,7 +3661,7 @@
         <div class="d-flex justify-content-between align-items-center mt-3">
           <div class="text-left">
             <small class="text-muted">
-              <strong>Keterangan:</strong> Nilai 0-100 • Rata-rata & final otomatis
+              <strong>Keterangan:</strong> Nilai 0-100 • Nilai akhir proyek dihitung kumulatif / dosen yang mengisi
             </small>
           </div>
           <div class="text-right">
@@ -3491,57 +3673,65 @@
 
     Swal.fire({
       html: modalHtml,
-      width: '920px',
+      width: window.innerWidth > 992 ? '1060px' : '96%',
       showConfirmButton: true,
-      confirmButtonText: '<i class="fas fa-save" title="Simpan Nilai" aria-label="Simpan Nilai"></i>',
+      confirmButtonText: '<i class="fas fa-save mr-1"></i> Simpan Nilai Proyek',
       confirmButtonColor: '#28a745',
       showCancelButton: true,
-      cancelButtonText: '<i class="fas fa-times" title="Batal" aria-label="Batal"></i>',
+      cancelButtonText: '<i class="fas fa-times mr-1"></i> Tutup',
+      cancelButtonColor: '#6c757d',
       showCloseButton: true,
       showLoaderOnConfirm: true,
       allowOutsideClick: () => !Swal.isLoading(),
       didOpen: () => {
-        const matkulSelect = Swal.getPopup().querySelector('#evaluasi_matkul_selector');
-        if (matkulSelect) {
-          matkulSelect.addEventListener('change', async function() {
-            const selectedMkId = this.value;
-            const targetUrl = fetchUrl + (selectedMkId ? (fetchUrl.includes('?') ? '&' : '?') + 'mata_kuliah_id=' + selectedMkId : '');
-            try {
-              const res = await fetch(targetUrl, {
-                headers: {
-                  'Accept': 'application/json',
-                  'X-Requested-With': 'XMLHttpRequest',
-                  'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                }
-              });
-              if (res.ok) {
-                const p = await res.json();
-                const evalMap = {};
-                (p.evaluations || []).forEach(item => {
-                  if (item && typeof item.mahasiswa_id !== 'undefined') {
-                    evalMap[String(item.mahasiswa_id)] = item;
-                  }
-                });
+        const popup = Swal.getPopup();
+        const evaluatorSelect = popup.querySelector('#project_evaluator_select');
+        const statusBadge = popup.querySelector('#project_evaluator_status_badge');
+        const mkText = popup.querySelector('#project_evaluator_mk_text');
 
-                document.querySelectorAll('.project-detail-modal tbody tr').forEach(row => {
-                  const mId = row.getAttribute('data-member');
-                  const currentEval = evalMap[mId] || {};
-                  row.setAttribute('data-evaluation-id', currentEval.id || '');
-                  row.querySelectorAll('.grade-input').forEach(input => {
-                    const itemKey = input.getAttribute('data-item');
-                    const rawVal = currentEval[itemKey];
-                    input.value = (rawVal === 0 || (rawVal && rawVal !== '' && !isNaN(rawVal))) ? rawVal : '';
-                  });
-                  calculateRowTotals(row);
-                });
-              }
-            } catch (err) {
-              console.error('Gagal memuat nilai untuk mata kuliah terpilih', err);
+        const updateProjectEvaluatorView = (evaluatorId) => {
+          const evalObj = availableEvaluators.find(e => e.dosen_id == evaluatorId);
+          if (evalObj) {
+            if (evalObj.has_evaluated) {
+              statusBadge.className = 'badge badge-success px-3 py-2 badge-pill';
+              statusBadge.innerHTML = `<i class="fas fa-check-circle mr-1"></i> Sudah Menilai (${evalObj.evaluated_count || 0} mhs)`;
+            } else {
+              statusBadge.className = 'badge badge-secondary px-3 py-2 badge-pill';
+              statusBadge.innerHTML = '<i class="fas fa-clock mr-1"></i> Belum Menilai';
             }
+
+            if (evalObj.mata_kuliah_nama) {
+              mkText.innerHTML = `Mata Kuliah: <strong>${evalObj.mata_kuliah_nama}</strong>`;
+            } else {
+              mkText.innerHTML = `Peran: <strong>${evalObj.peran || 'Penilai'}</strong>`;
+            }
+          }
+
+          popup.querySelectorAll('.project-detail-modal tbody tr').forEach(row => {
+            const memberId = row.getAttribute('data-member');
+            const evalRecord = allEvaluations.find(e => e.mahasiswa_id == memberId && e.evaluator_id == evaluatorId);
+
+            row.setAttribute('data-evaluation-id', evalRecord?.id || '');
+            row.querySelectorAll('.grade-input').forEach(input => {
+              const itemKey = input.getAttribute('data-item');
+              const rawVal = evalRecord ? evalRecord[itemKey] : '';
+              input.value = (rawVal === 0 || (rawVal && rawVal !== '' && !isNaN(rawVal))) ? rawVal : '';
+            });
+
+            calculateRowTotals(row);
           });
+        };
+
+        if (evaluatorSelect) {
+          evaluatorSelect.addEventListener('change', (e) => {
+            const newEvalId = parseInt(e.target.value);
+            selectedEvaluatorId = newEvalId;
+            updateProjectEvaluatorView(newEvalId);
+          });
+          updateProjectEvaluatorView(selectedEvaluatorId);
         }
 
-        document.querySelectorAll('.grade-input').forEach(input => {
+        popup.querySelectorAll('.grade-input').forEach(input => {
           input.addEventListener('input', function() {
             const row = this.closest('tr');
             if (row) {
@@ -3550,14 +3740,18 @@
           });
         });
 
-        document.querySelectorAll('.project-detail-modal tbody tr').forEach(row => {
+        popup.querySelectorAll('.project-detail-modal tbody tr').forEach(row => {
           calculateRowTotals(row);
         });
       },
       preConfirm: () => {
         const popup = Swal.getPopup();
+        const evalSelect = popup.querySelector('#project_evaluator_select');
+        const activeEvaluatorId = evalSelect ? parseInt(evalSelect.value) : selectedEvaluatorId;
+        const selectedOption = evalSelect ? evalSelect.selectedOptions[0] : null;
+        const activeMatkulId = selectedOption?.getAttribute('data-matkul-id') ? parseInt(selectedOption.getAttribute('data-matkul-id')) : null;
+
         const rows = popup.querySelectorAll('tbody tr');
-        const selectedMatkulId = popup.querySelector('#evaluasi_matkul_selector')?.value || null;
         const items = {};
 
         rows.forEach(row => calculateRowTotals(row));
@@ -3586,6 +3780,8 @@
           if (Object.keys(rowData).length > 0 || evaluationId) {
             items[memberId] = {
               evaluation_id: evaluationId,
+              evaluator_id: activeEvaluatorId,
+              mata_kuliah_id: activeMatkulId,
               nilai: rowData,
             };
           }
@@ -3593,7 +3789,6 @@
 
         if (! Object.keys(items).length) {
           Swal.showValidationMessage('Isi minimal satu nilai sebelum menyimpan');
-
           return false;
         }
 
@@ -3616,27 +3811,20 @@
           body: JSON.stringify({
             evaluasi_master_id: {{ $sesi->id }},
             sesi_id: {{ $sesi->id }},
-            mata_kuliah_id: selectedMatkulId,
+            evaluator_id: activeEvaluatorId,
+            mata_kuliah_id: activeMatkulId,
             items
           })
         })
-          .then(response => {
-            if (! response.ok) {
-              throw new Error('Gagal menyimpan nilai (HTTP '+response.status+')');
+          .then(async response => {
+            const data = await response.json().catch(() => ({}));
+            if (! response.ok || ! data?.success) {
+              throw new Error(data?.message || `Gagal menyimpan nilai (HTTP ${response.status})`);
             }
-
-            return response.json();
-          })
-          .then(data => {
-            if (! data?.success) {
-              throw new Error(data?.message || 'Gagal menyimpan nilai');
-            }
-
             return { data, finalScores };
           })
           .catch(error => {
             Swal.showValidationMessage(error.message || 'Gagal menyimpan nilai');
-
             return false;
           });
       }
