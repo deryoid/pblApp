@@ -3439,7 +3439,7 @@
     const buildEvaluatorOptions = () => {
       return availableEvaluators.map(e => {
         const isSel = e.dosen_id == selectedEvaluatorId ? 'selected' : '';
-        const roleText = (result.is_non_course_scheme || !e.mata_kuliah_nama)
+        const roleText = (isNonCourseScheme || !e.mata_kuliah_nama)
           ? (e.peran || 'Pembimbing / Penilai')
           : `[MK: ${e.mata_kuliah_nama}]`;
         const evalStatus = e.has_evaluated ? '✓ Sudah Menilai' : '⏳ Belum Menilai';
@@ -3482,8 +3482,8 @@
 
     // Bangun daftar mata kuliah terkait
     let coursesHtml = '';
-    if (result.is_non_course_scheme) {
-      coursesHtml = `<div class="col-12 text-muted small p-2 text-left"><span class="badge badge-warning text-dark mr-1"><i class="fas fa-certificate mr-1"></i>Skema: ${result.skema_kategori || 'Teaching Factory/Hibah/Lomba'}</span> Kelompok ini tidak memerlukan keterlibatan dosen mata kuliah (dinilai oleh pembimbing/penilai).</div>`;
+    if (isNonCourseScheme) {
+      coursesHtml = `<div class="col-12 text-muted small p-2 text-left"><span class="badge badge-warning text-dark mr-1"><i class="fas fa-certificate mr-1"></i>Skema: ${cardSkema || 'Teaching Factory/Hibah/Lomba'}</span> Kelompok ini tidak memerlukan keterlibatan dosen mata kuliah (dinilai oleh pembimbing/penilai).</div>`;
     } else if (relatedCourses.length > 0) {
       coursesHtml = relatedCourses.map(c => `
         <div class="col-12 col-md-6 mb-2">

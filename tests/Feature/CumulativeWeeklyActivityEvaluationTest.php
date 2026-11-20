@@ -465,6 +465,8 @@ class CumulativeWeeklyActivityEvaluationTest extends TestCase
         $dosenViewResp->assertSee('modalProjectCardDetail');
         $dosenViewResp->assertSee('modal-xl');
         $dosenViewResp->assertSee('Nilai AP');
+        $dosenViewResp->assertSee('window.gradeAP = async function');
+        $dosenViewResp->assertDontSee('roleText = (result.is_non_course_scheme');
 
         // 2. Admin view
         $adminUser = User::create([
@@ -485,6 +487,8 @@ class CumulativeWeeklyActivityEvaluationTest extends TestCase
         $adminViewResp->assertSee('modalEditProyek');
         $adminViewResp->assertSee('modalProjectCardDetail');
         $adminViewResp->assertSee('modal-xl');
+        $adminViewResp->assertSee('window.gradeAP = async function');
+        $adminViewResp->assertDontSee('roleText = (result.is_non_course_scheme');
     }
 
     public function test_user_can_select_specific_evaluator_to_store_weekly_ap(): void
