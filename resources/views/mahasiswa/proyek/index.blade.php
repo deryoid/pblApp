@@ -1469,13 +1469,18 @@
 
   function updateMatkulFilter(selectSkemaEl, selectMatkulEl, helpEl, badgeEl) {
     const skema = $(selectSkemaEl).val() || 'Internal';
-    const isInternal = (skema.toLowerCase() === 'internal');
+    const sLower = skema.toLowerCase();
+    const isNonCourse = sLower.includes('teaching factory') || sLower.includes('hibah') || sLower.includes('lomba') || sLower.includes('tefa');
+    const isInternal = (sLower === 'internal');
 
-    if (isInternal) {
-      $(badgeEl).removeClass('badge-success badge-info').addClass('badge-primary').text('Semester ' + kelompokSemester + ' (Disarankan)');
+    if (isNonCourse) {
+      $(badgeEl).removeClass('badge-primary badge-success').addClass('badge-secondary').text('Tidak Perlu Mata Kuliah');
+      $(helpEl).html('<i class="fas fa-info-circle mr-1 text-secondary"></i> Skema <strong>' + skema + '</strong> tidak memerlukan dosen mata kuliah (dinilai oleh pembimbing/penilai).');
+    } else if (isInternal) {
+      $(badgeEl).removeClass('badge-success badge-secondary').addClass('badge-primary').text('Semester ' + kelompokSemester + ' (Disarankan)');
       $(helpEl).html('<i class="fas fa-info-circle mr-1 text-primary"></i> Proyek Internal disarankan dikaitkan dengan mata kuliah <strong>Semester ' + kelompokSemester + '</strong>.');
     } else {
-      $(badgeEl).removeClass('badge-primary badge-info').addClass('badge-success').text('Bebas (Semua Semester)');
+      $(badgeEl).removeClass('badge-primary badge-secondary').addClass('badge-success').text('Bebas (Semua Semester)');
       $(helpEl).html('<i class="fas fa-check-circle mr-1 text-success"></i> Proyek <strong>' + skema + '</strong> bebas memilih mata kuliah dari semua semester.');
     }
   }

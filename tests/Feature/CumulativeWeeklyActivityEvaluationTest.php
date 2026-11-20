@@ -828,4 +828,133 @@ class CumulativeWeeklyActivityEvaluationTest extends TestCase
         $summary = $getResp->json('summary_per_mahasiswa.'.$this->mahasiswa->id);
         $this->assertEquals(88.0, (float) $summary['cumulative_score']);
     }
+
+    public function test_teaching_factory_scheme_does_not_require_dosen_mata_kuliah(): void
+    {
+        // Buat kartu proyek skema Teaching Factory tanpa mata kuliah
+        $tefaCard = ProjectCard::create([
+            'kelompok_id' => $this->kelompok->id,
+            'periode_id' => $this->periode->id,
+            'list_id' => $this->projectCard->list_id,
+            'title' => 'Produksi Smart IoT Gateway - Teaching Factory',
+            'created_by' => $this->mahasiswa->user_id,
+            'skema_pbl' => 'Teaching Factory',
+            'status' => 'Proses',
+        ]);
+
+        $this->assertTrue($tefaCard->isNonCourseScheme());
+
+        // Dosen C yang tidak mengampu mata kuliah semester tetap berwenang menilai proyek Teaching Factory
+        $this->assertTrue($tefaCard->canBeAssessedBy($this->dosenUserUnauth));
+
+        // Dosen C dapat memanggil API get dan submit nilai tanpa error 403
+        $getResp = $this->actingAs($this->dosenUserUnauth)
+            ->getJson(route('dosen.evaluasi.penilaian-dosen.show-by-project', ['project' => $tefaCard->id]));
+
+        $getResp->assertOk();
+        $this->assertTrue($getResp->json('is_non_course_scheme'));
+        $this->assertEmpty($getResp->json('mata_kuliahs'));
+
+        // Dosen C menyimpan nilai tanpa mata_kuliah_id
+        $postResp = $this->actingAs($this->dosenUserUnauth)
+            ->postJson(route('dosen.evaluasi.project.grade.dosen', ['card' => $tefaCard->id]), [
+                'evaluator_id' => $this->dosenUserUnauth->id,
+                'items' => [
+                    $this->mahasiswa->id => [
+                        'nilai' => [
+                            'd_relevansi' => 95,
+                            'd_kualitas' => 95,
+                            'd_kreativitas' => 95,
+                            'd_estetika' => 95,
+                        ],
+                    ],
+                ],
+            ]);
+
+        $postResp->assertOk();
+        $postResp->assertJson(['success' => true]);
+
+        $saved = EvaluasiDosen::where('project_card_id', $tefaCard->id)
+            ->where('mahasiswa_id', $this->mahasiswa->id)
+            ->first();
+
+        $this->assertNotNull($saved);
+        $this->assertEquals(95.0, (float) $saved->nilai_akhir);
+        $this->assertNull($saved->mata_kuliah_id);
+    }
+
+    public function test_hibah_and_lomba_schemes_do_not_require_dosen_mata_kuliah(): void
+    {
+        $hibahCard = ProjectCard::create([
+            'kelompok_id' => $this->kelompok->id,
+            'periode_id' => $this->periode->id,
+            'list_id' => $this->projectCard->list_id,
+            'title' => 'Riset Sensor Agrikultur - Hibah Penelitian',
+            'created_by' => $this->mahasiswa->user_id,
+            'skema_pbl' => 'Hibah/Penelitian',
+            'status' => 'Proses',
+        ]);
+
+        $lombaCard = ProjectCard::create([
+            'kelompok_id' => $this->kelompok->id,
+            'periode_id' => $this->periode->id,
+            'list_id' => $this->projectCard->list_id,
+            'title' => 'Aplikasi Gemastik 2026 - Lomba',
+            'created_by' => $this->mahasiswa->user_id,
+            'skema_pbl' => 'Lomba',
+            'status' => 'Proses',
+        ]);
+
+        $this->assertTrue($hibahCard->isNonCourseScheme());
+        $this->assertTrue($lombaCard->isNonCourseScheme());
+
+        $this->assertTrue($hibahCard->canBeAssessedBy($this->dosenUserUnauth));
+        $this->assertTrue($lombaCard->canBeAssessedBy($this->dosenUserUnauth));
+
+        // Dosen dapat menilai proyek Hibah
+        $this->actingAs($this->dosenUserUnauth)
+            ->postJson(route('dosen.evaluasi.project.grade.dosen', ['card' => $hibahCard->id]), [
+                'evaluator_id' => $this->dosenUserUnauth->id,
+                'items' => [
+                    $this->mahasiswa->id => [
+                        'nilai' => [
+                            'd_relevansi' => 88,
+                            'd_kualitas' => 88,
+                            'd_kreativitas' => 88,
+                            'd_estetika' => 88,
+                        ],
+                    ],
+                ],
+            ])
+            ->assertOk();
+
+        // Dosen dapat menilai proyek Lomba
+        $this->actingAs($this->dosenUserUnauth)
+            ->postJson(route('dosen.evaluasi.project.grade.dosen', ['card' => $lombaCard->id]), [
+                'evaluator_id' => $this->dosenUserUnauth->id,
+                'items' => [
+                    $this->mahasiswa->id => [
+                        'nilai' => [
+                            'd_relevansi' => 92,
+                            'd_kualitas' => 92,
+                            'd_kreativitas' => 92,
+                            'd_estetika' => 92,
+                        ],
+                    ],
+                ],
+            ])
+            ->assertOk();
+
+        $this->assertDatabaseHas('evaluasi_dosen', [
+            'project_card_id' => $hibahCard->id,
+            'mahasiswa_id' => $this->mahasiswa->id,
+            'nilai_akhir' => 88.0,
+        ]);
+
+        $this->assertDatabaseHas('evaluasi_dosen', [
+            'project_card_id' => $lombaCard->id,
+            'mahasiswa_id' => $this->mahasiswa->id,
+            'nilai_akhir' => 92.0,
+        ]);
+    }
 }

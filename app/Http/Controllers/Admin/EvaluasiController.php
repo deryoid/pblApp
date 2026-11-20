@@ -700,37 +700,44 @@ class EvaluasiController extends Controller
         // Ambil seluruh kartu proyek kelompok ini
         $allCards = $proyekLists->flatMap(fn ($l) => $l->cards);
 
-        // Kumpulkan mata kuliah terkait unik
-        $mataKuliahTerkait = $allCards->flatMap(fn ($c) => $c->mataKuliahs)
-            ->unique('id')
-            ->values();
+        $isNonCourseGroup = $kelompok->isNonCourseScheme() || ($allCards->isNotEmpty() && $allCards->every(fn ($c) => $c->isNonCourseScheme()));
 
-        if ($mataKuliahTerkait->isEmpty() && ! empty($kelompok->semester)) {
-            $mataKuliahTerkait = \App\Models\MataKuliah::with('dosenPengampu')
-                ->where('semester', $kelompok->semester)
-                ->where('is_active', true)
-                ->get();
+        // Kumpulkan mata kuliah terkait unik (hanya untuk skema reguler/internal yang membutuhkan MK)
+        $mataKuliahTerkait = collect();
+        if (! $isNonCourseGroup) {
+            $mataKuliahTerkait = $allCards->flatMap(fn ($c) => $c->mataKuliahs)
+                ->unique('id')
+                ->values();
+
+            if ($mataKuliahTerkait->isEmpty() && ! empty($kelompok->semester)) {
+                $mataKuliahTerkait = \App\Models\MataKuliah::with('dosenPengampu')
+                    ->where('semester', $kelompok->semester)
+                    ->where('is_active', true)
+                    ->get();
+            }
         }
 
         // Kumpulkan tim evaluator & pihak yang berwenang mengevaluasi
         $evaluatorList = collect();
 
-        // 1. Dosen Pengampu MK
-        foreach ($mataKuliahTerkait as $mk) {
-            foreach ($mk->dosenPengampu as $dosen) {
-                $evaluatorList->push([
-                    'type' => 'dosen_pengampu',
-                    'role_label' => 'Dosen Pengampu MK',
-                    'nama' => $dosen->nama_user ?: $dosen->name,
-                    'identitas' => $dosen->username ?: ($dosen->email ?: '-'),
-                    'email' => $dosen->email,
-                    'no_hp' => $dosen->no_hp,
-                    'matkul' => $mk->nama_matkul,
-                    'kode_matkul' => $mk->kode_matkul,
-                    'komponen' => 'Rubrik 4 Pilar Proyek (Relevansi, Kualitas, Kreativitas, Estetika)',
-                    'status' => 'Berwenang Menilai',
-                    'user_id' => $dosen->id,
-                ]);
+        // 1. Dosen Pengampu MK (hanya jika skema memerlukan mata kuliah)
+        if (! $isNonCourseGroup) {
+            foreach ($mataKuliahTerkait as $mk) {
+                foreach ($mk->dosenPengampu as $dosen) {
+                    $evaluatorList->push([
+                        'type' => 'dosen_pengampu',
+                        'role_label' => 'Dosen Pengampu MK',
+                        'nama' => $dosen->nama_user ?: $dosen->name,
+                        'identitas' => $dosen->username ?: ($dosen->email ?: '-'),
+                        'email' => $dosen->email,
+                        'no_hp' => $dosen->no_hp,
+                        'matkul' => $mk->nama_matkul,
+                        'kode_matkul' => $mk->kode_matkul,
+                        'komponen' => 'Rubrik 4 Pilar Proyek (Relevansi, Kualitas, Kreativitas, Estetika)',
+                        'status' => 'Berwenang Menilai',
+                        'user_id' => $dosen->id,
+                    ]);
+                }
             }
         }
 
@@ -1360,8 +1367,8 @@ class EvaluasiController extends Controller
                 $evaluasiMasterId = $evalMaster->id;
             }
 
-            // Auto-detect mata kuliah jika belum dispesifikasi
-            if (! $mataKuliahId) {
+            // Auto-detect mata kuliah jika belum dispesifikasi (hanya untuk skema reguler/internal yang membutuhkan MK)
+            if (! $mataKuliahId && ! $card->isNonCourseScheme()) {
                 $evalUser = User::find($activeEvaluatorId);
                 if ($evalUser) {
                     $taughtIds = $evalUser->getTaughtMataKuliahIds();
@@ -1810,36 +1817,39 @@ class EvaluasiController extends Controller
 
         $user = Auth::user();
         $kelompok = $projectCard->list?->kelompok;
+        $isNonCourseScheme = $projectCard->isNonCourseScheme();
 
         // Kumpulkan seluruh dosen berwenang untuk proyek ini
         $authorizedDosenMap = collect();
 
-        // 1. Dosen Pengampu dari mata kuliah yang terhubung ke kartu proyek
-        foreach ($projectCard->mataKuliahs as $mk) {
-            foreach ($mk->dosenPengampu as $dp) {
-                if (! $authorizedDosenMap->has($dp->id)) {
-                    $authorizedDosenMap->put($dp->id, [
-                        'dosen_id' => $dp->id,
-                        'nama' => $dp->nama_user ?: $dp->name,
-                        'nip' => $dp->username ?: '-',
-                        'peran' => 'Dosen Pengampu MK: '.$mk->nama_matkul,
-                        'mata_kuliah_id' => $mk->id,
-                        'mata_kuliah_nama' => $mk->nama_matkul,
-                    ]);
+        // 1. Dosen Pengampu dari mata kuliah yang terhubung ke kartu proyek (hanya untuk skema reguler/internal yang membutuhkan MK)
+        if (! $isNonCourseScheme) {
+            foreach ($projectCard->mataKuliahs as $mk) {
+                foreach ($mk->dosenPengampu as $dp) {
+                    if (! $authorizedDosenMap->has($dp->id)) {
+                        $authorizedDosenMap->put($dp->id, [
+                            'dosen_id' => $dp->id,
+                            'nama' => $dp->nama_user ?: $dp->name,
+                            'nip' => $dp->username ?: '-',
+                            'peran' => 'Dosen Pengampu MK: '.$mk->nama_matkul,
+                            'mata_kuliah_id' => $mk->id,
+                            'mata_kuliah_nama' => $mk->nama_matkul,
+                        ]);
+                    }
                 }
-            }
 
-            if ($mk->dosen_id && ! $authorizedDosenMap->has($mk->dosen_id)) {
-                $dpUser = User::find($mk->dosen_id);
-                if ($dpUser) {
-                    $authorizedDosenMap->put($dpUser->id, [
-                        'dosen_id' => $dpUser->id,
-                        'nama' => $dpUser->nama_user ?: $dpUser->name,
-                        'nip' => $dpUser->username ?: '-',
-                        'peran' => 'Dosen Pengampu MK: '.$mk->nama_matkul,
-                        'mata_kuliah_id' => $mk->id,
-                        'mata_kuliah_nama' => $mk->nama_matkul,
-                    ]);
+                if ($mk->dosen_id && ! $authorizedDosenMap->has($mk->dosen_id)) {
+                    $dpUser = User::find($mk->dosen_id);
+                    if ($dpUser) {
+                        $authorizedDosenMap->put($dpUser->id, [
+                            'dosen_id' => $dpUser->id,
+                            'nama' => $dpUser->nama_user ?: $dpUser->name,
+                            'nip' => $dpUser->username ?: '-',
+                            'peran' => 'Dosen Pengampu MK: '.$mk->nama_matkul,
+                            'mata_kuliah_id' => $mk->id,
+                            'mata_kuliah_nama' => $mk->nama_matkul,
+                        ]);
+                    }
                 }
             }
         }
@@ -1852,8 +1862,8 @@ class EvaluasiController extends Controller
                     'nama' => $dp->dosen->nama_user ?: $dp->dosen->name,
                     'nip' => $dp->dosen->username ?: '-',
                     'peran' => 'Dosen Penilai / Penguji PBL',
-                    'mata_kuliah_id' => $dp->mata_kuliah_id,
-                    'mata_kuliah_nama' => $dp->mataKuliah?->nama_matkul ?: 'Sidang PBL',
+                    'mata_kuliah_id' => $isNonCourseScheme ? null : $dp->mata_kuliah_id,
+                    'mata_kuliah_nama' => $isNonCourseScheme ? null : ($dp->mataKuliah?->nama_matkul ?: 'Sidang PBL'),
                 ]);
             }
         }
@@ -1870,8 +1880,8 @@ class EvaluasiController extends Controller
             ]);
         }
 
-        // 4. Sertakan dosen semester kelompok jika belum ada
-        if ($kelompok && $kelompok->semester) {
+        // 4. Sertakan dosen semester kelompok jika belum ada (hanya untuk skema reguler/internal yang membutuhkan MK)
+        if (! $isNonCourseScheme && $kelompok && $kelompok->semester) {
             $semMatkuls = \App\Models\MataKuliah::where('semester', $kelompok->semester)
                 ->where('is_active', true)
                 ->with('dosenPengampu')
@@ -2003,12 +2013,14 @@ class EvaluasiController extends Controller
                 'nama' => $user?->nama_user ?: $user?->name,
                 'is_admin' => $user ? $user->isAdmin() : false,
             ],
-            'mata_kuliahs' => $projectCard->mataKuliahs->map(fn ($mk) => [
+            'mata_kuliahs' => $isNonCourseScheme ? [] : $projectCard->mataKuliahs->map(fn ($mk) => [
                 'id' => $mk->id,
                 'nama' => $mk->nama_matkul ?? $mk->nama_matakuliah,
                 'kode' => $mk->kode_matkul ?? $mk->kode_matakuliah,
                 'semester' => $mk->semester,
             ]),
+            'is_non_course_scheme' => $isNonCourseScheme,
+            'skema_pbl' => $projectCard->skema_pbl ?? $kelompok?->skema_kategori ?? null,
         ]);
     }
 
@@ -2366,56 +2378,60 @@ class EvaluasiController extends Controller
                 ])
                 ->get();
 
-            // Ekstrak daftar mata kuliah terkait proyek ini
+            $isGroupNonCourse = $kelompok?->isNonCourseScheme() || ($projectCards->isNotEmpty() && $projectCards->every(fn ($c) => $c->isNonCourseScheme()));
+
+            // Ekstrak daftar mata kuliah terkait proyek ini (hanya untuk skema reguler/internal yang membutuhkan MK)
             $relatedCourses = collect();
             $authorizedDosenMap = collect();
 
             foreach ($projectCards as $card) {
-                foreach ($card->mataKuliahs as $mk) {
-                    if (! $relatedCourses->has($mk->id)) {
-                        $pengampuList = $mk->dosenPengampu->map(function ($dp) {
-                            return [
-                                'id' => $dp->id,
-                                'nama' => $dp->nama_user ?: $dp->name,
-                                'nip' => $dp->username ?: '-',
-                                'email' => $dp->email,
-                            ];
-                        });
+                if (! $isGroupNonCourse) {
+                    foreach ($card->mataKuliahs as $mk) {
+                        if (! $relatedCourses->has($mk->id)) {
+                            $pengampuList = $mk->dosenPengampu->map(function ($dp) {
+                                return [
+                                    'id' => $dp->id,
+                                    'nama' => $dp->nama_user ?: $dp->name,
+                                    'nip' => $dp->username ?: '-',
+                                    'email' => $dp->email,
+                                ];
+                            });
 
-                        $relatedCourses->put($mk->id, [
-                            'id' => $mk->id,
-                            'kode' => $mk->kode_matkul,
-                            'nama' => $mk->nama_matkul,
-                            'sks' => $mk->sks,
-                            'semester' => $mk->semester,
-                            'dosen_pengampu' => $pengampuList,
-                        ]);
-                    }
-
-                    foreach ($mk->dosenPengampu as $dp) {
-                        if (! $authorizedDosenMap->has($dp->id)) {
-                            $authorizedDosenMap->put($dp->id, [
-                                'dosen_id' => $dp->id,
-                                'nama' => $dp->nama_user ?: $dp->name,
-                                'nip' => $dp->username ?: '-',
-                                'peran' => 'Dosen Pengampu MK: '.$mk->nama_matkul,
-                                'mata_kuliah_id' => $mk->id,
-                                'mata_kuliah_nama' => $mk->nama_matkul,
+                            $relatedCourses->put($mk->id, [
+                                'id' => $mk->id,
+                                'kode' => $mk->kode_matkul,
+                                'nama' => $mk->nama_matkul,
+                                'sks' => $mk->sks,
+                                'semester' => $mk->semester,
+                                'dosen_pengampu' => $pengampuList,
                             ]);
                         }
-                    }
 
-                    if ($mk->dosen_id && ! $authorizedDosenMap->has($mk->dosen_id)) {
-                        $dpUser = User::find($mk->dosen_id);
-                        if ($dpUser) {
-                            $authorizedDosenMap->put($dpUser->id, [
-                                'dosen_id' => $dpUser->id,
-                                'nama' => $dpUser->nama_user ?: $dpUser->name,
-                                'nip' => $dpUser->username ?: '-',
-                                'peran' => 'Dosen Pengampu MK: '.$mk->nama_matkul,
-                                'mata_kuliah_id' => $mk->id,
-                                'mata_kuliah_nama' => $mk->nama_matkul,
-                            ]);
+                        foreach ($mk->dosenPengampu as $dp) {
+                            if (! $authorizedDosenMap->has($dp->id)) {
+                                $authorizedDosenMap->put($dp->id, [
+                                    'dosen_id' => $dp->id,
+                                    'nama' => $dp->nama_user ?: $dp->name,
+                                    'nip' => $dp->username ?: '-',
+                                    'peran' => 'Dosen Pengampu MK: '.$mk->nama_matkul,
+                                    'mata_kuliah_id' => $mk->id,
+                                    'mata_kuliah_nama' => $mk->nama_matkul,
+                                ]);
+                            }
+                        }
+
+                        if ($mk->dosen_id && ! $authorizedDosenMap->has($mk->dosen_id)) {
+                            $dpUser = User::find($mk->dosen_id);
+                            if ($dpUser) {
+                                $authorizedDosenMap->put($dpUser->id, [
+                                    'dosen_id' => $dpUser->id,
+                                    'nama' => $dpUser->nama_user ?: $dpUser->name,
+                                    'nip' => $dpUser->username ?: '-',
+                                    'peran' => 'Dosen Pengampu MK: '.$mk->nama_matkul,
+                                    'mata_kuliah_id' => $mk->id,
+                                    'mata_kuliah_nama' => $mk->nama_matkul,
+                                ]);
+                            }
                         }
                     }
                 }
@@ -2428,8 +2444,8 @@ class EvaluasiController extends Controller
                             'nama' => $dPenilai->dosen->nama_user ?: $dPenilai->dosen->name,
                             'nip' => $dPenilai->dosen->username ?: '-',
                             'peran' => 'Dosen Penilai Proyek: '.$card->title,
-                            'mata_kuliah_id' => $dPenilai->mata_kuliah_id,
-                            'mata_kuliah_nama' => $dPenilai->mataKuliah?->nama_matkul ?: 'Sidang PBL',
+                            'mata_kuliah_id' => $isGroupNonCourse ? null : $dPenilai->mata_kuliah_id,
+                            'mata_kuliah_nama' => $isGroupNonCourse ? null : ($dPenilai->mataKuliah?->nama_matkul ?: 'Sidang PBL'),
                         ]);
                     }
                 }
@@ -2447,8 +2463,8 @@ class EvaluasiController extends Controller
                 }
             }
 
-            // Sertakan dosen pengampu mata kuliah semester kelompok jika belum ada
-            if ($kelompok && $kelompok->semester) {
+            // Sertakan dosen pengampu mata kuliah semester kelompok jika belum ada (hanya untuk skema reguler/internal)
+            if (! $isGroupNonCourse && $kelompok && $kelompok->semester) {
                 $semMatkuls = \App\Models\MataKuliah::where('semester', $kelompok->semester)
                     ->where('is_active', true)
                     ->with('dosenPengampu')
@@ -2633,6 +2649,8 @@ class EvaluasiController extends Controller
                 'all_evaluations' => $allEvaluationsList,
                 'current_user_course' => $currentUserCourse,
                 'related_courses' => $relatedCourses->values(),
+                'is_non_course_scheme' => $isGroupNonCourse,
+                'skema_kategori' => $kelompok?->skema_kategori,
                 'evaluators_summary' => $evaluatorsStatus,
                 'nilai_ap' => $mappedNilaiAP,
             ]);

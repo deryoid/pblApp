@@ -235,6 +235,26 @@ class ProjectCard extends Model
     }
 
     /**
+     * Memeriksa apakah proyek menggunakan skema non-mata kuliah (Teaching Factory, Hibah/Penelitian, Lomba).
+     * Skema-skema ini tidak memerlukan keterlibatan dosen mata kuliah.
+     */
+    public function isNonCourseScheme(): bool
+    {
+        $skema = strtolower(trim((string) ($this->skema_pbl ?: optional($this->kelompok)->skema_kategori ?: '')));
+
+        if ($skema === '') {
+            return false;
+        }
+
+        return str_contains($skema, 'teaching factory')
+            || str_contains($skema, 'tefa')
+            || str_contains($skema, 'hibah')
+            || str_contains($skema, 'lomba')
+            || str_contains($skema, 'penelitian')
+            || str_contains($skema, 'pengabdian');
+    }
+
+    /**
      * Scope untuk membatasi kartu proyek yang hanya dapat diakses/dilihat oleh dosen pengampu / penilai / pembimbing.
      */
     public function scopeAccessibleByDosen($query, ?User $user)
@@ -253,7 +273,17 @@ class ProjectCard extends Model
                 ->orWhereHas('dosenPenilai', function ($dq) use ($identityIds) {
                     $dq->whereIn('dosen_id', $identityIds);
                 })
-                ->orWhereIn('dosen_penentu_id', $identityIds);
+                ->orWhereIn('dosen_penentu_id', $identityIds)
+                ->orWhere(function ($sq) {
+                    $sq->where('skema_pbl', 'like', '%Teaching Factory%')
+                        ->orWhere('skema_pbl', 'like', '%Hibah%')
+                        ->orWhere('skema_pbl', 'like', '%Lomba%')
+                        ->orWhereHas('kelompok', function ($kq) {
+                            $kq->where('skema_kategori', 'like', '%Teaching Factory%')
+                                ->orWhere('skema_kategori', 'like', '%Hibah%')
+                                ->orWhere('skema_kategori', 'like', '%Lomba%');
+                        });
+                });
         });
     }
 
@@ -308,7 +338,12 @@ class ProjectCard extends Model
             return false;
         }
 
-        // 4. Dosen Pengampu dari salah satu mata kuliah yang terhubung dengan proyek ini
+        // 4. Skema Teaching Factory, Hibah, dan Lomba: TIDAK PERLU dosen mata kuliah
+        if ($this->isNonCourseScheme()) {
+            return true;
+        }
+
+        // 5. Dosen Pengampu dari salah satu mata kuliah yang terhubung dengan proyek ini (untuk skema yang perlu mata kuliah, spt Internal)
         return $this->mataKuliahs()->whereIn('mata_kuliah.id', $taughtMatkulIds)->exists();
     }
 }

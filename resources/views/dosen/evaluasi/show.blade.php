@@ -2728,6 +2728,8 @@
     let isAuthorized = true;
     let currentUserCourse = null;
     let dataLoaded = false;
+    let isNonCourseScheme = false;
+    let cardSkema = '';
 
     // Show loading indicator
     Swal.fire({
@@ -2761,6 +2763,8 @@
         relatedCourses = result.related_courses || [];
         evaluatorsSummary = result.evaluators_summary || [];
         isAuthorized = result.is_authorized !== false;
+        isNonCourseScheme = Boolean(result.is_non_course_scheme);
+        cardSkema = result.skema_kategori || '';
         currentUserCourse = result.current_user_course;
         dataLoaded = true;
 
@@ -2799,7 +2803,9 @@
     const buildEvaluatorOptions = () => {
       return availableEvaluators.map(e => {
         const isSel = e.dosen_id == selectedEvaluatorId ? 'selected' : '';
-        const roleText = e.mata_kuliah_nama ? `[MK: ${e.mata_kuliah_nama}]` : (e.peran || 'Penilai');
+        const roleText = (result.is_non_course_scheme || !e.mata_kuliah_nama)
+          ? (e.peran || 'Pembimbing / Penilai')
+          : `[MK: ${e.mata_kuliah_nama}]`;
         const evalStatus = e.has_evaluated ? '✓ Sudah Menilai' : '⏳ Belum Menilai';
         const youTag = e.is_current_user ? ' (Anda)' : '';
         return `<option value="${e.dosen_id}" data-matkul-id="${e.mata_kuliah_id || ''}" data-matkul-nama="${e.mata_kuliah_nama || ''}" data-nama="${e.nama}" data-evaluated="${e.has_evaluated ? '1' : '0'}" ${isSel}>${e.nama} — ${roleText} [${evalStatus}]${youTag}</option>`;
@@ -2840,7 +2846,9 @@
 
     // Bangun daftar mata kuliah terkait
     let coursesHtml = '';
-    if (relatedCourses.length > 0) {
+    if (result.is_non_course_scheme) {
+      coursesHtml = `<div class="col-12 text-muted small p-2 text-left"><span class="badge badge-warning text-dark mr-1"><i class="fas fa-certificate mr-1"></i>Skema: ${result.skema_kategori || 'Teaching Factory/Hibah/Lomba'}</span> Kelompok ini tidak memerlukan keterlibatan dosen mata kuliah (dinilai oleh pembimbing/penilai).</div>`;
+    } else if (relatedCourses.length > 0) {
       coursesHtml = relatedCourses.map(c => `
         <div class="col-12 col-md-6 mb-2">
           <div class="p-2 border rounded bg-white shadow-sm text-left h-100">
@@ -3127,7 +3135,9 @@
               statusBadge.innerHTML = '<i class="fas fa-clock mr-1"></i> Belum Menilai';
             }
 
-            if (evalObj.mata_kuliah_nama) {
+            if (result.is_non_course_scheme) {
+              mkText.innerHTML = `<span class="badge badge-warning text-dark"><i class="fas fa-certificate mr-1"></i> Skema: <strong>${result.skema_kategori || 'Teaching Factory/Hibah/Lomba'}</strong> (Tanpa Dosen Mata Kuliah)</span>`;
+            } else if (evalObj.mata_kuliah_nama) {
               mkText.innerHTML = `Mata Kuliah: <strong>${evalObj.mata_kuliah_nama}</strong>`;
             } else {
               mkText.innerHTML = `Peran: <strong>${evalObj.peran || 'Dosen Penilai'}</strong>`;
@@ -3472,6 +3482,8 @@
     let allEvaluations = [];
     let summaryPerMahasiswa = {};
     let selectedEvaluatorId = null;
+    let isNonCourseScheme = false;
+    let cardSkema = '';
 
     try {
       const response = await fetch(fetchUrl, {
@@ -3490,6 +3502,8 @@
           selectedEvaluatorId = payload.default_evaluator_id;
           summaryPerMahasiswa = payload.summary_per_mahasiswa || {};
           cardMataKuliahs = Array.isArray(payload.mata_kuliahs) ? payload.mata_kuliahs : [];
+          isNonCourseScheme = Boolean(payload.is_non_course_scheme);
+          cardSkema = payload.skema_pbl || '';
 
           if (availableEvaluators.length === 0 && payload.current_user) {
             availableEvaluators.push({
@@ -3519,7 +3533,9 @@
     const buildProjectEvaluatorOptions = () => {
       return availableEvaluators.map(e => {
         const isSel = e.dosen_id == selectedEvaluatorId ? 'selected' : '';
-        const roleText = e.mata_kuliah_nama ? `[MK: ${e.mata_kuliah_nama}]` : (e.peran || 'Penilai');
+        const roleText = (isNonCourseScheme || !e.mata_kuliah_nama)
+          ? (e.peran || 'Pembimbing / Penilai')
+          : `[MK: ${e.mata_kuliah_nama}]`;
         const evalStatus = e.has_evaluated ? '✓ Sudah Menilai' : '⏳ Belum Menilai';
         const youTag = e.is_current_user ? ' (Anda)' : '';
         return `<option value="${e.dosen_id}" data-matkul-id="${e.mata_kuliah_id || ''}" data-matkul-nama="${e.mata_kuliah_nama || ''}" data-nama="${e.nama}" ${isSel}>${e.nama} — ${roleText} [${evalStatus}]${youTag}</option>`;
@@ -3627,6 +3643,7 @@
           <h4 style="margin: 0; font-size: 1.25rem; font-weight: 600; color: #2c3e50; margin-bottom: 8px;">${cardTitle}</h4>
           <div class="mb-2">
             <span class="badge badge-success">Evaluasi 4 Pilar Proyek</span>
+            ${isNonCourseScheme ? `<span class="badge badge-warning text-dark ml-1"><i class="fas fa-tag mr-1"></i>Skema: ${cardSkema} (Tanpa Dosen MK)</span>` : ''}
             <span class="badge badge-info ml-1">Total Bobot: ${totalBobot}%</span>
             <a href="{{ route('dosen.evaluasi.rubrik.index') }}" target="_blank" class="badge badge-light border ml-1 text-primary" style="text-decoration:none;">
               <i class="fas fa-external-link-alt mr-1"></i>Rubrik Acuan
@@ -3700,7 +3717,9 @@
               statusBadge.innerHTML = '<i class="fas fa-clock mr-1"></i> Belum Menilai';
             }
 
-            if (evalObj.mata_kuliah_nama) {
+            if (isNonCourseScheme) {
+              mkText.innerHTML = `<span class="badge badge-warning text-dark"><i class="fas fa-certificate mr-1"></i> Skema: <strong>${cardSkema || 'Teaching Factory/Hibah/Lomba'}</strong> (Tanpa Dosen Mata Kuliah)</span>`;
+            } else if (evalObj.mata_kuliah_nama) {
               mkText.innerHTML = `Mata Kuliah: <strong>${evalObj.mata_kuliah_nama}</strong>`;
             } else {
               mkText.innerHTML = `Peran: <strong>${evalObj.peran || 'Penilai'}</strong>`;

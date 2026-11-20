@@ -206,6 +206,26 @@ class Kelompok extends Model
         return strtolower(trim((string) ($this->skema_kategori ?? ''))) === 'teaching factory';
     }
 
+    /**
+     * Memeriksa apakah kelompok menggunakan skema non-mata kuliah (Teaching Factory, Hibah/Penelitian, Lomba).
+     * Skema-skema ini tidak memerlukan keterlibatan dosen mata kuliah.
+     */
+    public function isNonCourseScheme(): bool
+    {
+        $skema = strtolower(trim((string) ($this->skema_kategori ?? '')));
+
+        if ($skema === '') {
+            return false;
+        }
+
+        return str_contains($skema, 'teaching factory')
+            || str_contains($skema, 'tefa')
+            || str_contains($skema, 'hibah')
+            || str_contains($skema, 'lomba')
+            || str_contains($skema, 'penelitian')
+            || str_contains($skema, 'pengabdian');
+    }
+
     public function isUnlimitedMembers(): bool
     {
         return $this->isTeachingFactory();
@@ -324,8 +344,16 @@ class Kelompok extends Model
             return $query;
         }
 
-        return $query->whereHas('projectCards', function ($q) use ($user) {
-            $q->accessibleByDosen($user);
+        return $query->where(function ($q) use ($user) {
+            $q->whereHas('projectCards', function ($pq) use ($user) {
+                $pq->accessibleByDosen($user);
+            })
+            // Kelompok dengan skema Teaching Factory, Hibah, atau Lomba tidak memerlukan dosen mata kuliah
+                ->orWhere(function ($sq) {
+                    $sq->where('skema_kategori', 'like', '%Teaching Factory%')
+                        ->orWhere('skema_kategori', 'like', '%Hibah%')
+                        ->orWhere('skema_kategori', 'like', '%Lomba%');
+                });
         });
     }
 
@@ -339,6 +367,11 @@ class Kelompok extends Model
         }
 
         if ($user->isAdmin()) {
+            return true;
+        }
+
+        // Skema Teaching Factory, Hibah, dan Lomba tidak memerlukan dosen mata kuliah (dapat diakses dosen)
+        if ($this->isNonCourseScheme()) {
             return true;
         }
 
