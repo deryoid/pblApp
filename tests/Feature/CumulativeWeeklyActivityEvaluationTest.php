@@ -961,4 +961,50 @@ class CumulativeWeeklyActivityEvaluationTest extends TestCase
             'nilai_akhir' => 92.0,
         ]);
     }
+
+    public function test_safe_update_or_create_handles_multiple_evaluators_properly(): void
+    {
+        $evaluasiMaster = EvaluasiMaster::ensureForKelompok($this->periode->id, $this->kelompok->id, $this->dosenUserA->id);
+
+        // First evaluator creates a record
+        $recordA = EvaluasiNilaiAP::safeUpdateOrCreate(
+            [
+                'evaluasi_master_id' => $evaluasiMaster->id,
+                'mahasiswa_id' => $this->mahasiswa->id,
+                'aktivitas_list_id' => $this->aktivitasList->id,
+                'evaluator_id' => $this->dosenUserA->id,
+            ],
+            [
+                'periode_id' => $this->periode->id,
+                'kelompok_id' => $this->kelompok->id,
+                'w_ap_kehadiran' => 'Hadir',
+                'w_ap_presentasi' => 85.0,
+                'status' => 'Submitted',
+            ]
+        );
+
+        $this->assertNotNull($recordA);
+        $this->assertEquals(85.0, (float) $recordA->w_ap_presentasi);
+
+        // Second evaluator creates a record without collision
+        $recordB = EvaluasiNilaiAP::safeUpdateOrCreate(
+            [
+                'evaluasi_master_id' => $evaluasiMaster->id,
+                'mahasiswa_id' => $this->mahasiswa->id,
+                'aktivitas_list_id' => $this->aktivitasList->id,
+                'evaluator_id' => $this->dosenUserB->id,
+            ],
+            [
+                'periode_id' => $this->periode->id,
+                'kelompok_id' => $this->kelompok->id,
+                'w_ap_kehadiran' => 'Hadir',
+                'w_ap_presentasi' => 95.0,
+                'status' => 'Submitted',
+            ]
+        );
+
+        $this->assertNotNull($recordB);
+        $this->assertEquals(95.0, (float) $recordB->w_ap_presentasi);
+        $this->assertNotEquals($recordA->id, $recordB->id);
+    }
 }

@@ -127,4 +127,48 @@ class EvaluasiNilaiAP extends Model
     {
         return $query->where('status', 'Submitted');
     }
+
+    /**
+     * Update or create a record safely, auto-resolving legacy unique constraint collisions if present.
+     *
+     * @param  array<string, mixed>  $attributes
+     * @param  array<string, mixed>  $values
+     */
+    public static function safeUpdateOrCreate(array $attributes, array $values = []): self
+    {
+        try {
+            return static::updateOrCreate($attributes, $values);
+        } catch (\Illuminate\Database\QueryException $e) {
+            if ($e->getCode() == 23000 && str_contains($e->getMessage(), 'evaluasi_nilai_ap_unique')) {
+                static::dropLegacyUniqueIndex();
+
+                return static::updateOrCreate($attributes, $values);
+            }
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Safely drop the legacy unique index if still present in database.
+     */
+    public static function dropLegacyUniqueIndex(): void
+    {
+        try {
+            $driver = \Illuminate\Support\Facades\DB::getDriverName();
+
+            if ($driver === 'mysql') {
+                $existingMasterIndexes = collect(\Illuminate\Support\Facades\DB::select("SHOW INDEX FROM evaluasi_nilai_ap WHERE Column_name = 'evaluasi_master_id' AND Key_name != 'evaluasi_nilai_ap_unique'"));
+                if ($existingMasterIndexes->isEmpty()) {
+                    \Illuminate\Support\Facades\DB::statement('ALTER TABLE evaluasi_nilai_ap ADD INDEX evaluasi_nilai_ap_evaluasi_master_id_idx (evaluasi_master_id)');
+                }
+
+                \Illuminate\Support\Facades\DB::statement('ALTER TABLE evaluasi_nilai_ap DROP INDEX evaluasi_nilai_ap_unique');
+            } elseif ($driver === 'sqlite') {
+                \Illuminate\Support\Facades\DB::statement('DROP INDEX IF EXISTS evaluasi_nilai_ap_unique');
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Failed to drop legacy evaluasi_nilai_ap_unique index: '.$e->getMessage());
+        }
+    }
 }

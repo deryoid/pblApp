@@ -1916,12 +1916,15 @@ class EvaluasiController extends Controller
         }
 
         // Ambil seluruh rekam EvaluasiDosen untuk project card ini
-        $allEvals = EvaluasiDosen::where('project_card_id', $projectCard->id)
-            ->with([
-                'mahasiswa:id,nim,nama_mahasiswa',
-                'evaluator:id,nama_user,username',
-                'mataKuliah:id,kode_matkul,nama_matkul',
-            ])
+        $evalsQuery = EvaluasiDosen::where('project_card_id', $projectCard->id);
+        if ($request->filled('mata_kuliah_id')) {
+            $evalsQuery->where('mata_kuliah_id', $request->input('mata_kuliah_id'));
+        }
+        $allEvals = $evalsQuery->with([
+            'mahasiswa:id,nim,nama_mahasiswa',
+            'evaluator:id,nama_user,username',
+            'mataKuliah:id,kode_matkul,nama_matkul',
+        ])
             ->get();
 
         // Status per evaluator
@@ -2755,7 +2758,7 @@ class EvaluasiController extends Controller
                     'status' => $item['status'] ?? 'Submitted',
                 ];
 
-                $nilaiAP = EvaluasiNilaiAP::updateOrCreate(
+                $nilaiAP = EvaluasiNilaiAP::safeUpdateOrCreate(
                     [
                         'evaluasi_master_id' => $evaluasiMaster->id,
                         'mahasiswa_id' => $item['mahasiswa_id'],
@@ -2878,7 +2881,7 @@ class EvaluasiController extends Controller
                 }
 
                 // Create or update nilai AP
-                $nilaiAP = EvaluasiNilaiAP::updateOrCreate(
+                $nilaiAP = EvaluasiNilaiAP::safeUpdateOrCreate(
                     [
                         'evaluasi_master_id' => $saveData['evaluasi_master_id'],
                         'mahasiswa_id' => $saveData['mahasiswa_id'],
@@ -3052,7 +3055,7 @@ class EvaluasiController extends Controller
                     $nilaiAPData['status'] = $nilaiAPData['status'] ?? 'Draft';
 
                     // Create or update nilai AP
-                    $nilaiAP = EvaluasiNilaiAP::updateOrCreate(
+                    $nilaiAP = EvaluasiNilaiAP::safeUpdateOrCreate(
                         [
                             'evaluasi_master_id' => $nilaiAPData['evaluasi_master_id'],
                             'mahasiswa_id' => $nilaiAPData['mahasiswa_id'],
